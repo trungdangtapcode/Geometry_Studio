@@ -1,0 +1,15 @@
+Source/node_modules/
+Source/test-results/
+Source/playwright-report/
+Source/.vite/
+Source/.vite-temp/
+Source/dist/
+
+Doc/*.aux
+Doc/*.log
+Doc/*.out
+Doc/*.toc
+
+*.log
+*.zip
+.DS_Store

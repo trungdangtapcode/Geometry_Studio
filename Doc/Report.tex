@@ -1,0 +1,353 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+\setlist[itemize]{itemsep=3pt, topsep=4pt}
+\setlist[enumerate]{itemsep=3pt, topsep=4pt}
+
+\title{\textbf{CS105 Geometry Studio}\\Computer Graphics 3D Project Report}
+\author{Student ID: \textit{replace with your student ID}}
+\date{May 26, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+CS105 Geometry Studio is an interactive WebGL2 application for demonstrating core
+computer graphics concepts in three-dimensional space. The project implements
+primitive geometry generation, model loading, solid/point/line rendering modes,
+perspective projection controls, affine transformations, lighting, shadows,
+texture mapping, animation, scene persistence, and an evaluator-focused tour.
+The application is built with Three.js, TypeScript, and Vite, and is packaged as
+a static release that can be served locally for grading.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Project Overview}
+
+The goal of this project is to build a practical 3D graphics studio rather than
+a collection of isolated demonstrations. The application allows users to create
+objects, inspect their rendering modes, transform them interactively, adjust the
+camera projection, configure lights and shadows, apply textures, import external
+models, and run animations.
+
+The project is designed for two audiences:
+\begin{itemize}
+  \item \textbf{Course evaluators}, who need to verify that every assignment
+  requirement is implemented clearly.
+  \item \textbf{Students and developers}, who need a maintainable source
+  structure that demonstrates how a real-time graphics application is organized.
+\end{itemize}
+
+\section{Technology Stack}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{>{\bfseries}p{0.28\linewidth}p{0.62\linewidth}}
+\toprule
+Technology & Purpose \\
+\midrule
+Three.js 0.184.0 & WebGL2 rendering, geometry, materials, lighting, shadows, controls, loaders, and post-processing. \\
+TypeScript 6.0.3 & Static typing and safer long-term source maintenance. \\
+Vite 8.0.14 & Development server and static production build. \\
+Lucide & UI icon system. \\
+Playwright & Browser smoke tests for release validation. \\
+pdflatex & English report generation from LaTeX source. \\
+\bottomrule
+\end{tabular}
+\caption{Main technologies used in the project.}
+\end{table}
+
+\section{Implemented Requirements}
+
+\subsection{3D Geometry}
+
+The application supports the required primitive shapes:
+\begin{itemize}
+  \item Box / Cube
+  \item Sphere
+  \item Cone
+  \item Cylinder
+  \item Wheel / Torus
+  \item Teapot
+\end{itemize}
+
+Additional self-researched shapes are also included:
+\begin{itemize}
+  \item Torus Knot
+  \item Tube Curve
+  \item Tetrahedron, Octahedron, Dodecahedron, and Icosahedron
+  \item Parametric Surface
+  \item Extruded Star
+  \item Built-in sample drone model for model-loading demonstrations
+\end{itemize}
+
+Primitive geometry is generated using Three.js buffer geometries and normalized
+so that objects are centered in the scene and placed naturally on the ground
+plane. This makes the scene easier to inspect and makes object transformations
+more predictable.
+
+\subsection{Rendering Modes}
+
+Each object can be displayed in three required modes:
+\begin{itemize}
+  \item \textbf{Solid}: rendered as a mesh with material and lighting.
+  \item \textbf{Points}: rendered as vertices using \texttt{THREE.Points}.
+  \item \textbf{Lines}: rendered using \texttt{WireframeGeometry} and
+  \texttt{LineSegments}.
+\end{itemize}
+
+The line mode deliberately uses a real wireframe geometry instead of a single
+\texttt{Line} object. This avoids incomplete edge rendering on complex geometry
+and imported models.
+
+\subsection{Perspective Projection}
+
+The project uses \texttt{THREE.PerspectiveCamera}. The user can adjust:
+\begin{itemize}
+  \item Camera position on the X, Y, and Z axes
+  \item Field of view
+  \item Near clipping plane
+  \item Far clipping plane
+\end{itemize}
+
+Camera presets are provided for front, top, isometric, and reset views. A camera
+frustum helper can be enabled to make the projection volume visible during
+evaluation.
+
+\subsection{Affine Transformations}
+
+Affine transformations are implemented with \texttt{TransformControls}. The
+selected object can be translated, rotated, or scaled using:
+\begin{itemize}
+  \item On-screen transform gizmos
+  \item Keyboard shortcuts: T, R, and S
+  \item Numeric inspector fields for X, Y, and Z values
+  \item World-space and local-space transform modes
+\end{itemize}
+
+Each scene object is wrapped in a \texttt{THREE.Group}, which provides a stable
+transform root even when the object's internal visual representation changes
+between solid, point, and line modes.
+
+\subsection{Lighting and Shadows}
+
+The lighting system includes:
+\begin{itemize}
+  \item Ambient light for global illumination
+  \item Directional light to simulate sunlight
+  \item Point light
+  \item Spot light
+\end{itemize}
+
+The user can control light color, intensity, position, helpers, shadow state,
+and a light sweep animation. The renderer uses \texttt{PCFSoftShadowMap} and a
+shadow-receiving ground plane to make shadows visible during grading.
+
+\subsection{Texture Mapping}
+
+The project includes built-in procedural texture presets:
+\begin{itemize}
+  \item Checker
+  \item UV grid
+  \item Grid
+\end{itemize}
+
+Users can also upload bitmap images from their computer. Uploaded textures are
+loaded through \texttt{TextureLoader}, assigned to the selected material, and
+configured with sRGB color space. Repeat values on the X and Y axes can be
+adjusted from the inspector.
+
+\subsection{Model Loading}
+
+The application supports external model import in the following formats:
+\begin{itemize}
+  \item GLB / GLTF
+  \item OBJ
+  \item STL
+\end{itemize}
+
+The import pipeline uses \texttt{LoadingManager} for progress reporting and
+clear error messages. Imported objects are normalized, centered, scaled to a
+reasonable size, placed on the ground plane, and added to the same outliner and
+transformation workflow as primitive objects. Drag-and-drop import is also
+supported.
+
+\subsection{Animation}
+
+The timeline supports play and pause. Per-object animation modes include:
+\begin{itemize}
+  \item Spin
+  \item Orbit
+  \item Bounce
+  \item Pulse
+\end{itemize}
+
+The project also includes a light sweep animation. Animation updates use elapsed
+time and frame delta values so that motion remains stable across displays with
+different refresh rates.
+
+\section{Advanced Features}
+
+\subsection{Scene Persistence}
+
+The application can save and load a typed JSON scene document. The document
+stores:
+\begin{itemize}
+  \item Scene version and save time
+  \item Object names, types, render modes, materials, colors, textures, and
+  transforms
+  \item Object animation settings
+  \item Camera position, target, field of view, near plane, and far plane
+  \item Display settings such as grid, axes, stats, and frustum helper
+  \item Lighting configuration
+\end{itemize}
+
+External model binary data is not embedded into the JSON document. If a saved
+scene references an imported model, the loader restores a built-in sample
+placeholder so the scene workflow remains usable.
+
+\subsection{Undo and Redo}
+
+Undo and redo are implemented through a command-history system that stores
+snapshots of the scene document. This allows the project to restore prior states
+after changes such as object creation, deletion, material changes, render mode
+changes, camera changes, and lighting changes.
+
+\subsection{Evaluation Tour}
+
+The Evaluation Tour is designed specifically for grading. It creates a scene
+that demonstrates:
+\begin{itemize}
+  \item Required primitive geometry
+  \item Solid, point, and line rendering
+  \item Perspective camera and frustum helper
+  \item Affine transform workflow
+  \item Ambient, spot, and shadowed lighting
+  \item Texture mapping
+  \item Model-loading workflow through the built-in sample model
+  \item Multiple animation types
+\end{itemize}
+
+Toast messages appear in sequence to explain which requirement is being shown.
+
+\subsection{Cinematic Demo and Screenshot Export}
+
+The Cinematic Demo creates a visually stronger scene with different geometry,
+materials, render modes, textures, and animations. The screenshot button exports
+the current WebGL canvas as a PNG image.
+
+\subsection{Telemetry}
+
+The telemetry panel displays FPS, draw calls, triangles, lines, points, geometry
+count, texture count, and object count. These values are based on
+\texttt{renderer.info} and help demonstrate rendering cost during manual
+evaluation.
+
+\section{Source Architecture}
+
+The upgraded source code is split into focused modules:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{>{\ttfamily}p{0.34\linewidth}p{0.56\linewidth}}
+\toprule
+Module & Responsibility \\
+\midrule
+editor/types.ts & Shared application types such as SceneEntry, LightRig, and SceneDocument. \\
+editor/documents.ts & Scene JSON serialization and validation. \\
+editor/commands.ts & Undo/redo snapshot history. \\
+scene/primitives.ts & Primitive geometry, extra shapes, labels, and built-in sample model. \\
+scene/materials.ts & Materials, texture presets, and solid/point/line visual construction. \\
+scene/lights.ts & Stage, light rig, shadows, helpers, and light sweep. \\
+scene/importers.ts & GLB, GLTF, OBJ, and STL import pipeline. \\
+renderer/pipeline.ts & WebGLRenderer, EffectComposer, OutlinePass, and resize handling. \\
+animation/timeline.ts & Animation update logic. \\
+ui/template.ts & DOM template for the editor UI. \\
+utils/resourceTracker.ts & Explicit disposal of geometries, materials, textures, and URLs. \\
+\bottomrule
+\end{tabular}
+\caption{High-level source structure.}
+\end{table}
+
+\section{Rendering and Performance Considerations}
+
+The renderer is configured for WebGL2 with ACES tone mapping, sRGB output color
+space, soft shadows, and post-processing outline selection. Resize handling uses
+the canvas client size and caps the drawing buffer pixel count to avoid excessive
+GPU load on high-DPI displays.
+
+The project explicitly disposes geometries, materials, textures, and object URLs
+when objects are rebuilt or removed. This follows standard Three.js resource
+management practices and reduces the risk of memory leaks during long editing
+sessions.
+
+\section{Testing}
+
+The project includes automated browser tests with Playwright:
+\begin{itemize}
+  \item Startup rendering and non-empty canvas verification
+  \item Toolbar and inspector visibility
+  \item Object creation
+  \item Render mode switching
+  \item Responsive mobile layout smoke test
+  \item Undo and redo
+  \item Scene JSON loading
+  \item Evaluation Tour activation
+\end{itemize}
+
+The main verification commands are:
+\begin{verbatim}
+npm run typecheck
+npm run build
+npm run test:smoke
+\end{verbatim}
+
+\section{How to Run}
+
+To run from source:
+\begin{verbatim}
+cd CS105_Geometry_Studio/Source
+npm install
+npm run dev
+\end{verbatim}
+
+To run the static release:
+\begin{verbatim}
+cd CS105_Geometry_Studio/Release
+python3 -m http.server 8080
+\end{verbatim}
+
+Then open:
+\begin{verbatim}
+http://localhost:8080
+\end{verbatim}
+
+\section{Conclusion}
+
+CS105 Geometry Studio satisfies the project requirements for 3D geometry,
+rendering modes, perspective projection, affine transformations, lighting,
+shadows, texture mapping, model loading, and animation. The upgraded version
+also adds scene persistence, undo/redo, import progress, drag-and-drop, telemetry,
+an Evaluation Tour, screenshot export, and a modular source architecture. These
+features make the project easier to evaluate, easier to maintain, and more
+impressive as a complete computer graphics demonstration.
+
+\end{document}
