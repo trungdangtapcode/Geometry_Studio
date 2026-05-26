@@ -188,12 +188,16 @@ label {
   left: 18px;
   bottom: 16px;
   z-index: 5;
-  width: 42px;
+  width: 50px;
   display: grid;
   grid-auto-rows: 40px;
   align-content: start;
   gap: 6px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .tool-button,
@@ -646,10 +650,14 @@ label {
     bottom: 10px;
     left: 10px;
     width: auto;
+    height: 42px;
     grid-auto-flow: column;
     grid-auto-columns: 42px;
+    grid-auto-rows: 42px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 0;
+    scrollbar-gutter: auto;
   }
 
   .tool-button {
