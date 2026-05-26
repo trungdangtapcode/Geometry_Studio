@@ -944,7 +944,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function saveScene(): void {
-    downloadText("cs105-geometry-studio.scene.json", JSON.stringify(snapshot(), null, 2));
+    downloadText("geometry-studio.scene.json", JSON.stringify(snapshot(), null, 2));
     showToast("Scene JSON exported", "good");
   }
 
@@ -1082,7 +1082,7 @@ function boot(root: HTMLDivElement): void {
   function exportScreenshot(): void {
     composer.render();
     const link = document.createElement("a");
-    link.download = "cs105-geometry-studio.png";
+    link.download = "geometry-studio.png";
     link.href = renderer.domElement.toDataURL("image/png");
     link.click();
     showToast("Screenshot exported", "good");

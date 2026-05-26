@@ -57,7 +57,7 @@ export function studioTemplate(): string {
       <aside class="inspector" aria-label="Studio inspector">
         <header class="panel-header">
           <div>
-            <div class="eyebrow">CS105</div>
+            <div class="eyebrow">Studio</div>
             <h2>Scene Controls</h2>
           </div>
           <button class="icon-command" id="reset-scene" type="button" aria-label="Reset scene" title="Reset scene"><span data-icon="RotateCcw"></span></button>
