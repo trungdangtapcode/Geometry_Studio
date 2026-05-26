@@ -94,7 +94,13 @@ Using a local static server is recommended instead of double-clicking index.html
 - ui/: editor DOM template.
 - utils/: DOM helpers and ResourceTracker for disposing geometries, materials, textures, and object URLs.
 
-10. Rebuild The Report
+10. Engineering Docs
+Technical engineering plans are in:
+Geometry_Studio/docs/README.md
+
+The lowercase docs/ folder contains design notes for planned features, including the keyframe timeline architecture. The Doc/ folder remains the formal LaTeX report folder.
+
+11. Rebuild The Report
 Open a terminal in:
 Geometry_Studio/Doc
 
@@ -104,7 +110,7 @@ pdflatex Report.tex
 
 Running pdflatex twice refreshes the table of contents and references.
 
-11. Package For Submission
+12. Package For Submission
 Zip the whole Geometry_Studio folder as:
 StudentID.zip
 
