@@ -24,6 +24,25 @@
   box-sizing: border-box;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(31, 40, 46, 0.34) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(31, 40, 46, 0.28);
+}
+
 html,
 body,
 #app {
@@ -66,8 +85,8 @@ label {
 .viewport-top,
 .viewport-bottom {
   position: absolute;
-  left: 84px;
-  right: 384px;
+  left: 88px;
+  right: 396px;
   z-index: 4;
   display: flex;
   align-items: center;
@@ -87,13 +106,13 @@ label {
 
 .viewport-top h1 {
   margin: 0;
-  font-size: clamp(22px, 3vw, 42px);
+  font-size: clamp(24px, 2.6vw, 38px);
   line-height: 1;
   letter-spacing: 0;
 }
 
 .viewport-top p {
-  margin: 8px 0 0;
+  margin: 7px 0 0;
   color: var(--muted);
   font-size: 13px;
 }
@@ -165,22 +184,22 @@ label {
 
 .tool-rail {
   position: absolute;
-  top: 18px;
+  top: 16px;
   left: 18px;
-  bottom: 18px;
+  bottom: 16px;
   z-index: 5;
-  width: 50px;
+  width: 42px;
   display: grid;
-  grid-auto-rows: 44px;
+  grid-auto-rows: 40px;
   align-content: start;
-  gap: 8px;
-  padding: 8px 0;
+  gap: 6px;
+  overflow: hidden;
 }
 
 .tool-button,
 .icon-command {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   color: #20272c;
@@ -203,7 +222,7 @@ label {
 
 .drop-overlay {
   position: absolute;
-  inset: 18px 382px 18px 82px;
+  inset: 18px 396px 18px 84px;
   z-index: 20;
   display: none;
   place-items: center;
@@ -223,18 +242,20 @@ label {
 
 .inspector {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  bottom: 18px;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
   z-index: 6;
-  width: 348px;
+  width: 360px;
   overflow: auto;
-  padding: 18px;
+  padding: 18px 16px;
   border: 1px solid var(--line);
   background: var(--panel);
   border-radius: 8px;
   box-shadow: 0 22px 70px rgba(16, 24, 31, 0.16);
   backdrop-filter: blur(18px);
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .panel-header {
@@ -265,7 +286,7 @@ label {
 
 .panel-section {
   border-top: 1px solid var(--line);
-  padding: 16px 0;
+  padding: 14px 0;
 }
 
 .section-title {
@@ -290,10 +311,11 @@ label {
 
 .outliner {
   display: grid;
-  gap: 8px;
-  max-height: 174px;
+  gap: 7px;
+  max-height: 160px;
   overflow: auto;
   padding-right: 4px;
+  overscroll-behavior: contain;
 }
 
 .outliner-item {
@@ -370,7 +392,7 @@ label {
 
 .wide-button,
 .mini-button {
-  min-height: 34px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -552,12 +574,12 @@ label {
 
 .toast-stack {
   position: absolute;
-  left: 84px;
-  bottom: 76px;
+  left: 88px;
+  bottom: 78px;
   z-index: 12;
   display: grid;
-  gap: 8px;
-  width: min(420px, calc(100vw - 120px));
+  gap: 7px;
+  width: min(380px, calc(100vw - 124px));
   pointer-events: none;
 }
 
@@ -566,8 +588,10 @@ label {
   background: rgba(32, 39, 44, 0.92);
   color: #ffffff;
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   box-shadow: 0 18px 45px rgba(12, 16, 20, 0.2);
+  font-size: 14px;
+  line-height: 1.35;
   animation: toast-in 180ms ease-out;
 }
 

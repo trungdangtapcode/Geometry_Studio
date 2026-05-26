@@ -82,6 +82,7 @@ function boot(root: HTMLDivElement): void {
   let frameCount = 0;
   let statsVisible = true;
   let pendingDragSnapshot: SceneDocument | null = null;
+  let evaluationTourTimers: number[] = [];
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -838,6 +839,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function startEvaluationTour(): void {
+    clearEvaluationTourMessages();
     recordHistory();
     clearSceneEntries();
     const cube = addPrimitive("cube", new THREE.Vector3(-5, 0.02, -1.3), { color: "#4bd0a0", renderMode: "solid", materialMode: "standard" }, false);
@@ -872,7 +874,9 @@ function boot(root: HTMLDivElement): void {
       "Model loading: built-in sample model demonstrates imported model workflow.",
       "Animation: spin, bounce, pulse, and light sweep are running."
     ];
-    steps.forEach((message, index) => window.setTimeout(() => showToast(message, "good"), index * 1700));
+    evaluationTourTimers = steps.map((message, index) =>
+      window.setTimeout(() => showToast(message, "good"), index * 1500)
+    );
   }
 
   function resetScene(): void {
@@ -1162,6 +1166,9 @@ function boot(root: HTMLDivElement): void {
 
   function showToast(message: string, tone: ToastTone = "good"): void {
     const stack = query<HTMLDivElement>("#toast-stack");
+    while (stack.children.length >= 3) {
+      stack.firstElementChild?.remove();
+    }
     const toast = document.createElement("div");
     toast.className = `toast ${tone}`;
     toast.textContent = message;
@@ -1170,6 +1177,12 @@ function boot(root: HTMLDivElement): void {
       toast.classList.add("leaving");
       window.setTimeout(() => toast.remove(), 250);
     }, 3600);
+  }
+
+  function clearEvaluationTourMessages(): void {
+    evaluationTourTimers.forEach((timer) => window.clearTimeout(timer));
+    evaluationTourTimers = [];
+    query<HTMLDivElement>("#toast-stack").replaceChildren();
   }
 
   function nextSpawnPosition(): THREE.Vector3 {
