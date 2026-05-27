@@ -7,6 +7,7 @@
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage{enumitem}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{xcolor}
 
@@ -21,7 +22,7 @@
 
 \title{\textbf{Geometry Studio}\\Computer Graphics 3D Project Report}
 \author{Student ID: \textit{replace with your student ID}}
-\date{May 26, 2026}
+\date{May 27, 2026}
 
 \begin{document}
 
@@ -33,8 +34,9 @@ computer graphics concepts in three-dimensional space. The project implements
 primitive geometry generation, model loading, solid/point/line rendering modes,
 perspective projection controls, affine transformations, lighting, shadows,
 texture mapping, animation, scene persistence, and an evaluator-focused tour.
-The application is built with Three.js, TypeScript, and Vite, and is packaged as
-a static release that can be served locally for grading.
+The application is built with Three.js, TypeScript, Vite, and a keyframe
+timeline editor, and is packaged as a static release that can be served locally
+for grading.
 \end{abstract}
 
 \tableofcontents
@@ -69,6 +71,7 @@ TypeScript 6.0.3 & Static typing and safer long-term source maintenance. \\
 Vite 8.0.14 & Development server and static production build. \\
 Lucide & UI icon system. \\
 Playwright & Browser smoke tests for release validation. \\
+animation-timeline-js 2.3.5 & Canvas-based visual timeline control for transform keyframes. \\
 pdflatex & English report generation from LaTeX source. \\
 \bottomrule
 \end{tabular}
@@ -192,7 +195,8 @@ supported.
 
 \subsection{Animation}
 
-The timeline supports play and pause. Per-object animation modes include:
+The application supports both preset animation modes and a transform keyframe
+timeline. Per-object preset animation modes include:
 \begin{itemize}
   \item Spin
   \item Orbit
@@ -203,6 +207,12 @@ The timeline supports play and pause. Per-object animation modes include:
 The project also includes a light sweep animation. Animation updates use elapsed
 time and frame delta values so that motion remains stable across displays with
 different refresh rates.
+
+The keyframe timeline provides a bottom editing dock with a playhead, duration,
+FPS, snapping, loop control, and Position / Rotation / Scale tracks. Users can
+add, delete, drag, scrub, save, and reload transform keyframes. The editor stores
+rotation keyframes in readable Euler degrees and converts them to
+\texttt{QuaternionKeyframeTrack} objects for Three.js playback.
 
 \section{Advanced Features}
 
@@ -215,6 +225,7 @@ stores:
   \item Object names, types, render modes, materials, colors, textures, and
   transforms
   \item Object animation settings
+  \item Keyframe timeline settings, object tracks, and keyframe values
   \item Camera position, target, field of view, near plane, and far plane
   \item Display settings such as grid, axes, stats, and frustum helper
   \item Lighting configuration
@@ -229,7 +240,26 @@ placeholder so the scene workflow remains usable.
 Undo and redo are implemented through a command-history system that stores
 snapshots of the scene document. This allows the project to restore prior states
 after changes such as object creation, deletion, material changes, render mode
-changes, camera changes, and lighting changes.
+changes, camera changes, lighting changes, and timeline keyframe edits.
+
+\subsection{Keyframe Timeline Runtime}
+
+The keyframe timeline is implemented as a separate editor layer and runtime
+layer. The UI layer uses \texttt{animation-timeline-js} for visual keyframe rows,
+selection, dragging, snapping, and playhead interaction. Geometry Studio owns the
+actual scene timeline schema so saved JSON files remain stable and independent
+from the UI library.
+
+At runtime, timeline tracks are compiled into native Three.js animation clips:
+\begin{itemize}
+  \item Position and Scale use \texttt{VectorKeyframeTrack}.
+  \item Rotation uses \texttt{QuaternionKeyframeTrack}.
+  \item Each keyed object is evaluated by an \texttt{AnimationMixer}.
+\end{itemize}
+
+If an object has active transform timeline tracks, timeline playback overrides
+the older preset transform animation for that same object. This avoids ambiguous
+motion and makes the evaluator-visible behavior deterministic.
 
 \subsection{Evaluation Tour}
 
@@ -261,6 +291,54 @@ count, texture count, and object count. These values are based on
 \texttt{renderer.info} and help demonstrate rendering cost during manual
 evaluation.
 
+\section{Captured Screenshots}
+
+The following screenshots were captured from the static \texttt{Release/} build
+served locally through \texttt{python3 -m http.server 8080}. They demonstrate
+the final evaluator-facing interface and the major graphics features.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{screenshots/01-default-studio.png}
+\caption{Default Geometry Studio scene with primitive geometry, render modes,
+inspector controls, transform gizmo, grid, and timeline dock.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{screenshots/02-evaluation-tour.png}
+\caption{Evaluation Tour scene showing required primitives, shadows, camera
+frustum helper, lighting helpers, and multiple rendering modes.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{screenshots/03-cinematic-rendering.png}
+\caption{Cinematic rendering demo with mixed primitives, textures, point/line
+rendering, lighting, shadows, and animation playback.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{screenshots/04-keyframe-timeline.png}
+\caption{Transform keyframe timeline showing two Position keyframes and a
+selected object whose X position was keyed through the timeline workflow.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{screenshots/05-sample-model-workflow.png}
+\caption{Built-in sample model workflow demonstrating model-style objects in
+the same outliner, transform, render, and animation system.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.55\linewidth]{screenshots/06-mobile-responsive-layout.png}
+\caption{Responsive mobile layout with timeline, inspector, viewport, and
+horizontal tool rail.}
+\end{figure}
+
 \section{Source Architecture}
 
 The upgraded source code is split into focused modules:
@@ -274,6 +352,9 @@ Module & Responsibility \\
 editor/types.ts & Shared application types such as SceneEntry, LightRig, and SceneDocument. \\
 editor/documents.ts & Scene JSON serialization and validation. \\
 editor/commands.ts & Undo/redo snapshot history. \\
+animation/timelineSchema.ts & Timeline defaults, validation, migration, snapping, and object-track helpers. \\
+animation/clipFactory.ts & Converts timeline tracks into Three.js keyframe clips. \\
+animation/timelinePlayer.ts & Evaluates timeline clips with \texttt{AnimationMixer}. \\
 scene/primitives.ts & Primitive geometry, extra shapes, labels, and built-in sample model. \\
 scene/materials.ts & Materials, texture presets, and solid/point/line visual construction. \\
 scene/lights.ts & Stage, light rig, shadows, helpers, and light sweep. \\
@@ -281,6 +362,7 @@ scene/importers.ts & GLB, GLTF, OBJ, and STL import pipeline. \\
 renderer/pipeline.ts & WebGLRenderer, EffectComposer, OutlinePass, and resize handling. \\
 animation/timeline.ts & Animation update logic. \\
 ui/template.ts & DOM template for the editor UI. \\
+ui/timelinePanel.ts & Adapter between the timeline UI component and editor commands. \\
 utils/resourceTracker.ts & Explicit disposal of geometries, materials, textures, and URLs. \\
 \bottomrule
 \end{tabular}
@@ -299,6 +381,31 @@ when objects are rebuilt or removed. This follows standard Three.js resource
 management practices and reduces the risk of memory leaks during long editing
 sessions.
 
+\section{Planned Improvements}
+
+The current release focuses on a stable real-time WebGL editor. Future work
+should improve rendering quality while preserving interactivity and grading
+clarity.
+
+\begin{enumerate}
+  \item \textbf{Rendering Lab}: add tone mapping, exposure, shadow quality, PBR
+  material presets, environment lighting controls, and a clearer rasterization
+  versus ray tracing explanation.
+  \item \textbf{Environment Lighting}: use local environment assets and
+  \texttt{PMREMGenerator} to support physically-based reflections and
+  roughness-dependent lighting.
+  \item \textbf{OBJ + MTL Import}: extend OBJ import so users can load companion
+  material files and texture images for models such as teacups, furniture, or
+  scanned objects.
+  \item \textbf{Post-Processing}: add controlled toggles for bloom, ambient
+  occlusion, color grading, and anti-aliasing passes.
+  \item \textbf{Timeline Polish}: add auto-key, duplicate keyframes, camera
+  tracks, and light/material tracks.
+  \item \textbf{Path-Traced Preview}: evaluate a separate progressive still
+  preview using a GPU path-tracing library. This should remain optional because
+  the main editor is designed for real-time rasterized interaction.
+\end{enumerate}
+
 \section{Testing}
 
 The project includes automated browser tests with Playwright:
@@ -310,6 +417,7 @@ The project includes automated browser tests with Playwright:
   \item Responsive mobile layout smoke test
   \item Undo and redo
   \item Scene JSON loading
+  \item Keyframe timeline creation and JSON save verification
   \item Evaluation Tour activation
 \end{itemize}
 

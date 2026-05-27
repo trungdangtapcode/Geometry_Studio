@@ -16,6 +16,9 @@ PDF.
 - [Timeline Implementation Plan](timeline-implementation-plan.md) breaks the
   feature into a four-week implementation plan with first-version scope,
   interaction behavior, and tests.
+- [Improvement Roadmap](improvement-roadmap.md) records the next research-backed
+  upgrade path for rendering quality, OBJ/MTL import, post-processing, timeline
+  polish, and optional path-traced preview.
 
 ## Current Recommendation
 
