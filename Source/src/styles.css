@@ -182,6 +182,201 @@ label {
   border-color: var(--charcoal);
 }
 
+.keyframe-dock {
+  position: absolute;
+  left: 88px;
+  right: 396px;
+  bottom: 72px;
+  z-index: 5;
+  height: 238px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(250, 252, 253, 0.88);
+  box-shadow: 0 22px 70px rgba(16, 24, 31, 0.14);
+  backdrop-filter: blur(18px);
+}
+
+.keyframe-dock.collapsed {
+  height: 50px;
+}
+
+.keyframe-dock.collapsed .timeline-settings,
+.keyframe-dock.collapsed .timeline-body {
+  display: none;
+}
+
+.timeline-header {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 40px minmax(150px, 1fr) minmax(420px, auto);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 0;
+}
+
+.timeline-title {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.timeline-title strong {
+  overflow: hidden;
+  color: var(--charcoal);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-title span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-toolbar,
+.timeline-settings {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, auto));
+  align-items: center;
+  justify-content: end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.timeline-toolbar select,
+.timeline-settings input {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  color: var(--ink);
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.timeline-toolbar select {
+  width: 112px;
+}
+
+.mini-button.strong-mini {
+  background: var(--charcoal);
+  color: #ffffff;
+  border-color: var(--charcoal);
+}
+
+.mini-button.danger {
+  color: #842029;
+}
+
+.timeline-settings {
+  grid-template-columns: repeat(4, minmax(82px, 1fr)) repeat(2, auto);
+  justify-content: stretch;
+  padding: 0 10px;
+}
+
+.timeline-settings label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.timeline-settings .toggle-line {
+  align-self: end;
+  min-height: 34px;
+  text-transform: none;
+}
+
+.timeline-body {
+  display: grid;
+  grid-template-columns: 178px minmax(0, 1fr);
+  min-height: 0;
+  padding: 0 10px 10px;
+}
+
+.timeline-track-labels {
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 28px;
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: rgba(244, 247, 249, 0.88);
+}
+
+.timeline-track-label {
+  width: 100%;
+  height: 32px;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-bottom: 1px solid rgba(26, 35, 42, 0.08);
+  background: transparent;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.timeline-track-label span:last-child {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.timeline-track-label strong,
+.timeline-track-label small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-track-label strong {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.timeline-track-label small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.track-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 99px;
+}
+
+.timeline-empty {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.timeline-canvas {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0 8px 8px 0;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.timeline-canvas > div,
+.timeline-canvas canvas {
+  width: 100% !important;
+}
+
 .tool-rail {
   position: absolute;
   top: 16px;
@@ -694,6 +889,31 @@ label {
     right: 12px;
     bottom: calc(46vh + 80px);
     flex-wrap: wrap;
+  }
+
+  .keyframe-dock {
+    left: 10px;
+    right: 10px;
+    bottom: calc(46vh + 132px);
+    height: min(220px, 28vh);
+  }
+
+  .timeline-header {
+    grid-template-columns: 40px minmax(120px, 1fr);
+  }
+
+  .timeline-toolbar {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .timeline-settings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .timeline-body {
+    grid-template-columns: 132px minmax(0, 1fr);
   }
 
   .status-line {

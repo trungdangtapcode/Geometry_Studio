@@ -4,6 +4,22 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { updateEntryAnimation } from "./animation/timeline";
+import { TimelinePlayer } from "./animation/timelinePlayer";
+import {
+  copyTimelineObject,
+  createDefaultTimeline,
+  createTimelineKeyframe,
+  ensureObjectTimeline,
+  ensureTimelineTrack,
+  hasObjectTimelineTracks,
+  hasTimelineTracks,
+  normalizeTimelineDocument,
+  pruneEmptyTimelineTracks,
+  removeTimelineObject,
+  roundTime,
+  snapTimelineTime,
+  sortTimelineKeyframes
+} from "./animation/timelineSchema";
 import { CommandHistory } from "./editor/commands";
 import { createSceneDocument, validateSceneDocument } from "./editor/documents";
 import type {
@@ -16,6 +32,8 @@ import type {
   SceneDocument,
   SceneEntry,
   SerializedObject,
+  TimelineKeyframeDocument,
+  TimelineTrackKind,
   ToastTone
 } from "./editor/types";
 import { createRenderPipeline } from "./renderer/pipeline";
@@ -23,6 +41,7 @@ import { loadModelFromFile } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset } from "./scene/materials";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
+import { KeyframeTimelinePanel } from "./ui/timelinePanel";
 import { studioTemplate } from "./ui/template";
 import { capitalize, clamp, downloadText, formatNumber, hasWebGL2, hydrateIcons, query, safeJsonParse } from "./utils/dom";
 import { ResourceTracker } from "./utils/resourceTracker";
@@ -73,7 +92,9 @@ function boot(root: HTMLDivElement): void {
 
   const resourceTracker = new ResourceTracker();
   const history = new CommandHistory();
+  const timelinePlayer = new TimelinePlayer();
   const entries = new Map<string, SceneEntry>();
+  let sceneTimeline = createDefaultTimeline();
   let selectedId = "";
   let idCounter = 1;
   let playing = false;
@@ -82,6 +103,7 @@ function boot(root: HTMLDivElement): void {
   let frameCount = 0;
   let statsVisible = true;
   let pendingDragSnapshot: SceneDocument | null = null;
+  let pendingTimelineDragSnapshot: SceneDocument | null = null;
   let evaluationTourTimers: number[] = [];
 
   const raycaster = new THREE.Raycaster();
@@ -92,6 +114,17 @@ function boot(root: HTMLDivElement): void {
   const frustumHelper = new THREE.CameraHelper(camera);
   frustumHelper.visible = false;
   scene.add(stage.ground, stage.grid, stage.axes, frustumHelper);
+
+  const timelinePanel = new KeyframeTimelinePanel({
+    onTimeChanged: setTimelineTime,
+    onAddKeyframe: addTimelineKeyframe,
+    onDeleteKeyframes: deleteTimelineKeyframes,
+    onDragStarted: beginTimelineDrag,
+    onKeyframeMoved: moveTimelineKeyframe,
+    onDragFinished: finishTimelineDrag,
+    onSettingsChanged: updateTimelineSettings,
+    onTogglePlayback: togglePlay
+  });
 
   seedDefaultScene();
   setSelected(firstEntryId());
@@ -445,6 +478,7 @@ function boot(root: HTMLDivElement): void {
     syncSegmentedButtons();
     syncTextureUI();
     syncHistoryButtons();
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
     updateTelemetry();
   }
 
@@ -579,7 +613,7 @@ function boot(root: HTMLDivElement): void {
   function syncSelectionSummary(): void {
     const entry = selectedEntry();
     const summary = entry
-      ? `${entry.name} | ${capitalize(entry.renderMode)} | ${entry.animation === "none" ? "Static" : capitalize(entry.animation)}`
+      ? `${entry.name} | ${capitalize(entry.renderMode)} | ${hasObjectTimelineTracks(sceneTimeline, entry.id) ? "Keyframed" : entry.animation === "none" ? "Static" : capitalize(entry.animation)}`
       : "No object selected";
     query<HTMLParagraphElement>("#selection-summary").textContent = summary;
     query<HTMLInputElement>("#object-name").value = entry?.name ?? "";
@@ -808,15 +842,15 @@ function boot(root: HTMLDivElement): void {
 
   function togglePlay(): void {
     playing = !playing;
-    const button = query<HTMLButtonElement>("#play-toggle");
-    button.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
-    hydrateIcons(button);
+    updatePlayButton();
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
     showToast(playing ? "Animation running" : "Animation paused", "good");
   }
 
   function startCinematicDemo(): void {
     recordHistory();
     clearSceneEntries();
+    sceneTimeline = createDefaultTimeline();
     const cube = addPrimitive("cube", new THREE.Vector3(-4.2, 0.02, 0.8), { color: "#4bd0a0", textureName: "uv", animation: "bounce" }, false);
     const sphere = addPrimitive("sphere", new THREE.Vector3(-1.4, 0.02, -1.6), { color: "#f7bd4b", textureName: "checker", animation: "pulse" }, false);
     const teapot = addPrimitive("teapot", new THREE.Vector3(1.55, 0.02, 0.7), { color: "#df6b80", materialMode: "phong", animation: "spin" }, false);
@@ -834,6 +868,7 @@ function boot(root: HTMLDivElement): void {
     setCameraPreset("iso");
     if (!playing) togglePlay();
     setSelected(teapot.id);
+    rebuildTimelineRuntime();
     updateAllUI();
     showToast("Cinematic demo staged", "good");
   }
@@ -842,6 +877,7 @@ function boot(root: HTMLDivElement): void {
     clearEvaluationTourMessages();
     recordHistory();
     clearSceneEntries();
+    sceneTimeline = createDefaultTimeline();
     const cube = addPrimitive("cube", new THREE.Vector3(-5, 0.02, -1.3), { color: "#4bd0a0", renderMode: "solid", materialMode: "standard" }, false);
     const sphere = addPrimitive("sphere", new THREE.Vector3(-2.5, 0.02, 1.2), { color: "#df6b80", textureName: "checker", animation: "pulse" }, false);
     const cone = addPrimitive("cone", new THREE.Vector3(0, 0.02, -1.5), { color: "#f7bd4b", renderMode: "points", materialMode: "basic" }, false);
@@ -863,6 +899,7 @@ function boot(root: HTMLDivElement): void {
     setCameraPreset("iso");
     if (!playing) togglePlay();
     setSelected(cube.id);
+    rebuildTimelineRuntime();
     updateAllUI();
     const steps = [
       "Evaluation Tour: required primitives are visible.",
@@ -882,14 +919,17 @@ function boot(root: HTMLDivElement): void {
   function resetScene(): void {
     recordHistory();
     clearSceneEntries();
+    sceneTimeline = createDefaultTimeline();
     addPrimitive("cube", new THREE.Vector3(0, 0.02, 0), { color: "#4bd0a0" }, false);
     addPrimitive("sphere", new THREE.Vector3(3.2, 0.02, -1.2), { color: "#df6b80", textureName: "checker", animation: "pulse" }, false);
     setCameraPreset("reset");
+    rebuildTimelineRuntime();
     updateAllUI();
     showToast("Scene reset", "good");
   }
 
   function clearSceneEntries(): void {
+    timelinePlayer.clear();
     transformControls.detach();
     entries.forEach((entry) => {
       disposeEntry(entry);
@@ -914,6 +954,8 @@ function boot(root: HTMLDivElement): void {
     disposeEntry(entry);
     scene.remove(entry.root);
     entries.delete(entry.id);
+    removeTimelineObject(sceneTimeline, entry.id);
+    rebuildTimelineRuntime();
     selectedId = entries.size ? firstEntryId() : "";
     if (selectedId) transformControls.attach(entries.get(selectedId)!.root);
     syncOutline();
@@ -925,12 +967,15 @@ function boot(root: HTMLDivElement): void {
     const entry = selectedEntry();
     if (!entry) return;
     recordHistory();
+    const copyId = `object-${idCounter++}`;
     const copy = restoreObject({
       ...serializeObjectForDuplicate(entry),
-      id: `object-${idCounter++}`,
+      id: copyId,
       name: `${entry.name} Copy`,
       position: [entry.root.position.x + 0.8, entry.root.position.y, entry.root.position.z + 0.8]
     });
+    copyTimelineObject(sceneTimeline, entry.id, copy.id);
+    rebuildTimelineRuntime();
     setSelected(copy.id);
     updateAllUI();
     showToast(`${entry.name} duplicated`, "good");
@@ -979,7 +1024,8 @@ function boot(root: HTMLDivElement): void {
       stage,
       statsVisible,
       frustumVisible: frustumHelper.visible,
-      lightRig
+      lightRig,
+      timeline: sceneTimeline
     });
   }
 
@@ -1018,9 +1064,12 @@ function boot(root: HTMLDivElement): void {
     applyLightDocument(document);
     playing = document.playing;
     document.objects.forEach((object) => restoreObject(object));
+    sceneTimeline = normalizeTimelineDocument(document.timeline, new Set(entries.keys()));
     selectedId = document.selectedId && entries.has(document.selectedId) ? document.selectedId : entries.size ? firstEntryId() : "";
     if (selectedId) transformControls.attach(entries.get(selectedId)!.root);
     if (resetHistory) history.reset();
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
     updatePlayButton();
     syncLights(lightRig, entries.values());
     syncOutline();
@@ -1083,6 +1132,150 @@ function boot(root: HTMLDivElement): void {
     light.position.fromArray(value.position);
   }
 
+  function setTimelineTime(time: number): void {
+    sceneTimeline.currentTime = clamp(roundTime(time), 0, sceneTimeline.duration);
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    timelinePanel.setPlaybackTime(sceneTimeline, playing);
+    if (hasTimelineTracks(sceneTimeline)) {
+      syncTransformUI();
+      syncSelectionSummary();
+    }
+  }
+
+  function advanceTimeline(delta: number): void {
+    if (sceneTimeline.duration <= 0) return;
+    let nextTime = sceneTimeline.currentTime + delta;
+    if (nextTime > sceneTimeline.duration) {
+      if (sceneTimeline.loop) {
+        nextTime %= sceneTimeline.duration;
+      } else {
+        nextTime = sceneTimeline.duration;
+        playing = false;
+        updatePlayButton();
+      }
+    }
+    sceneTimeline.currentTime = roundTime(nextTime);
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    timelinePanel.setPlaybackTime(sceneTimeline, playing);
+    if (hasTimelineTracks(sceneTimeline)) {
+      syncTransformUI();
+      syncSelectionSummary();
+    }
+  }
+
+  function updateTimelineSettings(patch: Partial<SceneDocument["timeline"]>): void {
+    recordHistory();
+    if (typeof patch.duration === "number" && Number.isFinite(patch.duration)) {
+      sceneTimeline.duration = clamp(patch.duration, 0.5, 120);
+      sceneTimeline.currentTime = clamp(sceneTimeline.currentTime, 0, sceneTimeline.duration);
+    }
+    if (typeof patch.fps === "number" && Number.isFinite(patch.fps)) sceneTimeline.fps = Math.round(clamp(patch.fps, 1, 120));
+    if (typeof patch.snapStep === "number" && Number.isFinite(patch.snapStep)) sceneTimeline.snapStep = clamp(patch.snapStep, 0.001, 10);
+    if (typeof patch.loop === "boolean") sceneTimeline.loop = patch.loop;
+    if (typeof patch.snapEnabled === "boolean") sceneTimeline.snapEnabled = patch.snapEnabled;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+  }
+
+  function addTimelineKeyframe(kind: TimelineTrackKind): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before adding a keyframe.", "bad");
+      return;
+    }
+    recordHistory();
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+    const track = ensureTimelineTrack(objectTimeline, kind);
+    const value = timelineValueForEntry(entry, kind);
+    const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+    if (existing) {
+      existing.value = value;
+      existing.interpolation = "linear";
+    } else {
+      track.keyframes.push(createTimelineKeyframe(time, value));
+    }
+    sortTimelineKeyframes(track);
+    entry.animation = "none";
+    sceneTimeline.currentTime = time;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+    showToast(`${capitalize(kind)} keyframe set at ${formatNumber(time)}s`, "good");
+  }
+
+  function deleteTimelineKeyframes(keyframeIds: string[]): void {
+    if (keyframeIds.length === 0) {
+      showToast("Select a keyframe in the timeline first.", "bad");
+      return;
+    }
+    recordHistory();
+    const ids = new Set(keyframeIds);
+    sceneTimeline.objects.forEach((objectTimeline) => {
+      objectTimeline.tracks.forEach((track) => {
+        track.keyframes = track.keyframes.filter((keyframe) => !ids.has(keyframe.id));
+      });
+    });
+    pruneEmptyTimelineTracks(sceneTimeline);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+    showToast("Keyframe deleted", "good");
+  }
+
+  function beginTimelineDrag(): void {
+    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
+  }
+
+  function moveTimelineKeyframe(keyframeId: string, time: number): void {
+    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
+    const match = findTimelineKeyframe(keyframeId);
+    if (!match) return;
+    match.keyframe.time = clamp(roundTime(time), 0, sceneTimeline.duration);
+    sortTimelineKeyframes(match.track);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
+  }
+
+  function finishTimelineDrag(): void {
+    if (pendingTimelineDragSnapshot) {
+      history.record(pendingTimelineDragSnapshot);
+      pendingTimelineDragSnapshot = null;
+      syncHistoryButtons();
+    }
+    pruneEmptyTimelineTracks(sceneTimeline);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+  }
+
+  function rebuildTimelineRuntime(): void {
+    sceneTimeline = normalizeTimelineDocument(sceneTimeline, new Set(entries.keys()));
+    timelinePlayer.rebuild(sceneTimeline, entries.values());
+  }
+
+  function findTimelineKeyframe(keyframeId: string): { keyframe: TimelineKeyframeDocument; track: SceneDocument["timeline"]["objects"][number]["tracks"][number] } | null {
+    for (const objectTimeline of sceneTimeline.objects) {
+      for (const track of objectTimeline.tracks) {
+        const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
+        if (keyframe) return { keyframe, track };
+      }
+    }
+    return null;
+  }
+
+  function timelineValueForEntry(entry: SceneEntry, kind: TimelineTrackKind): [number, number, number] {
+    if (kind === "position") return [entry.root.position.x, entry.root.position.y, entry.root.position.z];
+    if (kind === "scale") return [entry.root.scale.x, entry.root.scale.y, entry.root.scale.z];
+    return [
+      THREE.MathUtils.radToDeg(entry.root.rotation.x),
+      THREE.MathUtils.radToDeg(entry.root.rotation.y),
+      THREE.MathUtils.radToDeg(entry.root.rotation.z)
+    ];
+  }
+
   function exportScreenshot(): void {
     composer.render();
     const link = document.createElement("a");
@@ -1122,7 +1315,12 @@ function boot(root: HTMLDivElement): void {
     const delta = clock.getDelta();
     const elapsed = clock.elapsedTime;
 
-    if (playing) entries.forEach((entry) => updateEntryAnimation(entry, delta, elapsed));
+    if (playing) {
+      advanceTimeline(delta);
+      entries.forEach((entry) => {
+        if (!hasObjectTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, delta, elapsed);
+      });
+    }
     if (lightRig.sweep) updateLightSweep(lightRig, elapsed);
 
     controls.update();

@@ -31,6 +31,22 @@ animation runtime for playback:
   Scale tracks only. More advanced property tracks can be added after the core
   editing loop is reliable.
 
+## Implementation Status
+
+The first transform timeline slice is implemented in `Source/`:
+
+- `animation/timelineSchema.ts` owns timeline defaults, migration, cloning, and
+  track helpers.
+- `animation/clipFactory.ts` compiles Position, Rotation, and Scale tracks into
+  Three.js keyframe tracks.
+- `animation/timelinePlayer.ts` evaluates clips with one `AnimationMixer` per
+  keyed object.
+- `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
+  timeline to editor callbacks.
+
+The longer-term documents remain useful for the next stages: auto-key, camera
+tracks, light/material tracks, curve editing, and export workflows.
+
 ## Reading Order
 
 1. Read the research document to understand the library choice.

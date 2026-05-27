@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { cloneTimelineDocument, createDefaultTimeline, normalizeTimelineDocument } from "../animation/timelineSchema";
 import type { LightRig, SceneDocument, SceneEntry, SerializedLight, SerializedObject, StageRig } from "./types";
 
 export interface DocumentContext {
@@ -11,11 +12,12 @@ export interface DocumentContext {
   statsVisible: boolean;
   frustumVisible: boolean;
   lightRig: LightRig;
+  timeline?: SceneDocument["timeline"];
 }
 
 export function createSceneDocument(context: DocumentContext): SceneDocument {
   return {
-    version: 1,
+    version: 2,
     savedAt: new Date().toISOString(),
     selectedId: context.selectedId,
     playing: context.playing,
@@ -42,16 +44,21 @@ export function createSceneDocument(context: DocumentContext): SceneDocument {
       point: serializeLight(context.lightRig.point),
       spot: serializeLight(context.lightRig.spot)
     },
-    objects: Array.from(context.entries).map(serializeEntry)
+    objects: Array.from(context.entries).map(serializeEntry),
+    timeline: cloneTimelineDocument(context.timeline ?? createDefaultTimeline())
   };
 }
 
 export function validateSceneDocument(value: unknown): SceneDocument {
   if (!value || typeof value !== "object") throw new Error("Scene file is not an object.");
-  const document = value as SceneDocument;
-  if (document.version !== 1) throw new Error("Unsupported scene document version.");
+  const document = value as SceneDocument & { timeline?: unknown };
+  if (document.version !== 1 && document.version !== 2) throw new Error("Unsupported scene document version.");
   if (!Array.isArray(document.objects)) throw new Error("Scene file is missing objects.");
-  return document;
+  return {
+    ...document,
+    version: 2,
+    timeline: normalizeTimelineDocument(document.timeline, new Set(document.objects.map((object) => object.id)))
+  };
 }
 
 function serializeEntry(entry: SceneEntry): SerializedObject {

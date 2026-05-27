@@ -30,6 +30,39 @@ export function studioTemplate(): string {
           <div class="status-line" id="status-line">Ready</div>
           <div class="fps" id="fps">-- FPS</div>
         </div>
+
+        <section class="keyframe-dock" id="keyframe-dock" aria-label="Keyframe timeline">
+          <header class="timeline-header">
+            <button class="icon-command" id="timeline-collapse" type="button" aria-label="Collapse timeline" title="Collapse timeline"><span data-icon="PanelBottomClose"></span></button>
+            <div class="timeline-title">
+              <strong>Keyframe Timeline</strong>
+              <span id="timeline-selection">No keyframe selected</span>
+            </div>
+            <div class="timeline-toolbar">
+              <button class="mini-button" id="timeline-start" type="button"><span data-icon="StepBack"></span><span>Start</span></button>
+              <button class="mini-button strong-mini" id="timeline-play-toggle" type="button"><span data-icon="Play"></span><span>Play</span></button>
+              <select id="timeline-track-kind" aria-label="Keyframe track">
+                <option value="position">Position</option>
+                <option value="rotation">Rotation</option>
+                <option value="scale">Scale</option>
+              </select>
+              <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Add</span></button>
+              <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
+            </div>
+          </header>
+          <div class="timeline-settings">
+            <label><span>Time</span><input id="timeline-current-time" type="number" min="0" step="0.033" value="0" /></label>
+            <label><span>Duration</span><input id="timeline-duration" type="number" min="0.5" max="120" step="0.5" value="8" /></label>
+            <label><span>FPS</span><input id="timeline-fps" type="number" min="1" max="120" step="1" value="30" /></label>
+            <label><span>Snap</span><input id="timeline-snap-step" type="number" min="0.001" max="10" step="0.001" value="0.033" /></label>
+            <label class="toggle-line"><input id="timeline-loop" type="checkbox" checked /><span>Loop</span></label>
+            <label class="toggle-line"><input id="timeline-snap" type="checkbox" checked /><span>Snap</span></label>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-track-labels" id="timeline-track-labels"></div>
+            <div class="timeline-canvas" id="timeline-canvas"></div>
+          </div>
+        </section>
       </section>
 
       <nav class="tool-rail" aria-label="Geometry tools">

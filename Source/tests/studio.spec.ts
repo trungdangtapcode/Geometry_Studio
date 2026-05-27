@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 test("renders the studio and core controls", async ({ page }) => {
   const errors: string[] = [];
@@ -103,4 +104,43 @@ test("supports undo redo scene loading and evaluation tour", async ({ page }) =>
   await page.getByRole("button", { name: "Evaluation Tour" }).click();
   await expect(page.locator("#selection-summary")).toContainText("Cube");
   await expect(page.getByText("Evaluation Tour: required primitives are visible.")).toBeVisible();
+});
+
+test("creates and saves transform keyframes on the timeline", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("Keyframe Timeline")).toBeVisible();
+
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  await positionX.evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(positionX).toHaveValue("2");
+  await page.locator("#timeline-add-keyframe").click();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.locator("#save-scene").click();
+  const download = await downloadPromise;
+  const filePath = await download.path();
+  expect(filePath).toBeTruthy();
+  const sceneDocument = JSON.parse(await readFile(filePath!, "utf8"));
+
+  expect(sceneDocument.version).toBe(2);
+  expect(sceneDocument.timeline.duration).toBe(8);
+  expect(sceneDocument.timeline.objects).toHaveLength(1);
+  expect(sceneDocument.timeline.objects[0].tracks[0].kind).toBe("position");
+  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes).toHaveLength(2);
+  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].value[0]).toBe(2);
+  expect(errors).toEqual([]);
 });

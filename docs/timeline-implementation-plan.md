@@ -1,5 +1,15 @@
 # Keyframe Timeline Implementation Plan
 
+## Status
+
+The first transform timeline slice has been implemented. Geometry Studio now has
+a bottom keyframe dock for Position, Rotation, and Scale tracks, scene JSON
+version 2 timeline persistence, Three.js `AnimationMixer` playback, basic
+Undo/Redo integration, and Playwright coverage for saving transform keyframes.
+
+The remaining plan below is still the long-term roadmap for polish and deeper
+track types.
+
 ## First-Version Scope
 
 Version one should implement a clean transform timeline only:

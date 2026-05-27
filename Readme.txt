@@ -1,7 +1,7 @@
 GEOMETRY STUDIO - SETUP AND USER GUIDE
 
 1. Overview
-Geometry Studio is an interactive 3D computer graphics project built with Three.js, TypeScript, and Vite. It lets the user create 3D geometry, switch between Solid / Points / Lines rendering, control perspective projection, apply affine transformations, edit lights and shadows, map textures, import models, save scenes, and run animations.
+Geometry Studio is an interactive 3D computer graphics project built with Three.js, TypeScript, and Vite. It lets the user create 3D geometry, switch between Solid / Points / Lines rendering, control perspective projection, apply affine transformations, edit lights and shadows, map textures, import models, save scenes, and run preset or keyframe animations.
 
 2. Submission Structure
 - Source/: TypeScript/Vite source code.
@@ -49,8 +49,9 @@ Using a local static server is recommended instead of double-clicking index.html
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep modes, plus Play/Pause controls.
+- Keyframe Timeline: bottom timeline dock for Position, Rotation, and Scale tracks with playhead scrubbing, add/delete keyframes, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
 - Display helpers: Grid, Axes, FPS, selected-object outline, progress UI, and toast messages.
-- Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, and animations.
+- Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, preset animations, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
 - Duplicate/Rename: duplicate or rename the selected object from the Outliner.
 - Drag and Drop: drop model files or texture images directly on the viewport.
@@ -81,6 +82,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Toggle shadows and edit light color, intensity, and position.
 - Upload a bitmap texture and adjust Repeat X/Y.
 - Import a .glb, .gltf, .obj, or .stl model.
+- Add Position / Rotation / Scale keyframes in the bottom timeline, scrub the playhead, and verify motion plays.
 - Run Cinematic Demo and Play/Pause animation.
 - Run Evaluation Tour to show every assignment requirement in one guided scene.
 - Save JSON, then Load JSON to verify scene persistence.
@@ -90,15 +92,15 @@ Using a local static server is recommended instead of double-clicking index.html
 - editor/: shared types, scene document JSON, and command history.
 - scene/: geometry primitives, material/render-mode handling, lights, stage setup, and importers.
 - renderer/: WebGLRenderer, EffectComposer, OutlinePass, and capped responsive resizing.
-- animation/: timeline and per-object animation updates.
-- ui/: editor DOM template.
+- animation/: preset animation updates, timeline schema, Three.js clip factory, and keyframe playback runtime.
+- ui/: editor DOM template and keyframe timeline panel adapter.
 - utils/: DOM helpers and ResourceTracker for disposing geometries, materials, textures, and object URLs.
 
 10. Engineering Docs
 Technical engineering plans are in:
 Geometry_Studio/docs/README.md
 
-The lowercase docs/ folder contains design notes for planned features, including the keyframe timeline architecture. The Doc/ folder remains the formal LaTeX report folder.
+The lowercase docs/ folder contains design notes for advanced features, including the keyframe timeline architecture and longer-term expansion plan. The Doc/ folder remains the formal LaTeX report folder.
 
 11. Rebuild The Report
 Open a terminal in:

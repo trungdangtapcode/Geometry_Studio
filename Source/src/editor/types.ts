@@ -22,6 +22,8 @@ export type AnimationMode = "none" | "spin" | "orbit" | "bounce" | "pulse";
 export type LightKind = "directional" | "point" | "spot";
 export type ObjectKind = "primitive" | "model" | "sampleModel";
 export type ToastTone = "good" | "bad";
+export type TimelineTrackKind = "position" | "rotation" | "scale";
+export type TimelineInterpolation = "hold" | "linear" | "smooth";
 
 export interface SceneEntry {
   id: string;
@@ -70,7 +72,7 @@ export interface LoadingStatus {
 }
 
 export interface SceneDocument {
-  version: 1;
+  version: 1 | 2;
   savedAt: string;
   selectedId: string | null;
   playing: boolean;
@@ -98,6 +100,38 @@ export interface SceneDocument {
     spot: SerializedLight;
   };
   objects: SerializedObject[];
+  timeline: SceneTimelineDocument;
+}
+
+export interface SceneTimelineDocument {
+  version: 1;
+  duration: number;
+  fps: number;
+  currentTime: number;
+  loop: boolean;
+  snapEnabled: boolean;
+  snapStep: number;
+  objects: ObjectTimelineDocument[];
+}
+
+export interface ObjectTimelineDocument {
+  objectId: string;
+  tracks: TimelineTrackDocument[];
+}
+
+export interface TimelineTrackDocument {
+  id: string;
+  kind: TimelineTrackKind;
+  label: string;
+  enabled: boolean;
+  keyframes: TimelineKeyframeDocument[];
+}
+
+export interface TimelineKeyframeDocument {
+  id: string;
+  time: number;
+  value: [number, number, number];
+  interpolation: TimelineInterpolation;
 }
 
 export interface SerializedLight {
