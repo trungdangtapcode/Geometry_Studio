@@ -3,7 +3,7 @@
 ## Status
 
 Frame navigation is implemented as an editing ergonomics upgrade on top of
-schema v8. It does not change the saved timeline document because frame stepping
+schema v9. It does not change the saved timeline document because frame stepping
 is derived from the existing `fps`, `currentTime`, `workStart`, and `workEnd`
 fields.
 

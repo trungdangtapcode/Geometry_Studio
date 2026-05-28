@@ -3,7 +3,7 @@
 ## Status
 
 Object appearance timeline tracks were introduced in schema v5 and expanded in
-schema v6. They remain supported in current schema v8. This adds a second class
+schema v6. They remain supported in current schema v9. This adds a second class
 of object-owned tracks beyond transforms:
 
 - Color.
@@ -64,8 +64,9 @@ round trip preserves the non-animated base appearance. Schema v6 also saves
 - Playback applies object appearance tracks on every timeline tick.
 - Auto-Key creates or updates Color, Opacity, Roughness, Metalness, and
   Visibility tracks when the matching inspector controls change.
-- Appearance tracks do not disable preset transform animations. Only Position,
-  Rotation, and Scale timeline tracks override spin/orbit/bounce/pulse.
+- Appearance tracks do not disable transform animation. Position, Rotation, and
+  Scale tracks drive motion, including presets that are baked into visible
+  keyframes.
 - Opacity updates existing object materials in place instead of rebuilding the
   visual hierarchy every frame.
 - Roughness and metalness update Standard materials in place.

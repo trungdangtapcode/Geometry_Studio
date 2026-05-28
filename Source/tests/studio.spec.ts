@@ -28,19 +28,36 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
   await expect(page.locator("#timeline-nudge-right")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
+  await expect(page.locator("#timeline-add-marker")).toBeVisible();
+  await expect(page.locator("#timeline-delete-marker")).toBeVisible();
+  await expect(page.locator("#timeline-resize-handle")).toBeVisible();
   await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
   await page.locator("#timeline-row-filter").selectOption("keyed");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]')).toHaveCount(1);
-  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]')).toHaveCount(0);
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]')).toHaveCount(1);
   await page.locator("#timeline-row-filter").selectOption("focus");
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
   await expect(rotationTrackLabel).toHaveClass(/active/);
+  await page.locator('[data-animation="spin"]').click({ force: true });
+  await expect(page.locator("#selection-summary")).toContainText("Keyframed");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Rotation");
   const cameraTrackLabel = page.locator('.camera-track-label[data-track-kind="cameraPosition"]');
+  await page.locator("#timeline-track-kind").selectOption("cameraPosition");
+  await expect(cameraTrackLabel).toBeVisible();
   await cameraTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("cameraPosition");
   await expect(cameraTrackLabel).toHaveClass(/active/);
+  const dockHeight = await page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height);
+  const resizeBox = await page.locator("#timeline-resize-handle").boundingBox();
+  expect(resizeBox).toBeTruthy();
+  await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y + 4);
+  await page.mouse.down();
+  await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y - 72);
+  await page.mouse.up();
+  await expect.poll(() => page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(dockHeight + 50);
   await page.locator("#timeline-next-frame").click();
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0);
@@ -185,6 +202,18 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(page.locator("#timeline-key-x")).toHaveValue("1.25");
+  await page.locator("#timeline-marker-label").evaluate((input) => {
+    (input as HTMLInputElement).value = "Intro Beat";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-marker").click();
+  await expect(page.locator(".timeline-marker")).toHaveCount(1);
+  await expect(page.locator("#timeline-marker-label")).toHaveValue("Intro Beat");
+  await page.locator("#timeline-marker-label").evaluate((input) => {
+    (input as HTMLInputElement).value = "Opening Cue";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator(".timeline-marker")).toContainText("Opening Cue");
   await page.locator("#timeline-auto-key").check();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
@@ -411,11 +440,14 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
-  expect(sceneDocument.timeline.version).toBe(8);
+  expect(sceneDocument.timeline.version).toBe(9);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.workStart).toBe(0.5);
   expect(sceneDocument.timeline.workEnd).toBe(4.5);
   expect(sceneDocument.timeline.autoKey).toBe(true);
+  expect(sceneDocument.timeline.markers).toHaveLength(1);
+  expect(sceneDocument.timeline.markers[0].label).toBe("Opening Cue");
+  expect(sceneDocument.timeline.markers[0].time).toBeCloseTo(0.267, 3);
   expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
   expect(sceneDocument.timeline.camera.tracks[0].kind).toBe("cameraPosition");
   expect(sceneDocument.timeline.camera.tracks[0].keyframes).toHaveLength(2);
@@ -424,8 +456,12 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneDocument.timeline.lights.tracks[0].kind).toBe("pointIntensity");
   expect(sceneDocument.timeline.lights.tracks[0].keyframes).toHaveLength(2);
   expect(sceneDocument.timeline.lights.tracks[0].keyframes[1].value[0]).toBe(6);
-  expect(sceneDocument.timeline.objects).toHaveLength(1);
-  const objectTracks = sceneDocument.timeline.objects[0].tracks as Array<{
+  expect(sceneDocument.timeline.objects.length).toBeGreaterThanOrEqual(3);
+  const keyedCube = sceneDocument.timeline.objects.find((object: { tracks: Array<{ kind: string }> }) =>
+    object.tracks.some((track) => track.kind === "objectColor")
+  );
+  expect(keyedCube).toBeTruthy();
+  const objectTracks = keyedCube!.tracks as Array<{
     kind: string;
     enabled: boolean;
     keyframes: Array<{ time: number; value: number[]; interpolation: string }>;

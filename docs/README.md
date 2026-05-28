@@ -32,6 +32,12 @@ PDF.
   texture Repeat, Offset, and Rotation tracks.
 - [Timeline Work Area](timeline-work-area.md) documents schema v8 Work In/Out
   playback range behavior.
+- [Timeline Markers](timeline-markers.md) documents schema v9 marker cue points.
+- [Timeline Preset Baking](timeline-preset-baking.md) documents why preset
+  animation buttons now generate visible keyframes instead of hidden procedural
+  motion.
+- [Timeline Resizable Dock](timeline-resizable-dock.md) documents the persistent
+  dock height handle, row alignment, and scroll synchronization.
 - [Timeline Frame Navigation](timeline-frame-navigation.md) documents
   frame-step controls, Work Out jump, and timecode display.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
@@ -77,6 +83,11 @@ animation runtime where it fits:
   surface for object, camera, and light tracks.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
+- Timeline markers add named cue points for animation beats and demo segments.
+- Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
+  keeping playback inspectable from the timeline.
+- The keyframe dock has a persisted height resize handle, with row labels and
+  canvas scrolling kept in sync.
 - Blender-style UI density is the default, with Compact and Comfortable options
   persisted in local storage.
 

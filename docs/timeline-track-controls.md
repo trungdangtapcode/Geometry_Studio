@@ -2,7 +2,7 @@
 
 ## Status
 
-Track enable/disable is implemented for timeline schema v8. The schema already
+Track enable/disable is implemented for timeline schema v9. The schema already
 stored `TimelineTrackDocument.enabled`; this update exposes it in the editor and
 ensures all runtime evaluators respect it.
 

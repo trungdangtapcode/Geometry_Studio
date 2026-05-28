@@ -3,7 +3,7 @@
 ## Status
 
 Light timeline tracks were introduced in schema v4 and remain supported in the
-current schema v8. They extend the existing dope-sheet rather than adding a
+current schema v9. They extend the existing dope-sheet rather than adding a
 second editor or animation framework.
 
 The supported tracks are:
@@ -36,12 +36,12 @@ infrastructure.
 ## Data Model
 
 Light tracks were added with timeline version 4. The current timeline document
-uses version 8 after object appearance, material, texture, and work-area tracks
-were added:
+uses version 9 after object appearance, material, texture, work-area, and marker
+features were added:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 8;
+  version: 9;
   duration: number;
   fps: number;
   currentTime: number;

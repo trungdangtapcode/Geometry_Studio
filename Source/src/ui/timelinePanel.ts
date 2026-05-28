@@ -5,8 +5,16 @@ import {
   type TimelineModel,
   type TimelineRow
 } from "animation-timeline-js";
-import type { SceneEntry, SceneTimelineDocument, TimelineInterpolation, TimelineKeyframeDocument, TimelineTrackDocument, TimelineTrackKind } from "../editor/types";
-import { formatNumber, hydrateIcons, query } from "../utils/dom";
+import type {
+  SceneEntry,
+  SceneTimelineDocument,
+  TimelineInterpolation,
+  TimelineKeyframeDocument,
+  TimelineMarkerDocument,
+  TimelineTrackDocument,
+  TimelineTrackKind
+} from "../editor/types";
+import { clamp, formatNumber, hydrateIcons, query } from "../utils/dom";
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
 
@@ -19,6 +27,10 @@ export interface KeyframeTimelineCallbacks {
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onEditKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void;
+  onAddMarker(label: string): void;
+  onDeleteMarker(markerId: string | null): void;
+  onRenameMarker(markerId: string, label: string): void;
+  onStepMarker(direction: -1 | 1): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onToggleTrack(kind: TimelineTrackKind): void;
   onTrackKindChanged(): void;
@@ -86,6 +98,10 @@ const LIGHT_TRACKS: TimelineTrackKind[] = [
 const CAMERA_TARGET_ID = "__camera__";
 const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
+const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
+const MIN_DOCK_HEIGHT = 190;
+const DEFAULT_ROW_HEIGHT = 30;
+const DEFAULT_HEADER_HEIGHT = 28;
 
 const TRACK_COLORS: Record<TimelineTrackKind, string> = {
   position: "#20bfa9",
@@ -144,7 +160,10 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
 export class KeyframeTimelinePanel {
   private readonly timeline: Timeline;
   private readonly root = query<HTMLElement>("#keyframe-dock");
+  private readonly resizeHandle = query<HTMLButtonElement>("#timeline-resize-handle");
   private readonly labels = query<HTMLDivElement>("#timeline-track-labels");
+  private readonly markerStrip = query<HTMLDivElement>("#timeline-marker-strip");
+  private readonly canvasHost = query<HTMLDivElement>("#timeline-canvas");
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
@@ -173,18 +192,27 @@ export class KeyframeTimelinePanel {
     y: query<HTMLElement>("#timeline-key-y-label"),
     z: query<HTMLElement>("#timeline-key-z-label")
   };
+  private readonly markerLabelInput = query<HTMLInputElement>("#timeline-marker-label");
   private selectedKeyframeIds = new Set<string>();
   private lastTimelineDocument: SceneTimelineDocument | null = null;
   private lastEntries: SceneEntry[] = [];
   private lastSelectedId = "";
   private lastPlaying = false;
   private lastEntryNames = new Map<string, string>();
+  private activeMarkerId: string | null = null;
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
+  private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
+  private timelineScroller: HTMLElement | null = null;
+  private syncingScroll = false;
   private updating = false;
+  private readonly handleResizeMove = (event: PointerEvent) => this.resizeDock(event);
+  private readonly handleResizeEnd = (event: PointerEvent) => this.finishResize(event);
+  private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
+    this.applyStoredDockHeight();
     this.timeline = new Timeline({
-      id: query<HTMLDivElement>("#timeline-canvas"),
+      id: this.canvasHost,
       min: 0,
       max: 8,
       stepPx: 80,
@@ -193,14 +221,14 @@ export class KeyframeTimelinePanel {
       snapEnabled: true,
       snapStep: 1 / 30,
       leftMargin: 6,
-      headerHeight: 28,
+      headerHeight: this.timelineHeaderHeight(),
       fillColor: "rgba(255,255,255,0.78)",
       headerFillColor: "rgba(244,247,249,0.92)",
       tickColor: "rgba(26,35,42,0.22)",
       labelsColor: "#687078",
       selectionColor: "rgba(32,191,169,0.18)",
       rowsStyle: {
-        height: 30,
+        height: this.timelineRowHeight(),
         marginBottom: 2,
         fillColor: "rgba(255,255,255,0.54)"
       },
@@ -241,15 +269,25 @@ export class KeyframeTimelinePanel {
     this.syncToggleTrackButton(timelineDocument, selectedId);
 
     const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
+    const rowHeight = this.timelineRowHeight();
+    const headerHeight = this.timelineHeaderHeight();
     this.labels.innerHTML = this.renderLabels(timelineDocument, visibleEntries, selectedId);
     this.timeline.setOptions({
       max: timelineDocument.duration,
       snapEnabled: timelineDocument.snapEnabled,
-      snapStep: timelineDocument.snapStep
+      snapStep: timelineDocument.snapStep,
+      headerHeight,
+      rowsStyle: {
+        height: rowHeight,
+        marginBottom: 2,
+        fillColor: "rgba(255,255,255,0.54)"
+      }
     });
-    this.timeline.setModel(this.createModel(timelineDocument, visibleEntries, selectedId));
+    this.timeline.setModel(this.createModel(timelineDocument, visibleEntries, selectedId, rowHeight));
     this.timeline.setTime(timelineDocument.currentTime);
     this.timeline.rescale();
+    this.bindTimelineScroller();
+    this.renderMarkers(timelineDocument);
     this.syncSelectionWidgets(timelineDocument, selectedId);
     this.updating = false;
   }
@@ -270,13 +308,18 @@ export class KeyframeTimelinePanel {
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.timeline.setTime(timelineDocument.currentTime);
+    this.renderMarkers(timelineDocument);
     this.syncKeyframeEditor(timelineDocument, this.lastSelectedId);
     this.updating = false;
   }
 
   private bindEvents(): void {
+    this.resizeHandle.addEventListener("pointerdown", (event) => this.startResize(event));
+    this.resizeHandle.addEventListener("dblclick", () => this.resetDockHeight());
+    this.labels.addEventListener("scroll", () => this.syncCanvasScrollFromLabels());
     query<HTMLButtonElement>("#timeline-collapse").addEventListener("click", () => {
       this.root.classList.toggle("collapsed");
+      window.setTimeout(() => this.refreshCanvas(), 0);
     });
     query<HTMLButtonElement>("#timeline-add-keyframe").addEventListener("click", () => {
       this.callbacks.onAddKeyframe(this.selectedTrackKind());
@@ -295,6 +338,23 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-nudge-right").addEventListener("click", () => {
       this.callbacks.onNudgeKeyframes(1, [...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-add-marker").addEventListener("click", () => {
+      this.callbacks.onAddMarker(this.markerLabelInput.value.trim());
+    });
+    query<HTMLButtonElement>("#timeline-delete-marker").addEventListener("click", () => {
+      this.callbacks.onDeleteMarker(this.activeMarkerId);
+    });
+    query<HTMLButtonElement>("#timeline-prev-marker").addEventListener("click", () => this.callbacks.onStepMarker(-1));
+    query<HTMLButtonElement>("#timeline-next-marker").addEventListener("click", () => this.callbacks.onStepMarker(1));
+    this.markerLabelInput.addEventListener("change", () => {
+      if (this.activeMarkerId) this.callbacks.onRenameMarker(this.activeMarkerId, this.markerLabelInput.value);
+    });
+    this.markerStrip.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-marker");
+      if (!button) return;
+      const time = Number(button.dataset.time);
+      if (Number.isFinite(time)) this.callbacks.onTimeChanged(time);
     });
     this.keyframeTimeInput.addEventListener("change", () => {
       this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { time: Number(this.keyframeTimeInput.value) });
@@ -370,6 +430,96 @@ export class KeyframeTimelinePanel {
     this.timeline.onDragFinished(() => this.callbacks.onDragFinished());
   }
 
+  private startResize(event: PointerEvent): void {
+    if (this.root.classList.contains("collapsed")) return;
+    event.preventDefault();
+    this.resizeState = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight: this.root.getBoundingClientRect().height
+    };
+    this.root.classList.add("resizing");
+    this.resizeHandle.setPointerCapture(event.pointerId);
+    window.addEventListener("pointermove", this.handleResizeMove);
+    window.addEventListener("pointerup", this.handleResizeEnd);
+    window.addEventListener("pointercancel", this.handleResizeEnd);
+  }
+
+  private resizeDock(event: PointerEvent): void {
+    if (!this.resizeState || event.pointerId !== this.resizeState.pointerId) return;
+    const delta = this.resizeState.startY - event.clientY;
+    const height = clamp(this.resizeState.startHeight + delta, MIN_DOCK_HEIGHT, this.maxDockHeight());
+    this.root.style.setProperty("--timeline-dock-height", `${Math.round(height)}px`);
+    this.refreshCanvas();
+  }
+
+  private finishResize(event: PointerEvent): void {
+    if (!this.resizeState || event.pointerId !== this.resizeState.pointerId) return;
+    const height = Math.round(this.root.getBoundingClientRect().height);
+    storeTimelineDockHeight(height);
+    this.resizeState = null;
+    this.root.classList.remove("resizing");
+    if (this.resizeHandle.hasPointerCapture(event.pointerId)) this.resizeHandle.releasePointerCapture(event.pointerId);
+    window.removeEventListener("pointermove", this.handleResizeMove);
+    window.removeEventListener("pointerup", this.handleResizeEnd);
+    window.removeEventListener("pointercancel", this.handleResizeEnd);
+    this.refreshCanvas();
+  }
+
+  private resetDockHeight(): void {
+    this.root.style.removeProperty("--timeline-dock-height");
+    clearTimelineDockHeight();
+    this.refreshCanvas();
+  }
+
+  private applyStoredDockHeight(): void {
+    const height = loadTimelineDockHeight();
+    if (height) this.root.style.setProperty("--timeline-dock-height", `${clamp(height, MIN_DOCK_HEIGHT, this.maxDockHeight())}px`);
+  }
+
+  private maxDockHeight(): number {
+    const ratio = window.innerWidth <= 880 ? 0.44 : 0.72;
+    const bottomOffset = Number.parseFloat(getComputedStyle(this.root).bottom) || 0;
+    const available = window.innerHeight - bottomOffset - 22;
+    return Math.max(MIN_DOCK_HEIGHT, Math.min(window.innerHeight * ratio, available));
+  }
+
+  private refreshCanvas(): void {
+    this.timeline.rescale();
+    this.timeline.redraw();
+    this.bindTimelineScroller();
+  }
+
+  private bindTimelineScroller(): void {
+    const scroller = this.canvasHost.querySelector<HTMLElement>(".scroll-container");
+    if (!scroller || scroller === this.timelineScroller) return;
+    this.timelineScroller?.removeEventListener("scroll", this.handleTimelineScroll);
+    this.timelineScroller = scroller;
+    this.timelineScroller.addEventListener("scroll", this.handleTimelineScroll);
+  }
+
+  private syncLabelsFromCanvasScroll(): void {
+    if (!this.timelineScroller || this.syncingScroll) return;
+    this.syncingScroll = true;
+    this.labels.scrollTop = this.timelineScroller.scrollTop;
+    this.syncingScroll = false;
+  }
+
+  private syncCanvasScrollFromLabels(): void {
+    if (!this.timelineScroller || this.syncingScroll) return;
+    this.syncingScroll = true;
+    this.timelineScroller.scrollTop = this.labels.scrollTop;
+    this.syncingScroll = false;
+  }
+
+  private timelineRowHeight(): number {
+    return cssNumber(this.root, "--timeline-track-row-height", DEFAULT_ROW_HEIGHT);
+  }
+
+  private timelineHeaderHeight(): number {
+    return cssNumber(this.root, "--timeline-track-top-padding", DEFAULT_HEADER_HEIGHT);
+  }
+
   private visibleEntries(timelineDocument: SceneTimelineDocument, entries: Iterable<SceneEntry>, selectedId: string): SceneEntry[] {
     const entryList = Array.from(entries);
     if (this.rowFilter === "all") return entryList;
@@ -387,6 +537,37 @@ export class KeyframeTimelinePanel {
     return selected ? [selected, ...keyed] : keyed;
   }
 
+  private renderMarkers(timelineDocument: SceneTimelineDocument): void {
+    this.markerStrip.innerHTML = "";
+    const activeMarker = this.currentMarker(timelineDocument);
+    this.activeMarkerId = activeMarker?.id ?? null;
+    timelineDocument.markers.forEach((marker) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "timeline-marker";
+      button.classList.toggle("active", marker.id === activeMarker?.id);
+      button.dataset.markerId = marker.id;
+      button.dataset.time = String(marker.time);
+      button.style.left = `${Math.min(100, Math.max(0, (marker.time / Math.max(timelineDocument.duration, 0.001)) * 100))}%`;
+      button.style.borderLeftColor = marker.color;
+      button.title = `${marker.label} at ${formatNumber(marker.time)}s`;
+      button.textContent = marker.label;
+      this.markerStrip.appendChild(button);
+    });
+    this.syncMarkerEditor(timelineDocument, activeMarker);
+  }
+
+  private syncMarkerEditor(timelineDocument: SceneTimelineDocument, marker = this.currentMarker(timelineDocument)): void {
+    this.activeMarkerId = marker?.id ?? null;
+    this.markerLabelInput.disabled = false;
+    this.markerLabelInput.value = marker?.label ?? "";
+    this.markerLabelInput.placeholder = marker ? "Rename marker" : `Marker ${timelineDocument.markers.length + 1}`;
+  }
+
+  private currentMarker(timelineDocument: SceneTimelineDocument): TimelineMarkerDocument | null {
+    return timelineDocument.markers.find((marker) => Math.abs(marker.time - timelineDocument.currentTime) < 0.001) ?? null;
+  }
+
   private visibleTrackKinds(
     kinds: TimelineTrackKind[],
     tracks: TimelineTrackDocument[],
@@ -402,8 +583,8 @@ export class KeyframeTimelinePanel {
       return kinds.filter((kind) => hasKeyframes(kind) || isActive(kind));
     }
 
-    if (targetId === selectedId || targetId === CAMERA_TARGET_ID || targetId === LIGHT_TARGET_ID) return kinds;
-    return kinds.filter(hasKeyframes);
+    if (targetId === selectedId) return kinds;
+    return kinds.filter((kind) => hasKeyframes(kind) || isActive(kind));
   }
 
   private isActiveRow(targetId: string, kind: TimelineTrackKind, selectedId: string): boolean {
@@ -472,7 +653,7 @@ export class KeyframeTimelinePanel {
     ].filter(Boolean).join(" ");
   }
 
-  private createModel(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string): TimelineModel {
+  private createModel(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string, rowHeight: number): TimelineModel {
     const objectTimelines = new Map(timelineDocument.objects.map((object) => [object.objectId, object]));
     const rows: TimelineUiRow[] = [];
     entries.forEach((entry) => {
@@ -488,7 +669,7 @@ export class KeyframeTimelinePanel {
           keyframesDraggable: true,
           groupsDraggable: true,
           style: {
-            height: 30,
+            height: rowHeight,
             marginBottom: index === visibleKinds.length - 1 ? 8 : 2,
             fillColor: index % 2 === 0 ? "rgba(255,255,255,0.66)" : "rgba(235,241,244,0.64)",
             keyframesStyle: {
@@ -525,7 +706,7 @@ export class KeyframeTimelinePanel {
         keyframesDraggable: true,
         groupsDraggable: true,
         style: {
-          height: 30,
+          height: rowHeight,
           marginBottom: index === visibleCameraKinds.length - 1 ? 0 : 2,
           fillColor: index % 2 === 0 ? "rgba(238,244,255,0.74)" : "rgba(244,239,255,0.74)",
           keyframesStyle: {
@@ -561,7 +742,7 @@ export class KeyframeTimelinePanel {
         keyframesDraggable: true,
         groupsDraggable: true,
         style: {
-          height: 30,
+          height: rowHeight,
           marginBottom: index === visibleLightKinds.length - 1 ? 0 : 2,
           fillColor: index % 2 === 0 ? "rgba(255,247,229,0.78)" : "rgba(244,249,255,0.78)",
           keyframesStyle: {
@@ -782,8 +963,38 @@ function storeTimelineRowFilter(filter: TimelineRowFilter): void {
   }
 }
 
+function loadTimelineDockHeight(): number | null {
+  try {
+    const value = Number(window.localStorage.getItem(DOCK_HEIGHT_STORAGE_KEY));
+    return Number.isFinite(value) && value >= MIN_DOCK_HEIGHT ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeTimelineDockHeight(height: number): void {
+  try {
+    window.localStorage.setItem(DOCK_HEIGHT_STORAGE_KEY, String(height));
+  } catch {
+    // Dock sizing is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function clearTimelineDockHeight(): void {
+  try {
+    window.localStorage.removeItem(DOCK_HEIGHT_STORAGE_KEY);
+  } catch {
+    // Dock sizing is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
   return value === "keyed" || value === "all" || value === "focus" ? value : "focus";
+}
+
+function cssNumber(element: HTMLElement, property: string, fallback: number): number {
+  const value = Number.parseFloat(getComputedStyle(element).getPropertyValue(property));
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function trackAxisConfig(kind: TimelineTrackKind): { labels: [string, string, string]; enabledAxes: 1 | 2 | 3 } {

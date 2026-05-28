@@ -195,8 +195,9 @@ supported.
 
 \subsection{Animation}
 
-The application supports both preset animation modes and a transform keyframe
-timeline. Per-object preset animation modes include:
+The application supports a keyframe-first animation workflow. Per-object preset
+buttons generate editable timeline keyframes instead of hidden procedural
+motion. The available presets are:
 \begin{itemize}
   \item Spin
   \item Orbit
@@ -204,24 +205,26 @@ timeline. Per-object preset animation modes include:
   \item Pulse
 \end{itemize}
 
-The project also includes a light sweep animation. Animation updates use elapsed
-time and frame delta values so that motion remains stable across displays with
-different refresh rates.
+The project also includes a light sweep preset for demos; it is baked into light
+position keyframes so the resulting motion is visible in the same timeline as
+object motion.
 
-The keyframe timeline provides a bottom editing dock with a playhead, timecode,
-duration, FPS, Work In/Out range, snapping, loop control, and tracks for object
-transforms, object appearance, camera properties, and lights. Users can add,
-delete, duplicate, copy, paste, drag, scrub, save, and reload keyframes.
+The keyframe timeline provides a resizable bottom editing dock with a playhead,
+timecode, duration, FPS, Work In/Out range, snapping, loop control, and tracks
+for object transforms, object appearance, camera properties, and lights. Users
+can add, delete, duplicate, copy, paste, drag, scrub, save, and reload
+keyframes.
 The left row labels select object, camera, and light tracks directly, and active
 tracks can be disabled non-destructively to test motion or appearance changes
 without deleting keyframes. Focus, Keyed, and All row filters keep dense scenes
-manageable while preserving access to the active track. Frame-accurate
-navigation is available through previous/next frame buttons and keyboard
-shortcuts, while selected keyframes can be nudged one frame left or right for
-precise retiming. A compact keyframe editor allows precise numeric edits to
-keyframe time and vector or scalar values. The editor stores rotation keyframes
-in readable Euler degrees and converts transform animation to Three.js playback
-tracks where appropriate.
+manageable while preserving access to the active track. Named timeline markers
+add cue points for animation beats, camera moves, and demo sections.
+Frame-accurate navigation is available through previous/next frame buttons and
+keyboard shortcuts, while selected keyframes can be nudged one frame left or
+right for precise retiming. A compact keyframe editor allows precise numeric
+edits to keyframe time and vector or scalar values. The editor stores rotation
+keyframes in readable Euler degrees and converts transform animation to Three.js
+playback tracks where appropriate.
 
 \section{Advanced Features}
 
@@ -330,8 +333,8 @@ rendering, lighting, shadows, and animation playback.}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{screenshots/04-keyframe-timeline.png}
-\caption{Transform keyframe timeline showing two Position keyframes and a
-selected object whose X position was keyed through the timeline workflow.}
+\caption{Resizable keyframe timeline showing editable track rows, markers, and
+selected keyframe values in the timeline workflow.}
 \end{figure}
 
 \begin{figure}[htbp]
@@ -370,7 +373,7 @@ scene/materials.ts & Materials, texture presets, and solid/point/line visual con
 scene/lights.ts & Stage, light rig, shadows, helpers, and light sweep. \\
 scene/importers.ts & GLB, GLTF, OBJ, and STL import pipeline. \\
 renderer/pipeline.ts & WebGLRenderer, EffectComposer, OutlinePass, and resize handling. \\
-animation/timeline.ts & Animation update logic. \\
+animation/timeline.ts & Legacy procedural animation helper retained for compatibility. \\
 ui/template.ts & DOM template for the editor UI. \\
 ui/density.ts & UI density loading, persistence, and root layout mode application. \\
 ui/timelinePanel.ts & Adapter between the timeline UI component and editor commands. \\

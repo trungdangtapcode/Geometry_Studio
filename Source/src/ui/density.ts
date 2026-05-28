@@ -14,6 +14,7 @@ export function bindUiDensityControl(root: HTMLElement): void {
     shell.dataset.density = density;
     if (select) select.value = density;
     if (persist) storeUiDensity(density);
+    window.dispatchEvent(new CustomEvent("studio-density-change", { detail: { density } }));
   };
 
   apply(loadUiDensity(), false);

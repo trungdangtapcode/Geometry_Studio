@@ -7,7 +7,8 @@
 - Use Three.js native animation classes for runtime playback.
 - Keep object transform tracks on Three.js native clips, and keep non-object
   editor tracks on the same scene timeline document.
-- Preserve the current preset animation system, but define clear conflict rules.
+- Convert preset animation actions into ordinary visible timeline keyframes so
+  playback is explainable from the dope sheet.
 - Make the feature testable without depending on visual judgment alone.
 
 ## Proposed Module Boundaries
@@ -47,11 +48,11 @@ versioned independently because timeline capabilities are growing faster than
 the outer scene format.
 
 Version 1 scene files do not contain keyframe timeline data. Loading them
-creates a default empty timeline. The current timeline schema is version 8:
+creates a default empty timeline. The current timeline schema is version 9:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 8;
+  version: 9;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -64,6 +65,7 @@ interface SceneTimelineDocument {
   camera: CameraTimelineDocument;
   lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];
+  markers: TimelineMarkerDocument[];
 }
 
 interface ObjectTimelineDocument {
@@ -110,6 +112,13 @@ interface TimelineKeyframeDocument {
   time: number;
   value: [number, number, number];
   interpolation: "hold" | "linear" | "smooth";
+}
+
+interface TimelineMarkerDocument {
+  id: string;
+  time: number;
+  label: string;
+  color: string;
 }
 ```
 
@@ -161,18 +170,22 @@ edit, import, delete, duplicate, load, or reset.
 
 ## Conflict Rules
 
-The project currently has preset animations such as spin, orbit, bounce, pulse,
-and light sweep. Timeline tracks need deterministic priority.
+The project exposes preset buttons such as Spin, Orbit, Bounce, Pulse, and Light
+Sweep. These are treated as keyframe generators rather than hidden animation
+engines, so an evaluator can inspect the resulting motion in the timeline.
 
 Rules:
 
-- If an object has enabled timeline tracks for transform properties, timeline
-  playback overrides preset transform animations for that object.
-- Adding the first timeline transform keyframe to an object should set that
-  object's preset animation mode to `none`, unless the user is explicitly in a
-  future advanced blend mode.
-- Light sweep is suspended whenever light timeline tracks exist, because keyed
-  light values must be deterministic during playback and scrubbing.
+- Selecting Spin, Orbit, Bounce, or Pulse creates visible Position, Rotation, or
+  Scale keyframes over the current work area and sets the object's procedural
+  mode to `none`.
+- Cinematic and evaluation demos bake their object and light motion into
+  timeline tracks before playback starts.
+- Legacy saved scenes that contain procedural animation modes but no transform
+  timeline tracks are migrated by baking those presets into ordinary keyframes
+  on load.
+- Light sweep is represented as a light position track when used in demos,
+  because keyed light values must be deterministic during playback and scrubbing.
 - Cinematic and evaluation tours may temporarily drive camera or scene state, but
   entering timeline edit mode should stop those tours.
 - If playback is stopped and the user drags an object with TransformControls, the

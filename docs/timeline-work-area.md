@@ -2,7 +2,8 @@
 
 ## Status
 
-Timeline Work In/Out controls are implemented as schema v8. This adds an
+Timeline Work In/Out controls were added in schema v8 and remain supported in
+current schema v9. This adds an
 After Effects and Premiere style work area around the existing timeline:
 
 - `Work In` defines where playback starts.
@@ -13,11 +14,11 @@ After Effects and Premiere style work area around the existing timeline:
 
 ## Data Model
 
-Timeline schema v8 adds two scalar fields:
+Timeline schema v8 added two scalar fields, still present in schema v9:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 8;
+  version: 9;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -48,4 +49,4 @@ Recommended manual check:
 2. Set Work Out to `4.5`.
 3. Press Start and confirm the playhead jumps to `0.5`.
 4. Press Play with Loop enabled and confirm playback wraps at `4.5`.
-5. Save JSON and verify `timeline.version` is `8`.
+5. Save JSON and verify `timeline.version` is `9`.

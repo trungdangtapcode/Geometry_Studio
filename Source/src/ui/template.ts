@@ -35,6 +35,7 @@ export function studioTemplate(): string {
         </div>
 
         <section class="keyframe-dock" id="keyframe-dock" aria-label="Keyframe timeline">
+          <button class="timeline-resize-handle" id="timeline-resize-handle" type="button" aria-label="Resize timeline height" title="Drag to resize timeline height"></button>
           <header class="timeline-header">
             <button class="icon-command" id="timeline-collapse" type="button" aria-label="Collapse timeline" title="Collapse timeline"><span data-icon="PanelBottomClose"></span></button>
             <div class="timeline-title">
@@ -50,6 +51,8 @@ export function studioTemplate(): string {
               <button class="mini-button strong-mini" id="timeline-play-toggle" type="button"><span data-icon="Play"></span><span>Play</span></button>
               <button class="mini-button icon-mini" id="timeline-next-keyframe" type="button" aria-label="Next keyframe" title="Next keyframe"><span data-icon="ChevronRight"></span></button>
               <button class="mini-button icon-mini" id="timeline-next-frame" type="button" aria-label="Next frame" title="Next frame"><span data-icon="SkipForward"></span></button>
+              <button class="mini-button icon-mini" id="timeline-prev-marker" type="button" aria-label="Previous marker" title="Previous marker"><span data-icon="Flag"></span></button>
+              <button class="mini-button icon-mini" id="timeline-next-marker" type="button" aria-label="Next marker" title="Next marker"><span data-icon="Flag"></span></button>
               <select id="timeline-track-kind" aria-label="Keyframe track">
                 <optgroup label="Object">
                   <option value="position">Position</option>
@@ -88,6 +91,8 @@ export function studioTemplate(): string {
                 <option value="all">All Rows</option>
               </select>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Add</span></button>
+              <button class="mini-button" id="timeline-add-marker" type="button"><span data-icon="Flag"></span><span>Marker</span></button>
+              <button class="mini-button danger" id="timeline-delete-marker" type="button"><span data-icon="Trash2"></span><span>Marker</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
               <button class="mini-button" id="timeline-copy-keyframes" type="button"><span data-icon="ClipboardCopy"></span><span>Copy</span></button>
               <button class="mini-button" id="timeline-paste-keyframes" type="button"><span data-icon="ClipboardPaste"></span><span>Paste</span></button>
@@ -126,10 +131,14 @@ export function studioTemplate(): string {
             <label><span id="timeline-key-x-label">X</span><input id="timeline-key-x" type="number" step="0.001" disabled /></label>
             <label><span id="timeline-key-y-label">Y</span><input id="timeline-key-y" type="number" step="0.001" disabled /></label>
             <label><span id="timeline-key-z-label">Z</span><input id="timeline-key-z" type="number" step="0.001" disabled /></label>
+            <label><span>Marker</span><input id="timeline-marker-label" type="text" maxlength="48" disabled /></label>
           </div>
           <div class="timeline-body">
             <div class="timeline-track-labels" id="timeline-track-labels"></div>
-            <div class="timeline-canvas" id="timeline-canvas"></div>
+            <div class="timeline-workspace">
+              <div class="timeline-marker-strip" id="timeline-marker-strip" aria-label="Timeline markers"></div>
+              <div class="timeline-canvas" id="timeline-canvas"></div>
+            </div>
           </div>
         </section>
       </section>

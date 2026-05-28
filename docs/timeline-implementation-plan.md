@@ -15,9 +15,11 @@ The follow-up AE-style slices are also partially implemented:
 - Timeline schema v6 adds object Roughness and Metalness tracks.
 - Timeline schema v7 adds Texture Repeat, Offset, and Rotation tracks.
 - Timeline schema v8 adds Work In/Out playback range controls.
+- Timeline schema v9 adds named marker cue points.
 - WebM preview export records the current work area from the WebGL canvas.
 - Auto-Key, duplicate, previous/next keyframe navigation, interpolation editing,
-  zoom controls, and clear-track commands are implemented.
+  zoom controls, clear-track commands, row filtering, resizable dock height, and
+  preset-to-keyframe baking are implemented.
 
 The remaining plan below is still the long-term roadmap for polish and deeper
 track types.
@@ -172,7 +174,8 @@ Manual tests:
 - Save JSON, reload the scene, and replay.
 - Delete object with timeline data and confirm no orphan rows remain.
 - Duplicate object with timeline data and confirm copied motion uses new IDs.
-- Toggle preset animation conflict and confirm timeline priority.
+- Toggle preset animation buttons and confirm they create visible Position,
+  Rotation, or Scale keyframes instead of hidden procedural motion.
 
 ## Suggested Commit Sequence
 

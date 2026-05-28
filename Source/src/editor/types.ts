@@ -133,7 +133,7 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -146,6 +146,7 @@ export interface SceneTimelineDocument {
   camera: CameraTimelineDocument;
   lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];
+  markers: TimelineMarkerDocument[];
 }
 
 export interface CameraTimelineDocument {
@@ -174,6 +175,13 @@ export interface TimelineKeyframeDocument {
   time: number;
   value: [number, number, number];
   interpolation: TimelineInterpolation;
+}
+
+export interface TimelineMarkerDocument {
+  id: string;
+  time: number;
+  label: string;
+  color: string;
 }
 
 export interface SerializedLight {

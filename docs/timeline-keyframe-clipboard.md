@@ -3,7 +3,7 @@
 ## Status
 
 Keyframe copy and paste is implemented as an editing workflow layer on top of
-timeline schema v8. It does not add new saved fields; pasted keyframes are
+timeline schema v9. It does not add new saved fields; pasted keyframes are
 stored as ordinary timeline keyframes.
 
 ## User-Facing Behavior

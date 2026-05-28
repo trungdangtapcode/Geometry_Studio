@@ -48,10 +48,10 @@ Using a local static server is recommended instead of double-clicking index.html
 - Lighting: Ambient, Directional, Point, and Spot lights with color, intensity, position, helper, and shadow controls.
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
-- Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep modes, plus Play/Pause controls.
-- Keyframe Timeline: bottom timeline dock for object, camera, light, material, visibility, and texture tracks with Focus/Keyed/All row filtering, clickable track rows, playhead scrubbing, add/delete/copy/paste/nudge keyframes, numeric keyframe time/value editing, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
+- Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
+- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with Focus/Keyed/All row filtering, named timeline markers, clickable track rows, playhead scrubbing, add/delete/copy/paste/nudge keyframes, numeric keyframe time/value editing, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, progress UI, and toast messages.
-- Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, preset animations, and keyframe timelines.
+- Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
 - Duplicate/Rename: duplicate or rename the selected object from the Outliner.
 - Drag and Drop: drop model files or texture images directly on the viewport.
@@ -91,7 +91,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Add Position / Rotation / Scale keyframes in the bottom timeline, copy/paste a keyframe, scrub the playhead, and verify motion plays.
 - Nudge a keyframe left or right by one frame from the toolbar.
 - Click timeline row labels to switch active object, camera, and light tracks.
-- Run Cinematic Demo and Play/Pause animation.
+- Run Cinematic Demo and Play/Pause the baked keyframe animation.
 - Run Evaluation Tour to show every assignment requirement in one guided scene.
 - Save JSON, then Load JSON to verify scene persistence.
 - Use Undo/Redo after adding, deleting, or changing an object render mode.
@@ -100,7 +100,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - editor/: shared types, scene document JSON, and command history.
 - scene/: geometry primitives, material/render-mode handling, lights, stage setup, and importers.
 - renderer/: WebGLRenderer, EffectComposer, OutlinePass, and capped responsive resizing.
-- animation/: preset animation updates, timeline schema, Three.js clip factory, and keyframe playback runtime.
+- animation/: timeline schema, Three.js clip factory, keyframe editing helpers, and keyframe playback runtime.
 - ui/: editor DOM template and keyframe timeline panel adapter.
 - utils/: DOM helpers and ResourceTracker for disposing geometries, materials, textures, and object URLs.
 

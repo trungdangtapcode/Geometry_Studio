@@ -19,6 +19,7 @@ import {
   copyTimelineObject,
   createDefaultTimeline,
   createTimelineKeyframe,
+  createTimelineMarker,
   ensureCameraTimeline,
   ensureLightTimeline,
   ensureObjectTimeline,
@@ -33,7 +34,8 @@ import {
   removeTimelineObject,
   roundTime,
   snapTimelineTime,
-  sortTimelineKeyframes
+  sortTimelineKeyframes,
+  sortTimelineMarkers
 } from "./animation/timelineSchema";
 import { CommandHistory } from "./editor/commands";
 import { createSceneDocument, validateSceneDocument } from "./editor/documents";
@@ -147,6 +149,10 @@ function boot(root: HTMLDivElement): void {
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onEditKeyframes: editTimelineKeyframes,
+    onAddMarker: addTimelineMarker,
+    onDeleteMarker: deleteTimelineMarker,
+    onRenameMarker: renameTimelineMarker,
+    onStepMarker: stepTimelineMarker,
     onClearTrack: clearTimelineTrack,
     onToggleTrack: toggleTimelineTrack,
     onTrackKindChanged: updateAllUI,
@@ -160,6 +166,7 @@ function boot(root: HTMLDivElement): void {
     onSettingsChanged: updateTimelineSettings,
     onTogglePlayback: togglePlay
   });
+  window.addEventListener("studio-density-change", () => timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing));
 
   seedDefaultScene();
   setSelected(firstEntryId());
@@ -170,8 +177,12 @@ function boot(root: HTMLDivElement): void {
 
   function seedDefaultScene(): void {
     addPrimitive("cube", new THREE.Vector3(0, 0.02, 0), { color: "#4bd0a0" }, false);
-    addPrimitive("torus", new THREE.Vector3(-3.2, 0.02, -1.6), { color: "#f7bd4b", renderMode: "lines", animation: "spin" }, false);
-    addPrimitive("sphere", new THREE.Vector3(3.2, 0.02, -1.2), { color: "#df6b80", textureName: "checker", animation: "pulse" }, false);
+    const torus = addPrimitive("torus", new THREE.Vector3(-3.2, 0.02, -1.6), { color: "#f7bd4b", renderMode: "lines" }, false);
+    const sphere = addPrimitive("sphere", new THREE.Vector3(3.2, 0.02, -1.2), { color: "#df6b80", textureName: "checker" }, false);
+    bakeObjectAnimationPreset(torus, "spin");
+    bakeObjectAnimationPreset(sphere, "pulse");
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
   }
 
   function addPrimitive(
@@ -219,7 +230,7 @@ function boot(root: HTMLDivElement): void {
       color: new THREE.Color("#d8dadf"),
       renderMode: "solid",
       materialMode: "standard",
-      animation: "spin",
+      animation: "none",
       textureName: "none"
     });
     entry.root.position.copy(position);
@@ -227,6 +238,9 @@ function boot(root: HTMLDivElement): void {
     rebuildEntryVisual(entry);
     scene.add(entry.root);
     entries.set(entry.id, entry);
+    bakeObjectAnimationPreset(entry, "spin");
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
     setSelected(entry.id);
     updateAllUI();
     if (record) showToast("Built-in sample model added", "good");
@@ -484,11 +498,23 @@ function boot(root: HTMLDivElement): void {
 
     document.querySelectorAll<HTMLButtonElement>("[data-animation]").forEach((button) => {
       button.addEventListener("click", () => {
-        updateSelectedEntry((entry) => {
-          entry.animation = button.dataset.animation as AnimationMode;
-          entry.basePosition.copy(entry.root.position);
-          entry.baseScale.copy(entry.root.scale);
-        });
+        const entry = selectedEntry();
+        if (!entry) return;
+        const mode = button.dataset.animation as AnimationMode;
+        recordHistory();
+        if (mode === "none") {
+          entry.animation = "none";
+          showToast("Procedural animation disabled", "good");
+        } else {
+          bakeObjectAnimationPreset(entry, mode, true);
+          query<HTMLSelectElement>("#timeline-track-kind").value = primaryTrackForAnimationMode(mode);
+          sceneTimeline.currentTime = sceneTimeline.workStart;
+          rebuildTimelineRuntime();
+          timelinePlayer.setTime(sceneTimeline.currentTime);
+          applyObjectPropertyTimeline();
+          showToast(`${capitalize(mode)} baked as visible timeline keyframes`, "good");
+        }
+        updateAllUI();
       });
     });
 
@@ -1061,31 +1087,33 @@ function boot(root: HTMLDivElement): void {
     }
     updatePlayButton();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
-    showToast(playing ? "Animation running" : "Animation paused", "good");
+    showToast(playing ? "Timeline running" : "Timeline paused", "good");
   }
 
   function startCinematicDemo(): void {
     recordHistory();
     clearSceneEntries();
     sceneTimeline = createDefaultTimeline();
-    const cube = addPrimitive("cube", new THREE.Vector3(-4.2, 0.02, 0.8), { color: "#4bd0a0", textureName: "uv", animation: "bounce" }, false);
-    const sphere = addPrimitive("sphere", new THREE.Vector3(-1.4, 0.02, -1.6), { color: "#f7bd4b", textureName: "checker", animation: "pulse" }, false);
-    const teapot = addPrimitive("teapot", new THREE.Vector3(1.55, 0.02, 0.7), { color: "#df6b80", materialMode: "phong", animation: "spin" }, false);
-    const knot = addPrimitive("torusKnot", new THREE.Vector3(4.2, 0.02, -1.3), { color: "#7c70f4", renderMode: "lines", animation: "spin" }, false);
-    const surface = addPrimitive("parametric", new THREE.Vector3(0, 0.02, 2.7), { color: "#2fb6c3", renderMode: "points", animation: "orbit" }, false);
-    [cube, sphere, teapot, knot, surface].forEach((entry) => {
-      entry.basePosition.copy(entry.root.position);
-      entry.baseScale.copy(entry.root.scale);
-    });
+    const cube = addPrimitive("cube", new THREE.Vector3(-4.2, 0.02, 0.8), { color: "#4bd0a0", textureName: "uv" }, false);
+    const sphere = addPrimitive("sphere", new THREE.Vector3(-1.4, 0.02, -1.6), { color: "#f7bd4b", textureName: "checker" }, false);
+    const teapot = addPrimitive("teapot", new THREE.Vector3(1.55, 0.02, 0.7), { color: "#df6b80", materialMode: "phong" }, false);
+    const knot = addPrimitive("torusKnot", new THREE.Vector3(4.2, 0.02, -1.3), { color: "#7c70f4", renderMode: "lines" }, false);
+    const surface = addPrimitive("parametric", new THREE.Vector3(0, 0.02, 2.7), { color: "#2fb6c3", renderMode: "points" }, false);
+    bakeObjectAnimationPreset(cube, "bounce");
+    bakeObjectAnimationPreset(sphere, "pulse");
+    bakeObjectAnimationPreset(teapot, "spin");
+    bakeObjectAnimationPreset(knot, "spin");
+    bakeObjectAnimationPreset(surface, "orbit");
     lightRig.active = "point";
-    lightRig.sweep = true;
     lightRig.point.intensity = 7;
     lightRig.point.color.set("#fff1c7");
     lightRig.point.position.set(4, 7, 4);
+    bakeActiveLightSweepTimeline();
     setCameraPreset("iso");
-    if (!playing) togglePlay();
     setSelected(teapot.id);
     rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    if (!playing) togglePlay();
     updateAllUI();
     showToast("Cinematic demo staged", "good");
   }
@@ -1096,27 +1124,27 @@ function boot(root: HTMLDivElement): void {
     clearSceneEntries();
     sceneTimeline = createDefaultTimeline();
     const cube = addPrimitive("cube", new THREE.Vector3(-5, 0.02, -1.3), { color: "#4bd0a0", renderMode: "solid", materialMode: "standard" }, false);
-    const sphere = addPrimitive("sphere", new THREE.Vector3(-2.5, 0.02, 1.2), { color: "#df6b80", textureName: "checker", animation: "pulse" }, false);
-    const cone = addPrimitive("cone", new THREE.Vector3(0, 0.02, -1.5), { color: "#f7bd4b", renderMode: "points", materialMode: "basic" }, false);
-    const cylinder = addPrimitive("cylinder", new THREE.Vector3(2.5, 0.02, 1.2), { color: "#2fb6c3", materialMode: "lambert" }, false);
-    const torus = addPrimitive("torus", new THREE.Vector3(5, 0.02, -1.2), { color: "#7c70f4", renderMode: "lines", animation: "spin" }, false);
-    const teapot = addPrimitive("teapot", new THREE.Vector3(0, 0.02, 3.2), { color: "#f06c4f", materialMode: "phong", animation: "bounce" }, false);
+    const sphere = addPrimitive("sphere", new THREE.Vector3(-2.5, 0.02, 1.2), { color: "#df6b80", textureName: "checker" }, false);
+    addPrimitive("cone", new THREE.Vector3(0, 0.02, -1.5), { color: "#f7bd4b", renderMode: "points", materialMode: "basic" }, false);
+    addPrimitive("cylinder", new THREE.Vector3(2.5, 0.02, 1.2), { color: "#2fb6c3", materialMode: "lambert" }, false);
+    const torus = addPrimitive("torus", new THREE.Vector3(5, 0.02, -1.2), { color: "#7c70f4", renderMode: "lines" }, false);
+    const teapot = addPrimitive("teapot", new THREE.Vector3(0, 0.02, 3.2), { color: "#f06c4f", materialMode: "phong" }, false);
     addSampleModel(new THREE.Vector3(0, 0.02, -4.1), false);
-    [cube, sphere, cone, cylinder, torus, teapot].forEach((entry) => {
-      entry.basePosition.copy(entry.root.position);
-      entry.baseScale.copy(entry.root.scale);
-    });
+    bakeObjectAnimationPreset(sphere, "pulse");
+    bakeObjectAnimationPreset(torus, "spin");
+    bakeObjectAnimationPreset(teapot, "bounce");
     lightRig.active = "spot";
     lightRig.helpers = true;
     lightRig.shadows = true;
-    lightRig.sweep = true;
     stage.grid.visible = true;
     stage.axes.visible = true;
     frustumHelper.visible = true;
+    bakeActiveLightSweepTimeline();
     setCameraPreset("iso");
-    if (!playing) togglePlay();
     setSelected(cube.id);
     rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    if (!playing) togglePlay();
     updateAllUI();
     const steps = [
       "Evaluation Tour: required primitives are visible.",
@@ -1126,7 +1154,7 @@ function boot(root: HTMLDivElement): void {
       "Lighting: ambient, spot light, shadows, helpers, and light sweep are active.",
       "Texture mapping: checker texture is applied to the sphere.",
       "Model loading: built-in sample model demonstrates imported model workflow.",
-      "Animation: spin, bounce, pulse, and light sweep are running."
+      "Animation: visible keyframes drive spin, bounce, pulse, and light motion."
     ];
     evaluationTourTimers = steps.map((message, index) =>
       window.setTimeout(() => showToast(message, "good"), index * 1500)
@@ -1138,9 +1166,11 @@ function boot(root: HTMLDivElement): void {
     clearSceneEntries();
     sceneTimeline = createDefaultTimeline();
     addPrimitive("cube", new THREE.Vector3(0, 0.02, 0), { color: "#4bd0a0" }, false);
-    addPrimitive("sphere", new THREE.Vector3(3.2, 0.02, -1.2), { color: "#df6b80", textureName: "checker", animation: "pulse" }, false);
+    const sphere = addPrimitive("sphere", new THREE.Vector3(3.2, 0.02, -1.2), { color: "#df6b80", textureName: "checker" }, false);
+    bakeObjectAnimationPreset(sphere, "pulse");
     setCameraPreset("reset");
     rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
     updateAllUI();
     showToast("Scene reset", "good");
   }
@@ -1282,6 +1312,7 @@ function boot(root: HTMLDivElement): void {
     playing = document.playing;
     document.objects.forEach((object) => restoreObject(object));
     sceneTimeline = normalizeTimelineDocument(document.timeline, new Set(entries.keys()));
+    bakeLegacyAnimationPresetsWithoutTracks();
     selectedId = document.selectedId && entries.has(document.selectedId) ? document.selectedId : entries.size ? firstEntryId() : "";
     if (selectedId) transformControls.attach(entries.get(selectedId)!.root);
     if (resetHistory) history.reset();
@@ -1342,6 +1373,14 @@ function boot(root: HTMLDivElement): void {
     entry.baseScale.copy(entry.root.scale);
     rebuildEntryVisual(entry);
     return entry;
+  }
+
+  function bakeLegacyAnimationPresetsWithoutTracks(): void {
+    entries.forEach((entry) => {
+      if (entry.animation === "none" || hasObjectTransformTimelineTracks(sceneTimeline, entry.id)) return;
+      bakeObjectAnimationPreset(entry, entry.animation);
+    });
+    if (lightRig.sweep && !hasLightTimelineTracks(sceneTimeline)) bakeActiveLightSweepTimeline();
   }
 
   function applyLightDocument(document: SceneDocument): void {
@@ -1440,6 +1479,111 @@ function boot(root: HTMLDivElement): void {
 
   function addTimelineKeyframe(kind: TimelineTrackKind): void {
     setTimelineKeyframe(kind);
+  }
+
+  function bakeObjectAnimationPreset(entry: SceneEntry, mode: AnimationMode, clearExisting = true): void {
+    if (mode === "none") {
+      entry.animation = "none";
+      return;
+    }
+
+    entry.animation = "none";
+    entry.basePosition.copy(entry.root.position);
+    entry.baseScale.copy(entry.root.scale);
+    const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+    if (clearExisting) {
+      objectTimeline.tracks = objectTimeline.tracks.filter((track) => !isObjectTransformTrackKind(track.kind));
+    }
+
+    const range = timelineBakeRange();
+    const position = entry.root.position.clone();
+    const scale = entry.root.scale.clone();
+    const rotation = [
+      THREE.MathUtils.radToDeg(entry.root.rotation.x),
+      THREE.MathUtils.radToDeg(entry.root.rotation.y),
+      THREE.MathUtils.radToDeg(entry.root.rotation.z)
+    ] as [number, number, number];
+
+    if (mode === "spin") {
+      replaceTimelineTrack(objectTimeline, "rotation", [
+        { time: range.start, value: rotation },
+        { time: range.end, value: [rotation[0] + 45, rotation[1] + 360, rotation[2]] }
+      ]);
+    } else if (mode === "bounce") {
+      replaceTimelineTrack(objectTimeline, "position", [
+        { time: range.start, value: [position.x, position.y, position.z], interpolation: "smooth" },
+        { time: range.mid, value: [position.x, position.y + 1.25, position.z], interpolation: "smooth" },
+        { time: range.end, value: [position.x, position.y, position.z], interpolation: "smooth" }
+      ]);
+    } else if (mode === "pulse") {
+      replaceTimelineTrack(objectTimeline, "scale", [
+        { time: range.start, value: [scale.x, scale.y, scale.z], interpolation: "smooth" },
+        { time: range.mid, value: [scale.x * 1.28, scale.y * 1.28, scale.z * 1.28], interpolation: "smooth" },
+        { time: range.end, value: [scale.x, scale.y, scale.z], interpolation: "smooth" }
+      ]);
+    } else if (mode === "orbit") {
+      const radius = 1.35 + (entry.phase % 1.2);
+      replaceTimelineTrack(objectTimeline, "position", [
+        { time: range.start, value: [position.x, position.y, position.z], interpolation: "smooth" },
+        { time: range.quarter, value: [position.x + radius, position.y, position.z + radius], interpolation: "smooth" },
+        { time: range.mid, value: [position.x, position.y, position.z + radius * 2], interpolation: "smooth" },
+        { time: range.threeQuarter, value: [position.x - radius, position.y, position.z + radius], interpolation: "smooth" },
+        { time: range.end, value: [position.x, position.y, position.z], interpolation: "smooth" }
+      ]);
+      replaceTimelineTrack(objectTimeline, "rotation", [
+        { time: range.start, value: rotation },
+        { time: range.end, value: [rotation[0], rotation[1] + 360, rotation[2]] }
+      ]);
+    }
+  }
+
+  function bakeActiveLightSweepTimeline(): void {
+    const trackKind = lightPositionTrackForKind(lightRig.active);
+    const light = currentLight(lightRig);
+    const range = timelineBakeRange();
+    const position = light.position.clone();
+    replaceTimelineTrack(ensureLightTimeline(sceneTimeline), trackKind, [
+      { time: range.start, value: [position.x, position.y, position.z], interpolation: "smooth" },
+      { time: range.mid, value: [position.x * -0.7, position.y + 1.2, position.z + 2.4], interpolation: "smooth" },
+      { time: range.end, value: [position.x, position.y, position.z], interpolation: "smooth" }
+    ]);
+    lightRig.sweep = false;
+  }
+
+  function replaceTimelineTrack(
+    collection: { tracks: TimelineTrackDocument[] },
+    kind: TimelineTrackKind,
+    keyframes: Array<{ time: number; value: [number, number, number]; interpolation?: TimelineInterpolation }>
+  ): void {
+    const track = ensureTimelineTrack(collection, kind);
+    track.enabled = true;
+    track.keyframes = keyframes.map((item) => {
+      const keyframe = createTimelineKeyframe(item.time, item.value);
+      keyframe.interpolation = item.interpolation ?? "linear";
+      return keyframe;
+    });
+    sortTimelineKeyframes(track);
+  }
+
+  function timelineBakeRange(): { start: number; quarter: number; mid: number; threeQuarter: number; end: number } {
+    const duration = Math.max(sceneTimeline.duration, 0.5);
+    const start = roundTime(clamp(sceneTimeline.workStart, 0, duration - 0.001));
+    let end = roundTime(clamp(sceneTimeline.workEnd, start + 0.5, duration));
+    if (end - start < 0.5) end = roundTime(Math.min(duration, start + 0.5));
+    const span = Math.max(end - start, 0.5);
+    return {
+      start,
+      quarter: roundTime(start + span * 0.25),
+      mid: roundTime(start + span * 0.5),
+      threeQuarter: roundTime(start + span * 0.75),
+      end
+    };
+  }
+
+  function primaryTrackForAnimationMode(mode: AnimationMode): "position" | "rotation" | "scale" {
+    if (mode === "spin") return "rotation";
+    if (mode === "pulse") return "scale";
+    return "position";
   }
 
   function setTimelineKeyframe(
@@ -1648,6 +1792,68 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} edited${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function addTimelineMarker(label: string): void {
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const existing = timelineMarkerAt(time);
+    const markerLabel = label.trim() || existing?.label || `Marker ${sceneTimeline.markers.length + 1}`;
+    recordHistory();
+    if (existing) {
+      existing.label = markerLabel.slice(0, 48);
+      sceneTimeline.currentTime = existing.time;
+      showToast(`Marker updated: ${existing.label}`, "good");
+    } else {
+      const marker = createTimelineMarker(time, markerLabel.slice(0, 48), markerColor(sceneTimeline.markers.length));
+      sceneTimeline.markers.push(marker);
+      sortTimelineMarkers(sceneTimeline);
+      sceneTimeline.currentTime = marker.time;
+      showToast(`Marker added: ${marker.label}`, "good");
+    }
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+  }
+
+  function deleteTimelineMarker(markerId: string | null): void {
+    const marker = markerId
+      ? sceneTimeline.markers.find((candidate) => candidate.id === markerId)
+      : timelineMarkerAt(sceneTimeline.currentTime);
+    if (!marker) {
+      showToast("Move to a marker before deleting it.", "bad");
+      return;
+    }
+    recordHistory();
+    sceneTimeline.markers = sceneTimeline.markers.filter((candidate) => candidate.id !== marker.id);
+    updateAllUI();
+    showToast(`Marker deleted: ${marker.label}`, "good");
+  }
+
+  function renameTimelineMarker(markerId: string, label: string): void {
+    const marker = sceneTimeline.markers.find((candidate) => candidate.id === markerId);
+    const nextLabel = label.trim().slice(0, 48);
+    if (!marker || !nextLabel || nextLabel === marker.label) return;
+    recordHistory();
+    marker.label = nextLabel;
+    updateAllUI();
+    showToast(`Marker renamed: ${marker.label}`, "good");
+  }
+
+  function stepTimelineMarker(direction: -1 | 1): void {
+    if (sceneTimeline.markers.length === 0) {
+      showToast("No timeline markers to navigate.", "bad");
+      return;
+    }
+    const current = sceneTimeline.currentTime;
+    const epsilon = 0.001;
+    const target = direction > 0
+      ? sceneTimeline.markers.find((marker) => marker.time > current + epsilon)
+      : [...sceneTimeline.markers].reverse().find((marker) => marker.time < current - epsilon);
+    if (!target) {
+      showToast(direction > 0 ? "No later marker." : "No earlier marker.", "bad");
+      return;
+    }
+    setTimelineTime(target.time);
+    showToast(`Marker: ${target.label}`, "good");
   }
 
   function setTimelineInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void {
@@ -1991,6 +2197,10 @@ function boot(root: HTMLDivElement): void {
       const entry = entries.get(objectId);
       if (entry) entry.animation = "none";
     });
+  }
+
+  function timelineMarkerAt(time: number) {
+    return sceneTimeline.markers.find((marker) => Math.abs(marker.time - time) < 0.001) ?? null;
   }
 
   function stepCandidateTimes(kind: TimelineTrackKind): number[] {
@@ -2353,6 +2563,11 @@ function boot(root: HTMLDivElement): void {
 
 function accentColor(index: number): string {
   const colors = ["#4bd0a0", "#df6b80", "#f7bd4b", "#7c70f4", "#2fb6c3", "#8ccf5f"];
+  return colors[index % colors.length];
+}
+
+function markerColor(index: number): string {
+  const colors = ["#f4ad2f", "#df6b80", "#4f8df7", "#20bfa9", "#7c70f4"];
   return colors[index % colors.length];
 }
 

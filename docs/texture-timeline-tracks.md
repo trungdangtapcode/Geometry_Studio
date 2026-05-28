@@ -3,7 +3,7 @@
 ## Status
 
 Texture transform timeline tracks were introduced in schema v7 and remain
-supported in current schema v8:
+supported in current schema v9:
 
 - Texture Repeat.
 - Texture Offset.
@@ -46,7 +46,8 @@ interface SerializedObject {
 - Playback applies texture tracks on every timeline tick.
 - Auto-Key creates or updates the matching texture transform track when the
   inspector controls change.
-- Texture tracks do not disable preset transform animations.
+- Texture tracks do not disable transform animation. Motion presets are baked
+  into ordinary Position, Rotation, or Scale keyframes.
 - Texture rotation uses a texture center of `(0.5, 0.5)` so rotation behaves
   like an editor control rather than spinning around the UV origin.
 

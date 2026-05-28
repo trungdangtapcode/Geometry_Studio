@@ -4,6 +4,7 @@ import type {
   ObjectTimelineDocument,
   SceneTimelineDocument,
   TimelineKeyframeDocument,
+  TimelineMarkerDocument,
   TimelineTrackDocument,
   TimelineTrackKind
 } from "../editor/types";
@@ -65,7 +66,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 8,
+    version: 9,
     duration: 8,
     workStart: 0,
     workEnd: 8,
@@ -77,13 +78,15 @@ export function createDefaultTimeline(): SceneTimelineDocument {
     autoKey: false,
     camera: { tracks: [] },
     lights: { tracks: [] },
-    objects: []
+    objects: [],
+    markers: []
   };
 }
 
 export function cloneTimelineDocument(timeline: SceneTimelineDocument): SceneTimelineDocument {
   return {
     ...timeline,
+    markers: (timeline.markers ?? []).map((marker) => ({ ...marker })),
     camera: cloneTrackCollection(timeline.camera ?? { tracks: [] }),
     lights: cloneTrackCollection(timeline.lights ?? { tracks: [] }),
     objects: timeline.objects.map((object) => ({
@@ -98,7 +101,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 8,
+    version: 9,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     workStart: defaults.workStart,
     workEnd: defaults.workEnd,
@@ -110,7 +113,8 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
     autoKey: typeof source.autoKey === "boolean" ? source.autoKey : defaults.autoKey,
     camera: normalizeTrackCollection(source.camera, CAMERA_TRACK_KINDS),
     lights: normalizeTrackCollection(source.lights, LIGHT_TRACK_KINDS),
-    objects: []
+    objects: [],
+    markers: []
   };
   timeline.currentTime = clamp(timeline.currentTime, 0, timeline.duration);
   timeline.workStart = roundTime(finiteNumber(source.workStart, defaults.workStart, 0, timeline.duration));
@@ -119,6 +123,10 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
     timeline.workStart = 0;
     timeline.workEnd = timeline.duration;
   }
+  timeline.markers = Array.isArray(source.markers)
+    ? source.markers.map((marker) => normalizeMarker(marker, timeline.duration)).filter((marker): marker is TimelineMarkerDocument => Boolean(marker))
+    : [];
+  sortTimelineMarkers(timeline);
 
   timeline.camera.tracks.forEach((track) => {
     track.keyframes.forEach((keyframe) => {
@@ -196,8 +204,21 @@ export function createTimelineKeyframe(time: number, value: [number, number, num
   };
 }
 
+export function createTimelineMarker(time: number, label: string, color = "#f4ad2f"): TimelineMarkerDocument {
+  return {
+    id: createTimelineId("marker"),
+    time: roundTime(time),
+    label,
+    color
+  };
+}
+
 export function sortTimelineKeyframes(track: TimelineTrackDocument): void {
   track.keyframes.sort((left, right) => left.time - right.time);
+}
+
+export function sortTimelineMarkers(timeline: SceneTimelineDocument): void {
+  timeline.markers.sort((left, right) => left.time - right.time);
 }
 
 export function pruneEmptyTimelineTracks(timeline: SceneTimelineDocument): void {
@@ -278,6 +299,17 @@ export function roundTime(time: number): number {
 
 export function trackLabel(kind: TimelineTrackKind): string {
   return TRACK_LABELS[kind];
+}
+
+function normalizeMarker(value: unknown, duration: number): TimelineMarkerDocument | null {
+  if (!value || typeof value !== "object") return null;
+  const marker = value as Partial<TimelineMarkerDocument>;
+  return {
+    id: typeof marker.id === "string" ? marker.id : createTimelineId("marker"),
+    time: roundTime(finiteNumber(marker.time, 0, 0, duration)),
+    label: typeof marker.label === "string" && marker.label.trim() ? marker.label.trim().slice(0, 48) : "Marker",
+    color: typeof marker.color === "string" && /^#[0-9a-fA-F]{6}$/.test(marker.color) ? marker.color : "#f4ad2f"
+  };
 }
 
 function normalizeTrack(value: unknown): TimelineTrackDocument | null {
