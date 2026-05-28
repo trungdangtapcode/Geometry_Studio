@@ -20,8 +20,8 @@ should stay close to this structure:
 - `animation/timelineSchema.ts`: default timeline values, validation helpers,
   scene JSON v1-to-v2 migration, and normalization of loaded data.
 - `animation/timelineEditing.ts`: pure keyframe edit operations such as source
-  resolution, copy/paste payloads, duplication, collision-aware nudging, and
-  target-track creation.
+  resolution, copy/paste payloads, duplication, collision-aware nudging, numeric
+  keyframe editing, and target-track creation.
 - `animation/clipFactory.ts`: converts timeline tracks into Three.js
   `AnimationClip` objects.
 - `animation/timelinePlayer.ts`: owns `AnimationMixer` instances, playback state,

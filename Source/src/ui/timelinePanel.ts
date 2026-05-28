@@ -5,7 +5,7 @@ import {
   type TimelineModel,
   type TimelineRow
 } from "animation-timeline-js";
-import type { SceneEntry, SceneTimelineDocument, TimelineInterpolation, TimelineTrackKind } from "../editor/types";
+import type { SceneEntry, SceneTimelineDocument, TimelineInterpolation, TimelineKeyframeDocument, TimelineTrackDocument, TimelineTrackKind } from "../editor/types";
 import { formatNumber, hydrateIcons, query } from "../utils/dom";
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
@@ -18,6 +18,7 @@ export interface KeyframeTimelineCallbacks {
   onPasteKeyframes(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
+  onEditKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onToggleTrack(kind: TimelineTrackKind): void;
   onTrackKindChanged(): void;
@@ -32,6 +33,11 @@ export interface KeyframeTimelineCallbacks {
   onTogglePlayback(): void;
 }
 
+export interface TimelineKeyframeEditPatch {
+  time?: number;
+  value?: Partial<Record<"x" | "y" | "z", number>>;
+}
+
 type TimelineUiKeyframe = TimelineKeyframe & {
   id: string;
   targetId: string;
@@ -41,6 +47,12 @@ type TimelineUiKeyframe = TimelineKeyframe & {
 type TimelineUiRow = TimelineRow & {
   targetId: string;
   trackKind: TimelineTrackKind;
+};
+
+type TimelineDetailSource = {
+  targetName: string;
+  track: TimelineTrackDocument;
+  keyframe: TimelineKeyframeDocument;
 };
 
 const OBJECT_TRACKS: TimelineTrackKind[] = [
@@ -145,7 +157,22 @@ export class KeyframeTimelinePanel {
   private readonly interpolationSelect = query<HTMLSelectElement>("#timeline-interpolation");
   private readonly selectionLabel = query<HTMLSpanElement>("#timeline-selection");
   private readonly timecodeLabel = query<HTMLSpanElement>("#timeline-timecode");
+  private readonly keyframeLabel = query<HTMLElement>("#timeline-key-label");
+  private readonly keyframeTimeInput = query<HTMLInputElement>("#timeline-key-time");
+  private readonly keyframeValueInputs = {
+    x: query<HTMLInputElement>("#timeline-key-x"),
+    y: query<HTMLInputElement>("#timeline-key-y"),
+    z: query<HTMLInputElement>("#timeline-key-z")
+  };
+  private readonly keyframeAxisLabels = {
+    x: query<HTMLElement>("#timeline-key-x-label"),
+    y: query<HTMLElement>("#timeline-key-y-label"),
+    z: query<HTMLElement>("#timeline-key-z-label")
+  };
   private selectedKeyframeIds = new Set<string>();
+  private lastTimelineDocument: SceneTimelineDocument | null = null;
+  private lastSelectedId = "";
+  private lastEntryNames = new Map<string, string>();
   private updating = false;
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
@@ -183,6 +210,10 @@ export class KeyframeTimelinePanel {
 
   update(timelineDocument: SceneTimelineDocument, entries: Iterable<SceneEntry>, selectedId: string, playing: boolean): void {
     this.updating = true;
+    const entryList = Array.from(entries);
+    this.lastTimelineDocument = timelineDocument;
+    this.lastSelectedId = selectedId;
+    this.lastEntryNames = new Map(entryList.map((entry) => [entry.id, entry.name]));
     this.root.classList.toggle("playing", playing);
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
@@ -199,7 +230,7 @@ export class KeyframeTimelinePanel {
     this.interpolationSelect.value = this.currentInterpolation(timelineDocument, selectedId);
     this.syncToggleTrackButton(timelineDocument, selectedId);
 
-    const visibleEntries = this.visibleEntries(timelineDocument, entries, selectedId);
+    const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
     this.labels.innerHTML = this.renderLabels(timelineDocument, visibleEntries, selectedId);
     this.timeline.setOptions({
       max: timelineDocument.duration,
@@ -209,9 +240,7 @@ export class KeyframeTimelinePanel {
     this.timeline.setModel(this.createModel(timelineDocument, visibleEntries));
     this.timeline.setTime(timelineDocument.currentTime);
     this.timeline.rescale();
-    this.selectionLabel.textContent = this.selectedKeyframeIds.size
-      ? `${this.selectedKeyframeIds.size} keyframe${this.selectedKeyframeIds.size === 1 ? "" : "s"} selected`
-      : "No keyframe selected";
+    this.syncSelectionWidgets(timelineDocument, selectedId);
     this.updating = false;
   }
 
@@ -231,6 +260,7 @@ export class KeyframeTimelinePanel {
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.timeline.setTime(timelineDocument.currentTime);
+    this.syncKeyframeEditor(timelineDocument, this.lastSelectedId);
     this.updating = false;
   }
 
@@ -255,6 +285,14 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-nudge-right").addEventListener("click", () => {
       this.callbacks.onNudgeKeyframes(1, [...this.selectedKeyframeIds]);
+    });
+    this.keyframeTimeInput.addEventListener("change", () => {
+      this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { time: Number(this.keyframeTimeInput.value) });
+    });
+    (["x", "y", "z"] as const).forEach((axis) => {
+      this.keyframeValueInputs[axis].addEventListener("change", () => {
+        this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { value: { [axis]: Number(this.keyframeValueInputs[axis].value) } });
+      });
     });
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
       this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);
@@ -306,9 +344,7 @@ export class KeyframeTimelinePanel {
     });
     this.timeline.onSelected((event) => {
       this.selectedKeyframeIds = new Set(event.selected.map((keyframe) => (keyframe as TimelineUiKeyframe).id).filter(Boolean));
-      this.selectionLabel.textContent = this.selectedKeyframeIds.size
-        ? `${this.selectedKeyframeIds.size} keyframe${this.selectedKeyframeIds.size === 1 ? "" : "s"} selected`
-        : "No keyframe selected";
+      if (this.lastTimelineDocument) this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
     });
     this.timeline.onDragStarted(() => this.callbacks.onDragStarted());
     this.timeline.onKeyframeChanged((event) => {
@@ -530,15 +566,85 @@ export class KeyframeTimelinePanel {
     };
   }
 
-  private playheadKeyframe(timelineDocument: SceneTimelineDocument, selectedId: string) {
+  private syncSelectionWidgets(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    const sources = this.detailSources(timelineDocument, selectedId);
+    this.selectionLabel.textContent = this.selectedKeyframeIds.size
+      ? `${this.selectedKeyframeIds.size} keyframe${this.selectedKeyframeIds.size === 1 ? "" : "s"} selected`
+      : sources.length
+        ? "Playhead keyframe active"
+      : "No keyframe selected";
+    this.syncKeyframeEditor(timelineDocument, selectedId, sources);
+  }
+
+  private syncKeyframeEditor(timelineDocument: SceneTimelineDocument, selectedId: string, resolvedSources?: TimelineDetailSource[]): void {
+    const sources = resolvedSources ?? this.detailSources(timelineDocument, selectedId);
+    const first = sources[0];
+    const axisConfig = first ? trackAxisConfig(first.track.kind) : trackAxisConfig(this.selectedTrackKind());
+    (["x", "y", "z"] as const).forEach((axis, index) => {
+      this.keyframeAxisLabels[axis].textContent = axisConfig.labels[index];
+      this.keyframeValueInputs[axis].disabled = sources.length === 0 || index >= axisConfig.enabledAxes;
+      this.keyframeValueInputs[axis].value = sources.length && index < axisConfig.enabledAxes
+        ? commonValue(sources.map((source) => source.keyframe.value[index]))
+        : "";
+      this.keyframeValueInputs[axis].placeholder = sources.length > 1 ? "Mixed" : "";
+    });
+
+    this.keyframeTimeInput.disabled = sources.length !== 1;
+    this.keyframeTimeInput.value = sources.length === 1 ? formatNumber(first.keyframe.time) : "";
+    this.keyframeTimeInput.placeholder = sources.length > 1 ? "Multiple" : "";
+    if (!first) {
+      this.keyframeLabel.textContent = "No keyframe selected";
+    } else if (sources.length === 1) {
+      this.keyframeLabel.textContent = `${first.targetName} | ${TRACK_LABELS[first.track.kind]}`;
+    } else {
+      this.keyframeLabel.textContent = `${sources.length} selected keyframes`;
+    }
+  }
+
+  private detailSources(timelineDocument: SceneTimelineDocument, selectedId: string): TimelineDetailSource[] {
+    if (this.selectedKeyframeIds.size > 0) {
+      const ids = this.selectedKeyframeIds;
+      const sources: TimelineDetailSource[] = [];
+      this.collectDetailSources(timelineDocument.camera.tracks, "Camera", ids, sources);
+      this.collectDetailSources(timelineDocument.lights.tracks, "Lights", ids, sources);
+      timelineDocument.objects.forEach((objectTimeline) => {
+        this.collectDetailSources(objectTimeline.tracks, this.lastEntryNames.get(objectTimeline.objectId) ?? "Object", ids, sources);
+      });
+      return sources;
+    }
+
+    const track = this.playheadTrack(timelineDocument, selectedId);
+    const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - timelineDocument.currentTime) < 0.001);
+    if (!track || !keyframe) return [];
+    if (isCameraTrack(track.kind)) return [{ targetName: "Camera", track, keyframe }];
+    if (isLightTrack(track.kind)) return [{ targetName: "Lights", track, keyframe }];
+    return [{ targetName: this.lastEntryNames.get(selectedId) ?? "Object", track, keyframe }];
+  }
+
+  private collectDetailSources(
+    tracks: TimelineTrackDocument[],
+    targetName: string,
+    ids: Set<string>,
+    sources: TimelineDetailSource[]
+  ): void {
+    tracks.forEach((track) => {
+      track.keyframes.forEach((keyframe) => {
+        if (ids.has(keyframe.id)) sources.push({ targetName, track, keyframe });
+      });
+    });
+  }
+
+  private playheadTrack(timelineDocument: SceneTimelineDocument, selectedId: string): TimelineTrackDocument | undefined {
     const selectedTrack = this.selectedTrackKind();
-    const track = isCameraTrack(selectedTrack)
-      ? timelineDocument.camera.tracks.find((candidate) => candidate.kind === selectedTrack)
-      : isLightTrack(selectedTrack)
-        ? timelineDocument.lights.tracks.find((candidate) => candidate.kind === selectedTrack)
-      : timelineDocument.objects
-        .find((object) => object.objectId === selectedId)
-        ?.tracks.find((candidate) => candidate.kind === selectedTrack);
+    if (isCameraTrack(selectedTrack)) return timelineDocument.camera.tracks.find((candidate) => candidate.kind === selectedTrack);
+    if (isLightTrack(selectedTrack)) return timelineDocument.lights.tracks.find((candidate) => candidate.kind === selectedTrack);
+    return timelineDocument.objects
+      .find((object) => object.objectId === selectedId)
+      ?.tracks.find((candidate) => candidate.kind === selectedTrack);
+  }
+
+  private playheadKeyframe(timelineDocument: SceneTimelineDocument, selectedId: string) {
+    const track = this.playheadTrack(timelineDocument, selectedId);
     return track?.keyframes.find((keyframe) => Math.abs(keyframe.time - timelineDocument.currentTime) < 0.001);
   }
 
@@ -596,6 +702,29 @@ function isCameraTrack(kind: TimelineTrackKind): kind is "cameraPosition" | "cam
 
 function isLightTrack(kind: TimelineTrackKind): boolean {
   return LIGHT_TRACKS.includes(kind);
+}
+
+function trackAxisConfig(kind: TimelineTrackKind): { labels: [string, string, string]; enabledAxes: 1 | 2 | 3 } {
+  if (kind === "objectColor" || kind.endsWith("Color")) return { labels: ["R", "G", "B"], enabledAxes: 3 };
+  if (kind === "cameraLens") return { labels: ["FOV", "Near", "Far"], enabledAxes: 3 };
+  if (kind === "objectTextureRepeat" || kind === "objectTextureOffset") return { labels: ["U", "V", "-"], enabledAxes: 2 };
+  if (
+    kind === "objectOpacity" ||
+    kind === "objectRoughness" ||
+    kind === "objectMetalness" ||
+    kind === "objectTextureRotation" ||
+    kind === "objectVisibility" ||
+    kind.endsWith("Intensity")
+  ) {
+    return { labels: ["Value", "-", "-"], enabledAxes: 1 };
+  }
+  return { labels: ["X", "Y", "Z"], enabledAxes: 3 };
+}
+
+function commonValue(values: number[]): string {
+  if (values.length === 0) return "";
+  const first = values[0];
+  return values.every((value) => Math.abs(value - first) < 0.0001) ? formatNumber(first) : "";
 }
 
 function formatTimecode(time: number, fps: number): string {

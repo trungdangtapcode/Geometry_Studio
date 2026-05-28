@@ -167,6 +167,19 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await expect(page.getByText("Keyframe Timeline")).toBeVisible();
 
   await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
+  await expect(page.locator("#timeline-key-time")).toBeEnabled();
+  await expect(page.locator("#timeline-key-x")).toBeEnabled();
+  await page.locator("#timeline-key-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.25";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(0.27, 2);
+  await page.locator("#timeline-key-x").evaluate((input) => {
+    (input as HTMLInputElement).value = "1.25";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#timeline-key-x")).toHaveValue("1.25");
   await page.locator("#timeline-auto-key").check();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
@@ -423,6 +436,8 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const visibilityTrack = objectTracks.find((track) => track.kind === "objectVisibility")!;
   expect(positionTrack.keyframes).toHaveLength(4);
   expect(positionTrack.enabled).toBe(false);
+  expect(positionTrack.keyframes[0].time).toBeCloseTo(0.267, 3);
+  expect(positionTrack.keyframes[0].value[0]).toBe(1.25);
   expect(positionTrack.keyframes[1].value[0]).toBe(2);
   expect(positionTrack.keyframes[1].interpolation).toBe("smooth");
   const pastedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.533) < 0.001)!;

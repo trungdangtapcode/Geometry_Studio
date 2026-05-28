@@ -370,7 +370,7 @@ svg {
   z-index: 5;
   height: var(--dock-height);
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   gap: var(--dock-gap);
   overflow: hidden;
   border: 1px solid var(--line);
@@ -385,6 +385,7 @@ svg {
 }
 
 .keyframe-dock.collapsed .timeline-settings,
+.keyframe-dock.collapsed .timeline-keyframe-editor,
 .keyframe-dock.collapsed .timeline-body {
   display: none;
 }
@@ -505,6 +506,48 @@ svg {
   align-self: end;
   min-height: var(--control-height);
   text-transform: none;
+}
+
+.timeline-keyframe-editor {
+  display: grid;
+  grid-template-columns: minmax(126px, 1fr) repeat(4, minmax(70px, 0.72fr));
+  align-items: end;
+  gap: calc(var(--grid-gap) - 2px);
+  padding: 0 var(--timeline-header-padding-x);
+}
+
+.timeline-keyframe-editor strong {
+  overflow: hidden;
+  color: var(--charcoal);
+  font-size: var(--ui-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-keyframe-editor label {
+  display: grid;
+  gap: calc(var(--grid-gap) - 3px);
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--ui-tiny-font);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.timeline-keyframe-editor input {
+  width: 100%;
+  min-height: var(--control-height);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--panel-strong);
+  color: var(--ink);
+  padding: 0 var(--control-padding-x);
+  font-size: var(--ui-font);
+}
+
+.timeline-keyframe-editor input:disabled {
+  color: rgba(20, 24, 27, 0.44);
+  background: rgba(255, 255, 255, 0.48);
 }
 
 .timeline-body {

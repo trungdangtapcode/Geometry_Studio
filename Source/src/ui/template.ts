@@ -115,6 +115,13 @@ export function studioTemplate(): string {
             <label class="toggle-line"><input id="timeline-snap" type="checkbox" checked /><span>Snap</span></label>
             <label class="toggle-line"><input id="timeline-auto-key" type="checkbox" /><span>Auto-Key</span></label>
           </div>
+          <div class="timeline-keyframe-editor" id="timeline-keyframe-editor">
+            <strong id="timeline-key-label">No keyframe selected</strong>
+            <label><span>Key Time</span><input id="timeline-key-time" type="number" min="0" step="0.001" disabled /></label>
+            <label><span id="timeline-key-x-label">X</span><input id="timeline-key-x" type="number" step="0.001" disabled /></label>
+            <label><span id="timeline-key-y-label">Y</span><input id="timeline-key-y" type="number" step="0.001" disabled /></label>
+            <label><span id="timeline-key-z-label">Z</span><input id="timeline-key-z" type="number" step="0.001" disabled /></label>
+          </div>
           <div class="timeline-body">
             <div class="timeline-track-labels" id="timeline-track-labels"></div>
             <div class="timeline-canvas" id="timeline-canvas"></div>

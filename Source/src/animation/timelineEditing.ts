@@ -61,7 +61,18 @@ export interface NudgeTimelineResult extends TimelineEditResult {
   currentTime: number;
 }
 
+export interface TimelineKeyframeEditPatch {
+  time?: number;
+  value?: Partial<Record<"x" | "y" | "z", number>>;
+}
+
+export interface EditTimelineResult extends TimelineEditResult {
+  edited: number;
+  currentTime: number;
+}
+
 const TRANSFORM_TRACK_KINDS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
+const AXIS_INDEX: Record<"x" | "y" | "z", number> = { x: 0, y: 1, z: 2 };
 
 export function resolveTimelineKeyframeSources(
   timeline: SceneTimelineDocument,
@@ -208,6 +219,64 @@ export function nudgeResolvedKeyframes(
     currentTime: updates.length ? Math.min(...updates.map((update) => update.time)) : timeline.currentTime,
     changedTransformObjectIds: [...changedTransformObjectIds]
   };
+}
+
+export function editResolvedKeyframes(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  patch: TimelineKeyframeEditPatch
+): EditTimelineResult {
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  const movingIds = new Set(sources.map((source) => source.keyframe.id));
+  const anchorTime = sources.length ? Math.min(...sources.map((source) => source.keyframe.time)) : timeline.currentTime;
+  const targetAnchor = typeof patch.time === "number" && Number.isFinite(patch.time)
+    ? snapTimelineTime(timeline, Math.min(Math.max(patch.time, 0), timeline.duration))
+    : null;
+  const delta = targetAnchor === null ? 0 : targetAnchor - anchorTime;
+  let edited = 0;
+  let skipped = 0;
+
+  sources.forEach((source) => {
+    let changed = false;
+
+    if (targetAnchor !== null) {
+      const nextTime = sources.length === 1
+        ? targetAnchor
+        : snapTimelineTime(timeline, source.keyframe.time + delta);
+      const blocked = nextTime < 0 ||
+        nextTime > timeline.duration ||
+        source.track.keyframes.some((keyframe) => !movingIds.has(keyframe.id) && Math.abs(keyframe.time - nextTime) < 0.001);
+      if (blocked) {
+        skipped += 1;
+      } else if (Math.abs(source.keyframe.time - nextTime) >= 0.001) {
+        source.keyframe.time = nextTime;
+        changed = true;
+      }
+    }
+
+    if (patch.value) {
+      (["x", "y", "z"] as const).forEach((axis) => {
+        const value = patch.value?.[axis];
+        if (typeof value !== "number" || !Number.isFinite(value)) return;
+        const index = AXIS_INDEX[axis];
+        if (Math.abs(source.keyframe.value[index] - value) >= 0.0001) {
+          source.keyframe.value[index] = value;
+          changed = true;
+        }
+      });
+    }
+
+    if (changed) {
+      changedTracks.add(source.track);
+      if (source.scope === "object" && isTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+      edited += 1;
+    }
+  });
+  changedTracks.forEach(sortTimelineKeyframes);
+
+  const currentTime = targetAnchor ?? (sources.length ? Math.min(...sources.map((source) => source.keyframe.time)) : timeline.currentTime);
+  return { edited, skipped, currentTime, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
 function collectKeyframesById(

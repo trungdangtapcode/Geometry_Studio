@@ -7,10 +7,12 @@ import { updateEntryAnimation } from "./animation/timeline";
 import {
   createTimelineClipboard,
   duplicateResolvedKeyframes,
+  editResolvedKeyframes,
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
   resolveTimelineKeyframeSources,
-  type TimelineClipboard
+  type TimelineClipboard,
+  type TimelineKeyframeEditPatch
 } from "./animation/timelineEditing";
 import { TimelinePlayer } from "./animation/timelinePlayer";
 import {
@@ -144,6 +146,7 @@ function boot(root: HTMLDivElement): void {
     onPasteKeyframes: pasteTimelineKeyframes,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
+    onEditKeyframes: editTimelineKeyframes,
     onClearTrack: clearTimelineTrack,
     onToggleTrack: toggleTimelineTrack,
     onTrackKindChanged: updateAllUI,
@@ -1619,6 +1622,32 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${result.nudged} keyframe${result.nudged === 1 ? "" : "s"} nudged ${direction > 0 ? "right" : "left"}${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function editTimelineKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (sources.length === 0) {
+      showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = editResolvedKeyframes(sceneTimeline, sources, patch);
+    if (result.edited === 0) {
+      updateAllUI();
+      showToast("No keyframe value changed.", "bad");
+      return;
+    }
+
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(result.currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} edited${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function setTimelineInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void {
