@@ -14,6 +14,7 @@ The follow-up AE-style slices are also partially implemented:
 - Timeline schema v5 adds object Color, Opacity, and Visibility tracks.
 - Timeline schema v6 adds object Roughness and Metalness tracks.
 - Timeline schema v7 adds Texture Repeat, Offset, and Rotation tracks.
+- Timeline schema v8 adds Work In/Out playback range controls.
 - Auto-Key, duplicate, previous/next keyframe navigation, interpolation editing,
   zoom controls, and clear-track commands are implemented.
 

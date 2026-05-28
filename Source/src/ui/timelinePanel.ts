@@ -8,7 +8,7 @@ import {
 import type { SceneEntry, SceneTimelineDocument, TimelineInterpolation, TimelineTrackKind } from "../editor/types";
 import { formatNumber, hydrateIcons, query } from "../utils/dom";
 
-type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
+type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
 
 export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
@@ -127,6 +127,8 @@ export class KeyframeTimelinePanel {
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
   private readonly timeInput = query<HTMLInputElement>("#timeline-current-time");
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
+  private readonly workStartInput = query<HTMLInputElement>("#timeline-work-start");
+  private readonly workEndInput = query<HTMLInputElement>("#timeline-work-end");
   private readonly fpsInput = query<HTMLInputElement>("#timeline-fps");
   private readonly snapInput = query<HTMLInputElement>("#timeline-snap");
   private readonly autoKeyInput = query<HTMLInputElement>("#timeline-auto-key");
@@ -177,6 +179,8 @@ export class KeyframeTimelinePanel {
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.durationInput.value = formatNumber(timelineDocument.duration);
+    this.workStartInput.value = formatNumber(timelineDocument.workStart);
+    this.workEndInput.value = formatNumber(timelineDocument.workEnd);
     this.fpsInput.value = String(timelineDocument.fps);
     this.loopInput.checked = timelineDocument.loop;
     this.snapInput.checked = timelineDocument.snapEnabled;
@@ -235,10 +239,12 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.timeline.zoomOut(0.25));
     query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.timeline.zoomIn(0.25));
     query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimeline());
-    query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(0));
+    query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workStartInput.value)));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
     this.timeInput.addEventListener("change", () => this.callbacks.onTimeChanged(Number(this.timeInput.value)));
     this.durationInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ duration: Number(this.durationInput.value) }));
+    this.workStartInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ workStart: Number(this.workStartInput.value) }));
+    this.workEndInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ workEnd: Number(this.workEndInput.value) }));
     this.fpsInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ fps: Number(this.fpsInput.value) }));
     this.snapStepInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapStep: Number(this.snapStepInput.value) }));
     this.loopInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ loop: this.loopInput.checked }));

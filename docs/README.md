@@ -30,6 +30,8 @@ PDF.
   Visibility tracks.
 - [Texture Timeline Tracks](texture-timeline-tracks.md) documents schema v7
   texture Repeat, Offset, and Rotation tracks.
+- [Timeline Work Area](timeline-work-area.md) documents schema v8 Work In/Out
+  playback range behavior.
 
 ## Current Recommendation
 

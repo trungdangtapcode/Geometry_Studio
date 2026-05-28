@@ -133,8 +133,10 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   duration: number;
+  workStart: number;
+  workEnd: number;
   fps: number;
   currentTime: number;
   loop: boolean;

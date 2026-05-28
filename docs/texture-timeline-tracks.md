@@ -2,7 +2,8 @@
 
 ## Status
 
-Texture transform timeline tracks are implemented as schema v7:
+Texture transform timeline tracks were introduced in schema v7 and remain
+supported in current schema v8:
 
 - Texture Repeat.
 - Texture Offset.
@@ -67,7 +68,7 @@ The timeline track dropdown exposes:
 
 The Playwright timeline workflow verifies:
 
-- Schema v7 is saved.
+- Texture tracks are saved in the current timeline schema.
 - Texture Repeat, Offset, and Rotation tracks are created through the UI.
 - Track keyframes round trip into exported scene JSON.
 - Base scene texture transform values round trip in the saved object document.
@@ -79,7 +80,7 @@ Recommended manual check:
 3. Add Repeat, Offset, and Rotation keyframes at time 0.
 4. Move the playhead and change the texture controls.
 5. Scrub the timeline and confirm the texture mapping changes.
-6. Save JSON and verify `timeline.version` is `7`.
+6. Save JSON and verify the current timeline schema version.
 
 ## Remaining Timeline Work
 

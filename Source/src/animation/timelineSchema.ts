@@ -65,8 +65,10 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 7,
+    version: 8,
     duration: 8,
+    workStart: 0,
+    workEnd: 8,
     fps: 30,
     currentTime: 0,
     loop: true,
@@ -96,8 +98,10 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 7,
+    version: 8,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
+    workStart: defaults.workStart,
+    workEnd: defaults.workEnd,
     fps: Math.round(finiteNumber(source.fps, defaults.fps, 1, 120)),
     currentTime: finiteNumber(source.currentTime, defaults.currentTime, 0, 120),
     loop: typeof source.loop === "boolean" ? source.loop : defaults.loop,
@@ -109,6 +113,12 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
     objects: []
   };
   timeline.currentTime = clamp(timeline.currentTime, 0, timeline.duration);
+  timeline.workStart = roundTime(finiteNumber(source.workStart, defaults.workStart, 0, timeline.duration));
+  timeline.workEnd = roundTime(finiteNumber(source.workEnd, timeline.duration, 0, timeline.duration));
+  if (timeline.workEnd <= timeline.workStart) {
+    timeline.workStart = 0;
+    timeline.workEnd = timeline.duration;
+  }
 
   timeline.camera.tracks.forEach((track) => {
     track.keyframes.forEach((keyframe) => {

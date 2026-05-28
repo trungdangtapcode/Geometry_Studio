@@ -322,6 +322,14 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(objectVisible).not.toBeChecked();
+  await page.locator("#timeline-work-start").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-work-end").evaluate((input) => {
+    (input as HTMLInputElement).value = "4.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "4.5";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -336,8 +344,10 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
-  expect(sceneDocument.timeline.version).toBe(7);
+  expect(sceneDocument.timeline.version).toBe(8);
   expect(sceneDocument.timeline.duration).toBe(8);
+  expect(sceneDocument.timeline.workStart).toBe(0.5);
+  expect(sceneDocument.timeline.workEnd).toBe(4.5);
   expect(sceneDocument.timeline.autoKey).toBe(true);
   expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
   expect(sceneDocument.timeline.camera.tracks[0].kind).toBe("cameraPosition");

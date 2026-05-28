@@ -87,6 +87,8 @@ export function studioTemplate(): string {
           <div class="timeline-settings">
             <label><span>Time</span><input id="timeline-current-time" type="number" min="0" step="0.033" value="0" /></label>
             <label><span>Duration</span><input id="timeline-duration" type="number" min="0.5" max="120" step="0.5" value="8" /></label>
+            <label><span>Work In</span><input id="timeline-work-start" type="number" min="0" max="120" step="0.1" value="0" /></label>
+            <label><span>Work Out</span><input id="timeline-work-end" type="number" min="0.1" max="120" step="0.1" value="8" /></label>
             <label><span>FPS</span><input id="timeline-fps" type="number" min="1" max="120" step="1" value="30" /></label>
             <label><span>Snap</span><input id="timeline-snap-step" type="number" min="0.001" max="10" step="0.001" value="0.033" /></label>
             <label>

@@ -3,7 +3,7 @@
 ## Status
 
 Light timeline tracks were introduced in schema v4 and remain supported in the
-current schema v7. They extend the existing dope-sheet rather than adding a
+current schema v8. They extend the existing dope-sheet rather than adding a
 second editor or animation framework.
 
 The supported tracks are:
@@ -36,12 +36,12 @@ infrastructure.
 ## Data Model
 
 Light tracks were added with timeline version 4. The current timeline document
-uses version 7 after object appearance, material, and texture property tracks
+uses version 8 after object appearance, material, texture, and work-area tracks
 were added:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 7;
+  version: 8;
   duration: number;
   fps: number;
   currentTime: number;
@@ -115,7 +115,7 @@ Recommended manual checks:
 3. Add a keyframe at 0 seconds.
 4. Move to 2 seconds and change intensity with Auto-Key enabled.
 5. Scrub between 0 and 2 seconds and confirm the light changes smoothly.
-6. Save JSON and verify `timeline.version` is `7` and
+6. Save JSON and verify the current timeline schema version and
    `timeline.lights.tracks` contains the new track.
 
 ## Next Extensions

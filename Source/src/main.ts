@@ -1010,6 +1010,9 @@ function boot(root: HTMLDivElement): void {
 
   function togglePlay(): void {
     playing = !playing;
+    if (playing && (sceneTimeline.currentTime < sceneTimeline.workStart || sceneTimeline.currentTime >= sceneTimeline.workEnd)) {
+      setTimelineTime(sceneTimeline.workStart);
+    }
     updatePlayButton();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
     showToast(playing ? "Animation running" : "Animation paused", "good");
@@ -1330,12 +1333,17 @@ function boot(root: HTMLDivElement): void {
 
   function advanceTimeline(delta: number): void {
     if (sceneTimeline.duration <= 0) return;
+    const workStart = clamp(sceneTimeline.workStart, 0, sceneTimeline.duration);
+    const workEnd = clamp(sceneTimeline.workEnd, workStart + 0.001, sceneTimeline.duration);
+    const span = Math.max(workEnd - workStart, 0.001);
     let nextTime = sceneTimeline.currentTime + delta;
-    if (nextTime > sceneTimeline.duration) {
+    if (nextTime < workStart || sceneTimeline.currentTime > workEnd) {
+      nextTime = workStart;
+    } else if (nextTime > workEnd) {
       if (sceneTimeline.loop) {
-        nextTime %= sceneTimeline.duration;
+        nextTime = workStart + ((nextTime - workEnd) % span);
       } else {
-        nextTime = sceneTimeline.duration;
+        nextTime = workEnd;
         playing = false;
         updatePlayButton();
       }
@@ -1360,7 +1368,12 @@ function boot(root: HTMLDivElement): void {
     if (typeof patch.duration === "number" && Number.isFinite(patch.duration)) {
       sceneTimeline.duration = clamp(patch.duration, 0.5, 120);
       sceneTimeline.currentTime = clamp(sceneTimeline.currentTime, 0, sceneTimeline.duration);
+      sceneTimeline.workStart = clamp(sceneTimeline.workStart, 0, sceneTimeline.duration);
+      sceneTimeline.workEnd = clamp(sceneTimeline.workEnd, sceneTimeline.workStart + 0.001, sceneTimeline.duration);
     }
+    if (typeof patch.workStart === "number" && Number.isFinite(patch.workStart)) sceneTimeline.workStart = clamp(patch.workStart, 0, sceneTimeline.duration - 0.001);
+    if (typeof patch.workEnd === "number" && Number.isFinite(patch.workEnd)) sceneTimeline.workEnd = clamp(patch.workEnd, sceneTimeline.workStart + 0.001, sceneTimeline.duration);
+    if (sceneTimeline.workEnd <= sceneTimeline.workStart) sceneTimeline.workEnd = Math.min(sceneTimeline.duration, sceneTimeline.workStart + 0.001);
     if (typeof patch.fps === "number" && Number.isFinite(patch.fps)) sceneTimeline.fps = Math.round(clamp(patch.fps, 1, 120));
     if (typeof patch.snapStep === "number" && Number.isFinite(patch.snapStep)) sceneTimeline.snapStep = clamp(patch.snapStep, 0.001, 10);
     if (typeof patch.loop === "boolean") sceneTimeline.loop = patch.loop;
