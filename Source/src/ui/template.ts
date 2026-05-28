@@ -82,6 +82,11 @@ export function studioTemplate(): string {
                   <option value="ambientIntensity">Ambient Intensity</option>
                 </optgroup>
               </select>
+              <select id="timeline-row-filter" aria-label="Timeline row filter">
+                <option value="focus">Focus Rows</option>
+                <option value="keyed">Keyed Rows</option>
+                <option value="all">All Rows</option>
+              </select>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Add</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
               <button class="mini-button" id="timeline-copy-keyframes" type="button"><span data-icon="ClipboardCopy"></span><span>Copy</span></button>

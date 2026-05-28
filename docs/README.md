@@ -44,6 +44,8 @@ PDF.
   enable/disable behavior.
 - [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
   label selection and active/disabled row states.
+- [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
+  and All row visibility modes for dense scenes.
 - [Preview Export](preview-export.md) documents WebM work-area recording.
 - [UI Density Control](ui-density.md) documents the Blender-style compact
   control-density system.
@@ -73,6 +75,8 @@ animation runtime where it fits:
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation
   surface for object, camera, and light tracks.
+- Row filtering keeps dense scenes manageable through Focus, Keyed, and All
+  timeline views.
 - Blender-style UI density is the default, with Compact and Comfortable options
   persisted in local storage.
 

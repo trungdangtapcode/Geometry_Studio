@@ -28,6 +28,11 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
   await expect(page.locator("#timeline-nudge-right")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
+  await page.locator("#timeline-row-filter").selectOption("keyed");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]')).toHaveCount(1);
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]')).toHaveCount(0);
+  await page.locator("#timeline-row-filter").selectOption("focus");
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
