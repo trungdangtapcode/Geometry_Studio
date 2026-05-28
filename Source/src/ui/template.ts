@@ -48,6 +48,9 @@ export function studioTemplate(): string {
                   <option value="position">Position</option>
                   <option value="rotation">Rotation</option>
                   <option value="scale">Scale</option>
+                  <option value="objectColor">Color</option>
+                  <option value="objectOpacity">Opacity</option>
+                  <option value="objectVisibility">Visibility</option>
                 </optgroup>
                 <optgroup label="Camera">
                   <option value="cameraPosition">Camera Position</option>
@@ -202,6 +205,14 @@ export function studioTemplate(): string {
             <label>
               <span>Color</span>
               <input id="object-color" type="color" value="#4bd0a0" />
+            </label>
+            <label>
+              <span>Opacity</span>
+              <input id="object-opacity" type="number" min="0" max="1" step="0.05" value="1" />
+            </label>
+            <label class="toggle-line panel-toggle">
+              <input id="object-visible" type="checkbox" checked />
+              <span>Visible</span>
             </label>
           </div>
           <div class="material-presets">

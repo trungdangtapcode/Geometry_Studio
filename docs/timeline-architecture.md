@@ -43,11 +43,11 @@ versioned independently because timeline capabilities are growing faster than
 the outer scene format.
 
 Version 1 scene files do not contain keyframe timeline data. Loading them
-creates a default empty timeline. The current timeline schema is version 4:
+creates a default empty timeline. The current timeline schema is version 5:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 4;
+  version: 5;
   duration: number;
   fps: number;
   currentTime: number;
@@ -69,6 +69,9 @@ type TimelineTrackKind =
   | "position"
   | "rotation"
   | "scale"
+  | "objectColor"
+  | "objectOpacity"
+  | "objectVisibility"
   | "cameraPosition"
   | "cameraTarget"
   | "cameraLens"

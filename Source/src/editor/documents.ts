@@ -70,6 +70,8 @@ function serializeEntry(entry: SceneEntry): SerializedObject {
     renderMode: entry.renderMode,
     materialMode: entry.materialMode,
     color: `#${entry.color.getHexString()}`,
+    opacity: entry.opacity,
+    visible: entry.root.visible,
     textureName: entry.textureName === "uploaded" ? "none" : entry.textureName,
     textureRepeat: [entry.textureRepeat.x, entry.textureRepeat.y],
     animation: entry.animation,

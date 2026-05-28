@@ -12,6 +12,9 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   position: "Position",
   rotation: "Rotation",
   scale: "Scale",
+  objectColor: "Object Color",
+  objectOpacity: "Object Opacity",
+  objectVisibility: "Object Visibility",
   cameraPosition: "Camera Position",
   cameraTarget: "Camera Target",
   cameraLens: "Camera Lens",
@@ -27,7 +30,15 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   ambientIntensity: "Ambient Intensity"
 };
 
-const OBJECT_TRACK_KINDS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
+const TRANSFORM_TRACK_KINDS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
+const OBJECT_TRACK_KINDS = new Set<TimelineTrackKind>([
+  "position",
+  "rotation",
+  "scale",
+  "objectColor",
+  "objectOpacity",
+  "objectVisibility"
+]);
 const CAMERA_TRACK_KINDS = new Set<TimelineTrackKind>(["cameraPosition", "cameraTarget", "cameraLens"]);
 const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
   "directionalPosition",
@@ -44,7 +55,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 4,
+    version: 5,
     duration: 8,
     fps: 30,
     currentTime: 0,
@@ -75,7 +86,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 4,
+    version: 5,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     fps: Math.round(finiteNumber(source.fps, defaults.fps, 1, 120)),
     currentTime: finiteNumber(source.currentTime, defaults.currentTime, 0, 120),
@@ -228,6 +239,13 @@ export function hasObjectTimelineTracks(timeline: SceneTimelineDocument, objectI
   ));
 }
 
+export function hasObjectTransformTimelineTracks(timeline: SceneTimelineDocument, objectId: string): boolean {
+  return Boolean(timeline.objects.find((object) =>
+    object.objectId === objectId &&
+    object.tracks.some((track) => TRANSFORM_TRACK_KINDS.has(track.kind) && track.enabled && track.keyframes.length > 0)
+  ));
+}
+
 export function snapTimelineTime(timeline: SceneTimelineDocument, time: number): number {
   const clamped = clamp(time, 0, timeline.duration);
   if (!timeline.snapEnabled) return roundTime(clamped);
@@ -282,6 +300,9 @@ function isTimelineTrackKind(value: unknown): value is TimelineTrackKind {
   return value === "position" ||
     value === "rotation" ||
     value === "scale" ||
+    value === "objectColor" ||
+    value === "objectOpacity" ||
+    value === "objectVisibility" ||
     value === "cameraPosition" ||
     value === "cameraTarget" ||
     value === "cameraLens" ||

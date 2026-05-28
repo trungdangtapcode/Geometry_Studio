@@ -15,6 +15,7 @@ import {
   ensureTimelineTrack,
   hasCameraTimelineTracks,
   hasLightTimelineTracks,
+  hasObjectTransformTimelineTracks,
   hasObjectTimelineTracks,
   hasTimelineTracks,
   normalizeTimelineDocument,
@@ -158,7 +159,7 @@ function boot(root: HTMLDivElement): void {
   function addPrimitive(
     primitiveType: PrimitiveType,
     position = nextSpawnPosition(),
-    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName">> & { color?: string; name?: string; id?: string } = {},
+    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity">> & { color?: string; name?: string; id?: string } = {},
     record = true
   ): SceneEntry {
     if (record) recordHistory();
@@ -173,7 +174,8 @@ function boot(root: HTMLDivElement): void {
       renderMode: options.renderMode ?? "solid",
       materialMode: options.materialMode ?? "standard",
       animation: options.animation ?? "none",
-      textureName: options.textureName ?? "none"
+      textureName: options.textureName ?? "none",
+      opacity: options.opacity ?? 1
     });
 
     entry.root.position.copy(position);
@@ -223,6 +225,7 @@ function boot(root: HTMLDivElement): void {
     materialMode?: MaterialMode;
     animation?: AnimationMode;
     textureName?: string;
+    opacity?: number;
   }): SceneEntry {
     const id = config.id ?? `object-${idCounter++}`;
     idCounter = Math.max(idCounter, numericObjectId(id) + 1);
@@ -242,6 +245,7 @@ function boot(root: HTMLDivElement): void {
       renderMode: config.renderMode ?? "solid",
       materialMode: config.materialMode ?? "standard",
       color: config.color,
+      opacity: config.opacity ?? 1,
       texture,
       textureName,
       textureRepeat: new THREE.Vector2(1, 1),
@@ -269,6 +273,22 @@ function boot(root: HTMLDivElement): void {
     entry.root.add(visual);
     syncLights(lightRig, entries.values());
     syncOutline();
+  }
+
+  function applyEntryAppearance(entry: SceneEntry): void {
+    entry.root.traverse((object) => {
+      const material = (object as THREE.Mesh | THREE.LineSegments | THREE.Points).material;
+      if (!material) return;
+      const materials = Array.isArray(material) ? material : [material];
+      materials.forEach((item) => {
+        if ("color" in item && item.color instanceof THREE.Color) {
+          item.color.copy(entry.color);
+        }
+        item.transparent = entry.opacity < 1;
+        item.opacity = entry.opacity;
+        item.needsUpdate = true;
+      });
+    });
   }
 
   function setSelected(id: string): void {
@@ -362,7 +382,29 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#object-color").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
         entry.color.set((event.target as HTMLInputElement).value);
-        rebuildEntryVisual(entry);
+        applyEntryAppearance(entry);
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe("objectColor", { notify: false, record: false, refresh: false });
+        }
+      });
+    });
+
+    query<HTMLInputElement>("#object-opacity").addEventListener("change", (event) => {
+      updateSelectedEntry((entry) => {
+        entry.opacity = clamp(Number((event.target as HTMLInputElement).value), 0, 1);
+        applyEntryAppearance(entry);
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe("objectOpacity", { notify: false, record: false, refresh: false });
+        }
+      });
+    });
+
+    query<HTMLInputElement>("#object-visible").addEventListener("change", (event) => {
+      updateSelectedEntry((entry) => {
+        entry.root.visible = (event.target as HTMLInputElement).checked;
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe("objectVisibility", { notify: false, record: false, refresh: false });
+        }
       });
     });
 
@@ -677,6 +719,8 @@ function boot(root: HTMLDivElement): void {
     });
     query<HTMLSelectElement>("#material-mode").value = entry?.materialMode ?? "standard";
     query<HTMLInputElement>("#object-color").value = entry ? `#${entry.color.getHexString()}` : "#4bd0a0";
+    query<HTMLInputElement>("#object-opacity").value = String(entry?.opacity ?? 1);
+    query<HTMLInputElement>("#object-visible").checked = entry?.root.visible ?? true;
     query<HTMLInputElement>("#grid-toggle").checked = stage.grid.visible;
     query<HTMLInputElement>("#axes-toggle").checked = stage.axes.visible;
     query<HTMLInputElement>("#stats-toggle").checked = statsVisible;
@@ -1117,6 +1161,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     updatePlayButton();
     syncLights(lightRig, entries.values());
     syncOutline();
@@ -1133,7 +1178,8 @@ function boot(root: HTMLDivElement): void {
         renderMode: object.renderMode,
         materialMode: object.materialMode,
         animation: object.animation,
-        textureName: object.textureName
+        textureName: object.textureName,
+        opacity: object.opacity ?? 1
       }, false);
     } else {
       entry = makeEntry({
@@ -1146,7 +1192,8 @@ function boot(root: HTMLDivElement): void {
         renderMode: object.renderMode,
         materialMode: object.materialMode,
         animation: object.animation,
-        textureName: object.textureName
+        textureName: object.textureName,
+        opacity: object.opacity ?? 1
       });
       entry.root.position.fromArray(object.position);
       rebuildEntryVisual(entry);
@@ -1155,6 +1202,7 @@ function boot(root: HTMLDivElement): void {
     }
     entry.root.rotation.set(object.rotation[0], object.rotation[1], object.rotation[2]);
     entry.root.scale.fromArray(object.scale);
+    entry.root.visible = object.visible ?? true;
     entry.textureRepeat.set(object.textureRepeat[0], object.textureRepeat[1]);
     entry.basePosition.copy(entry.root.position);
     entry.baseScale.copy(entry.root.scale);
@@ -1184,11 +1232,13 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     timelinePanel.setPlaybackTime(sceneTimeline, playing);
     if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
     if (hasLightTimelineTracks(sceneTimeline)) syncLightUI();
     if (hasTimelineTracks(sceneTimeline)) {
       syncTransformUI();
+      syncSegmentedButtons();
       syncSelectionSummary();
     }
   }
@@ -1209,11 +1259,13 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     timelinePanel.setPlaybackTime(sceneTimeline, playing);
     if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
     if (hasLightTimelineTracks(sceneTimeline)) syncLightUI();
     if (hasTimelineTracks(sceneTimeline)) {
       syncTransformUI();
+      syncSegmentedButtons();
       syncSelectionSummary();
     }
   }
@@ -1233,6 +1285,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     updateAllUI();
   }
 
@@ -1297,12 +1350,13 @@ function boot(root: HTMLDivElement): void {
       track.keyframes.push(createTimelineKeyframe(time, value));
     }
     sortTimelineKeyframes(track);
-    entry.animation = "none";
+    if (isObjectTransformTrackKind(kind)) entry.animation = "none";
     sceneTimeline.currentTime = time;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
     if (options.refresh !== false) updateAllUI();
-    if (options.notify !== false) showToast(`${capitalize(kind)} keyframe set at ${formatNumber(time)}s`, "good");
+    if (options.notify !== false) showToast(`${objectTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
   }
 
   function deleteTimelineKeyframes(keyframeIds: string[]): void {
@@ -1328,6 +1382,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     updateAllUI();
     showToast("Keyframe deleted", "good");
   }
@@ -1357,7 +1412,9 @@ function boot(root: HTMLDivElement): void {
 
     changedObjectIds.forEach((objectId) => {
       const entry = entries.get(objectId);
-      if (entry) entry.animation = "none";
+      if (entry && sources.some((source) => source.objectId === objectId && isObjectTransformTrackKind(source.track.kind))) {
+        entry.animation = "none";
+      }
     });
 
     if (created === 0) {
@@ -1369,6 +1426,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${created} keyframe${created === 1 ? "" : "s"} duplicated`, "good");
   }
@@ -1388,6 +1446,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${capitalize(interpolation)} interpolation applied`, "good");
   }
@@ -1433,7 +1492,7 @@ function boot(root: HTMLDivElement): void {
     const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id);
     const track = objectTimeline?.tracks.find((candidate) => candidate.kind === kind);
     if (!objectTimeline || !track || track.keyframes.length === 0) {
-      showToast(`${capitalize(kind)} track has no keyframes.`, "bad");
+      showToast(`${objectTrackLabel(kind)} track has no keyframes.`, "bad");
       return;
     }
     recordHistory();
@@ -1441,8 +1500,9 @@ function boot(root: HTMLDivElement): void {
     pruneEmptyTimelineTracks(sceneTimeline);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
     updateAllUI();
-    showToast(`${capitalize(kind)} track cleared`, "good");
+    showToast(`${objectTrackLabel(kind)} track cleared`, "good");
   }
 
   function stepTimelineKeyframe(direction: -1 | 1): void {
@@ -1477,6 +1537,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
   }
 
@@ -1491,6 +1552,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
     applyLightTimeline();
+    applyObjectPropertyTimeline();
     updateAllUI();
   }
 
@@ -1520,11 +1582,15 @@ function boot(root: HTMLDivElement): void {
   function timelineValueForEntry(entry: SceneEntry, kind: TimelineTrackKind): [number, number, number] {
     if (kind === "position") return [entry.root.position.x, entry.root.position.y, entry.root.position.z];
     if (kind === "scale") return [entry.root.scale.x, entry.root.scale.y, entry.root.scale.z];
-    return [
+    if (kind === "rotation") return [
       THREE.MathUtils.radToDeg(entry.root.rotation.x),
       THREE.MathUtils.radToDeg(entry.root.rotation.y),
       THREE.MathUtils.radToDeg(entry.root.rotation.z)
     ];
+    if (kind === "objectColor") return [entry.color.r, entry.color.g, entry.color.b];
+    if (kind === "objectOpacity") return [entry.opacity, 0, 0];
+    if (kind === "objectVisibility") return [entry.root.visible ? 1 : 0, 0, 0];
+    return [0, 0, 0];
   }
 
   function timelineValueForCamera(kind: TimelineTrackKind): [number, number, number] {
@@ -1581,6 +1647,29 @@ function boot(root: HTMLDivElement): void {
       }
     });
     syncLightHelpers(lightRig);
+  }
+
+  function applyObjectPropertyTimeline(): void {
+    sceneTimeline.objects.forEach((objectTimeline) => {
+      const entry = entries.get(objectTimeline.objectId);
+      if (!entry) return;
+      let appearanceChanged = false;
+      objectTimeline.tracks.forEach((track) => {
+        if (!isObjectPropertyTrackKind(track.kind)) return;
+        const value = evaluateTimelineTrack(track, sceneTimeline.currentTime);
+        if (!value) return;
+        if (track.kind === "objectColor") {
+          entry.color.setRGB(clamp(value[0], 0, 1), clamp(value[1], 0, 1), clamp(value[2], 0, 1));
+          appearanceChanged = true;
+        } else if (track.kind === "objectOpacity") {
+          entry.opacity = clamp(value[0], 0, 1);
+          appearanceChanged = true;
+        } else if (track.kind === "objectVisibility") {
+          entry.root.visible = value[0] >= 0.5;
+        }
+      });
+      if (appearanceChanged) applyEntryAppearance(entry);
+    });
   }
 
   function evaluateTimelineTrack(track: TimelineTrackDocument, time: number): [number, number, number] | null {
@@ -1717,6 +1806,14 @@ function boot(root: HTMLDivElement): void {
     return kind === "cameraPosition" || kind === "cameraTarget" || kind === "cameraLens";
   }
 
+  function isObjectTransformTrackKind(kind: TimelineTrackKind): kind is "position" | "rotation" | "scale" {
+    return kind === "position" || kind === "rotation" || kind === "scale";
+  }
+
+  function isObjectPropertyTrackKind(kind: TimelineTrackKind): kind is "objectColor" | "objectOpacity" | "objectVisibility" {
+    return kind === "objectColor" || kind === "objectOpacity" || kind === "objectVisibility";
+  }
+
   function isLightTrackKind(kind: TimelineTrackKind): kind is
     | "directionalPosition"
     | "directionalColor"
@@ -1751,6 +1848,16 @@ function boot(root: HTMLDivElement): void {
     if (kind === "cameraPosition") return "Camera position";
     if (kind === "cameraTarget") return "Camera target";
     if (kind === "cameraLens") return "Camera lens";
+    return capitalize(kind);
+  }
+
+  function objectTrackLabel(kind: TimelineTrackKind): string {
+    if (kind === "position") return "Position";
+    if (kind === "rotation") return "Rotation";
+    if (kind === "scale") return "Scale";
+    if (kind === "objectColor") return "Object color";
+    if (kind === "objectOpacity") return "Object opacity";
+    if (kind === "objectVisibility") return "Object visibility";
     return capitalize(kind);
   }
 
@@ -1810,7 +1917,7 @@ function boot(root: HTMLDivElement): void {
     if (playing) {
       advanceTimeline(delta);
       entries.forEach((entry) => {
-        if (!hasObjectTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, delta, elapsed);
+        if (!hasObjectTransformTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, delta, elapsed);
       });
     }
     if (lightRig.sweep && !hasLightTimelineTracks(sceneTimeline)) updateLightSweep(lightRig, elapsed);
@@ -1897,6 +2004,8 @@ function boot(root: HTMLDivElement): void {
       renderMode: entry.renderMode,
       materialMode: entry.materialMode,
       color: `#${entry.color.getHexString()}`,
+      opacity: entry.opacity,
+      visible: entry.root.visible,
       textureName: entry.textureName === "uploaded" ? "none" : entry.textureName,
       textureRepeat: [entry.textureRepeat.x, entry.textureRepeat.y],
       animation: entry.animation,

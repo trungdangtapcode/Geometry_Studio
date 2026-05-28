@@ -24,7 +24,9 @@ PDF.
   `animation-timeline-js` as the dope-sheet component and integrate proven
   Auto-Key / duplicate / navigation workflows around it.
 - [Light Timeline Tracks](light-timeline-tracks.md) documents the implemented
-  light property tracks, playback rules, and schema v4 migration.
+  light property tracks, playback rules, and their schema v4-to-v5 status.
+- [Object Property Timeline Tracks](object-property-timeline-tracks.md)
+  documents schema v5 object Color, Opacity, and Visibility tracks.
 
 ## Current Recommendation
 
@@ -37,14 +39,14 @@ animation runtime where it fits:
   `AnimationMixer` keep runtime playback aligned with the renderer already used
   by Geometry Studio.
 - Object Position, Rotation, and Scale tracks use Three.js clips and mixers.
-- Camera and light property tracks use the same timeline document and UI adapter,
-  then apply evaluated values directly to renderer-owned objects during
-  scrubbing/playback.
+- Camera, light, and object appearance tracks use the same timeline document and
+  UI adapter, then apply evaluated values directly to renderer-owned properties
+  during scrubbing/playback.
 
 ## Implementation Status
 
-The implemented timeline stack in `Source/` now includes object, camera, and
-light tracks:
+The implemented timeline stack in `Source/` now includes object transform,
+object appearance, camera, and light tracks:
 
 - `animation/timelineSchema.ts` owns timeline defaults, migration, cloning, and
   track helpers.
@@ -54,13 +56,12 @@ light tracks:
   keyed object.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
-- `main.ts` evaluates camera and light tracks against the same keyframe schema
-  so non-object properties remain synchronized with scrubbing, Auto-Key, Undo,
-  Redo, save, and load.
+- `main.ts` evaluates camera, light, color, opacity, and visibility tracks
+  against the same keyframe schema so non-transform properties remain
+  synchronized with scrubbing, Auto-Key, Undo, Redo, save, and load.
 
-The longer-term documents remain useful for the next stages: material/color
-tracks, visibility tracks, per-axis expansion, curve editing, and export
-workflows.
+The longer-term documents remain useful for the next stages: roughness/metalness
+tracks, per-axis expansion, curve editing, and export workflows.
 
 ## Reading Order
 

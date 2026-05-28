@@ -6,7 +6,9 @@ export function createMaterial(entry: SceneEntry, tracker?: ResourceTracker): TH
   const materialParams = {
     color: entry.color,
     map: entry.texture ?? undefined,
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
+    transparent: entry.opacity < 1,
+    opacity: entry.opacity
   };
 
   if (entry.texture) {
@@ -18,7 +20,8 @@ export function createMaterial(entry: SceneEntry, tracker?: ResourceTracker): TH
   }
 
   if (entry.materialMode === "normal") {
-    return tracker?.track(new THREE.MeshNormalMaterial({ side: THREE.DoubleSide })) ?? new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+    const params = { side: THREE.DoubleSide, transparent: entry.opacity < 1, opacity: entry.opacity };
+    return tracker?.track(new THREE.MeshNormalMaterial(params)) ?? new THREE.MeshNormalMaterial(params);
   }
   if (entry.materialMode === "basic") {
     return tracker?.track(new THREE.MeshBasicMaterial(materialParams)) ?? new THREE.MeshBasicMaterial(materialParams);
@@ -45,8 +48,10 @@ export function buildGeometryVisual(entry: SceneEntry, tracker?: ResourceTracker
     const material = tracker?.track(new THREE.PointsMaterial({
       color: entry.color,
       size: 0.08,
-      sizeAttenuation: true
-    })) ?? new THREE.PointsMaterial({ color: entry.color, size: 0.08, sizeAttenuation: true });
+      sizeAttenuation: true,
+      transparent: entry.opacity < 1,
+      opacity: entry.opacity
+    })) ?? new THREE.PointsMaterial({ color: entry.color, size: 0.08, sizeAttenuation: true, transparent: entry.opacity < 1, opacity: entry.opacity });
     return new THREE.Points(geometry, material);
   }
 
@@ -55,8 +60,8 @@ export function buildGeometryVisual(entry: SceneEntry, tracker?: ResourceTracker
     const material = tracker?.track(new THREE.LineBasicMaterial({
       color: entry.color,
       transparent: true,
-      opacity: 0.95
-    })) ?? new THREE.LineBasicMaterial({ color: entry.color, transparent: true, opacity: 0.95 });
+      opacity: entry.opacity * 0.95
+    })) ?? new THREE.LineBasicMaterial({ color: entry.color, transparent: true, opacity: entry.opacity * 0.95 });
     return new THREE.LineSegments(wireGeometry, material);
   }
 
@@ -78,11 +83,17 @@ export function buildModelVisual(entry: SceneEntry, tracker?: ResourceTracker): 
     mesh.visible = false;
     if (entry.renderMode === "lines") {
       const wireGeometry = tracker?.track(new THREE.WireframeGeometry(mesh.geometry)) ?? new THREE.WireframeGeometry(mesh.geometry);
-      const lineMaterial = tracker?.track(new THREE.LineBasicMaterial({ color: entry.color })) ?? new THREE.LineBasicMaterial({ color: entry.color });
+      const lineMaterial = tracker?.track(new THREE.LineBasicMaterial({ color: entry.color, transparent: entry.opacity < 1, opacity: entry.opacity })) ??
+        new THREE.LineBasicMaterial({ color: entry.color, transparent: entry.opacity < 1, opacity: entry.opacity });
       mesh.add(new THREE.LineSegments(wireGeometry, lineMaterial));
     } else {
       const pointGeometry = tracker?.track(mesh.geometry.clone()) ?? mesh.geometry.clone();
-      const pointMaterial = tracker?.track(new THREE.PointsMaterial({ color: entry.color, size: 0.06 })) ?? new THREE.PointsMaterial({ color: entry.color, size: 0.06 });
+      const pointMaterial = tracker?.track(new THREE.PointsMaterial({
+        color: entry.color,
+        size: 0.06,
+        transparent: entry.opacity < 1,
+        opacity: entry.opacity
+      })) ?? new THREE.PointsMaterial({ color: entry.color, size: 0.06, transparent: entry.opacity < 1, opacity: entry.opacity });
       mesh.add(new THREE.Points(pointGeometry, pointMaterial));
     }
   });

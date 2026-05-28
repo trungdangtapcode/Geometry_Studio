@@ -144,7 +144,7 @@ The first version intentionally implemented only transform tracks:
 - Rotation: X, Y, Z in the UI, converted to quaternion tracks at runtime
 - Scale: X, Y, Z
 
-Camera and light tracks have since been added as incremental schema extensions
-after the transform editing loop became testable. Material, object color,
-visibility, texture, and nested model bone tracks remain later work because they
-need more UI grouping and validation.
+Camera, light, and object appearance tracks have since been added as incremental
+schema extensions after the transform editing loop became testable. Roughness,
+metalness, texture transform, and nested model bone tracks remain later work
+because they need more UI grouping and validation.

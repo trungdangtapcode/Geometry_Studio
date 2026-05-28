@@ -107,7 +107,7 @@ test("supports undo redo scene loading and evaluation tour", async ({ page }) =>
 });
 
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
     const downloads: string[] = [];
@@ -184,6 +184,57 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   });
   await expect(pointIntensity).toHaveValue("6");
 
+  await page.locator("#timeline-track-kind").selectOption("objectColor");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const objectColor = page.locator("#object-color");
+  await objectColor.evaluate((input) => {
+    (input as HTMLInputElement).value = "#3366ff";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(objectColor).toHaveValue("#3366ff");
+
+  await page.locator("#timeline-track-kind").selectOption("objectOpacity");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const objectOpacity = page.locator("#object-opacity");
+  await objectOpacity.evaluate((input) => {
+    (input as HTMLInputElement).value = "0.4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(objectOpacity).toHaveValue("0.4");
+
+  await page.locator("#timeline-track-kind").selectOption("objectVisibility");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const objectVisible = page.locator("#object-visible");
+  await objectVisible.evaluate((input) => {
+    (input as HTMLInputElement).checked = false;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(objectVisible).not.toBeChecked();
+
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#save-scene")?.click();
   });
@@ -193,7 +244,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
-  expect(sceneDocument.timeline.version).toBe(4);
+  expect(sceneDocument.timeline.version).toBe(5);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.autoKey).toBe(true);
   expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
@@ -205,13 +256,26 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneDocument.timeline.lights.tracks[0].keyframes).toHaveLength(2);
   expect(sceneDocument.timeline.lights.tracks[0].keyframes[1].value[0]).toBe(6);
   expect(sceneDocument.timeline.objects).toHaveLength(1);
-  expect(sceneDocument.timeline.objects[0].tracks[0].kind).toBe("position");
-  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes).toHaveLength(3);
-  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].value[0]).toBe(2);
-  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].interpolation).toBe("smooth");
+  const objectTracks = sceneDocument.timeline.objects[0].tracks as Array<{
+    kind: string;
+    keyframes: Array<{ value: number[]; interpolation: string }>;
+  }>;
+  const positionTrack = objectTracks.find((track) => track.kind === "position")!;
+  const colorTrack = objectTracks.find((track) => track.kind === "objectColor")!;
+  const opacityTrack = objectTracks.find((track) => track.kind === "objectOpacity")!;
+  const visibilityTrack = objectTracks.find((track) => track.kind === "objectVisibility")!;
+  expect(positionTrack.keyframes).toHaveLength(3);
+  expect(positionTrack.keyframes[1].value[0]).toBe(2);
+  expect(positionTrack.keyframes[1].interpolation).toBe("smooth");
+  expect(colorTrack.keyframes).toHaveLength(2);
+  expect(colorTrack.keyframes[1].value[2]).toBeCloseTo(1, 3);
+  expect(opacityTrack.keyframes).toHaveLength(2);
+  expect(opacityTrack.keyframes[1].value[0]).toBe(0.4);
+  expect(visibilityTrack.keyframes).toHaveLength(2);
+  expect(visibilityTrack.keyframes[1].value[0]).toBe(0);
 
   await page.locator("#timeline-track-kind").selectOption("position");
   await page.locator("#timeline-clear-track").click({ force: true });
-  await expect(page.locator("#selection-summary")).toContainText("Static");
+  await expect(page.locator("#selection-summary")).toContainText("Keyframed");
   expect(errors).toEqual([]);
 });

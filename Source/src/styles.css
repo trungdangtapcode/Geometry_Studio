@@ -735,6 +735,11 @@ label {
   padding: 0;
 }
 
+.form-grid .toggle-line input[type="checkbox"] {
+  width: auto;
+  min-height: 0;
+}
+
 .toggle-line {
   min-height: 34px;
   display: flex !important;
