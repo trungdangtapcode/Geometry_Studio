@@ -54,6 +54,8 @@ PDF.
   key buttons on each property row.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
   and All row visibility modes for dense scenes.
+- [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
+  position path rendering for visible spatial keyframe feedback.
 - [Preview Export](preview-export.md) documents WebM work-area recording.
 - [UI Density Control](ui-density.md) documents the Blender-style compact
   control-density system.
@@ -87,6 +89,8 @@ animation runtime where it fits:
   matching common motion-graphics editor workflows.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
+- Selected objects with two or more Position keys show a viewport motion path,
+  turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
 - Timeline markers add named cue points for animation beats and demo segments.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
   keeping playback inspectable from the timeline.

@@ -31,6 +31,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-add-marker")).toBeVisible();
   await expect(page.locator("#timeline-delete-marker")).toBeVisible();
   await expect(page.locator("#timeline-resize-handle")).toBeVisible();
+  await expect(page.locator("#motion-path-toggle")).toBeChecked();
   await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
   await page.locator("#timeline-row-filter").selectOption("keyed");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]')).toHaveCount(1);
@@ -75,6 +76,11 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   await page.keyboard.press("ArrowLeft");
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
+  await page.locator("#timeline-collapse").click({ force: true });
+  await expect(page.locator("#keyframe-dock")).toHaveClass(/collapsed/);
+  await expect(page.locator(".timeline-body")).toBeHidden();
+  await expect(page.locator(".timeline-toolbar")).toBeHidden();
+  await expect.poll(() => page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(80);
 
   const canvas = page.locator("canvas").first();
   await expect(canvas).toBeVisible();
@@ -444,6 +450,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
+  expect(sceneDocument.display.motionPath).toBe(true);
   expect(sceneDocument.timeline.version).toBe(9);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.workStart).toBe(0.5);

@@ -117,6 +117,7 @@ export interface SceneDocument {
     axes: boolean;
     stats: boolean;
     frustum: boolean;
+    motionPath: boolean;
   };
   lights: {
     active: LightKind;

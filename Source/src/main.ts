@@ -59,6 +59,7 @@ import { createRenderPipeline } from "./renderer/pipeline";
 import { loadModelFromFile } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
+import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
 import { KeyframeTimelinePanel } from "./ui/timelinePanel";
 import { bindUiDensityControl } from "./ui/density";
@@ -123,6 +124,7 @@ function boot(root: HTMLDivElement): void {
   let lastFpsTime = performance.now();
   let frameCount = 0;
   let statsVisible = true;
+  let motionPathVisible = true;
   let recordingPreview = false;
   let previewRecorder: MediaRecorder | null = null;
   let previewChunks: Blob[] = [];
@@ -136,9 +138,10 @@ function boot(root: HTMLDivElement): void {
   const clock = new THREE.Clock();
   const stage = createStage();
   const lightRig = createLights(scene);
+  const motionPathRig = createMotionPathRig();
   const frustumHelper = new THREE.CameraHelper(camera);
   frustumHelper.visible = false;
-  scene.add(stage.ground, stage.grid, stage.axes, frustumHelper);
+  scene.add(stage.ground, stage.grid, stage.axes, motionPathRig.group, frustumHelper);
 
   const timelinePanel = new KeyframeTimelinePanel({
     onTimeChanged: setTimelineTime,
@@ -641,6 +644,12 @@ function boot(root: HTMLDivElement): void {
       frustumHelper.visible = (event.target as HTMLInputElement).checked;
       frustumHelper.update();
     });
+    query<HTMLInputElement>("#motion-path-toggle").addEventListener("change", (event) => {
+      recordHistory();
+      motionPathVisible = (event.target as HTMLInputElement).checked;
+      syncMotionPath();
+      syncSegmentedButtons();
+    });
 
     canvas.addEventListener("pointerdown", handleCanvasPick);
     window.addEventListener("keydown", handleKeyboard);
@@ -668,6 +677,7 @@ function boot(root: HTMLDivElement): void {
     syncTextureUI();
     syncHistoryButtons();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
+    syncMotionPath();
     updateTelemetry();
   }
 
@@ -844,6 +854,11 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#axes-toggle").checked = stage.axes.visible;
     query<HTMLInputElement>("#stats-toggle").checked = statsVisible;
     query<HTMLInputElement>("#frustum-toggle").checked = frustumHelper.visible;
+    query<HTMLInputElement>("#motion-path-toggle").checked = motionPathVisible;
+  }
+
+  function syncMotionPath(): void {
+    updateMotionPath(motionPathRig, sceneTimeline, selectedEntry(), motionPathVisible);
   }
 
   function syncTextureUI(): void {
@@ -1178,6 +1193,7 @@ function boot(root: HTMLDivElement): void {
   function clearSceneEntries(): void {
     timelinePlayer.clear();
     transformControls.detach();
+    clearMotionPath(motionPathRig);
     entries.forEach((entry) => {
       disposeEntry(entry);
       scene.remove(entry.root);
@@ -1271,6 +1287,7 @@ function boot(root: HTMLDivElement): void {
       stage,
       statsVisible,
       frustumVisible: frustumHelper.visible,
+      motionPathVisible,
       lightRig,
       timeline: sceneTimeline
     });
@@ -1304,10 +1321,11 @@ function boot(root: HTMLDivElement): void {
     controls.target.fromArray(document.camera.target);
     camera.updateProjectionMatrix();
     controls.update();
-    stage.grid.visible = document.display.grid;
-    stage.axes.visible = document.display.axes;
-    statsVisible = document.display.stats;
-    frustumHelper.visible = document.display.frustum;
+    stage.grid.visible = document.display?.grid ?? true;
+    stage.axes.visible = document.display?.axes ?? true;
+    statsVisible = document.display?.stats ?? true;
+    frustumHelper.visible = document.display?.frustum ?? false;
+    motionPathVisible = document.display?.motionPath ?? true;
     applyLightDocument(document);
     playing = document.playing;
     document.objects.forEach((object) => restoreObject(object));
@@ -2007,6 +2025,7 @@ function boot(root: HTMLDivElement): void {
     applyLightTimeline();
     applyObjectPropertyTimeline();
     if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
+    syncMotionPath();
   }
 
   function finishTimelineDrag(): void {

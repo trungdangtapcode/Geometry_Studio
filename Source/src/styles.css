@@ -414,9 +414,23 @@ svg {
 
 .keyframe-dock.collapsed {
   height: var(--dock-collapsed-height);
+  min-height: var(--dock-collapsed-height);
+  max-height: var(--dock-collapsed-height);
+  grid-template-rows: 1fr;
+  gap: 0;
 }
 
 .keyframe-dock.collapsed .timeline-resize-handle {
+  display: none;
+}
+
+.keyframe-dock.collapsed .timeline-header {
+  min-height: var(--dock-collapsed-height);
+  grid-template-columns: var(--timeline-header-column) minmax(0, 1fr);
+  padding: 0 var(--timeline-header-padding-x);
+}
+
+.keyframe-dock.collapsed .timeline-toolbar {
   display: none;
 }
 

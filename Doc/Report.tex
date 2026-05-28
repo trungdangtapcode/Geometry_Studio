@@ -214,6 +214,11 @@ timecode, duration, FPS, Work In/Out range, snapping, loop control, and tracks
 for object transforms, object appearance, camera properties, and lights. Users
 can add, delete, duplicate, copy, paste, drag, scrub, save, and reload
 keyframes.
+When the selected object has two or more Position keyframes, the viewport draws
+a motion path: a curve for the sampled trajectory and points for the authored
+key positions. This makes the animation relationship from an initial position
+at time \(t_0\) to a later position at time \(t_1\) visible directly in the
+scene, instead of only in the timeline row.
 The left row labels select object, camera, and light tracks directly, and active
 tracks can be disabled non-destructively to test motion or appearance changes
 without deleting keyframes. Focus, Keyed, and All row filters keep dense scenes
@@ -351,6 +356,13 @@ the same outliner, transform, render, and animation system.}
 \includegraphics[width=0.55\linewidth]{screenshots/06-mobile-responsive-layout.png}
 \caption{Responsive mobile layout with timeline, inspector, viewport, and
 horizontal tool rail.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{screenshots/07-motion-path-timeline.png}
+\caption{Position keyframes with the selected object's viewport motion path,
+showing the spatial interpolation from one keyed position to the next.}
 \end{figure}
 
 \section{Source Architecture}

@@ -318,8 +318,11 @@ export class KeyframeTimelinePanel {
     this.resizeHandle.addEventListener("pointerdown", (event) => this.startResize(event));
     this.resizeHandle.addEventListener("dblclick", () => this.resetDockHeight());
     this.labels.addEventListener("scroll", () => this.syncCanvasScrollFromLabels());
-    query<HTMLButtonElement>("#timeline-collapse").addEventListener("click", () => {
-      this.root.classList.toggle("collapsed");
+    query<HTMLButtonElement>("#timeline-collapse").addEventListener("click", (event) => {
+      const collapsed = this.root.classList.toggle("collapsed");
+      const button = event.currentTarget as HTMLButtonElement;
+      button.setAttribute("aria-label", collapsed ? "Expand timeline" : "Collapse timeline");
+      button.title = collapsed ? "Expand timeline" : "Collapse timeline";
       window.setTimeout(() => this.refreshCanvas(), 0);
     });
     query<HTMLButtonElement>("#timeline-add-keyframe").addEventListener("click", () => {

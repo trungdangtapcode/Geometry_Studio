@@ -385,6 +385,7 @@ export function studioTemplate(): string {
             <label class="toggle-line"><input id="grid-toggle" type="checkbox" checked /><span>Grid</span></label>
             <label class="toggle-line"><input id="axes-toggle" type="checkbox" checked /><span>Axes</span></label>
             <label class="toggle-line"><input id="stats-toggle" type="checkbox" checked /><span>Stats</span></label>
+            <label class="toggle-line"><input id="motion-path-toggle" type="checkbox" checked /><span>Motion Path</span></label>
           </div>
         </section>
       </aside>

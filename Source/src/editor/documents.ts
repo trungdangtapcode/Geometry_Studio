@@ -11,6 +11,7 @@ export interface DocumentContext {
   stage: StageRig;
   statsVisible: boolean;
   frustumVisible: boolean;
+  motionPathVisible: boolean;
   lightRig: LightRig;
   timeline?: SceneDocument["timeline"];
 }
@@ -32,7 +33,8 @@ export function createSceneDocument(context: DocumentContext): SceneDocument {
       grid: context.stage.grid.visible,
       axes: context.stage.axes.visible,
       stats: context.statsVisible,
-      frustum: context.frustumVisible
+      frustum: context.frustumVisible,
+      motionPath: context.motionPathVisible
     },
     lights: {
       active: context.lightRig.active,
