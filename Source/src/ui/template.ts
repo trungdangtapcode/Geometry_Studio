@@ -44,9 +44,16 @@ export function studioTemplate(): string {
               <button class="mini-button strong-mini" id="timeline-play-toggle" type="button"><span data-icon="Play"></span><span>Play</span></button>
               <button class="mini-button icon-mini" id="timeline-next-keyframe" type="button" aria-label="Next keyframe" title="Next keyframe"><span data-icon="ChevronRight"></span></button>
               <select id="timeline-track-kind" aria-label="Keyframe track">
-                <option value="position">Position</option>
-                <option value="rotation">Rotation</option>
-                <option value="scale">Scale</option>
+                <optgroup label="Object">
+                  <option value="position">Position</option>
+                  <option value="rotation">Rotation</option>
+                  <option value="scale">Scale</option>
+                </optgroup>
+                <optgroup label="Camera">
+                  <option value="cameraPosition">Camera Position</option>
+                  <option value="cameraTarget">Camera Target</option>
+                  <option value="cameraLens">Camera Lens</option>
+                </optgroup>
               </select>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Add</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>

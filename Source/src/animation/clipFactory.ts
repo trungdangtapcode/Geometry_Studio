@@ -12,6 +12,7 @@ export function buildTimelineClip(objectTimeline: ObjectTimelineDocument, durati
 }
 
 function buildKeyframeTrack(track: TimelineTrackDocument): THREE.KeyframeTrack | null {
+  if (track.kind !== "position" && track.kind !== "rotation" && track.kind !== "scale") return null;
   const keyframes = [...track.keyframes].sort((left, right) => left.time - right.time);
   if (keyframes.length === 0) return null;
   const times = keyframes.map((keyframe) => keyframe.time);

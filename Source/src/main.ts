@@ -9,8 +9,10 @@ import {
   copyTimelineObject,
   createDefaultTimeline,
   createTimelineKeyframe,
+  ensureCameraTimeline,
   ensureObjectTimeline,
   ensureTimelineTrack,
+  hasCameraTimelineTracks,
   hasObjectTimelineTracks,
   hasTimelineTracks,
   normalizeTimelineDocument,
@@ -562,6 +564,9 @@ function boot(root: HTMLDivElement): void {
       ["position", "X", "x", camera.position.x, 0.1],
       ["position", "Y", "y", camera.position.y, 0.1],
       ["position", "Z", "z", camera.position.z, 0.1],
+      ["target", "Target X", "x", controls.target.x, 0.1],
+      ["target", "Target Y", "y", controls.target.y, 0.1],
+      ["target", "Target Z", "z", controls.target.z, 0.1],
       ["camera", "FOV", "fov", camera.fov, 1],
       ["camera", "Near", "near", camera.near, 0.01],
       ["camera", "Far", "far", camera.far, 1]
@@ -578,15 +583,20 @@ function boot(root: HTMLDivElement): void {
     grid.querySelectorAll<HTMLInputElement>(".camera-input").forEach((input) => {
       input.addEventListener("change", () => {
         recordHistory();
+        const group = input.dataset.group as "position" | "target" | "camera";
         const prop = input.dataset.prop!;
         const value = Number(input.value);
-        if (prop === "x" || prop === "y" || prop === "z") camera.position[prop] = value;
+        if (group === "position" && (prop === "x" || prop === "y" || prop === "z")) camera.position[prop] = value;
+        else if (group === "target" && (prop === "x" || prop === "y" || prop === "z")) controls.target[prop] = value;
         else if (prop === "fov") camera.fov = clamp(value, 1, 175);
         else if (prop === "near") camera.near = clamp(value, 0.01, camera.far - 0.01);
         else if (prop === "far") camera.far = Math.max(value, camera.near + 0.01);
         camera.updateProjectionMatrix();
         frustumHelper.update();
         controls.update();
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe(cameraTrackForGroup(group), { notify: false, record: false, refresh: false });
+        }
         syncCameraUI();
       });
     });
@@ -1082,6 +1092,7 @@ function boot(root: HTMLDivElement): void {
     if (resetHistory) history.reset();
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     updatePlayButton();
     syncLights(lightRig, entries.values());
     syncOutline();
@@ -1147,7 +1158,9 @@ function boot(root: HTMLDivElement): void {
   function setTimelineTime(time: number): void {
     sceneTimeline.currentTime = clamp(roundTime(time), 0, sceneTimeline.duration);
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     timelinePanel.setPlaybackTime(sceneTimeline, playing);
+    if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
     if (hasTimelineTracks(sceneTimeline)) {
       syncTransformUI();
       syncSelectionSummary();
@@ -1168,7 +1181,9 @@ function boot(root: HTMLDivElement): void {
     }
     sceneTimeline.currentTime = roundTime(nextTime);
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     timelinePanel.setPlaybackTime(sceneTimeline, playing);
+    if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
     if (hasTimelineTracks(sceneTimeline)) {
       syncTransformUI();
       syncSelectionSummary();
@@ -1188,6 +1203,7 @@ function boot(root: HTMLDivElement): void {
     if (typeof patch.autoKey === "boolean") sceneTimeline.autoKey = patch.autoKey;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     updateAllUI();
   }
 
@@ -1199,13 +1215,31 @@ function boot(root: HTMLDivElement): void {
     kind: TimelineTrackKind,
     options: { notify?: boolean; record?: boolean; refresh?: boolean; time?: number } = {}
   ): void {
+    const time = snapTimelineTime(sceneTimeline, options.time ?? sceneTimeline.currentTime);
+    if (isCameraTrackKind(kind)) {
+      if (options.record !== false) recordHistory();
+      const cameraTimeline = ensureCameraTimeline(sceneTimeline);
+      const track = ensureTimelineTrack(cameraTimeline, kind);
+      const value = timelineValueForCamera(kind);
+      const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+      if (existing) existing.value = value;
+      else track.keyframes.push(createTimelineKeyframe(time, value));
+      sortTimelineKeyframes(track);
+      sceneTimeline.currentTime = time;
+      rebuildTimelineRuntime();
+      timelinePlayer.setTime(sceneTimeline.currentTime);
+      applyCameraTimeline();
+      if (options.refresh !== false) updateAllUI();
+      if (options.notify !== false) showToast(`${cameraTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
+      return;
+    }
+
     const entry = selectedEntry();
     if (!entry) {
       if (options.notify !== false) showToast("Select an object before adding a keyframe.", "bad");
       return;
     }
     if (options.record !== false) recordHistory();
-    const time = snapTimelineTime(sceneTimeline, options.time ?? sceneTimeline.currentTime);
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
     const track = ensureTimelineTrack(objectTimeline, kind);
     const value = timelineValueForEntry(entry, kind);
@@ -1231,6 +1265,9 @@ function boot(root: HTMLDivElement): void {
     }
     recordHistory();
     const ids = new Set(keyframeIds);
+    sceneTimeline.camera.tracks.forEach((track) => {
+      track.keyframes = track.keyframes.filter((keyframe) => !ids.has(keyframe.id));
+    });
     sceneTimeline.objects.forEach((objectTimeline) => {
       objectTimeline.tracks.forEach((track) => {
         track.keyframes = track.keyframes.filter((keyframe) => !ids.has(keyframe.id));
@@ -1239,6 +1276,7 @@ function boot(root: HTMLDivElement): void {
     pruneEmptyTimelineTracks(sceneTimeline);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     updateAllUI();
     showToast("Keyframe deleted", "good");
   }
@@ -1278,6 +1316,7 @@ function boot(root: HTMLDivElement): void {
     }
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     updateAllUI();
     showToast(`${created} keyframe${created === 1 ? "" : "s"} duplicated`, "good");
   }
@@ -1295,11 +1334,28 @@ function boot(root: HTMLDivElement): void {
     });
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     updateAllUI();
     showToast(`${capitalize(interpolation)} interpolation applied`, "good");
   }
 
   function clearTimelineTrack(kind: TimelineTrackKind): void {
+    if (isCameraTrackKind(kind)) {
+      const track = sceneTimeline.camera.tracks.find((candidate) => candidate.kind === kind);
+      if (!track || track.keyframes.length === 0) {
+        showToast(`${cameraTrackLabel(kind)} track has no keyframes.`, "bad");
+        return;
+      }
+      recordHistory();
+      sceneTimeline.camera.tracks = sceneTimeline.camera.tracks.filter((candidate) => candidate.kind !== kind);
+      pruneEmptyTimelineTracks(sceneTimeline);
+      rebuildTimelineRuntime();
+      timelinePlayer.setTime(sceneTimeline.currentTime);
+      applyCameraTimeline();
+      updateAllUI();
+      showToast(`${cameraTrackLabel(kind)} track cleared`, "good");
+      return;
+    }
     const entry = selectedEntry();
     if (!entry) {
       showToast("Select an object before clearing a track.", "bad");
@@ -1350,6 +1406,7 @@ function boot(root: HTMLDivElement): void {
     sortTimelineKeyframes(match.track);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
   }
 
@@ -1362,6 +1419,7 @@ function boot(root: HTMLDivElement): void {
     pruneEmptyTimelineTracks(sceneTimeline);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
     updateAllUI();
   }
 
@@ -1371,6 +1429,10 @@ function boot(root: HTMLDivElement): void {
   }
 
   function findTimelineKeyframe(keyframeId: string): { keyframe: TimelineKeyframeDocument; track: SceneDocument["timeline"]["objects"][number]["tracks"][number] } | null {
+    for (const track of sceneTimeline.camera.tracks) {
+      const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
+      if (keyframe) return { keyframe, track };
+    }
     for (const objectTimeline of sceneTimeline.objects) {
       for (const track of objectTimeline.tracks) {
         const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
@@ -1390,10 +1452,64 @@ function boot(root: HTMLDivElement): void {
     ];
   }
 
+  function timelineValueForCamera(kind: TimelineTrackKind): [number, number, number] {
+    if (kind === "cameraPosition") return [camera.position.x, camera.position.y, camera.position.z];
+    if (kind === "cameraTarget") return [controls.target.x, controls.target.y, controls.target.z];
+    return [camera.fov, camera.near, camera.far];
+  }
+
+  function applyCameraTimeline(): void {
+    if (!hasCameraTimelineTracks(sceneTimeline)) return;
+    let projectionChanged = false;
+    sceneTimeline.camera.tracks.forEach((track) => {
+      const value = evaluateTimelineTrack(track, sceneTimeline.currentTime);
+      if (!value) return;
+      if (track.kind === "cameraPosition") {
+        camera.position.fromArray(value);
+      } else if (track.kind === "cameraTarget") {
+        controls.target.fromArray(value);
+      } else if (track.kind === "cameraLens") {
+        camera.fov = clamp(value[0], 1, 175);
+        camera.near = clamp(value[1], 0.01, Math.max(0.02, value[2] - 0.01));
+        camera.far = Math.max(value[2], camera.near + 0.01);
+        projectionChanged = true;
+      }
+    });
+    if (projectionChanged) camera.updateProjectionMatrix();
+    controls.update();
+    frustumHelper.update();
+  }
+
+  function evaluateTimelineTrack(track: SceneDocument["timeline"]["objects"][number]["tracks"][number], time: number): [number, number, number] | null {
+    const keyframes = [...track.keyframes].sort((left, right) => left.time - right.time);
+    if (keyframes.length === 0) return null;
+    if (time <= keyframes[0].time) return [...keyframes[0].value] as [number, number, number];
+    const last = keyframes[keyframes.length - 1];
+    if (time >= last.time) return [...last.value] as [number, number, number];
+    const rightIndex = keyframes.findIndex((keyframe) => keyframe.time >= time);
+    const left = keyframes[rightIndex - 1];
+    const right = keyframes[rightIndex];
+    if (!left || !right) return [...last.value] as [number, number, number];
+    if (left.interpolation === "hold") return [...left.value] as [number, number, number];
+    const span = Math.max(right.time - left.time, 0.001);
+    const rawT = clamp((time - left.time) / span, 0, 1);
+    const t = left.interpolation === "smooth" ? rawT * rawT * (3 - 2 * rawT) : rawT;
+    return [
+      left.value[0] + (right.value[0] - left.value[0]) * t,
+      left.value[1] + (right.value[1] - left.value[1]) * t,
+      left.value[2] + (right.value[2] - left.value[2]) * t
+    ];
+  }
+
   function resolveTimelineKeyframeSources(keyframeIds: string[]): Array<{ objectId: string; track: SceneDocument["timeline"]["objects"][number]["tracks"][number]; keyframe: TimelineKeyframeDocument }> {
     const sources: Array<{ objectId: string; track: SceneDocument["timeline"]["objects"][number]["tracks"][number]; keyframe: TimelineKeyframeDocument }> = [];
     const ids = new Set(keyframeIds);
     if (ids.size > 0) {
+      sceneTimeline.camera.tracks.forEach((track) => {
+        track.keyframes.forEach((keyframe) => {
+          if (ids.has(keyframe.id)) sources.push({ objectId: "camera", track, keyframe });
+        });
+      });
       sceneTimeline.objects.forEach((objectTimeline) => {
         objectTimeline.tracks.forEach((track) => {
           track.keyframes.forEach((keyframe) => {
@@ -1404,9 +1520,17 @@ function boot(root: HTMLDivElement): void {
       return sources;
     }
 
+    const selectedTrack = timelinePanel.selectedTrackKind();
+    if (isCameraTrackKind(selectedTrack)) {
+      const track = sceneTimeline.camera.tracks.find((candidate) => candidate.kind === selectedTrack);
+      const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
+      if (track && keyframe) sources.push({ objectId: "camera", track, keyframe });
+      return sources;
+    }
+
     const entry = selectedEntry();
     const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
-    const track = objectTimeline?.tracks.find((candidate) => candidate.kind === timelinePanel.selectedTrackKind());
+    const track = objectTimeline?.tracks.find((candidate) => candidate.kind === selectedTrack);
     const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
     if (entry && track && keyframe) sources.push({ objectId: entry.id, track, keyframe });
     return sources;
@@ -1424,6 +1548,12 @@ function boot(root: HTMLDivElement): void {
   }
 
   function stepCandidateTimes(kind: TimelineTrackKind): number[] {
+    if (isCameraTrackKind(kind)) {
+      return [...new Set(sceneTimeline.camera.tracks
+        .filter((track) => track.kind === kind)
+        .flatMap((track) => track.keyframes.map((keyframe) => roundTime(keyframe.time))))]
+        .sort((left, right) => left - right);
+    }
     const selectedObjectTimeline = sceneTimeline.objects.find((objectTimeline) => objectTimeline.objectId === selectedId);
     const selectedTrack = selectedObjectTimeline?.tracks.find((track) => track.kind === kind && track.keyframes.length > 0);
     const times = selectedTrack
@@ -1437,6 +1567,23 @@ function boot(root: HTMLDivElement): void {
     if (mode === "rotate") return "rotation";
     if (mode === "scale") return "scale";
     return "position";
+  }
+
+  function cameraTrackForGroup(group: "position" | "target" | "camera"): TimelineTrackKind {
+    if (group === "position") return "cameraPosition";
+    if (group === "target") return "cameraTarget";
+    return "cameraLens";
+  }
+
+  function isCameraTrackKind(kind: TimelineTrackKind): kind is "cameraPosition" | "cameraTarget" | "cameraLens" {
+    return kind === "cameraPosition" || kind === "cameraTarget" || kind === "cameraLens";
+  }
+
+  function cameraTrackLabel(kind: TimelineTrackKind): string {
+    if (kind === "cameraPosition") return "Camera position";
+    if (kind === "cameraTarget") return "Camera target";
+    if (kind === "cameraLens") return "Camera lens";
+    return capitalize(kind);
   }
 
   function exportScreenshot(): void {

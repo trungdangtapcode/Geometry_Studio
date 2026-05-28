@@ -65,6 +65,8 @@ existing timeline library and the current Three.js runtime:
   marker shapes in the dope sheet.
 - Timeline zoom-in, zoom-out, and fit-to-duration controls built on the installed
   timeline component API.
+- Camera timeline tracks for Camera Position, Camera Target, and Camera Lens
+  values, persisted in timeline schema v3 and evaluated during playback.
 
 ## Patterns To Defer
 
@@ -72,7 +74,6 @@ These should remain later phases because they require more schema and UI work:
 
 - Curve editor / graph editor.
 - Separate per-axis tracks.
-- Camera tracks.
 - Light, material, color, visibility, and texture tracks.
 - Clip blocks with ripple editing.
 - Audio/video tracks.

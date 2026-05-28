@@ -148,6 +148,23 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await page.locator("#timeline-duplicate-keyframe").click();
   await page.locator("#timeline-interpolation").selectOption("smooth");
 
+  await page.locator("#timeline-track-kind").selectOption("cameraPosition");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const cameraX = page.locator('.camera-input[data-group="position"][data-prop="x"]');
+  await cameraX.evaluate((input) => {
+    (input as HTMLInputElement).value = "9";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(cameraX).toHaveValue("9");
+
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#save-scene")?.click();
   });
@@ -157,15 +174,20 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
-  expect(sceneDocument.timeline.version).toBe(2);
+  expect(sceneDocument.timeline.version).toBe(3);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.autoKey).toBe(true);
+  expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
+  expect(sceneDocument.timeline.camera.tracks[0].kind).toBe("cameraPosition");
+  expect(sceneDocument.timeline.camera.tracks[0].keyframes).toHaveLength(2);
+  expect(sceneDocument.timeline.camera.tracks[0].keyframes[1].value[0]).toBe(9);
   expect(sceneDocument.timeline.objects).toHaveLength(1);
   expect(sceneDocument.timeline.objects[0].tracks[0].kind).toBe("position");
   expect(sceneDocument.timeline.objects[0].tracks[0].keyframes).toHaveLength(3);
   expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].value[0]).toBe(2);
   expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].interpolation).toBe("smooth");
 
+  await page.locator("#timeline-track-kind").selectOption("position");
   await page.locator("#timeline-clear-track").click({ force: true });
   await expect(page.locator("#selection-summary")).toContainText("Static");
   expect(errors).toEqual([]);

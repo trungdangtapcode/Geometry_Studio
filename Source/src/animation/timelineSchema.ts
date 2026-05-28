@@ -1,4 +1,5 @@
 import type {
+  CameraTimelineDocument,
   ObjectTimelineDocument,
   SceneTimelineDocument,
   TimelineKeyframeDocument,
@@ -9,12 +10,15 @@ import type {
 const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   position: "Position",
   rotation: "Rotation",
-  scale: "Scale"
+  scale: "Scale",
+  cameraPosition: "Camera Position",
+  cameraTarget: "Camera Target",
+  cameraLens: "Camera Lens"
 };
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 2,
+    version: 3,
     duration: 8,
     fps: 30,
     currentTime: 0,
@@ -22,6 +26,7 @@ export function createDefaultTimeline(): SceneTimelineDocument {
     snapEnabled: true,
     snapStep: 1 / 30,
     autoKey: false,
+    camera: { tracks: [] },
     objects: []
   };
 }
@@ -29,15 +34,10 @@ export function createDefaultTimeline(): SceneTimelineDocument {
 export function cloneTimelineDocument(timeline: SceneTimelineDocument): SceneTimelineDocument {
   return {
     ...timeline,
+    camera: cloneTrackCollection(timeline.camera),
     objects: timeline.objects.map((object) => ({
       objectId: object.objectId,
-      tracks: object.tracks.map((track) => ({
-        ...track,
-        keyframes: track.keyframes.map((keyframe) => ({
-          ...keyframe,
-          value: [...keyframe.value] as [number, number, number]
-        }))
-      }))
+      tracks: cloneTrackCollection(object).tracks
     }))
   };
 }
@@ -47,7 +47,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 2,
+    version: 3,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     fps: Math.round(finiteNumber(source.fps, defaults.fps, 1, 120)),
     currentTime: finiteNumber(source.currentTime, defaults.currentTime, 0, 120),
@@ -55,10 +55,17 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
     snapEnabled: typeof source.snapEnabled === "boolean" ? source.snapEnabled : defaults.snapEnabled,
     snapStep: finiteNumber(source.snapStep, defaults.snapStep, 0.001, 10),
     autoKey: typeof source.autoKey === "boolean" ? source.autoKey : defaults.autoKey,
+    camera: normalizeTrackCollection(source.camera),
     objects: []
   };
   timeline.currentTime = clamp(timeline.currentTime, 0, timeline.duration);
 
+  timeline.camera.tracks.forEach((track) => {
+    track.keyframes.forEach((keyframe) => {
+      keyframe.time = roundTime(clamp(keyframe.time, 0, timeline.duration));
+    });
+    sortTimelineKeyframes(track);
+  });
   if (!Array.isArray(source.objects)) return timeline;
   source.objects.forEach((objectValue) => {
     if (!objectValue || typeof objectValue !== "object") return;
@@ -82,6 +89,11 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   return timeline;
 }
 
+export function ensureCameraTimeline(timeline: SceneTimelineDocument): CameraTimelineDocument {
+  timeline.camera ??= { tracks: [] };
+  return timeline.camera;
+}
+
 export function ensureObjectTimeline(timeline: SceneTimelineDocument, objectId: string): ObjectTimelineDocument {
   let objectTimeline = timeline.objects.find((object) => object.objectId === objectId);
   if (!objectTimeline) {
@@ -91,7 +103,7 @@ export function ensureObjectTimeline(timeline: SceneTimelineDocument, objectId: 
   return objectTimeline;
 }
 
-export function ensureTimelineTrack(objectTimeline: ObjectTimelineDocument, kind: TimelineTrackKind): TimelineTrackDocument {
+export function ensureTimelineTrack(objectTimeline: { tracks: TimelineTrackDocument[] }, kind: TimelineTrackKind): TimelineTrackDocument {
   let track = objectTimeline.tracks.find((candidate) => candidate.kind === kind);
   if (!track) {
     track = {
@@ -120,6 +132,9 @@ export function sortTimelineKeyframes(track: TimelineTrackDocument): void {
 }
 
 export function pruneEmptyTimelineTracks(timeline: SceneTimelineDocument): void {
+  timeline.camera = {
+    tracks: timeline.camera.tracks.filter((track) => track.keyframes.length > 0)
+  };
   timeline.objects = timeline.objects
     .map((object) => ({
       ...object,
@@ -151,9 +166,14 @@ export function copyTimelineObject(timeline: SceneTimelineDocument, sourceObject
 }
 
 export function hasTimelineTracks(timeline: SceneTimelineDocument): boolean {
-  return timeline.objects.some((object) =>
+  return timeline.camera.tracks.some((track) => track.enabled && track.keyframes.length > 0) ||
+    timeline.objects.some((object) =>
     object.tracks.some((track) => track.enabled && track.keyframes.length > 0)
   );
+}
+
+export function hasCameraTimelineTracks(timeline: SceneTimelineDocument): boolean {
+  return timeline.camera.tracks.some((track) => track.enabled && track.keyframes.length > 0);
 }
 
 export function hasObjectTimelineTracks(timeline: SceneTimelineDocument, objectId: string): boolean {
@@ -213,7 +233,33 @@ function createTimelineId(prefix: string): string {
 }
 
 function isTimelineTrackKind(value: unknown): value is TimelineTrackKind {
-  return value === "position" || value === "rotation" || value === "scale";
+  return value === "position" ||
+    value === "rotation" ||
+    value === "scale" ||
+    value === "cameraPosition" ||
+    value === "cameraTarget" ||
+    value === "cameraLens";
+}
+
+function cloneTrackCollection(collection: { tracks: TimelineTrackDocument[] }): { tracks: TimelineTrackDocument[] } {
+  return {
+    tracks: collection.tracks.map((track) => ({
+      ...track,
+      keyframes: track.keyframes.map((keyframe) => ({
+        ...keyframe,
+        value: [...keyframe.value] as [number, number, number]
+      }))
+    }))
+  };
+}
+
+function normalizeTrackCollection(value: unknown): CameraTimelineDocument {
+  if (!value || typeof value !== "object") return { tracks: [] };
+  const collection = value as Partial<CameraTimelineDocument>;
+  const tracks = Array.isArray(collection.tracks)
+    ? collection.tracks.map(normalizeTrack).filter((track): track is TimelineTrackDocument => Boolean(track))
+    : [];
+  return { tracks: tracks.filter((track) => track.keyframes.length > 0) };
 }
 
 function finiteNumber(value: unknown, fallback: number, min: number, max: number): number {
