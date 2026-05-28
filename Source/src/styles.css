@@ -608,12 +608,15 @@ svg {
   width: 100%;
   height: var(--timeline-track-row-height);
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
+  grid-template-columns: 10px minmax(0, 1fr) var(--icon-mini-size);
   align-items: center;
   gap: var(--grid-gap);
   border: 0;
   border-bottom: 1px solid rgba(26, 35, 42, 0.08);
   background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
   padding: 0 var(--timeline-header-padding-x);
   text-align: left;
 }
@@ -636,27 +639,51 @@ svg {
   border: 1px solid currentColor;
 }
 
-.timeline-track-label span:last-child {
+.track-label-text {
   display: grid;
   gap: 1px;
   min-width: 0;
 }
 
-.timeline-track-label strong,
-.timeline-track-label small {
+.track-label-text strong,
+.track-label-text small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.timeline-track-label strong {
+.track-label-text strong {
   color: var(--ink);
   font-size: var(--ui-small-font);
 }
 
-.timeline-track-label small {
+.track-label-text small {
   color: var(--muted);
   font-size: var(--ui-tiny-font);
+}
+
+.timeline-row-key {
+  width: calc(var(--icon-mini-size) - 4px);
+  height: calc(var(--timeline-track-row-height) - 4px);
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  border: 1px solid rgba(26, 35, 42, 0.1);
+  border-radius: calc(var(--control-radius) - 3px);
+  background: rgba(255, 255, 255, 0.68);
+  color: rgba(26, 35, 42, 0.54);
+  padding: 0;
+}
+
+.timeline-row-key:hover,
+.timeline-row-key:focus-visible {
+  border-color: var(--teal);
+  color: var(--teal);
+  outline: 0;
+}
+
+.timeline-track-label.has-keyframes .timeline-row-key {
+  color: var(--charcoal);
 }
 
 .track-swatch {

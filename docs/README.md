@@ -50,6 +50,8 @@ PDF.
   enable/disable behavior.
 - [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
   label selection and active/disabled row states.
+- [Timeline Row Keying](timeline-row-keying.md) documents the AE-style diamond
+  key buttons on each property row.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
   and All row visibility modes for dense scenes.
 - [Preview Export](preview-export.md) documents WebM work-area recording.
@@ -81,6 +83,8 @@ animation runtime where it fits:
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation
   surface for object, camera, and light tracks.
+- Row-level diamond buttons add or update keys directly from the property row,
+  matching common motion-graphics editor workflows.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
 - Timeline markers add named cue points for animation beats and demo segments.

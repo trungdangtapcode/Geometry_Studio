@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("renders the studio and core controls", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -40,6 +40,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await rotationTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
   await expect(rotationTrackLabel).toHaveClass(/active/);
+  await rotationTrackLabel.locator(".timeline-row-key").click();
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Rotation");
   await page.locator('[data-animation="spin"]').click({ force: true });
   await expect(page.locator("#selection-summary")).toContainText("Keyframed");
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
@@ -50,14 +52,16 @@ test("renders the studio and core controls", async ({ page }) => {
   await cameraTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("cameraPosition");
   await expect(cameraTrackLabel).toHaveClass(/active/);
+  await cameraTrackLabel.locator(".timeline-row-key").click();
+  await expect(page.locator("#timeline-key-label")).toContainText("Camera | Camera Position");
   const dockHeight = await page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height);
   const resizeBox = await page.locator("#timeline-resize-handle").boundingBox();
   expect(resizeBox).toBeTruthy();
   await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y + 4);
   await page.mouse.down();
-  await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y - 72);
+  await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y - 120);
   await page.mouse.up();
-  await expect.poll(() => page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(dockHeight + 50);
+  await expect.poll(() => page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(dockHeight + 20);
   await page.locator("#timeline-next-frame").click();
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0);

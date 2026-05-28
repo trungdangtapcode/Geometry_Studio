@@ -49,7 +49,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
-- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with Focus/Keyed/All row filtering, named timeline markers, clickable track rows, playhead scrubbing, add/delete/copy/paste/nudge keyframes, numeric keyframe time/value editing, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
+- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with Focus/Keyed/All row filtering, named timeline markers, clickable track rows, per-row diamond key buttons, playhead scrubbing, add/delete/copy/paste/nudge keyframes, numeric keyframe time/value editing, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
@@ -88,7 +88,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Toggle shadows and edit light color, intensity, and position.
 - Upload a bitmap texture and adjust Repeat X/Y.
 - Import a .glb, .gltf, .obj, or .stl model.
-- Add Position / Rotation / Scale keyframes in the bottom timeline, copy/paste a keyframe, scrub the playhead, and verify motion plays.
+- Add Position / Rotation / Scale keyframes in the bottom timeline using either the Add button or a row diamond key button, copy/paste a keyframe, scrub the playhead, and verify motion plays.
 - Nudge a keyframe left or right by one frame from the toolbar.
 - Click timeline row labels to switch active object, camera, and light tracks.
 - Run Cinematic Demo and Play/Pause the baked keyframe animation.

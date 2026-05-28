@@ -272,6 +272,7 @@ export class KeyframeTimelinePanel {
     const rowHeight = this.timelineRowHeight();
     const headerHeight = this.timelineHeaderHeight();
     this.labels.innerHTML = this.renderLabels(timelineDocument, visibleEntries, selectedId);
+    hydrateIcons(this.labels);
     this.timeline.setOptions({
       max: timelineDocument.duration,
       snapEnabled: timelineDocument.snapEnabled,
@@ -374,11 +375,24 @@ export class KeyframeTimelinePanel {
       this.callbacks.onToggleTrack(this.selectedTrackKind());
     });
     this.labels.addEventListener("click", (event) => {
-      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-track-label");
-      if (!button) return;
-      const kind = button.dataset.trackKind as TimelineTrackKind | undefined;
-      const targetId = button.dataset.objectId;
+      const keyButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-key");
+      const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
+      if (!row) return;
+      const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
+      const targetId = row.dataset.objectId;
       if (!kind || !targetId) return;
+      this.trackSelect.value = kind;
+      this.callbacks.onTrackLabelSelected(targetId, kind);
+      if (keyButton) this.callbacks.onAddKeyframe(kind);
+    });
+    this.labels.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
+      if (!row || event.target instanceof HTMLButtonElement) return;
+      const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
+      const targetId = row.dataset.objectId;
+      if (!kind || !targetId) return;
+      event.preventDefault();
       this.trackSelect.value = kind;
       this.callbacks.onTrackLabelSelected(targetId, kind);
     });
@@ -604,43 +618,67 @@ export class KeyframeTimelinePanel {
         const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
         return visibleKinds.map((kind) => {
           const track = objectTimeline?.tracks.find((candidate) => candidate.kind === kind);
-        return `
-        <button class="${this.labelClass(entry.id === selectedId && activeKind === kind, track?.enabled ?? true, Boolean(track?.keyframes.length))}" type="button" data-object-id="${entry.id}" data-track-kind="${kind}">
-          <span class="track-swatch" style="background:${TRACK_COLORS[kind]}"></span>
-          <span>
-            <strong>${entry.name}</strong>
-            <small>${TRACK_LABELS[kind]}</small>
-          </span>
-        </button>
-      `;
+          return this.renderTrackLabel({
+            targetId: entry.id,
+            targetName: entry.name,
+            kind,
+            active: entry.id === selectedId && activeKind === kind,
+            enabled: track?.enabled ?? true,
+            hasKeyframes: Boolean(track?.keyframes.length)
+          });
         });
       })
       .join("");
     const cameraLabels = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId).map((kind) => {
       const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === kind);
-      return `
-      <button class="${this.labelClass(isCameraTrack(activeKind) && activeKind === kind, track?.enabled ?? true, Boolean(track?.keyframes.length), "camera-track-label")}" type="button" data-object-id="${CAMERA_TARGET_ID}" data-track-kind="${kind}">
-        <span class="track-swatch" style="background:${TRACK_COLORS[kind]}"></span>
-        <span>
-          <strong>Camera</strong>
-          <small>${TRACK_LABELS[kind]}</small>
-        </span>
-      </button>
-    `;
+      return this.renderTrackLabel({
+        targetId: CAMERA_TARGET_ID,
+        targetName: "Camera",
+        kind,
+        active: isCameraTrack(activeKind) && activeKind === kind,
+        enabled: track?.enabled ?? true,
+        hasKeyframes: Boolean(track?.keyframes.length),
+        extraClass: "camera-track-label"
+      });
     }).join("");
     const lightLabels = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId).map((kind) => {
       const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === kind);
-      return `
-      <button class="${this.labelClass(isLightTrack(activeKind) && activeKind === kind, track?.enabled ?? true, Boolean(track?.keyframes.length), "light-track-label")}" type="button" data-object-id="${LIGHT_TARGET_ID}" data-track-kind="${kind}">
-        <span class="track-swatch" style="background:${TRACK_COLORS[kind]}"></span>
-        <span>
-          <strong>Lights</strong>
-          <small>${TRACK_LABELS[kind]}</small>
-        </span>
-      </button>
-    `;
+      return this.renderTrackLabel({
+        targetId: LIGHT_TARGET_ID,
+        targetName: "Lights",
+        kind,
+        active: isLightTrack(activeKind) && activeKind === kind,
+        enabled: track?.enabled ?? true,
+        hasKeyframes: Boolean(track?.keyframes.length),
+        extraClass: "light-track-label"
+      });
     }).join("");
     return `${objectLabels || `<div class="timeline-empty">Select an object to keyframe</div>`}${cameraLabels}${lightLabels}`;
+  }
+
+  private renderTrackLabel(options: {
+    targetId: string;
+    targetName: string;
+    kind: TimelineTrackKind;
+    active: boolean;
+    enabled: boolean;
+    hasKeyframes: boolean;
+    extraClass?: string;
+  }): string {
+    const label = TRACK_LABELS[options.kind];
+    const keyText = options.hasKeyframes ? "Update keyframe" : "Add keyframe";
+    return `
+      <div class="${this.labelClass(options.active, options.enabled, options.hasKeyframes, options.extraClass ?? "")}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" aria-label="${options.targetName} ${label}">
+        <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
+        <span class="track-label-text">
+          <strong>${options.targetName}</strong>
+          <small>${label}</small>
+        </span>
+        <button class="timeline-row-key" type="button" aria-label="${keyText}: ${options.targetName} ${label}" title="${keyText}">
+          <span data-icon="${options.hasKeyframes ? "Diamond" : "DiamondPlus"}"></span>
+        </button>
+      </div>
+    `;
   }
 
   private labelClass(active: boolean, enabled: boolean, hasKeyframes: boolean, extra = ""): string {
