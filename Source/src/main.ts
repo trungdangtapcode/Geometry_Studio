@@ -119,6 +119,9 @@ function boot(root: HTMLDivElement): void {
     onTimeChanged: setTimelineTime,
     onAddKeyframe: addTimelineKeyframe,
     onDeleteKeyframes: deleteTimelineKeyframes,
+    onDuplicateKeyframes: duplicateTimelineKeyframes,
+    onClearTrack: clearTimelineTrack,
+    onStepKeyframe: stepTimelineKeyframe,
     onDragStarted: beginTimelineDrag,
     onKeyframeMoved: moveTimelineKeyframe,
     onDragFinished: finishTimelineDrag,
@@ -307,10 +310,14 @@ function boot(root: HTMLDivElement): void {
         history.record(pendingDragSnapshot);
         pendingDragSnapshot = null;
         syncHistoryButtons();
+        if (sceneTimeline.autoKey) updateAllUI();
       }
       syncSelectedBases();
     });
     transformControls.addEventListener("objectChange", () => {
+      if (sceneTimeline.autoKey) {
+        setTimelineKeyframe(trackKindForTransformMode(), { notify: false, record: false, refresh: false });
+      }
       syncTransformUI();
       syncSelectedBases();
     });
@@ -539,6 +546,9 @@ function boot(root: HTMLDivElement): void {
         if (prop === "rotation") current.root.rotation[axis] = THREE.MathUtils.degToRad(value);
         else current.root[prop][axis] = value;
         syncSelectedBases();
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe(prop, { notify: false, record: false, refresh: false });
+        }
         updateAllUI();
       });
     });
@@ -1173,19 +1183,27 @@ function boot(root: HTMLDivElement): void {
     if (typeof patch.snapStep === "number" && Number.isFinite(patch.snapStep)) sceneTimeline.snapStep = clamp(patch.snapStep, 0.001, 10);
     if (typeof patch.loop === "boolean") sceneTimeline.loop = patch.loop;
     if (typeof patch.snapEnabled === "boolean") sceneTimeline.snapEnabled = patch.snapEnabled;
+    if (typeof patch.autoKey === "boolean") sceneTimeline.autoKey = patch.autoKey;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     updateAllUI();
   }
 
   function addTimelineKeyframe(kind: TimelineTrackKind): void {
+    setTimelineKeyframe(kind);
+  }
+
+  function setTimelineKeyframe(
+    kind: TimelineTrackKind,
+    options: { notify?: boolean; record?: boolean; refresh?: boolean; time?: number } = {}
+  ): void {
     const entry = selectedEntry();
     if (!entry) {
-      showToast("Select an object before adding a keyframe.", "bad");
+      if (options.notify !== false) showToast("Select an object before adding a keyframe.", "bad");
       return;
     }
-    recordHistory();
-    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    if (options.record !== false) recordHistory();
+    const time = snapTimelineTime(sceneTimeline, options.time ?? sceneTimeline.currentTime);
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
     const track = ensureTimelineTrack(objectTimeline, kind);
     const value = timelineValueForEntry(entry, kind);
@@ -1201,8 +1219,8 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.currentTime = time;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
-    updateAllUI();
-    showToast(`${capitalize(kind)} keyframe set at ${formatNumber(time)}s`, "good");
+    if (options.refresh !== false) updateAllUI();
+    if (options.notify !== false) showToast(`${capitalize(kind)} keyframe set at ${formatNumber(time)}s`, "good");
   }
 
   function deleteTimelineKeyframes(keyframeIds: string[]): void {
@@ -1222,6 +1240,102 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     updateAllUI();
     showToast("Keyframe deleted", "good");
+  }
+
+  function duplicateTimelineKeyframes(keyframeIds: string[]): void {
+    type TrackDocument = SceneDocument["timeline"]["objects"][number]["tracks"][number];
+    const sources: Array<{ objectId: string; track: TrackDocument; keyframe: TimelineKeyframeDocument }> = [];
+    const ids = new Set(keyframeIds);
+    if (ids.size > 0) {
+      sceneTimeline.objects.forEach((objectTimeline) => {
+        objectTimeline.tracks.forEach((track) => {
+          track.keyframes.forEach((keyframe) => {
+            if (ids.has(keyframe.id)) sources.push({ objectId: objectTimeline.objectId, track, keyframe });
+          });
+        });
+      });
+    } else {
+      const entry = selectedEntry();
+      const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
+      const track = objectTimeline?.tracks.find((candidate) => candidate.kind === timelinePanel.selectedTrackKind());
+      const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
+      if (entry && track && keyframe) sources.push({ objectId: entry.id, track, keyframe });
+    }
+
+    if (sources.length === 0) {
+      showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const offset = Math.max(sceneTimeline.snapEnabled ? sceneTimeline.snapStep : 1 / sceneTimeline.fps, 0.001);
+    let created = 0;
+    const changedObjectIds = new Set<string>();
+
+    sources.forEach(({ objectId, track, keyframe }) => {
+      const nextTime = nextAvailableKeyframeTime(track, keyframe.time + offset, offset);
+      if (nextTime === null) return;
+      const duplicate = createTimelineKeyframe(nextTime, [...keyframe.value] as [number, number, number]);
+      duplicate.interpolation = keyframe.interpolation;
+      track.keyframes.push(duplicate);
+      sortTimelineKeyframes(track);
+      changedObjectIds.add(objectId);
+      created += 1;
+    });
+
+    changedObjectIds.forEach((objectId) => {
+      const entry = entries.get(objectId);
+      if (entry) entry.animation = "none";
+    });
+
+    if (created === 0) {
+      updateAllUI();
+      showToast("No room to duplicate selected keyframes.", "bad");
+      return;
+    }
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+    showToast(`${created} keyframe${created === 1 ? "" : "s"} duplicated`, "good");
+  }
+
+  function clearTimelineTrack(kind: TimelineTrackKind): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before clearing a track.", "bad");
+      return;
+    }
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id);
+    const track = objectTimeline?.tracks.find((candidate) => candidate.kind === kind);
+    if (!objectTimeline || !track || track.keyframes.length === 0) {
+      showToast(`${capitalize(kind)} track has no keyframes.`, "bad");
+      return;
+    }
+    recordHistory();
+    objectTimeline.tracks = objectTimeline.tracks.filter((candidate) => candidate.kind !== kind);
+    pruneEmptyTimelineTracks(sceneTimeline);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+    showToast(`${capitalize(kind)} track cleared`, "good");
+  }
+
+  function stepTimelineKeyframe(direction: -1 | 1): void {
+    const times = stepCandidateTimes(timelinePanel.selectedTrackKind());
+    if (times.length === 0) {
+      showToast("No timeline keyframes to navigate.", "bad");
+      return;
+    }
+    const current = sceneTimeline.currentTime;
+    const epsilon = 0.001;
+    const target = direction > 0
+      ? times.find((time) => time > current + epsilon)
+      : [...times].reverse().find((time) => time < current - epsilon);
+    if (target === undefined) {
+      showToast(direction > 0 ? "No later keyframe." : "No earlier keyframe.", "bad");
+      return;
+    }
+    setTimelineTime(target);
   }
 
   function beginTimelineDrag(): void {
@@ -1274,6 +1388,33 @@ function boot(root: HTMLDivElement): void {
       THREE.MathUtils.radToDeg(entry.root.rotation.y),
       THREE.MathUtils.radToDeg(entry.root.rotation.z)
     ];
+  }
+
+  function nextAvailableKeyframeTime(track: SceneDocument["timeline"]["objects"][number]["tracks"][number], startTime: number, offset: number): number | null {
+    let candidate = snapTimelineTime(sceneTimeline, startTime);
+    while (candidate <= sceneTimeline.duration) {
+      const occupied = track.keyframes.some((keyframe) => Math.abs(keyframe.time - candidate) < 0.001);
+      if (!occupied) return candidate;
+      candidate = snapTimelineTime(sceneTimeline, candidate + offset);
+      if (sceneTimeline.duration - candidate < 0.001) break;
+    }
+    return null;
+  }
+
+  function stepCandidateTimes(kind: TimelineTrackKind): number[] {
+    const selectedObjectTimeline = sceneTimeline.objects.find((objectTimeline) => objectTimeline.objectId === selectedId);
+    const selectedTrack = selectedObjectTimeline?.tracks.find((track) => track.kind === kind && track.keyframes.length > 0);
+    const times = selectedTrack
+      ? selectedTrack.keyframes.map((keyframe) => keyframe.time)
+      : sceneTimeline.objects.flatMap((objectTimeline) => objectTimeline.tracks.flatMap((track) => track.keyframes.map((keyframe) => keyframe.time)));
+    return [...new Set(times.map(roundTime))].sort((left, right) => left - right);
+  }
+
+  function trackKindForTransformMode(): TimelineTrackKind {
+    const mode = transformControls.getMode();
+    if (mode === "rotate") return "rotation";
+    if (mode === "scale") return "scale";
+    return "position";
   }
 
   function exportScreenshot(): void {

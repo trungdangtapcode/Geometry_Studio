@@ -116,6 +116,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await expect(page.getByText("Keyframe Timeline")).toBeVisible();
 
   await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-auto-key").check();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -127,7 +128,11 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(positionX).toHaveValue("2");
-  await page.locator("#timeline-add-keyframe").click();
+
+  const timelineCanvas = page.locator("#timeline-canvas canvas").first();
+  await expect(timelineCanvas).toBeVisible();
+  await timelineCanvas.click({ position: { x: 88, y: 44 } });
+  await page.locator("#timeline-duplicate-keyframe").click();
 
   const downloadPromise = page.waitForEvent("download");
   await page.locator("#save-scene").click();
@@ -137,10 +142,15 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(await readFile(filePath!, "utf8"));
 
   expect(sceneDocument.version).toBe(2);
+  expect(sceneDocument.timeline.version).toBe(2);
   expect(sceneDocument.timeline.duration).toBe(8);
+  expect(sceneDocument.timeline.autoKey).toBe(true);
   expect(sceneDocument.timeline.objects).toHaveLength(1);
   expect(sceneDocument.timeline.objects[0].tracks[0].kind).toBe("position");
-  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes).toHaveLength(2);
+  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes).toHaveLength(3);
   expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].value[0]).toBe(2);
+
+  await page.locator("#timeline-clear-track").click();
+  await expect(page.locator("#selection-summary")).toContainText("Static");
   expect(errors).toEqual([]);
 });

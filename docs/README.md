@@ -19,6 +19,10 @@ PDF.
 - [Improvement Roadmap](improvement-roadmap.md) records the next research-backed
   upgrade path for rendering quality, OBJ/MTL import, post-processing, timeline
   polish, and optional path-traced preview.
+- [AE-Style Timeline Integration Research](ae-timeline-integration-research.md)
+  records the no-reinvention decision for the next timeline phase: keep
+  `animation-timeline-js` as the dope-sheet component and integrate proven
+  Auto-Key / duplicate / navigation workflows around it.
 
 ## Current Recommendation
 

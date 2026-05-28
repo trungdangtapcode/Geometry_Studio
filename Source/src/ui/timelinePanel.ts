@@ -7,12 +7,15 @@ import {
 import type { SceneEntry, SceneTimelineDocument, TimelineTrackKind } from "../editor/types";
 import { capitalize, formatNumber, hydrateIcons, query } from "../utils/dom";
 
-type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "fps" | "loop" | "snapEnabled" | "snapStep">>;
+type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
 
 export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
   onAddKeyframe(kind: TimelineTrackKind): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
+  onDuplicateKeyframes(keyframeIds: string[]): void;
+  onClearTrack(kind: TimelineTrackKind): void;
+  onStepKeyframe(direction: -1 | 1): void;
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
   onDragFinished(): void;
@@ -49,6 +52,7 @@ export class KeyframeTimelinePanel {
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
   private readonly fpsInput = query<HTMLInputElement>("#timeline-fps");
   private readonly snapInput = query<HTMLInputElement>("#timeline-snap");
+  private readonly autoKeyInput = query<HTMLInputElement>("#timeline-auto-key");
   private readonly loopInput = query<HTMLInputElement>("#timeline-loop");
   private readonly snapStepInput = query<HTMLInputElement>("#timeline-snap-step");
   private readonly selectionLabel = query<HTMLDivElement>("#timeline-selection");
@@ -98,6 +102,7 @@ export class KeyframeTimelinePanel {
     this.fpsInput.value = String(timelineDocument.fps);
     this.loopInput.checked = timelineDocument.loop;
     this.snapInput.checked = timelineDocument.snapEnabled;
+    this.autoKeyInput.checked = timelineDocument.autoKey;
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
 
     const visibleEntries = this.visibleEntries(timelineDocument, entries, selectedId);
@@ -140,6 +145,14 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
     });
+    query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
+      this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
+      this.callbacks.onClearTrack(this.selectedTrackKind());
+    });
+    query<HTMLButtonElement>("#timeline-prev-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(-1));
+    query<HTMLButtonElement>("#timeline-next-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(1));
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(0));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
     this.timeInput.addEventListener("change", () => this.callbacks.onTimeChanged(Number(this.timeInput.value)));
@@ -148,6 +161,7 @@ export class KeyframeTimelinePanel {
     this.snapStepInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapStep: Number(this.snapStepInput.value) }));
     this.loopInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ loop: this.loopInput.checked }));
     this.snapInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapEnabled: this.snapInput.checked }));
+    this.autoKeyInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ autoKey: this.autoKeyInput.checked }));
 
     this.timeline.onTimeChanged((event) => {
       if (this.updating) return;

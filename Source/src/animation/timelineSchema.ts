@@ -14,13 +14,14 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 1,
+    version: 2,
     duration: 8,
     fps: 30,
     currentTime: 0,
     loop: true,
     snapEnabled: true,
     snapStep: 1 / 30,
+    autoKey: false,
     objects: []
   };
 }
@@ -46,13 +47,14 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 1,
+    version: 2,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     fps: Math.round(finiteNumber(source.fps, defaults.fps, 1, 120)),
     currentTime: finiteNumber(source.currentTime, defaults.currentTime, 0, 120),
     loop: typeof source.loop === "boolean" ? source.loop : defaults.loop,
     snapEnabled: typeof source.snapEnabled === "boolean" ? source.snapEnabled : defaults.snapEnabled,
     snapStep: finiteNumber(source.snapStep, defaults.snapStep, 0.001, 10),
+    autoKey: typeof source.autoKey === "boolean" ? source.autoKey : defaults.autoKey,
     objects: []
   };
   timeline.currentTime = clamp(timeline.currentTime, 0, timeline.duration);

@@ -104,13 +104,14 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1;
+  version: 1 | 2;
   duration: number;
   fps: number;
   currentTime: number;
   loop: boolean;
   snapEnabled: boolean;
   snapStep: number;
+  autoKey: boolean;
   objects: ObjectTimelineDocument[];
 }
 
