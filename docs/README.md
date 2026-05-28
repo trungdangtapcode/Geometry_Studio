@@ -32,6 +32,7 @@ PDF.
   texture Repeat, Offset, and Rotation tracks.
 - [Timeline Work Area](timeline-work-area.md) documents schema v8 Work In/Out
   playback range behavior.
+- [Preview Export](preview-export.md) documents WebM work-area recording.
 
 ## Current Recommendation
 

@@ -27,6 +27,9 @@ export function studioTemplate(): string {
           <button class="timeline-btn" id="screenshot-btn" type="button" aria-label="Screenshot">
             <span data-icon="Camera"></span><span>Screenshot</span>
           </button>
+          <button class="timeline-btn" id="record-video-btn" type="button" aria-label="Record WebM preview">
+            <span data-icon="Video"></span><span>Record WebM</span>
+          </button>
           <div class="status-line" id="status-line">Ready</div>
           <div class="fps" id="fps">-- FPS</div>
         </div>

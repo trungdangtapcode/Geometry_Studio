@@ -115,6 +115,9 @@ function boot(root: HTMLDivElement): void {
   let lastFpsTime = performance.now();
   let frameCount = 0;
   let statsVisible = true;
+  let recordingPreview = false;
+  let previewRecorder: MediaRecorder | null = null;
+  let previewChunks: Blob[] = [];
   let pendingDragSnapshot: SceneDocument | null = null;
   let pendingTimelineDragSnapshot: SceneDocument | null = null;
   let evaluationTourTimers: number[] = [];
@@ -352,6 +355,7 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#cinematic-btn").addEventListener("click", startCinematicDemo);
     query<HTMLButtonElement>("#evaluation-btn").addEventListener("click", startEvaluationTour);
     query<HTMLButtonElement>("#screenshot-btn").addEventListener("click", exportScreenshot);
+    query<HTMLButtonElement>("#record-video-btn").addEventListener("click", togglePreviewRecording);
     query<HTMLButtonElement>("#save-scene").addEventListener("click", saveScene);
     query<HTMLInputElement>("#scene-input").addEventListener("change", handleSceneLoad);
     query<HTMLButtonElement>("#undo-btn").addEventListener("click", undo);
@@ -1340,7 +1344,12 @@ function boot(root: HTMLDivElement): void {
     if (nextTime < workStart || sceneTimeline.currentTime > workEnd) {
       nextTime = workStart;
     } else if (nextTime > workEnd) {
-      if (sceneTimeline.loop) {
+      if (recordingPreview) {
+        nextTime = workEnd;
+        playing = false;
+        updatePlayButton();
+        window.setTimeout(() => stopPreviewRecording(false), 0);
+      } else if (sceneTimeline.loop) {
         nextTime = workStart + ((nextTime - workEnd) % span);
       } else {
         nextTime = workEnd;
@@ -2024,6 +2033,67 @@ function boot(root: HTMLDivElement): void {
     showToast("Screenshot exported", "good");
   }
 
+  function togglePreviewRecording(): void {
+    if (recordingPreview) {
+      stopPreviewRecording(true);
+      return;
+    }
+    if (!("MediaRecorder" in window) || !("captureStream" in canvas)) {
+      showToast("WebM recording is not supported in this browser.", "bad");
+      return;
+    }
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9"
+      : MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
+        ? "video/webm;codecs=vp8"
+        : "video/webm";
+    previewChunks = [];
+    const stream = canvas.captureStream(Math.min(Math.max(sceneTimeline.fps, 1), 60));
+    previewRecorder = new MediaRecorder(stream, { mimeType });
+    previewRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size > 0) previewChunks.push(event.data);
+    });
+    previewRecorder.addEventListener("stop", () => {
+      stream.getTracks().forEach((track) => track.stop());
+      const blob = new Blob(previewChunks, { type: mimeType });
+      previewChunks = [];
+      if (blob.size === 0) {
+        showToast("Recording produced no video data.", "bad");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "geometry-studio-preview.webm";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 500);
+      showToast("WebM preview exported", "good");
+    });
+    recordingPreview = true;
+    updateRecordingButton();
+    setTimelineTime(sceneTimeline.workStart);
+    playing = true;
+    updatePlayButton();
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
+    previewRecorder.start(250);
+    showToast("Recording work area to WebM", "good");
+  }
+
+  function stopPreviewRecording(manual: boolean): void {
+    if (!recordingPreview && !previewRecorder) return;
+    recordingPreview = false;
+    if (manual) {
+      playing = false;
+      updatePlayButton();
+      timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
+    }
+    updateRecordingButton();
+    if (previewRecorder && previewRecorder.state !== "inactive") previewRecorder.stop();
+    previewRecorder = null;
+  }
+
   function handleDragOver(event: DragEvent): void {
     event.preventDefault();
     query<HTMLDivElement>("#drop-overlay").classList.add("active");
@@ -2132,6 +2202,13 @@ function boot(root: HTMLDivElement): void {
   function updatePlayButton(): void {
     const button = query<HTMLButtonElement>("#play-toggle");
     button.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
+    hydrateIcons(button);
+  }
+
+  function updateRecordingButton(): void {
+    const button = query<HTMLButtonElement>("#record-video-btn");
+    button.classList.toggle("strong", recordingPreview);
+    button.innerHTML = `<span data-icon="${recordingPreview ? "Square" : "Video"}"></span><span>${recordingPreview ? "Stop WebM" : "Record WebM"}</span>`;
     hydrateIcons(button);
   }
 

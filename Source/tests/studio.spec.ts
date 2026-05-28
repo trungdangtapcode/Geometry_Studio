@@ -10,6 +10,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Geometry Studio" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cube", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Render mode" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record WebM" })).toBeVisible();
 
   const canvas = page.locator("canvas").first();
   await expect(canvas).toBeVisible();
