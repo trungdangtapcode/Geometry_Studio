@@ -67,6 +67,10 @@ existing timeline library and the current Three.js runtime:
   timeline component API.
 - Camera timeline tracks for Camera Position, Camera Target, and Camera Lens
   values, persisted in timeline schema v3 and evaluated during playback.
+- Light timeline tracks for directional, point, spot, and ambient lights,
+  persisted in timeline schema v4 and evaluated during scrubbing/playback.
+  Light sweep is disabled while light tracks exist so keyed lighting remains
+  deterministic.
 
 ## Patterns To Defer
 
@@ -74,7 +78,7 @@ These should remain later phases because they require more schema and UI work:
 
 - Curve editor / graph editor.
 - Separate per-axis tracks.
-- Light, material, color, visibility, and texture tracks.
+- Material, object color, visibility, and texture tracks.
 - Clip blocks with ripple editing.
 - Audio/video tracks.
 

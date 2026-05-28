@@ -38,7 +38,20 @@ type TimelineUiRow = TimelineRow & {
 
 const OBJECT_TRACKS: TimelineTrackKind[] = ["position", "rotation", "scale"];
 const CAMERA_TRACKS: TimelineTrackKind[] = ["cameraPosition", "cameraTarget", "cameraLens"];
+const LIGHT_TRACKS: TimelineTrackKind[] = [
+  "directionalPosition",
+  "directionalColor",
+  "directionalIntensity",
+  "pointPosition",
+  "pointColor",
+  "pointIntensity",
+  "spotPosition",
+  "spotColor",
+  "spotIntensity",
+  "ambientIntensity"
+];
 const CAMERA_TARGET_ID = "__camera__";
+const LIGHT_TARGET_ID = "__lights__";
 
 const TRACK_COLORS: Record<TimelineTrackKind, string> = {
   position: "#20bfa9",
@@ -46,7 +59,17 @@ const TRACK_COLORS: Record<TimelineTrackKind, string> = {
   scale: "#7c70f4",
   cameraPosition: "#4f8df7",
   cameraTarget: "#a86de8",
-  cameraLens: "#df6b80"
+  cameraLens: "#df6b80",
+  directionalPosition: "#f7bd4b",
+  directionalColor: "#f39c12",
+  directionalIntensity: "#d98f00",
+  pointPosition: "#60c0ff",
+  pointColor: "#2f9de8",
+  pointIntensity: "#1479b8",
+  spotPosition: "#fb7185",
+  spotColor: "#df6b80",
+  spotIntensity: "#b8394e",
+  ambientIntensity: "#8393a2"
 };
 
 const TRACK_LABELS: Record<TimelineTrackKind, string> = {
@@ -55,7 +78,17 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   scale: "Scale",
   cameraPosition: "Camera Position",
   cameraTarget: "Camera Target",
-  cameraLens: "Camera Lens"
+  cameraLens: "Camera Lens",
+  directionalPosition: "Sun Position",
+  directionalColor: "Sun Color",
+  directionalIntensity: "Sun Intensity",
+  pointPosition: "Point Position",
+  pointColor: "Point Color",
+  pointIntensity: "Point Intensity",
+  spotPosition: "Spot Position",
+  spotColor: "Spot Color",
+  spotIntensity: "Spot Intensity",
+  ambientIntensity: "Ambient Intensity"
 };
 
 export class KeyframeTimelinePanel {
@@ -235,7 +268,16 @@ export class KeyframeTimelinePanel {
         </span>
       </button>
     `).join("");
-    return `${objectLabels || `<div class="timeline-empty">Select an object to keyframe</div>`}${cameraLabels}`;
+    const lightLabels = LIGHT_TRACKS.map((kind) => `
+      <button class="timeline-track-label light-track-label" type="button" data-object-id="${LIGHT_TARGET_ID}" data-track-kind="${kind}">
+        <span class="track-swatch" style="background:${TRACK_COLORS[kind]}"></span>
+        <span>
+          <strong>Lights</strong>
+          <small>${TRACK_LABELS[kind]}</small>
+        </span>
+      </button>
+    `).join("");
+    return `${objectLabels || `<div class="timeline-empty">Select an object to keyframe</div>`}${cameraLabels}${lightLabels}`;
   }
 
   private createModel(timelineDocument: SceneTimelineDocument, entries: SceneEntry[]): TimelineModel {
@@ -314,12 +356,48 @@ export class KeyframeTimelinePanel {
         })) ?? []
       });
     });
+    LIGHT_TRACKS.forEach((kind, index) => {
+      const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === kind);
+      rows.push({
+        targetId: LIGHT_TARGET_ID,
+        trackKind: kind,
+        min: 0,
+        max: timelineDocument.duration,
+        keyframesDraggable: true,
+        groupsDraggable: true,
+        style: {
+          height: 30,
+          marginBottom: index === LIGHT_TRACKS.length - 1 ? 0 : 2,
+          fillColor: index % 2 === 0 ? "rgba(255,247,229,0.78)" : "rgba(244,249,255,0.78)",
+          keyframesStyle: {
+            width: 14,
+            height: 14,
+            fillColor: TRACK_COLORS[kind],
+            selectedFillColor: "#ffffff",
+            strokeColor: "rgba(26,35,42,0.35)",
+            selectedStrokeColor: TRACK_COLORS[kind],
+            strokeThickness: 2
+          }
+        },
+        keyframes: track?.keyframes.map((keyframe): TimelineUiKeyframe => ({
+          id: keyframe.id,
+          targetId: LIGHT_TARGET_ID,
+          trackKind: kind,
+          val: keyframe.time,
+          style: this.keyframeStyle(kind, keyframe.interpolation),
+          selected: this.selectedKeyframeIds.has(keyframe.id),
+          selectable: true,
+          draggable: true
+        })) ?? []
+      });
+    });
     return { rows };
   }
 
   private currentInterpolation(timelineDocument: SceneTimelineDocument, selectedId: string): TimelineInterpolation {
     const selectedKeyframes = [
       ...timelineDocument.camera.tracks.flatMap((track) => track.keyframes.filter((keyframe) => this.selectedKeyframeIds.has(keyframe.id))),
+      ...timelineDocument.lights.tracks.flatMap((track) => track.keyframes.filter((keyframe) => this.selectedKeyframeIds.has(keyframe.id))),
       ...timelineDocument.objects.flatMap((object) =>
         object.tracks.flatMap((track) => track.keyframes.filter((keyframe) => this.selectedKeyframeIds.has(keyframe.id)))
       )
@@ -332,6 +410,8 @@ export class KeyframeTimelinePanel {
     const selectedTrack = this.selectedTrackKind();
     const track = isCameraTrack(selectedTrack)
       ? timelineDocument.camera.tracks.find((candidate) => candidate.kind === selectedTrack)
+      : isLightTrack(selectedTrack)
+        ? timelineDocument.lights.tracks.find((candidate) => candidate.kind === selectedTrack)
       : timelineDocument.objects
         .find((object) => object.objectId === selectedId)
         ?.tracks.find((candidate) => candidate.kind === selectedTrack);
@@ -388,4 +468,8 @@ export class KeyframeTimelinePanel {
 
 function isCameraTrack(kind: TimelineTrackKind): kind is "cameraPosition" | "cameraTarget" | "cameraLens" {
   return kind === "cameraPosition" || kind === "cameraTarget" || kind === "cameraLens";
+}
+
+function isLightTrack(kind: TimelineTrackKind): boolean {
+  return LIGHT_TRACKS.includes(kind);
 }

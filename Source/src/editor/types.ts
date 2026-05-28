@@ -22,7 +22,23 @@ export type AnimationMode = "none" | "spin" | "orbit" | "bounce" | "pulse";
 export type LightKind = "directional" | "point" | "spot";
 export type ObjectKind = "primitive" | "model" | "sampleModel";
 export type ToastTone = "good" | "bad";
-export type TimelineTrackKind = "position" | "rotation" | "scale" | "cameraPosition" | "cameraTarget" | "cameraLens";
+export type TimelineTrackKind =
+  | "position"
+  | "rotation"
+  | "scale"
+  | "cameraPosition"
+  | "cameraTarget"
+  | "cameraLens"
+  | "directionalPosition"
+  | "directionalColor"
+  | "directionalIntensity"
+  | "pointPosition"
+  | "pointColor"
+  | "pointIntensity"
+  | "spotPosition"
+  | "spotColor"
+  | "spotIntensity"
+  | "ambientIntensity";
 export type TimelineInterpolation = "hold" | "linear" | "smooth";
 
 export interface SceneEntry {
@@ -104,7 +120,7 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   duration: number;
   fps: number;
   currentTime: number;
@@ -113,10 +129,15 @@ export interface SceneTimelineDocument {
   snapStep: number;
   autoKey: boolean;
   camera: CameraTimelineDocument;
+  lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];
 }
 
 export interface CameraTimelineDocument {
+  tracks: TimelineTrackDocument[];
+}
+
+export interface LightTimelineDocument {
   tracks: TimelineTrackDocument[];
 }
 

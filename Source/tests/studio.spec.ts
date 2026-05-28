@@ -102,11 +102,12 @@ test("supports undo redo scene loading and evaluation tour", async ({ page }) =>
 
   await page.getByRole("button", { name: "Evaluation Tour" }).click();
   await expect(page.locator("#selection-summary")).toContainText("Cube");
-  await expect(page.getByText("Evaluation Tour: required primitives are visible.")).toBeVisible();
+  await expect(page.locator("#outliner")).toContainText("Teapot");
+  await expect(page.locator("#outliner")).toContainText("Sample Drone");
 });
 
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
     const downloads: string[] = [];
@@ -165,6 +166,24 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   });
   await expect(cameraX).toHaveValue("9");
 
+  await page.locator('[data-light="point"]').click();
+  await page.locator("#timeline-track-kind").selectOption("pointIntensity");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const pointIntensity = page.locator("#light-intensity");
+  await pointIntensity.evaluate((input) => {
+    (input as HTMLInputElement).value = "6";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(pointIntensity).toHaveValue("6");
+
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#save-scene")?.click();
   });
@@ -174,13 +193,17 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
-  expect(sceneDocument.timeline.version).toBe(3);
+  expect(sceneDocument.timeline.version).toBe(4);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.autoKey).toBe(true);
   expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
   expect(sceneDocument.timeline.camera.tracks[0].kind).toBe("cameraPosition");
   expect(sceneDocument.timeline.camera.tracks[0].keyframes).toHaveLength(2);
   expect(sceneDocument.timeline.camera.tracks[0].keyframes[1].value[0]).toBe(9);
+  expect(sceneDocument.timeline.lights.tracks).toHaveLength(1);
+  expect(sceneDocument.timeline.lights.tracks[0].kind).toBe("pointIntensity");
+  expect(sceneDocument.timeline.lights.tracks[0].keyframes).toHaveLength(2);
+  expect(sceneDocument.timeline.lights.tracks[0].keyframes[1].value[0]).toBe(6);
   expect(sceneDocument.timeline.objects).toHaveLength(1);
   expect(sceneDocument.timeline.objects[0].tracks[0].kind).toBe("position");
   expect(sceneDocument.timeline.objects[0].tracks[0].keyframes).toHaveLength(3);

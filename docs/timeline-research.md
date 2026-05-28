@@ -138,12 +138,13 @@ adapter, not as the source of truth.
 
 ## First-Version Scope
 
-Only implement transform tracks:
+The first version intentionally implemented only transform tracks:
 
 - Position: X, Y, Z
 - Rotation: X, Y, Z in the UI, converted to quaternion tracks at runtime
 - Scale: X, Y, Z
 
-Do not include material, color, light, camera, visibility, or nested model bone
-tracks in version one. Those are valuable later, but they would make the first
-release harder to test and easier to break.
+Camera and light tracks have since been added as incremental schema extensions
+after the transform editing loop became testable. Material, object color,
+visibility, texture, and nested model bone tracks remain later work because they
+need more UI grouping and validation.

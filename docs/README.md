@@ -23,24 +23,28 @@ PDF.
   records the no-reinvention decision for the next timeline phase: keep
   `animation-timeline-js` as the dope-sheet component and integrate proven
   Auto-Key / duplicate / navigation workflows around it.
+- [Light Timeline Tracks](light-timeline-tracks.md) documents the implemented
+  light property tracks, playback rules, and schema v4 migration.
 
 ## Current Recommendation
 
 Use `animation-timeline-js@2.3.5` for the visual timeline UI and Three.js native
-animation runtime for playback:
+animation runtime where it fits:
 
 - `animation-timeline-js` gives the project MIT-licensed, TypeScript-friendly
   keyframe timeline primitives without pulling in a large application framework.
 - Three.js `AnimationClip`, `VectorKeyframeTrack`, `QuaternionKeyframeTrack`, and
   `AnimationMixer` keep runtime playback aligned with the renderer already used
   by Geometry Studio.
-- First implementation scope should stay narrow: object Position, Rotation, and
-  Scale tracks only. More advanced property tracks can be added after the core
-  editing loop is reliable.
+- Object Position, Rotation, and Scale tracks use Three.js clips and mixers.
+- Camera and light property tracks use the same timeline document and UI adapter,
+  then apply evaluated values directly to renderer-owned objects during
+  scrubbing/playback.
 
 ## Implementation Status
 
-The first transform timeline slice is implemented in `Source/`:
+The implemented timeline stack in `Source/` now includes object, camera, and
+light tracks:
 
 - `animation/timelineSchema.ts` owns timeline defaults, migration, cloning, and
   track helpers.
@@ -50,9 +54,13 @@ The first transform timeline slice is implemented in `Source/`:
   keyed object.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
+- `main.ts` evaluates camera and light tracks against the same keyframe schema
+  so non-object properties remain synchronized with scrubbing, Auto-Key, Undo,
+  Redo, save, and load.
 
-The longer-term documents remain useful for the next stages: auto-key, camera
-tracks, light/material tracks, curve editing, and export workflows.
+The longer-term documents remain useful for the next stages: material/color
+tracks, visibility tracks, per-axis expansion, curve editing, and export
+workflows.
 
 ## Reading Order
 

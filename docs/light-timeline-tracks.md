@@ -1,0 +1,129 @@
+# Light Timeline Tracks
+
+## Status
+
+Light timeline tracks are implemented as schema v4. They extend the existing
+dope-sheet rather than adding a second editor or animation framework.
+
+The supported tracks are:
+
+- Directional light: position, color, intensity.
+- Point light: position, color, intensity.
+- Spot light: position, color, intensity.
+- Ambient light: intensity.
+
+## Why This Design
+
+Object transform animation already uses Three.js `AnimationClip` and
+`AnimationMixer`, which is the correct native runtime for object transforms.
+Lights are different because Geometry Studio exposes active light state,
+helpers, shadows, sweep mode, and inspector controls directly from the editor.
+
+For this slice, light tracks use the same timeline schema and
+`animation-timeline-js` UI, then apply evaluated values directly to Three.js
+light objects:
+
+- Position tracks write to `light.position`.
+- Color tracks write to `light.color`.
+- Intensity tracks write to `light.intensity`.
+- Ambient intensity writes to `ambient.intensity`.
+
+This keeps the implementation small, inspectable, and consistent with camera
+tracks. It also avoids creating hidden mixer roots for renderer-owned editor
+infrastructure.
+
+## Data Model
+
+Scene timeline documents now use version 4:
+
+```ts
+interface SceneTimelineDocument {
+  version: 4;
+  duration: number;
+  fps: number;
+  currentTime: number;
+  loop: boolean;
+  snapEnabled: boolean;
+  snapStep: number;
+  autoKey: boolean;
+  camera: CameraTimelineDocument;
+  lights: LightTimelineDocument;
+  objects: ObjectTimelineDocument[];
+}
+
+interface LightTimelineDocument {
+  tracks: TimelineTrackDocument[];
+}
+
+type LightTimelineTrackKind =
+  | "directionalPosition"
+  | "directionalColor"
+  | "directionalIntensity"
+  | "pointPosition"
+  | "pointColor"
+  | "pointIntensity"
+  | "spotPosition"
+  | "spotColor"
+  | "spotIntensity"
+  | "ambientIntensity";
+```
+
+All keyframe values still use `[number, number, number]` for schema consistency:
+
+- Position: `[x, y, z]`
+- Color: `[r, g, b]`
+- Intensity: `[intensity, 0, 0]`
+
+## Runtime Rules
+
+- Scrubbing the timeline applies light tracks immediately.
+- Playback applies light tracks on every timeline tick.
+- Auto-Key creates or updates a light track when the user edits the active
+  light's position, color, or intensity.
+- Light sweep is suspended whenever light timeline tracks exist, because the
+  keyed timeline must be deterministic.
+- Undo and Redo use full scene snapshots, matching the existing editor command
+  behavior.
+- Save/load round trips include `timeline.lights.tracks`.
+
+## UI Rules
+
+Light rows appear after object and camera rows in the bottom timeline panel.
+They use the same commands as other tracks:
+
+- Add keyframe.
+- Delete selected keyframes.
+- Duplicate selected keyframes.
+- Previous/next keyframe navigation.
+- Clear active track.
+- Linear, Smooth, and Hold interpolation.
+- Snap, loop, duration, FPS, and Auto-Key.
+
+## Testing
+
+The Playwright timeline workflow now verifies that a point-light intensity track
+can be keyed through the UI and saved to scene JSON. The production build also
+typechecks the expanded timeline schema.
+
+Recommended manual checks:
+
+1. Select Point light.
+2. Select `Point Intensity` in the timeline track dropdown.
+3. Add a keyframe at 0 seconds.
+4. Move to 2 seconds and change intensity with Auto-Key enabled.
+5. Scrub between 0 and 2 seconds and confirm the light changes smoothly.
+6. Save JSON and verify `timeline.version` is `4` and
+   `timeline.lights.tracks` contains the new track.
+
+## Next Extensions
+
+The next property-track slice should target object material and visibility:
+
+- Material color.
+- Roughness and metalness.
+- Opacity.
+- Object visibility.
+
+These can reuse the same track collection pattern but need clearer UI grouping,
+because material tracks belong to selected scene objects while light tracks are
+global scene controls.

@@ -5,7 +5,8 @@
 - Keep the timeline source of truth in Geometry Studio's own scene document.
 - Use `animation-timeline-js` only as a view/controller adapter.
 - Use Three.js native animation classes for runtime playback.
-- Keep the first version focused on Position, Rotation, and Scale tracks.
+- Keep object transform tracks on Three.js native clips, and keep non-object
+  editor tracks on the same scene timeline document.
 - Preserve the current preset animation system, but define clear conflict rules.
 - Make the feature testable without depending on visual judgment alone.
 
@@ -37,30 +38,25 @@ store, rebuild runtime clips, and refresh the timeline adapter.
 
 ## Scene Document Versioning
 
-The current scene document should migrate from version 1 to version 2 when the
-timeline lands.
+The scene document writes `version: 2`. The nested timeline document is
+versioned independently because timeline capabilities are growing faster than
+the outer scene format.
 
-Version 1 does not contain keyframe timeline data. Version 2 adds a `timeline`
-field:
+Version 1 scene files do not contain keyframe timeline data. Loading them
+creates a default empty timeline. The current timeline schema is version 4:
 
 ```ts
-interface SceneDocumentV2 {
-  version: 2;
-  objects: SceneObjectDocument[];
-  lights: SceneLightDocument[];
-  camera: SceneCameraDocument;
-  view: SceneViewDocument;
-  timeline: SceneTimelineDocument;
-}
-
 interface SceneTimelineDocument {
-  version: 1;
+  version: 4;
   duration: number;
   fps: number;
   currentTime: number;
   loop: boolean;
   snapEnabled: boolean;
   snapStep: number;
+  autoKey: boolean;
+  camera: CameraTimelineDocument;
+  lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];
 }
 
@@ -69,7 +65,23 @@ interface ObjectTimelineDocument {
   tracks: TimelineTrackDocument[];
 }
 
-type TimelineTrackKind = "position" | "rotation" | "scale";
+type TimelineTrackKind =
+  | "position"
+  | "rotation"
+  | "scale"
+  | "cameraPosition"
+  | "cameraTarget"
+  | "cameraLens"
+  | "directionalPosition"
+  | "directionalColor"
+  | "directionalIntensity"
+  | "pointPosition"
+  | "pointColor"
+  | "pointIntensity"
+  | "spotPosition"
+  | "spotColor"
+  | "spotIntensity"
+  | "ambientIntensity";
 
 interface TimelineTrackDocument {
   id: string;
@@ -145,8 +157,8 @@ Rules:
 - Adding the first timeline transform keyframe to an object should set that
   object's preset animation mode to `none`, unless the user is explicitly in a
   future advanced blend mode.
-- Light sweep can continue because it animates lights, not the selected object's
-  transform.
+- Light sweep is suspended whenever light timeline tracks exist, because keyed
+  light values must be deterministic during playback and scrubbing.
 - Cinematic and evaluation tours may temporarily drive camera or scene state, but
   entering timeline edit mode should stop those tours.
 - If playback is stopped and the user drags an object with TransformControls, the

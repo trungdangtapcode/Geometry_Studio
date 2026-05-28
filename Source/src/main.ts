@@ -10,9 +10,11 @@ import {
   createDefaultTimeline,
   createTimelineKeyframe,
   ensureCameraTimeline,
+  ensureLightTimeline,
   ensureObjectTimeline,
   ensureTimelineTrack,
   hasCameraTimelineTracks,
+  hasLightTimelineTracks,
   hasObjectTimelineTracks,
   hasTimelineTracks,
   normalizeTimelineDocument,
@@ -36,6 +38,7 @@ import type {
   SerializedObject,
   TimelineInterpolation,
   TimelineKeyframeDocument,
+  TimelineTrackDocument,
   TimelineTrackKind,
   ToastTone
 } from "./editor/types";
@@ -54,6 +57,12 @@ const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
   throw new Error("Missing #app container.");
 }
+
+type TimelineKeyframeSource = {
+  objectId: string;
+  track: TimelineTrackDocument;
+  keyframe: TimelineKeyframeDocument;
+};
 
 if (!hasWebGL2()) {
   app.innerHTML = `
@@ -419,16 +428,26 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#light-intensity").addEventListener("change", (event) => {
       recordHistory();
       currentLight(lightRig).intensity = Number((event.target as HTMLInputElement).value);
+      if (sceneTimeline.autoKey) {
+        setTimelineKeyframe(lightIntensityTrackForKind(lightRig.active), { notify: false, record: false, refresh: false });
+      }
       updateAllUI();
     });
     query<HTMLInputElement>("#light-color").addEventListener("change", (event) => {
       recordHistory();
       currentLight(lightRig).color.set((event.target as HTMLInputElement).value);
+      if (sceneTimeline.autoKey) {
+        setTimelineKeyframe(lightColorTrackForKind(lightRig.active), { notify: false, record: false, refresh: false });
+      }
       updateAllUI();
     });
     query<HTMLInputElement>("#ambient-intensity").addEventListener("change", (event) => {
       recordHistory();
       lightRig.ambient.intensity = Number((event.target as HTMLInputElement).value);
+      if (sceneTimeline.autoKey) {
+        setTimelineKeyframe("ambientIntensity", { notify: false, record: false, refresh: false });
+      }
+      updateAllUI();
     });
     query<HTMLInputElement>("#shadow-toggle").addEventListener("change", (event) => {
       recordHistory();
@@ -628,6 +647,10 @@ function boot(root: HTMLDivElement): void {
         const axis = input.dataset.axis as "x" | "y" | "z";
         currentLight(lightRig).position[axis] = Number(input.value);
         syncLightHelpers(lightRig);
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe(lightPositionTrackForKind(lightRig.active), { notify: false, record: false, refresh: false });
+        }
+        updateAllUI();
       });
     });
   }
@@ -1093,6 +1116,7 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     updatePlayButton();
     syncLights(lightRig, entries.values());
     syncOutline();
@@ -1159,8 +1183,10 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.currentTime = clamp(roundTime(time), 0, sceneTimeline.duration);
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     timelinePanel.setPlaybackTime(sceneTimeline, playing);
     if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
+    if (hasLightTimelineTracks(sceneTimeline)) syncLightUI();
     if (hasTimelineTracks(sceneTimeline)) {
       syncTransformUI();
       syncSelectionSummary();
@@ -1182,8 +1208,10 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.currentTime = roundTime(nextTime);
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     timelinePanel.setPlaybackTime(sceneTimeline, playing);
     if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
+    if (hasLightTimelineTracks(sceneTimeline)) syncLightUI();
     if (hasTimelineTracks(sceneTimeline)) {
       syncTransformUI();
       syncSelectionSummary();
@@ -1204,6 +1232,7 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     updateAllUI();
   }
 
@@ -1231,6 +1260,24 @@ function boot(root: HTMLDivElement): void {
       applyCameraTimeline();
       if (options.refresh !== false) updateAllUI();
       if (options.notify !== false) showToast(`${cameraTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
+      return;
+    }
+
+    if (isLightTrackKind(kind)) {
+      if (options.record !== false) recordHistory();
+      const lightTimeline = ensureLightTimeline(sceneTimeline);
+      const track = ensureTimelineTrack(lightTimeline, kind);
+      const value = timelineValueForLight(kind);
+      const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+      if (existing) existing.value = value;
+      else track.keyframes.push(createTimelineKeyframe(time, value));
+      sortTimelineKeyframes(track);
+      sceneTimeline.currentTime = time;
+      rebuildTimelineRuntime();
+      timelinePlayer.setTime(sceneTimeline.currentTime);
+      applyLightTimeline();
+      if (options.refresh !== false) updateAllUI();
+      if (options.notify !== false) showToast(`${lightTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
       return;
     }
 
@@ -1268,6 +1315,9 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.camera.tracks.forEach((track) => {
       track.keyframes = track.keyframes.filter((keyframe) => !ids.has(keyframe.id));
     });
+    sceneTimeline.lights.tracks.forEach((track) => {
+      track.keyframes = track.keyframes.filter((keyframe) => !ids.has(keyframe.id));
+    });
     sceneTimeline.objects.forEach((objectTimeline) => {
       objectTimeline.tracks.forEach((track) => {
         track.keyframes = track.keyframes.filter((keyframe) => !ids.has(keyframe.id));
@@ -1277,6 +1327,7 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     updateAllUI();
     showToast("Keyframe deleted", "good");
   }
@@ -1317,6 +1368,7 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     updateAllUI();
     showToast(`${created} keyframe${created === 1 ? "" : "s"} duplicated`, "good");
   }
@@ -1335,6 +1387,7 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     updateAllUI();
     showToast(`${capitalize(interpolation)} interpolation applied`, "good");
   }
@@ -1354,6 +1407,22 @@ function boot(root: HTMLDivElement): void {
       applyCameraTimeline();
       updateAllUI();
       showToast(`${cameraTrackLabel(kind)} track cleared`, "good");
+      return;
+    }
+    if (isLightTrackKind(kind)) {
+      const track = sceneTimeline.lights.tracks.find((candidate) => candidate.kind === kind);
+      if (!track || track.keyframes.length === 0) {
+        showToast(`${lightTrackLabel(kind)} track has no keyframes.`, "bad");
+        return;
+      }
+      recordHistory();
+      sceneTimeline.lights.tracks = sceneTimeline.lights.tracks.filter((candidate) => candidate.kind !== kind);
+      pruneEmptyTimelineTracks(sceneTimeline);
+      rebuildTimelineRuntime();
+      timelinePlayer.setTime(sceneTimeline.currentTime);
+      applyLightTimeline();
+      updateAllUI();
+      showToast(`${lightTrackLabel(kind)} track cleared`, "good");
       return;
     }
     const entry = selectedEntry();
@@ -1407,6 +1476,7 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
   }
 
@@ -1420,6 +1490,7 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
+    applyLightTimeline();
     updateAllUI();
   }
 
@@ -1428,8 +1499,12 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.rebuild(sceneTimeline, entries.values());
   }
 
-  function findTimelineKeyframe(keyframeId: string): { keyframe: TimelineKeyframeDocument; track: SceneDocument["timeline"]["objects"][number]["tracks"][number] } | null {
+  function findTimelineKeyframe(keyframeId: string): { keyframe: TimelineKeyframeDocument; track: TimelineTrackDocument } | null {
     for (const track of sceneTimeline.camera.tracks) {
+      const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
+      if (keyframe) return { keyframe, track };
+    }
+    for (const track of sceneTimeline.lights.tracks) {
       const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
       if (keyframe) return { keyframe, track };
     }
@@ -1458,6 +1533,15 @@ function boot(root: HTMLDivElement): void {
     return [camera.fov, camera.near, camera.far];
   }
 
+  function timelineValueForLight(kind: TimelineTrackKind): [number, number, number] {
+    if (kind === "ambientIntensity") return [lightRig.ambient.intensity, 0, 0];
+    const light = lightForTrackKind(kind);
+    if (!light) return [0, 0, 0];
+    if (kind.endsWith("Position")) return [light.position.x, light.position.y, light.position.z];
+    if (kind.endsWith("Color")) return [light.color.r, light.color.g, light.color.b];
+    return [light.intensity, 0, 0];
+  }
+
   function applyCameraTimeline(): void {
     if (!hasCameraTimelineTracks(sceneTimeline)) return;
     let projectionChanged = false;
@@ -1480,7 +1564,26 @@ function boot(root: HTMLDivElement): void {
     frustumHelper.update();
   }
 
-  function evaluateTimelineTrack(track: SceneDocument["timeline"]["objects"][number]["tracks"][number], time: number): [number, number, number] | null {
+  function applyLightTimeline(): void {
+    if (!hasLightTimelineTracks(sceneTimeline)) return;
+    sceneTimeline.lights.tracks.forEach((track) => {
+      const value = evaluateTimelineTrack(track, sceneTimeline.currentTime);
+      if (!value) return;
+      const light = lightForTrackKind(track.kind);
+      if (track.kind === "ambientIntensity") {
+        lightRig.ambient.intensity = Math.max(0, value[0]);
+      } else if (light && track.kind.endsWith("Position")) {
+        light.position.fromArray(value);
+      } else if (light && track.kind.endsWith("Color")) {
+        light.color.setRGB(clamp(value[0], 0, 1), clamp(value[1], 0, 1), clamp(value[2], 0, 1));
+      } else if (light && track.kind.endsWith("Intensity")) {
+        light.intensity = Math.max(0, value[0]);
+      }
+    });
+    syncLightHelpers(lightRig);
+  }
+
+  function evaluateTimelineTrack(track: TimelineTrackDocument, time: number): [number, number, number] | null {
     const keyframes = [...track.keyframes].sort((left, right) => left.time - right.time);
     if (keyframes.length === 0) return null;
     if (time <= keyframes[0].time) return [...keyframes[0].value] as [number, number, number];
@@ -1501,13 +1604,18 @@ function boot(root: HTMLDivElement): void {
     ];
   }
 
-  function resolveTimelineKeyframeSources(keyframeIds: string[]): Array<{ objectId: string; track: SceneDocument["timeline"]["objects"][number]["tracks"][number]; keyframe: TimelineKeyframeDocument }> {
-    const sources: Array<{ objectId: string; track: SceneDocument["timeline"]["objects"][number]["tracks"][number]; keyframe: TimelineKeyframeDocument }> = [];
+  function resolveTimelineKeyframeSources(keyframeIds: string[]): TimelineKeyframeSource[] {
+    const sources: TimelineKeyframeSource[] = [];
     const ids = new Set(keyframeIds);
     if (ids.size > 0) {
       sceneTimeline.camera.tracks.forEach((track) => {
         track.keyframes.forEach((keyframe) => {
           if (ids.has(keyframe.id)) sources.push({ objectId: "camera", track, keyframe });
+        });
+      });
+      sceneTimeline.lights.tracks.forEach((track) => {
+        track.keyframes.forEach((keyframe) => {
+          if (ids.has(keyframe.id)) sources.push({ objectId: "lights", track, keyframe });
         });
       });
       sceneTimeline.objects.forEach((objectTimeline) => {
@@ -1527,6 +1635,12 @@ function boot(root: HTMLDivElement): void {
       if (track && keyframe) sources.push({ objectId: "camera", track, keyframe });
       return sources;
     }
+    if (isLightTrackKind(selectedTrack)) {
+      const track = sceneTimeline.lights.tracks.find((candidate) => candidate.kind === selectedTrack);
+      const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
+      if (track && keyframe) sources.push({ objectId: "lights", track, keyframe });
+      return sources;
+    }
 
     const entry = selectedEntry();
     const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
@@ -1536,7 +1650,7 @@ function boot(root: HTMLDivElement): void {
     return sources;
   }
 
-  function nextAvailableKeyframeTime(track: SceneDocument["timeline"]["objects"][number]["tracks"][number], startTime: number, offset: number): number | null {
+  function nextAvailableKeyframeTime(track: TimelineTrackDocument, startTime: number, offset: number): number | null {
     let candidate = snapTimelineTime(sceneTimeline, startTime);
     while (candidate <= sceneTimeline.duration) {
       const occupied = track.keyframes.some((keyframe) => Math.abs(keyframe.time - candidate) < 0.001);
@@ -1550,6 +1664,12 @@ function boot(root: HTMLDivElement): void {
   function stepCandidateTimes(kind: TimelineTrackKind): number[] {
     if (isCameraTrackKind(kind)) {
       return [...new Set(sceneTimeline.camera.tracks
+        .filter((track) => track.kind === kind)
+        .flatMap((track) => track.keyframes.map((keyframe) => roundTime(keyframe.time))))]
+        .sort((left, right) => left - right);
+    }
+    if (isLightTrackKind(kind)) {
+      return [...new Set(sceneTimeline.lights.tracks
         .filter((track) => track.kind === kind)
         .flatMap((track) => track.keyframes.map((keyframe) => roundTime(keyframe.time))))]
         .sort((left, right) => left - right);
@@ -1575,14 +1695,76 @@ function boot(root: HTMLDivElement): void {
     return "cameraLens";
   }
 
+  function lightPositionTrackForKind(kind: LightKind): TimelineTrackKind {
+    if (kind === "directional") return "directionalPosition";
+    if (kind === "point") return "pointPosition";
+    return "spotPosition";
+  }
+
+  function lightColorTrackForKind(kind: LightKind): TimelineTrackKind {
+    if (kind === "directional") return "directionalColor";
+    if (kind === "point") return "pointColor";
+    return "spotColor";
+  }
+
+  function lightIntensityTrackForKind(kind: LightKind): TimelineTrackKind {
+    if (kind === "directional") return "directionalIntensity";
+    if (kind === "point") return "pointIntensity";
+    return "spotIntensity";
+  }
+
   function isCameraTrackKind(kind: TimelineTrackKind): kind is "cameraPosition" | "cameraTarget" | "cameraLens" {
     return kind === "cameraPosition" || kind === "cameraTarget" || kind === "cameraLens";
+  }
+
+  function isLightTrackKind(kind: TimelineTrackKind): kind is
+    | "directionalPosition"
+    | "directionalColor"
+    | "directionalIntensity"
+    | "pointPosition"
+    | "pointColor"
+    | "pointIntensity"
+    | "spotPosition"
+    | "spotColor"
+    | "spotIntensity"
+    | "ambientIntensity" {
+    return kind === "directionalPosition" ||
+      kind === "directionalColor" ||
+      kind === "directionalIntensity" ||
+      kind === "pointPosition" ||
+      kind === "pointColor" ||
+      kind === "pointIntensity" ||
+      kind === "spotPosition" ||
+      kind === "spotColor" ||
+      kind === "spotIntensity" ||
+      kind === "ambientIntensity";
+  }
+
+  function lightForTrackKind(kind: TimelineTrackKind): THREE.DirectionalLight | THREE.PointLight | THREE.SpotLight | null {
+    if (kind.startsWith("directional")) return lightRig.directional;
+    if (kind.startsWith("point")) return lightRig.point;
+    if (kind.startsWith("spot")) return lightRig.spot;
+    return null;
   }
 
   function cameraTrackLabel(kind: TimelineTrackKind): string {
     if (kind === "cameraPosition") return "Camera position";
     if (kind === "cameraTarget") return "Camera target";
     if (kind === "cameraLens") return "Camera lens";
+    return capitalize(kind);
+  }
+
+  function lightTrackLabel(kind: TimelineTrackKind): string {
+    if (kind === "directionalPosition") return "Sun position";
+    if (kind === "directionalColor") return "Sun color";
+    if (kind === "directionalIntensity") return "Sun intensity";
+    if (kind === "pointPosition") return "Point light position";
+    if (kind === "pointColor") return "Point light color";
+    if (kind === "pointIntensity") return "Point light intensity";
+    if (kind === "spotPosition") return "Spot light position";
+    if (kind === "spotColor") return "Spot light color";
+    if (kind === "spotIntensity") return "Spot light intensity";
+    if (kind === "ambientIntensity") return "Ambient intensity";
     return capitalize(kind);
   }
 
@@ -1631,7 +1813,7 @@ function boot(root: HTMLDivElement): void {
         if (!hasObjectTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, delta, elapsed);
       });
     }
-    if (lightRig.sweep) updateLightSweep(lightRig, elapsed);
+    if (lightRig.sweep && !hasLightTimelineTracks(sceneTimeline)) updateLightSweep(lightRig, elapsed);
 
     controls.update();
     frustumHelper.update();

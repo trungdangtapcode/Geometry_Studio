@@ -54,6 +54,18 @@ export function studioTemplate(): string {
                   <option value="cameraTarget">Camera Target</option>
                   <option value="cameraLens">Camera Lens</option>
                 </optgroup>
+                <optgroup label="Lights">
+                  <option value="directionalPosition">Sun Position</option>
+                  <option value="directionalColor">Sun Color</option>
+                  <option value="directionalIntensity">Sun Intensity</option>
+                  <option value="pointPosition">Point Position</option>
+                  <option value="pointColor">Point Color</option>
+                  <option value="pointIntensity">Point Intensity</option>
+                  <option value="spotPosition">Spot Position</option>
+                  <option value="spotColor">Spot Color</option>
+                  <option value="spotIntensity">Spot Intensity</option>
+                  <option value="ambientIntensity">Ambient Intensity</option>
+                </optgroup>
               </select>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Add</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
