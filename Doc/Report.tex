@@ -208,11 +208,13 @@ The project also includes a light sweep animation. Animation updates use elapsed
 time and frame delta values so that motion remains stable across displays with
 different refresh rates.
 
-The keyframe timeline provides a bottom editing dock with a playhead, duration,
-FPS, snapping, loop control, and Position / Rotation / Scale tracks. Users can
-add, delete, drag, scrub, save, and reload transform keyframes. The editor stores
-rotation keyframes in readable Euler degrees and converts them to
-\texttt{QuaternionKeyframeTrack} objects for Three.js playback.
+The keyframe timeline provides a bottom editing dock with a playhead, timecode,
+duration, FPS, Work In/Out range, snapping, loop control, and tracks for object
+transforms, object appearance, camera properties, and lights. Users can add,
+delete, duplicate, drag, scrub, save, and reload keyframes. Frame-accurate
+navigation is available through previous/next frame buttons and keyboard
+shortcuts. The editor stores rotation keyframes in readable Euler degrees and
+converts transform animation to Three.js playback tracks where appropriate.
 
 \section{Advanced Features}
 

@@ -987,6 +987,22 @@ function boot(root: HTMLDivElement): void {
       event.preventDefault();
       togglePlay();
     }
+    if (key === "arrowleft" || key === "arrowright") {
+      event.preventDefault();
+      if (event.shiftKey) stepTimelineKeyframe(key === "arrowright" ? 1 : -1);
+      else stepTimelineFrame(key === "arrowright" ? 1 : -1);
+      return;
+    }
+    if (key === "home") {
+      event.preventDefault();
+      setTimelineTime(sceneTimeline.workStart);
+      return;
+    }
+    if (key === "end") {
+      event.preventDefault();
+      setTimelineTime(sceneTimeline.workEnd);
+      return;
+    }
     if (key === "delete" || key === "backspace") deleteSelected();
   }
 

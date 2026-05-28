@@ -19,6 +19,14 @@ test("renders the studio and core controls", async ({ page }) => {
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0);
   await page.locator("#timeline-prev-frame").click();
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
+  await page.keyboard.press("End");
+  await expect(page.locator("#timeline-timecode")).toContainText("F0240");
+  await page.keyboard.press("Home");
+  await expect(page.locator("#timeline-timecode")).toContainText("F0000");
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator("#timeline-timecode")).toContainText("F0001");
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator("#timeline-timecode")).toContainText("F0000");
 
   const canvas = page.locator("canvas").first();
   await expect(canvas).toBeVisible();

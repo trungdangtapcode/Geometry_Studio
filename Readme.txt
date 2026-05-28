@@ -65,6 +65,9 @@ Using a local static server is recommended instead of double-clicking index.html
 - R: Rotate.
 - S: Scale.
 - Space: Play or pause animation.
+- Left / Right: step the timeline one frame.
+- Shift+Left / Shift+Right: jump to the previous or next keyframe on the selected track.
+- Home / End: jump to Work In or Work Out.
 - Delete or Backspace: delete the selected object.
 - Ctrl+Z: Undo.
 - Ctrl+Y or Ctrl+Shift+Z: Redo.
