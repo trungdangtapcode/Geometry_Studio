@@ -233,7 +233,7 @@ stores:
   \item Object animation settings
   \item Keyframe timeline settings, object tracks, and keyframe values
   \item Camera position, target, field of view, near plane, and far plane
-  \item Display settings such as grid, axes, stats, and frustum helper
+  \item Display settings such as UI density, grid, axes, stats, and frustum helper
   \item Lighting configuration
 \end{itemize}
 
@@ -369,6 +369,7 @@ scene/importers.ts & GLB, GLTF, OBJ, and STL import pipeline. \\
 renderer/pipeline.ts & WebGLRenderer, EffectComposer, OutlinePass, and resize handling. \\
 animation/timeline.ts & Animation update logic. \\
 ui/template.ts & DOM template for the editor UI. \\
+ui/density.ts & UI density loading, persistence, and root layout mode application. \\
 ui/timelinePanel.ts & Adapter between the timeline UI component and editor commands. \\
 utils/resourceTracker.ts & Explicit disposal of geometries, materials, textures, and URLs. \\
 \bottomrule

@@ -43,6 +43,8 @@ PDF.
 - [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
   label selection and active/disabled row states.
 - [Preview Export](preview-export.md) documents WebM work-area recording.
+- [UI Density Control](ui-density.md) documents the Blender-style compact
+  control-density system.
 
 ## Current Recommendation
 
@@ -67,6 +69,8 @@ animation runtime where it fits:
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation
   surface for object, camera, and light tracks.
+- Blender-style UI density is the default, with Compact and Comfortable options
+  persisted in local storage.
 
 ## Implementation Status
 
@@ -83,6 +87,7 @@ object appearance, camera, and light tracks:
   keyed object.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
+- `ui/density.ts` owns UI-density persistence and root layout mode application.
 - `main.ts` evaluates camera, light, color, opacity, and visibility tracks
   against the same keyframe schema so non-transform properties remain
   synchronized with scrubbing, Auto-Key, Undo, Redo, save, and load.

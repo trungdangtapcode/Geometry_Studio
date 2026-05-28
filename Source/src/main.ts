@@ -57,6 +57,7 @@ import { createLights, createStage, currentLight, setActiveLight, syncLightHelpe
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
 import { KeyframeTimelinePanel } from "./ui/timelinePanel";
+import { bindUiDensityControl } from "./ui/density";
 import { studioTemplate } from "./ui/template";
 import { capitalize, clamp, downloadText, formatNumber, hasWebGL2, hydrateIcons, query, safeJsonParse } from "./utils/dom";
 import { ResourceTracker } from "./utils/resourceTracker";
@@ -80,6 +81,7 @@ if (!hasWebGL2()) {
 
 function boot(root: HTMLDivElement): void {
   root.innerHTML = studioTemplate();
+  bindUiDensityControl(root);
   hydrateIcons();
 
   const canvas = query<HTMLCanvasElement>("#scene-canvas");

@@ -149,6 +149,14 @@ export function studioTemplate(): string {
           <div>
             <div class="eyebrow">Studio</div>
             <h2>Scene Controls</h2>
+            <label class="density-control">
+              <span>Density</span>
+              <select id="ui-density" aria-label="UI density">
+                <option value="comfortable">Comfortable</option>
+                <option value="compact">Compact</option>
+                <option value="blender">Blender</option>
+              </select>
+            </label>
           </div>
           <button class="icon-command" id="reset-scene" type="button" aria-label="Reset scene" title="Reset scene"><span data-icon="RotateCcw"></span></button>
         </header>

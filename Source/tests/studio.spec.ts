@@ -9,6 +9,14 @@ test("renders the studio and core controls", async ({ page }) => {
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Geometry Studio" })).toBeVisible();
+  await expect(page.locator(".studio-shell")).toHaveAttribute("data-density", "blender");
+  await expect(page.locator("#ui-density")).toHaveValue("blender");
+  expect(await page.locator(".inspector").evaluate((element) => parseFloat(getComputedStyle(element).width))).toBeLessThan(310);
+  await page.locator("#ui-density").selectOption("compact");
+  await expect(page.locator(".studio-shell")).toHaveAttribute("data-density", "compact");
+  await page.reload();
+  await expect(page.locator("#ui-density")).toHaveValue("compact");
+  await expect(page.locator(".studio-shell")).toHaveAttribute("data-density", "compact");
   await expect(page.getByRole("button", { name: "Cube", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Render mode" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Record WebM" })).toBeVisible();

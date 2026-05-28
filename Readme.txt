@@ -50,7 +50,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep modes, plus Play/Pause controls.
 - Keyframe Timeline: bottom timeline dock for object, camera, light, material, visibility, and texture tracks with clickable track rows, playhead scrubbing, add/delete/copy/paste/nudge keyframes, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
-- Display helpers: Grid, Axes, FPS, selected-object outline, progress UI, and toast messages.
+- Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, preset animations, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
 - Duplicate/Rename: duplicate or rename the selected object from the Outliner.
@@ -59,6 +59,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Cinematic Demo: creates a polished animated showcase scene.
 - Screenshot Export: saves the current viewport as a PNG image.
 - Telemetry: displays FPS, draw calls, triangles, lines, points, geometry count, texture count, and object count.
+- UI Density: choose Blender, Compact, or Comfortable sizing from the inspector header. Blender density is the default for a smaller professional editing layout.
 
 7. Keyboard Shortcuts
 - T: Move / Translate.
