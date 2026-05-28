@@ -34,6 +34,8 @@ PDF.
   playback range behavior.
 - [Timeline Frame Navigation](timeline-frame-navigation.md) documents
   frame-step controls, Work Out jump, and timecode display.
+- [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
+  keyframe copy/paste behavior for object, camera, and light tracks.
 - [Preview Export](preview-export.md) documents WebM work-area recording.
 
 ## Current Recommendation
@@ -50,6 +52,9 @@ animation runtime where it fits:
 - Camera, light, and object appearance tracks use the same timeline document and
   UI adapter, then apply evaluated values directly to renderer-owned properties
   during scrubbing/playback.
+- Timeline keyframe clipboard support copies selected or playhead keyframes and
+  pastes them at the current playhead time while preserving relative timing and
+  interpolation.
 
 ## Implementation Status
 

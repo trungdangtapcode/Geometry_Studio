@@ -14,6 +14,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
   await expect(page.locator("#timeline-prev-frame")).toBeVisible();
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
+  await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
+  await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
   await page.locator("#timeline-next-frame").click();
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0);
@@ -165,6 +167,12 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await expect(page.locator("#timeline-zoom-out")).toBeVisible();
   await page.locator("#timeline-duplicate-keyframe").click();
   await page.locator("#timeline-interpolation").selectOption("smooth");
+  await page.locator("#timeline-copy-keyframes").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-paste-keyframes").click();
 
   await page.locator("#timeline-track-kind").selectOption("cameraPosition");
   await page.locator("#timeline-current-time").evaluate((input) => {
@@ -377,7 +385,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneDocument.timeline.objects).toHaveLength(1);
   const objectTracks = sceneDocument.timeline.objects[0].tracks as Array<{
     kind: string;
-    keyframes: Array<{ value: number[]; interpolation: string }>;
+    keyframes: Array<{ time: number; value: number[]; interpolation: string }>;
   }>;
   const positionTrack = objectTracks.find((track) => track.kind === "position")!;
   const colorTrack = objectTracks.find((track) => track.kind === "objectColor")!;
@@ -388,9 +396,11 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const textureOffsetTrack = objectTracks.find((track) => track.kind === "objectTextureOffset")!;
   const textureRotationTrack = objectTracks.find((track) => track.kind === "objectTextureRotation")!;
   const visibilityTrack = objectTracks.find((track) => track.kind === "objectVisibility")!;
-  expect(positionTrack.keyframes).toHaveLength(3);
+  expect(positionTrack.keyframes).toHaveLength(4);
   expect(positionTrack.keyframes[1].value[0]).toBe(2);
   expect(positionTrack.keyframes[1].interpolation).toBe("smooth");
+  const pastedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.5) < 0.001)!;
+  expect(pastedPosition.value[0]).toBe(2);
   expect(colorTrack.keyframes).toHaveLength(2);
   expect(colorTrack.keyframes[1].value[2]).toBeCloseTo(1, 3);
   expect(opacityTrack.keyframes).toHaveLength(2);

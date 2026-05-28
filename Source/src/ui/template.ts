@@ -84,6 +84,8 @@ export function studioTemplate(): string {
               </select>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Add</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
+              <button class="mini-button" id="timeline-copy-keyframes" type="button"><span data-icon="ClipboardCopy"></span><span>Copy</span></button>
+              <button class="mini-button" id="timeline-paste-keyframes" type="button"><span data-icon="ClipboardPaste"></span><span>Paste</span></button>
               <button class="mini-button" id="timeline-duplicate-keyframe" type="button"><span data-icon="Copy"></span><span>Duplicate</span></button>
               <button class="mini-button danger" id="timeline-clear-track" type="button"><span data-icon="Eraser"></span><span>Clear Track</span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-out" type="button" aria-label="Zoom timeline out" title="Zoom timeline out"><span data-icon="ZoomOut"></span></button>

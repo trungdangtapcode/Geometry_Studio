@@ -14,6 +14,8 @@ export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
   onAddKeyframe(kind: TimelineTrackKind): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
+  onCopyKeyframes(keyframeIds: string[]): void;
+  onPasteKeyframes(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
@@ -211,6 +213,10 @@ export class KeyframeTimelinePanel {
     return this.trackSelect.value as TimelineTrackKind;
   }
 
+  selectedKeyframeIdsList(): string[] {
+    return [...this.selectedKeyframeIds];
+  }
+
   setPlaybackTime(timelineDocument: SceneTimelineDocument, playing: boolean): void {
     this.updating = true;
     this.root.classList.toggle("playing", playing);
@@ -231,6 +237,12 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-copy-keyframes").addEventListener("click", () => {
+      this.callbacks.onCopyKeyframes([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-paste-keyframes").addEventListener("click", () => {
+      this.callbacks.onPasteKeyframes();
     });
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
       this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);

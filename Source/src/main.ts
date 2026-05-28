@@ -60,9 +60,22 @@ if (!app) {
 }
 
 type TimelineKeyframeSource = {
+  scope: "object" | "camera" | "lights";
   objectId: string;
   track: TimelineTrackDocument;
   keyframe: TimelineKeyframeDocument;
+};
+
+type TimelineClipboardKeyframe = {
+  scope: "object" | "camera" | "lights";
+  kind: TimelineTrackKind;
+  relativeTime: number;
+  value: [number, number, number];
+  interpolation: TimelineInterpolation;
+};
+
+type TimelineClipboard = {
+  keyframes: TimelineClipboardKeyframe[];
 };
 
 if (!hasWebGL2()) {
@@ -118,6 +131,7 @@ function boot(root: HTMLDivElement): void {
   let recordingPreview = false;
   let previewRecorder: MediaRecorder | null = null;
   let previewChunks: Blob[] = [];
+  let timelineClipboard: TimelineClipboard | null = null;
   let pendingDragSnapshot: SceneDocument | null = null;
   let pendingTimelineDragSnapshot: SceneDocument | null = null;
   let evaluationTourTimers: number[] = [];
@@ -135,6 +149,8 @@ function boot(root: HTMLDivElement): void {
     onTimeChanged: setTimelineTime,
     onAddKeyframe: addTimelineKeyframe,
     onDeleteKeyframes: deleteTimelineKeyframes,
+    onCopyKeyframes: copyTimelineKeyframes,
+    onPasteKeyframes: pasteTimelineKeyframes,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onClearTrack: clearTimelineTrack,
     onStepKeyframe: stepTimelineKeyframe,
@@ -975,6 +991,16 @@ function boot(root: HTMLDivElement): void {
       redo();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && key === "c") {
+      event.preventDefault();
+      copyTimelineKeyframes();
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && key === "v") {
+      event.preventDefault();
+      pasteTimelineKeyframes();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "s") {
       event.preventDefault();
       saveScene();
@@ -1511,6 +1537,86 @@ function boot(root: HTMLDivElement): void {
     showToast("Keyframe deleted", "good");
   }
 
+  function copyTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveTimelineKeyframeSources(keyframeIds);
+    if (sources.length === 0) {
+      showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
+      return;
+    }
+
+    const origin = Math.min(...sources.map((source) => source.keyframe.time));
+    timelineClipboard = {
+      keyframes: sources.map(({ scope, track, keyframe }) => ({
+        scope,
+        kind: track.kind,
+        relativeTime: roundTime(keyframe.time - origin),
+        value: [...keyframe.value] as [number, number, number],
+        interpolation: keyframe.interpolation
+      }))
+    };
+    showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} copied`, "good");
+  }
+
+  function pasteTimelineKeyframes(): void {
+    if (!timelineClipboard || timelineClipboard.keyframes.length === 0) {
+      showToast("Copy timeline keyframes before pasting.", "bad");
+      return;
+    }
+
+    const baseTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const selectedObject = selectedEntry();
+    let pasted = 0;
+    let skipped = 0;
+
+    recordHistory();
+    timelineClipboard.keyframes.forEach((clip) => {
+      const rawTime = baseTime + clip.relativeTime;
+      if (rawTime > sceneTimeline.duration + 0.001) {
+        skipped += 1;
+        return;
+      }
+      const time = snapTimelineTime(sceneTimeline, rawTime);
+
+      const track = pasteTargetTrack(clip, selectedObject);
+      if (!track) {
+        skipped += 1;
+        return;
+      }
+
+      track.enabled = true;
+      const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+      if (existing) {
+        existing.value = [...clip.value] as [number, number, number];
+        existing.interpolation = clip.interpolation;
+      } else {
+        const pastedKeyframe = createTimelineKeyframe(time, [...clip.value] as [number, number, number]);
+        pastedKeyframe.interpolation = clip.interpolation;
+        track.keyframes.push(pastedKeyframe);
+      }
+      sortTimelineKeyframes(track);
+      pasted += 1;
+    });
+
+    if (selectedObject && timelineClipboard.keyframes.some((clip) => clip.scope === "object" && isObjectTransformTrackKind(clip.kind))) {
+      selectedObject.animation = "none";
+    }
+
+    if (pasted === 0) {
+      updateAllUI();
+      showToast("No compatible keyframes could be pasted.", "bad");
+      return;
+    }
+
+    sceneTimeline.currentTime = baseTime;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`${pasted} keyframe${pasted === 1 ? "" : "s"} pasted${skipped ? `, ${skipped} skipped` : ""}`, "good");
+  }
+
   function duplicateTimelineKeyframes(keyframeIds: string[]): void {
     const sources = resolveTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
@@ -1850,18 +1956,18 @@ function boot(root: HTMLDivElement): void {
     if (ids.size > 0) {
       sceneTimeline.camera.tracks.forEach((track) => {
         track.keyframes.forEach((keyframe) => {
-          if (ids.has(keyframe.id)) sources.push({ objectId: "camera", track, keyframe });
+          if (ids.has(keyframe.id)) sources.push({ scope: "camera", objectId: "camera", track, keyframe });
         });
       });
       sceneTimeline.lights.tracks.forEach((track) => {
         track.keyframes.forEach((keyframe) => {
-          if (ids.has(keyframe.id)) sources.push({ objectId: "lights", track, keyframe });
+          if (ids.has(keyframe.id)) sources.push({ scope: "lights", objectId: "lights", track, keyframe });
         });
       });
       sceneTimeline.objects.forEach((objectTimeline) => {
         objectTimeline.tracks.forEach((track) => {
           track.keyframes.forEach((keyframe) => {
-            if (ids.has(keyframe.id)) sources.push({ objectId: objectTimeline.objectId, track, keyframe });
+            if (ids.has(keyframe.id)) sources.push({ scope: "object", objectId: objectTimeline.objectId, track, keyframe });
           });
         });
       });
@@ -1872,13 +1978,13 @@ function boot(root: HTMLDivElement): void {
     if (isCameraTrackKind(selectedTrack)) {
       const track = sceneTimeline.camera.tracks.find((candidate) => candidate.kind === selectedTrack);
       const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
-      if (track && keyframe) sources.push({ objectId: "camera", track, keyframe });
+      if (track && keyframe) sources.push({ scope: "camera", objectId: "camera", track, keyframe });
       return sources;
     }
     if (isLightTrackKind(selectedTrack)) {
       const track = sceneTimeline.lights.tracks.find((candidate) => candidate.kind === selectedTrack);
       const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
-      if (track && keyframe) sources.push({ objectId: "lights", track, keyframe });
+      if (track && keyframe) sources.push({ scope: "lights", objectId: "lights", track, keyframe });
       return sources;
     }
 
@@ -1886,8 +1992,19 @@ function boot(root: HTMLDivElement): void {
     const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
     const track = objectTimeline?.tracks.find((candidate) => candidate.kind === selectedTrack);
     const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
-    if (entry && track && keyframe) sources.push({ objectId: entry.id, track, keyframe });
+    if (entry && track && keyframe) sources.push({ scope: "object", objectId: entry.id, track, keyframe });
     return sources;
+  }
+
+  function pasteTargetTrack(clip: TimelineClipboardKeyframe, selectedObject: SceneEntry | null): TimelineTrackDocument | null {
+    if (clip.scope === "camera") {
+      return ensureTimelineTrack(ensureCameraTimeline(sceneTimeline), clip.kind);
+    }
+    if (clip.scope === "lights") {
+      return ensureTimelineTrack(ensureLightTimeline(sceneTimeline), clip.kind);
+    }
+    if (!selectedObject) return null;
+    return ensureTimelineTrack(ensureObjectTimeline(sceneTimeline, selectedObject.id), clip.kind);
   }
 
   function nextAvailableKeyframeTime(track: TimelineTrackDocument, startTime: number, offset: number): number | null {
