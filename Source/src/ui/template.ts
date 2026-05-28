@@ -50,6 +50,8 @@ export function studioTemplate(): string {
                   <option value="scale">Scale</option>
                   <option value="objectColor">Color</option>
                   <option value="objectOpacity">Opacity</option>
+                  <option value="objectRoughness">Roughness</option>
+                  <option value="objectMetalness">Metalness</option>
                   <option value="objectVisibility">Visibility</option>
                 </optgroup>
                 <optgroup label="Camera">
@@ -209,6 +211,14 @@ export function studioTemplate(): string {
             <label>
               <span>Opacity</span>
               <input id="object-opacity" type="number" min="0" max="1" step="0.05" value="1" />
+            </label>
+            <label>
+              <span>Roughness</span>
+              <input id="object-roughness" type="number" min="0" max="1" step="0.05" value="0.42" />
+            </label>
+            <label>
+              <span>Metalness</span>
+              <input id="object-metalness" type="number" min="0" max="1" step="0.05" value="0.08" />
             </label>
             <label class="toggle-line panel-toggle">
               <input id="object-visible" type="checkbox" checked />

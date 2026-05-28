@@ -24,9 +24,10 @@ PDF.
   `animation-timeline-js` as the dope-sheet component and integrate proven
   Auto-Key / duplicate / navigation workflows around it.
 - [Light Timeline Tracks](light-timeline-tracks.md) documents the implemented
-  light property tracks, playback rules, and their schema v4-to-v5 status.
+  light property tracks, playback rules, and current schema status.
 - [Object Property Timeline Tracks](object-property-timeline-tracks.md)
-  documents schema v5 object Color, Opacity, and Visibility tracks.
+  documents schema v6 object Color, Opacity, Roughness, Metalness, and
+  Visibility tracks.
 
 ## Current Recommendation
 
@@ -60,7 +61,7 @@ object appearance, camera, and light tracks:
   against the same keyframe schema so non-transform properties remain
   synchronized with scrubbing, Auto-Key, Undo, Redo, save, and load.
 
-The longer-term documents remain useful for the next stages: roughness/metalness
+The longer-term documents remain useful for the next stages: texture transform
 tracks, per-axis expansion, curve editing, and export workflows.
 
 ## Reading Order

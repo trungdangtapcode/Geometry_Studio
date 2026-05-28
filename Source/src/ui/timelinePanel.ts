@@ -36,7 +36,16 @@ type TimelineUiRow = TimelineRow & {
   trackKind: TimelineTrackKind;
 };
 
-const OBJECT_TRACKS: TimelineTrackKind[] = ["position", "rotation", "scale", "objectColor", "objectOpacity", "objectVisibility"];
+const OBJECT_TRACKS: TimelineTrackKind[] = [
+  "position",
+  "rotation",
+  "scale",
+  "objectColor",
+  "objectOpacity",
+  "objectRoughness",
+  "objectMetalness",
+  "objectVisibility"
+];
 const CAMERA_TRACKS: TimelineTrackKind[] = ["cameraPosition", "cameraTarget", "cameraLens"];
 const LIGHT_TRACKS: TimelineTrackKind[] = [
   "directionalPosition",
@@ -59,6 +68,8 @@ const TRACK_COLORS: Record<TimelineTrackKind, string> = {
   scale: "#7c70f4",
   objectColor: "#df6b80",
   objectOpacity: "#64748b",
+  objectRoughness: "#8b5cf6",
+  objectMetalness: "#0f766e",
   objectVisibility: "#16a34a",
   cameraPosition: "#4f8df7",
   cameraTarget: "#a86de8",
@@ -81,6 +92,8 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   scale: "Scale",
   objectColor: "Color",
   objectOpacity: "Opacity",
+  objectRoughness: "Roughness",
+  objectMetalness: "Metalness",
   objectVisibility: "Visibility",
   cameraPosition: "Camera Position",
   cameraTarget: "Camera Target",

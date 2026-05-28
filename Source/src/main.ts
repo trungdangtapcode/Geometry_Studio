@@ -159,7 +159,7 @@ function boot(root: HTMLDivElement): void {
   function addPrimitive(
     primitiveType: PrimitiveType,
     position = nextSpawnPosition(),
-    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity">> & { color?: string; name?: string; id?: string } = {},
+    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity" | "roughness" | "metalness">> & { color?: string; name?: string; id?: string } = {},
     record = true
   ): SceneEntry {
     if (record) recordHistory();
@@ -175,7 +175,9 @@ function boot(root: HTMLDivElement): void {
       materialMode: options.materialMode ?? "standard",
       animation: options.animation ?? "none",
       textureName: options.textureName ?? "none",
-      opacity: options.opacity ?? 1
+      opacity: options.opacity ?? 1,
+      roughness: options.roughness ?? 0.42,
+      metalness: options.metalness ?? 0.08
     });
 
     entry.root.position.copy(position);
@@ -226,6 +228,8 @@ function boot(root: HTMLDivElement): void {
     animation?: AnimationMode;
     textureName?: string;
     opacity?: number;
+    roughness?: number;
+    metalness?: number;
   }): SceneEntry {
     const id = config.id ?? `object-${idCounter++}`;
     idCounter = Math.max(idCounter, numericObjectId(id) + 1);
@@ -246,6 +250,8 @@ function boot(root: HTMLDivElement): void {
       materialMode: config.materialMode ?? "standard",
       color: config.color,
       opacity: config.opacity ?? 1,
+      roughness: config.roughness ?? 0.42,
+      metalness: config.metalness ?? 0.08,
       texture,
       textureName,
       textureRepeat: new THREE.Vector2(1, 1),
@@ -286,6 +292,12 @@ function boot(root: HTMLDivElement): void {
         }
         item.transparent = entry.opacity < 1;
         item.opacity = entry.opacity;
+        if ("roughness" in item && typeof item.roughness === "number") {
+          item.roughness = entry.roughness;
+        }
+        if ("metalness" in item && typeof item.metalness === "number") {
+          item.metalness = entry.metalness;
+        }
         item.needsUpdate = true;
       });
     });
@@ -395,6 +407,26 @@ function boot(root: HTMLDivElement): void {
         applyEntryAppearance(entry);
         if (sceneTimeline.autoKey) {
           setTimelineKeyframe("objectOpacity", { notify: false, record: false, refresh: false });
+        }
+      });
+    });
+
+    query<HTMLInputElement>("#object-roughness").addEventListener("change", (event) => {
+      updateSelectedEntry((entry) => {
+        entry.roughness = clamp(Number((event.target as HTMLInputElement).value), 0, 1);
+        applyEntryAppearance(entry);
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe("objectRoughness", { notify: false, record: false, refresh: false });
+        }
+      });
+    });
+
+    query<HTMLInputElement>("#object-metalness").addEventListener("change", (event) => {
+      updateSelectedEntry((entry) => {
+        entry.metalness = clamp(Number((event.target as HTMLInputElement).value), 0, 1);
+        applyEntryAppearance(entry);
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe("objectMetalness", { notify: false, record: false, refresh: false });
         }
       });
     });
@@ -720,6 +752,8 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#material-mode").value = entry?.materialMode ?? "standard";
     query<HTMLInputElement>("#object-color").value = entry ? `#${entry.color.getHexString()}` : "#4bd0a0";
     query<HTMLInputElement>("#object-opacity").value = String(entry?.opacity ?? 1);
+    query<HTMLInputElement>("#object-roughness").value = String(entry?.roughness ?? 0.42);
+    query<HTMLInputElement>("#object-metalness").value = String(entry?.metalness ?? 0.08);
     query<HTMLInputElement>("#object-visible").checked = entry?.root.visible ?? true;
     query<HTMLInputElement>("#grid-toggle").checked = stage.grid.visible;
     query<HTMLInputElement>("#axes-toggle").checked = stage.axes.visible;
@@ -1179,7 +1213,9 @@ function boot(root: HTMLDivElement): void {
         materialMode: object.materialMode,
         animation: object.animation,
         textureName: object.textureName,
-        opacity: object.opacity ?? 1
+        opacity: object.opacity ?? 1,
+        roughness: object.roughness ?? 0.42,
+        metalness: object.metalness ?? 0.08
       }, false);
     } else {
       entry = makeEntry({
@@ -1193,7 +1229,9 @@ function boot(root: HTMLDivElement): void {
         materialMode: object.materialMode,
         animation: object.animation,
         textureName: object.textureName,
-        opacity: object.opacity ?? 1
+        opacity: object.opacity ?? 1,
+        roughness: object.roughness ?? 0.42,
+        metalness: object.metalness ?? 0.08
       });
       entry.root.position.fromArray(object.position);
       rebuildEntryVisual(entry);
@@ -1589,6 +1627,8 @@ function boot(root: HTMLDivElement): void {
     ];
     if (kind === "objectColor") return [entry.color.r, entry.color.g, entry.color.b];
     if (kind === "objectOpacity") return [entry.opacity, 0, 0];
+    if (kind === "objectRoughness") return [entry.roughness, 0, 0];
+    if (kind === "objectMetalness") return [entry.metalness, 0, 0];
     if (kind === "objectVisibility") return [entry.root.visible ? 1 : 0, 0, 0];
     return [0, 0, 0];
   }
@@ -1663,6 +1703,12 @@ function boot(root: HTMLDivElement): void {
           appearanceChanged = true;
         } else if (track.kind === "objectOpacity") {
           entry.opacity = clamp(value[0], 0, 1);
+          appearanceChanged = true;
+        } else if (track.kind === "objectRoughness") {
+          entry.roughness = clamp(value[0], 0, 1);
+          appearanceChanged = true;
+        } else if (track.kind === "objectMetalness") {
+          entry.metalness = clamp(value[0], 0, 1);
           appearanceChanged = true;
         } else if (track.kind === "objectVisibility") {
           entry.root.visible = value[0] >= 0.5;
@@ -1810,8 +1856,17 @@ function boot(root: HTMLDivElement): void {
     return kind === "position" || kind === "rotation" || kind === "scale";
   }
 
-  function isObjectPropertyTrackKind(kind: TimelineTrackKind): kind is "objectColor" | "objectOpacity" | "objectVisibility" {
-    return kind === "objectColor" || kind === "objectOpacity" || kind === "objectVisibility";
+  function isObjectPropertyTrackKind(kind: TimelineTrackKind): kind is
+    | "objectColor"
+    | "objectOpacity"
+    | "objectRoughness"
+    | "objectMetalness"
+    | "objectVisibility" {
+    return kind === "objectColor" ||
+      kind === "objectOpacity" ||
+      kind === "objectRoughness" ||
+      kind === "objectMetalness" ||
+      kind === "objectVisibility";
   }
 
   function isLightTrackKind(kind: TimelineTrackKind): kind is
@@ -1857,6 +1912,8 @@ function boot(root: HTMLDivElement): void {
     if (kind === "scale") return "Scale";
     if (kind === "objectColor") return "Object color";
     if (kind === "objectOpacity") return "Object opacity";
+    if (kind === "objectRoughness") return "Object roughness";
+    if (kind === "objectMetalness") return "Object metalness";
     if (kind === "objectVisibility") return "Object visibility";
     return capitalize(kind);
   }
@@ -2005,6 +2062,8 @@ function boot(root: HTMLDivElement): void {
       materialMode: entry.materialMode,
       color: `#${entry.color.getHexString()}`,
       opacity: entry.opacity,
+      roughness: entry.roughness,
+      metalness: entry.metalness,
       visible: entry.root.visible,
       textureName: entry.textureName === "uploaded" ? "none" : entry.textureName,
       textureRepeat: [entry.textureRepeat.x, entry.textureRepeat.y],

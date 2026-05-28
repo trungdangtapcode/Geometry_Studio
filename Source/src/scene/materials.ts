@@ -34,8 +34,8 @@ export function createMaterial(entry: SceneEntry, tracker?: ResourceTracker): TH
   }
   const material = new THREE.MeshStandardMaterial({
     ...materialParams,
-    roughness: 0.42,
-    metalness: 0.08
+    roughness: entry.roughness,
+    metalness: entry.metalness
   });
   return tracker?.track(material) ?? material;
 }

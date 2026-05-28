@@ -107,7 +107,7 @@ test("supports undo redo scene loading and evaluation tour", async ({ page }) =>
 });
 
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
     const downloads: string[] = [];
@@ -218,6 +218,40 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   });
   await expect(objectOpacity).toHaveValue("0.4");
 
+  await page.locator("#timeline-track-kind").selectOption("objectRoughness");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3.25";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const objectRoughness = page.locator("#object-roughness");
+  await objectRoughness.evaluate((input) => {
+    (input as HTMLInputElement).value = "0.85";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(objectRoughness).toHaveValue("0.85");
+
+  await page.locator("#timeline-track-kind").selectOption("objectMetalness");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3.35";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const objectMetalness = page.locator("#object-metalness");
+  await objectMetalness.evaluate((input) => {
+    (input as HTMLInputElement).value = "0.55";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(objectMetalness).toHaveValue("0.55");
+
   await page.locator("#timeline-track-kind").selectOption("objectVisibility");
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "0";
@@ -244,7 +278,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
-  expect(sceneDocument.timeline.version).toBe(5);
+  expect(sceneDocument.timeline.version).toBe(6);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.autoKey).toBe(true);
   expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
@@ -263,6 +297,8 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const positionTrack = objectTracks.find((track) => track.kind === "position")!;
   const colorTrack = objectTracks.find((track) => track.kind === "objectColor")!;
   const opacityTrack = objectTracks.find((track) => track.kind === "objectOpacity")!;
+  const roughnessTrack = objectTracks.find((track) => track.kind === "objectRoughness")!;
+  const metalnessTrack = objectTracks.find((track) => track.kind === "objectMetalness")!;
   const visibilityTrack = objectTracks.find((track) => track.kind === "objectVisibility")!;
   expect(positionTrack.keyframes).toHaveLength(3);
   expect(positionTrack.keyframes[1].value[0]).toBe(2);
@@ -271,6 +307,10 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(colorTrack.keyframes[1].value[2]).toBeCloseTo(1, 3);
   expect(opacityTrack.keyframes).toHaveLength(2);
   expect(opacityTrack.keyframes[1].value[0]).toBe(0.4);
+  expect(roughnessTrack.keyframes).toHaveLength(2);
+  expect(roughnessTrack.keyframes[1].value[0]).toBe(0.85);
+  expect(metalnessTrack.keyframes).toHaveLength(2);
+  expect(metalnessTrack.keyframes[1].value[0]).toBe(0.55);
   expect(visibilityTrack.keyframes).toHaveLength(2);
   expect(visibilityTrack.keyframes[1].value[0]).toBe(0);
 

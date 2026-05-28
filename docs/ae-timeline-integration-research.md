@@ -71,9 +71,9 @@ existing timeline library and the current Three.js runtime:
   persisted in timeline schema v4 and evaluated during scrubbing/playback.
   Light sweep is disabled while light tracks exist so keyed lighting remains
   deterministic.
-- Object appearance tracks for Color, Opacity, and Visibility, persisted in
-  timeline schema v5 and evaluated during scrubbing/playback without disabling
-  preset transform animation.
+- Object appearance/material tracks for Color, Opacity, Roughness, Metalness,
+  and Visibility, persisted through timeline schema v6 and evaluated during
+  scrubbing/playback without disabling preset transform animation.
 
 ## Patterns To Defer
 
@@ -81,7 +81,7 @@ These should remain later phases because they require more schema and UI work:
 
 - Curve editor / graph editor.
 - Separate per-axis tracks.
-- Roughness, metalness, texture transform, and other deeper material tracks.
+- Texture transform and other deeper material tracks.
 - Clip blocks with ripple editing.
 - Audio/video tracks.
 

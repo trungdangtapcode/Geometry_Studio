@@ -28,6 +28,8 @@ export type TimelineTrackKind =
   | "scale"
   | "objectColor"
   | "objectOpacity"
+  | "objectRoughness"
+  | "objectMetalness"
   | "objectVisibility"
   | "cameraPosition"
   | "cameraTarget"
@@ -56,6 +58,8 @@ export interface SceneEntry {
   materialMode: MaterialMode;
   color: THREE.Color;
   opacity: number;
+  roughness: number;
+  metalness: number;
   texture: THREE.Texture | null;
   textureName: string;
   textureRepeat: THREE.Vector2;
@@ -124,7 +128,7 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3 | 4 | 5;
+  version: 1 | 2 | 3 | 4 | 5 | 6;
   duration: number;
   fps: number;
   currentTime: number;
@@ -180,6 +184,8 @@ export interface SerializedObject {
   materialMode: MaterialMode;
   color: string;
   opacity?: number;
+  roughness?: number;
+  metalness?: number;
   visible?: boolean;
   textureName: string;
   textureRepeat: [number, number];
