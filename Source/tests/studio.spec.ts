@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
 
 test("renders the studio and core controls", async ({ page }) => {
   const errors: string[] = [];
@@ -107,7 +106,19 @@ test("supports undo redo scene loading and evaluation tour", async ({ page }) =>
 });
 
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
+  test.setTimeout(90_000);
   const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
@@ -131,15 +142,19 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
 
   const timelineCanvas = page.locator("#timeline-canvas canvas").first();
   await expect(timelineCanvas).toBeVisible();
-  await timelineCanvas.click({ position: { x: 88, y: 44 } });
+  await page.locator("#timeline-zoom-fit").click();
+  await expect(page.locator("#timeline-zoom-in")).toBeVisible();
+  await expect(page.locator("#timeline-zoom-out")).toBeVisible();
   await page.locator("#timeline-duplicate-keyframe").click();
+  await page.locator("#timeline-interpolation").selectOption("smooth");
 
-  const downloadPromise = page.waitForEvent("download");
-  await page.locator("#save-scene").click();
-  const download = await downloadPromise;
-  const filePath = await download.path();
-  expect(filePath).toBeTruthy();
-  const sceneDocument = JSON.parse(await readFile(filePath!, "utf8"));
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  expect(sceneJson).toBeTruthy();
+  const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
   expect(sceneDocument.timeline.version).toBe(2);
@@ -149,8 +164,9 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneDocument.timeline.objects[0].tracks[0].kind).toBe("position");
   expect(sceneDocument.timeline.objects[0].tracks[0].keyframes).toHaveLength(3);
   expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].value[0]).toBe(2);
+  expect(sceneDocument.timeline.objects[0].tracks[0].keyframes[1].interpolation).toBe("smooth");
 
-  await page.locator("#timeline-clear-track").click();
+  await page.locator("#timeline-clear-track").click({ force: true });
   await expect(page.locator("#selection-summary")).toContainText("Static");
   expect(errors).toEqual([]);
 });

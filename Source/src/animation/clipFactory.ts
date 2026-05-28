@@ -23,6 +23,8 @@ function buildKeyframeTrack(track: TimelineTrackDocument): THREE.KeyframeTrack |
 
   if (keyframes.some((keyframe) => keyframe.interpolation === "hold")) {
     keyframeTrack.setInterpolation(THREE.InterpolateDiscrete);
+  } else if (keyframes.some((keyframe) => keyframe.interpolation === "smooth")) {
+    keyframeTrack.setInterpolation(THREE.InterpolateSmooth);
   } else {
     keyframeTrack.setInterpolation(THREE.InterpolateLinear);
   }

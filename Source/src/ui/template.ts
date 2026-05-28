@@ -52,6 +52,9 @@ export function studioTemplate(): string {
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
               <button class="mini-button" id="timeline-duplicate-keyframe" type="button"><span data-icon="Copy"></span><span>Duplicate</span></button>
               <button class="mini-button danger" id="timeline-clear-track" type="button"><span data-icon="Eraser"></span><span>Clear Track</span></button>
+              <button class="mini-button icon-mini" id="timeline-zoom-out" type="button" aria-label="Zoom timeline out" title="Zoom timeline out"><span data-icon="ZoomOut"></span></button>
+              <button class="mini-button icon-mini" id="timeline-zoom-fit" type="button" aria-label="Fit timeline" title="Fit timeline"><span data-icon="Maximize2"></span></button>
+              <button class="mini-button icon-mini" id="timeline-zoom-in" type="button" aria-label="Zoom timeline in" title="Zoom timeline in"><span data-icon="ZoomIn"></span></button>
             </div>
           </header>
           <div class="timeline-settings">
@@ -59,6 +62,14 @@ export function studioTemplate(): string {
             <label><span>Duration</span><input id="timeline-duration" type="number" min="0.5" max="120" step="0.5" value="8" /></label>
             <label><span>FPS</span><input id="timeline-fps" type="number" min="1" max="120" step="1" value="30" /></label>
             <label><span>Snap</span><input id="timeline-snap-step" type="number" min="0.001" max="10" step="0.001" value="0.033" /></label>
+            <label>
+              <span>Interpolation</span>
+              <select id="timeline-interpolation" aria-label="Keyframe interpolation">
+                <option value="linear">Linear</option>
+                <option value="smooth">Smooth</option>
+                <option value="hold">Hold</option>
+              </select>
+            </label>
             <label class="toggle-line"><input id="timeline-loop" type="checkbox" checked /><span>Loop</span></label>
             <label class="toggle-line"><input id="timeline-snap" type="checkbox" checked /><span>Snap</span></label>
             <label class="toggle-line"><input id="timeline-auto-key" type="checkbox" /><span>Auto-Key</span></label>

@@ -47,8 +47,24 @@ existing timeline library and the current Three.js runtime:
 - Duplicate keyframes: copy selected keyframes forward by the snap step.
 - Clear track: remove the selected object's active Position, Rotation, or Scale
   track.
+- Interpolation control: apply Linear, Smooth, or Hold interpolation to selected
+  keyframes, or to the active track keyframe under the playhead.
+- Timeline zoom controls: use the timeline library's built-in zoom and a local
+  fit-to-duration command rather than custom canvas scaling code.
 - Track conflict rule: timeline transform tracks continue to override preset
   object animation modes for the same object.
+
+## Implemented Timeline Slices
+
+- Transform dope sheet backed by `animation-timeline-js`.
+- Three.js `AnimationClip` / `AnimationMixer` playback for Position, Rotation,
+  and Scale tracks.
+- JSON persistence for timeline v2, including Auto-Key state.
+- Auto-Key, previous/next keyframe, duplicate keyframe, and clear-track commands.
+- Interpolation editing for Linear, Smooth, and Hold keyframes, with distinct
+  marker shapes in the dope sheet.
+- Timeline zoom-in, zoom-out, and fit-to-duration controls built on the installed
+  timeline component API.
 
 ## Patterns To Defer
 
@@ -67,4 +83,3 @@ Do not introduce React, Theatre Studio, or a second animation runtime for this
 phase. A second framework would increase bundle size and create two sources of
 truth. The clean extension point is the existing `KeyframeTimelinePanel` adapter
 around `animation-timeline-js`.
-

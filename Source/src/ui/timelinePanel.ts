@@ -1,10 +1,11 @@
 import {
   Timeline,
   type TimelineKeyframe,
+  TimelineKeyframeShape,
   type TimelineModel,
   type TimelineRow
 } from "animation-timeline-js";
-import type { SceneEntry, SceneTimelineDocument, TimelineTrackKind } from "../editor/types";
+import type { SceneEntry, SceneTimelineDocument, TimelineInterpolation, TimelineTrackKind } from "../editor/types";
 import { capitalize, formatNumber, hydrateIcons, query } from "../utils/dom";
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
@@ -16,6 +17,7 @@ export interface KeyframeTimelineCallbacks {
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
+  onSetInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void;
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
   onDragFinished(): void;
@@ -55,6 +57,7 @@ export class KeyframeTimelinePanel {
   private readonly autoKeyInput = query<HTMLInputElement>("#timeline-auto-key");
   private readonly loopInput = query<HTMLInputElement>("#timeline-loop");
   private readonly snapStepInput = query<HTMLInputElement>("#timeline-snap-step");
+  private readonly interpolationSelect = query<HTMLSelectElement>("#timeline-interpolation");
   private readonly selectionLabel = query<HTMLDivElement>("#timeline-selection");
   private selectedKeyframeIds = new Set<string>();
   private updating = false;
@@ -104,6 +107,7 @@ export class KeyframeTimelinePanel {
     this.snapInput.checked = timelineDocument.snapEnabled;
     this.autoKeyInput.checked = timelineDocument.autoKey;
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
+    this.interpolationSelect.value = this.currentInterpolation(timelineDocument, selectedId);
 
     const visibleEntries = this.visibleEntries(timelineDocument, entries, selectedId);
     this.labels.innerHTML = this.renderLabels(visibleEntries);
@@ -153,6 +157,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-prev-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(-1));
     query<HTMLButtonElement>("#timeline-next-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(1));
+    query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.timeline.zoomOut(0.25));
+    query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.timeline.zoomIn(0.25));
+    query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimeline());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(0));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
     this.timeInput.addEventListener("change", () => this.callbacks.onTimeChanged(Number(this.timeInput.value)));
@@ -162,6 +169,9 @@ export class KeyframeTimelinePanel {
     this.loopInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ loop: this.loopInput.checked }));
     this.snapInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapEnabled: this.snapInput.checked }));
     this.autoKeyInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ autoKey: this.autoKeyInput.checked }));
+    this.interpolationSelect.addEventListener("change", () => {
+      this.callbacks.onSetInterpolation([...this.selectedKeyframeIds], this.interpolationSelect.value as TimelineInterpolation);
+    });
 
     this.timeline.onTimeChanged((event) => {
       if (this.updating) return;
@@ -238,6 +248,7 @@ export class KeyframeTimelinePanel {
             objectId: entry.id,
             trackKind: kind,
             val: keyframe.time,
+            style: this.keyframeStyle(kind, keyframe.interpolation),
             selected: this.selectedKeyframeIds.has(keyframe.id),
             selectable: true,
             draggable: true
@@ -246,5 +257,66 @@ export class KeyframeTimelinePanel {
       });
     });
     return { rows };
+  }
+
+  private currentInterpolation(timelineDocument: SceneTimelineDocument, selectedId: string): TimelineInterpolation {
+    const selectedKeyframes = timelineDocument.objects.flatMap((object) =>
+      object.tracks.flatMap((track) => track.keyframes.filter((keyframe) => this.selectedKeyframeIds.has(keyframe.id)))
+    );
+    const keyframe = selectedKeyframes[0] ?? this.playheadKeyframe(timelineDocument, selectedId);
+    return keyframe?.interpolation ?? "linear";
+  }
+
+  private playheadKeyframe(timelineDocument: SceneTimelineDocument, selectedId: string) {
+    const objectTimeline = timelineDocument.objects.find((object) => object.objectId === selectedId);
+    const track = objectTimeline?.tracks.find((candidate) => candidate.kind === this.selectedTrackKind());
+    return track?.keyframes.find((keyframe) => Math.abs(keyframe.time - timelineDocument.currentTime) < 0.001);
+  }
+
+  private keyframeStyle(kind: TimelineTrackKind, interpolation: TimelineInterpolation) {
+    const baseColor = TRACK_COLORS[kind];
+    if (interpolation === "hold") {
+      return {
+        shape: TimelineKeyframeShape.Rect,
+        width: 13,
+        height: 13,
+        fillColor: "#2a3138",
+        selectedFillColor: "#ffffff",
+        strokeColor: baseColor,
+        selectedStrokeColor: baseColor,
+        strokeThickness: 2
+      };
+    }
+    if (interpolation === "smooth") {
+      return {
+        shape: TimelineKeyframeShape.Circle,
+        width: 13,
+        height: 13,
+        fillColor: baseColor,
+        selectedFillColor: "#ffffff",
+        strokeColor: "rgba(26,35,42,0.35)",
+        selectedStrokeColor: baseColor,
+        strokeThickness: 2
+      };
+    }
+    return {
+      shape: TimelineKeyframeShape.Rhomb,
+      width: 14,
+      height: 14,
+      fillColor: baseColor,
+      selectedFillColor: "#ffffff",
+      strokeColor: "rgba(26,35,42,0.35)",
+      selectedStrokeColor: baseColor,
+      strokeThickness: 2
+    };
+  }
+
+  private fitTimeline(): void {
+    const duration = Math.max(Number(this.durationInput.value) || 8, 0.5);
+    const clientWidth = Math.max(this.timeline.getClientWidth(), 1);
+    const zoom = Math.max(0.05, Math.min(8, (clientWidth - 32) / (duration * 80)));
+    this.timeline.setZoom(zoom);
+    this.timeline.scrollLeft = 0;
+    this.timeline.redraw();
   }
 }

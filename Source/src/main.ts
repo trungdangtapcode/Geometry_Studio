@@ -32,6 +32,7 @@ import type {
   SceneDocument,
   SceneEntry,
   SerializedObject,
+  TimelineInterpolation,
   TimelineKeyframeDocument,
   TimelineTrackKind,
   ToastTone
@@ -122,6 +123,7 @@ function boot(root: HTMLDivElement): void {
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onClearTrack: clearTimelineTrack,
     onStepKeyframe: stepTimelineKeyframe,
+    onSetInterpolation: setTimelineInterpolation,
     onDragStarted: beginTimelineDrag,
     onKeyframeMoved: moveTimelineKeyframe,
     onDragFinished: finishTimelineDrag,
@@ -1210,7 +1212,6 @@ function boot(root: HTMLDivElement): void {
     const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
     if (existing) {
       existing.value = value;
-      existing.interpolation = "linear";
     } else {
       track.keyframes.push(createTimelineKeyframe(time, value));
     }
@@ -1243,25 +1244,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function duplicateTimelineKeyframes(keyframeIds: string[]): void {
-    type TrackDocument = SceneDocument["timeline"]["objects"][number]["tracks"][number];
-    const sources: Array<{ objectId: string; track: TrackDocument; keyframe: TimelineKeyframeDocument }> = [];
-    const ids = new Set(keyframeIds);
-    if (ids.size > 0) {
-      sceneTimeline.objects.forEach((objectTimeline) => {
-        objectTimeline.tracks.forEach((track) => {
-          track.keyframes.forEach((keyframe) => {
-            if (ids.has(keyframe.id)) sources.push({ objectId: objectTimeline.objectId, track, keyframe });
-          });
-        });
-      });
-    } else {
-      const entry = selectedEntry();
-      const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
-      const track = objectTimeline?.tracks.find((candidate) => candidate.kind === timelinePanel.selectedTrackKind());
-      const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
-      if (entry && track && keyframe) sources.push({ objectId: entry.id, track, keyframe });
-    }
-
+    const sources = resolveTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
@@ -1297,6 +1280,23 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     updateAllUI();
     showToast(`${created} keyframe${created === 1 ? "" : "s"} duplicated`, "good");
+  }
+
+  function setTimelineInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void {
+    const sources = resolveTimelineKeyframeSources(keyframeIds);
+    if (sources.length === 0) {
+      showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
+      return;
+    }
+
+    recordHistory();
+    sources.forEach(({ keyframe }) => {
+      keyframe.interpolation = interpolation;
+    });
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+    showToast(`${capitalize(interpolation)} interpolation applied`, "good");
   }
 
   function clearTimelineTrack(kind: TimelineTrackKind): void {
@@ -1388,6 +1388,28 @@ function boot(root: HTMLDivElement): void {
       THREE.MathUtils.radToDeg(entry.root.rotation.y),
       THREE.MathUtils.radToDeg(entry.root.rotation.z)
     ];
+  }
+
+  function resolveTimelineKeyframeSources(keyframeIds: string[]): Array<{ objectId: string; track: SceneDocument["timeline"]["objects"][number]["tracks"][number]; keyframe: TimelineKeyframeDocument }> {
+    const sources: Array<{ objectId: string; track: SceneDocument["timeline"]["objects"][number]["tracks"][number]; keyframe: TimelineKeyframeDocument }> = [];
+    const ids = new Set(keyframeIds);
+    if (ids.size > 0) {
+      sceneTimeline.objects.forEach((objectTimeline) => {
+        objectTimeline.tracks.forEach((track) => {
+          track.keyframes.forEach((keyframe) => {
+            if (ids.has(keyframe.id)) sources.push({ objectId: objectTimeline.objectId, track, keyframe });
+          });
+        });
+      });
+      return sources;
+    }
+
+    const entry = selectedEntry();
+    const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
+    const track = objectTimeline?.tracks.find((candidate) => candidate.kind === timelinePanel.selectedTrackKind());
+    const keyframe = track?.keyframes.find((candidate) => Math.abs(candidate.time - sceneTimeline.currentTime) < 0.001);
+    if (entry && track && keyframe) sources.push({ objectId: entry.id, track, keyframe });
+    return sources;
   }
 
   function nextAvailableKeyframeTime(track: SceneDocument["timeline"]["objects"][number]["tracks"][number], startTime: number, offset: number): number | null {

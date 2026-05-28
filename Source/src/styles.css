@@ -258,7 +258,8 @@ label {
 }
 
 .timeline-toolbar select,
-.timeline-settings input {
+.timeline-settings input,
+.timeline-settings select {
   min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -293,7 +294,7 @@ label {
 }
 
 .timeline-settings {
-  grid-template-columns: repeat(4, minmax(82px, 1fr)) repeat(3, auto);
+  grid-template-columns: repeat(5, minmax(82px, 1fr)) repeat(3, auto);
   justify-content: stretch;
   padding: 0 10px;
 }
