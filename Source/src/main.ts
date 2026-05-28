@@ -153,6 +153,8 @@ function boot(root: HTMLDivElement): void {
     onPasteKeyframes: pasteTimelineKeyframes,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onClearTrack: clearTimelineTrack,
+    onToggleTrack: toggleTimelineTrack,
+    onTrackKindChanged: updateAllUI,
     onStepKeyframe: stepTimelineKeyframe,
     onStepFrame: stepTimelineFrame,
     onSetInterpolation: setTimelineInterpolation,
@@ -1735,6 +1737,36 @@ function boot(root: HTMLDivElement): void {
     showToast(`${objectTrackLabel(kind)} track cleared`, "good");
   }
 
+  function toggleTimelineTrack(kind: TimelineTrackKind): void {
+    const track = activeTimelineTrack(kind);
+    if (!track || track.keyframes.length === 0) {
+      showToast("Add keyframes to the active track before toggling it.", "bad");
+      return;
+    }
+
+    recordHistory();
+    track.enabled = !track.enabled;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`${track.label} track ${track.enabled ? "enabled" : "disabled"}`, "good");
+  }
+
+  function activeTimelineTrack(kind: TimelineTrackKind): TimelineTrackDocument | null {
+    if (isCameraTrackKind(kind)) {
+      return sceneTimeline.camera.tracks.find((candidate) => candidate.kind === kind) ?? null;
+    }
+    if (isLightTrackKind(kind)) {
+      return sceneTimeline.lights.tracks.find((candidate) => candidate.kind === kind) ?? null;
+    }
+    const entry = selectedEntry();
+    const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
+    return objectTimeline?.tracks.find((candidate) => candidate.kind === kind) ?? null;
+  }
+
   function stepTimelineKeyframe(direction: -1 | 1): void {
     const times = stepCandidateTimes(timelinePanel.selectedTrackKind());
     if (times.length === 0) {
@@ -1930,6 +1962,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function evaluateTimelineTrack(track: TimelineTrackDocument, time: number): [number, number, number] | null {
+    if (!track.enabled) return null;
     const keyframes = [...track.keyframes].sort((left, right) => left.time - right.time);
     if (keyframes.length === 0) return null;
     if (time <= keyframes[0].time) return [...keyframes[0].value] as [number, number, number];

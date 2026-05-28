@@ -36,6 +36,8 @@ PDF.
   frame-step controls, Work Out jump, and timecode display.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
+- [Timeline Track Controls](timeline-track-controls.md) documents active-track
+  enable/disable behavior.
 - [Preview Export](preview-export.md) documents WebM work-area recording.
 
 ## Current Recommendation
@@ -55,6 +57,8 @@ animation runtime where it fits:
 - Timeline keyframe clipboard support copies selected or playhead keyframes and
   pastes them at the current playhead time while preserving relative timing and
   interpolation.
+- Track enable/disable controls mute individual property tracks without deleting
+  saved keyframes.
 
 ## Implementation Status
 

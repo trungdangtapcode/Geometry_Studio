@@ -49,7 +49,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep modes, plus Play/Pause controls.
-- Keyframe Timeline: bottom timeline dock for object, camera, light, material, visibility, and texture tracks with playhead scrubbing, add/delete/copy/paste keyframes, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
+- Keyframe Timeline: bottom timeline dock for object, camera, light, material, visibility, and texture tracks with playhead scrubbing, add/delete/copy/paste keyframes, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, and JSON save/load.
 - Display helpers: Grid, Axes, FPS, selected-object outline, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, preset animations, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.

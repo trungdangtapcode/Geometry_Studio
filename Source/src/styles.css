@@ -300,6 +300,11 @@ label {
   color: #842029;
 }
 
+.mini-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .timeline-settings {
   grid-template-columns: repeat(5, minmax(82px, 1fr)) repeat(3, auto);
   justify-content: stretch;

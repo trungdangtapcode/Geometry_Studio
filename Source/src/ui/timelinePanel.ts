@@ -18,6 +18,8 @@ export interface KeyframeTimelineCallbacks {
   onPasteKeyframes(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onClearTrack(kind: TimelineTrackKind): void;
+  onToggleTrack(kind: TimelineTrackKind): void;
+  onTrackKindChanged(): void;
   onStepKeyframe(direction: -1 | 1): void;
   onStepFrame(direction: -1 | 1): void;
   onSetInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void;
@@ -128,6 +130,7 @@ export class KeyframeTimelinePanel {
   private readonly labels = query<HTMLDivElement>("#timeline-track-labels");
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
+  private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly timeInput = query<HTMLInputElement>("#timeline-current-time");
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
   private readonly workStartInput = query<HTMLInputElement>("#timeline-work-start");
@@ -192,6 +195,7 @@ export class KeyframeTimelinePanel {
     this.autoKeyInput.checked = timelineDocument.autoKey;
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
     this.interpolationSelect.value = this.currentInterpolation(timelineDocument, selectedId);
+    this.syncToggleTrackButton(timelineDocument, selectedId);
 
     const visibleEntries = this.visibleEntries(timelineDocument, entries, selectedId);
     this.labels.innerHTML = this.renderLabels(visibleEntries);
@@ -250,6 +254,9 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());
     });
+    this.toggleTrackButton.addEventListener("click", () => {
+      this.callbacks.onToggleTrack(this.selectedTrackKind());
+    });
     query<HTMLButtonElement>("#timeline-prev-frame").addEventListener("click", () => this.callbacks.onStepFrame(-1));
     query<HTMLButtonElement>("#timeline-next-frame").addEventListener("click", () => this.callbacks.onStepFrame(1));
     query<HTMLButtonElement>("#timeline-prev-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(-1));
@@ -269,6 +276,9 @@ export class KeyframeTimelinePanel {
     this.loopInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ loop: this.loopInput.checked }));
     this.snapInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapEnabled: this.snapInput.checked }));
     this.autoKeyInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ autoKey: this.autoKeyInput.checked }));
+    this.trackSelect.addEventListener("change", () => {
+      if (!this.updating) this.callbacks.onTrackKindChanged();
+    });
     this.interpolationSelect.addEventListener("change", () => {
       this.callbacks.onSetInterpolation([...this.selectedKeyframeIds], this.interpolationSelect.value as TimelineInterpolation);
     });
@@ -457,6 +467,29 @@ export class KeyframeTimelinePanel {
     ];
     const keyframe = selectedKeyframes[0] ?? this.playheadKeyframe(timelineDocument, selectedId);
     return keyframe?.interpolation ?? "linear";
+  }
+
+  private syncToggleTrackButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    const state = this.selectedTrackState(timelineDocument, selectedId);
+    this.toggleTrackButton.disabled = !state.hasKeyframes;
+    this.toggleTrackButton.classList.toggle("danger", state.hasKeyframes && !state.enabled);
+    this.toggleTrackButton.innerHTML = `<span data-icon="${state.enabled ? "Eye" : "EyeOff"}"></span><span>${state.enabled ? "Track On" : "Track Off"}</span>`;
+    hydrateIcons(this.toggleTrackButton);
+  }
+
+  private selectedTrackState(timelineDocument: SceneTimelineDocument, selectedId: string): { enabled: boolean; hasKeyframes: boolean } {
+    const selectedTrack = this.selectedTrackKind();
+    const track = isCameraTrack(selectedTrack)
+      ? timelineDocument.camera.tracks.find((candidate) => candidate.kind === selectedTrack)
+      : isLightTrack(selectedTrack)
+        ? timelineDocument.lights.tracks.find((candidate) => candidate.kind === selectedTrack)
+        : timelineDocument.objects
+          .find((object) => object.objectId === selectedId)
+          ?.tracks.find((candidate) => candidate.kind === selectedTrack);
+    return {
+      enabled: track?.enabled ?? true,
+      hasKeyframes: Boolean(track && track.keyframes.length > 0)
+    };
   }
 
   private playheadKeyframe(timelineDocument: SceneTimelineDocument, selectedId: string) {

@@ -16,6 +16,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
+  await expect(page.locator("#timeline-toggle-track")).toBeVisible();
   await page.locator("#timeline-next-frame").click();
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0);
@@ -173,6 +174,8 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.locator("#timeline-paste-keyframes").click();
+  await page.locator("#timeline-toggle-track").click();
+  await expect(page.locator("#timeline-toggle-track")).toContainText("Track Off");
 
   await page.locator("#timeline-track-kind").selectOption("cameraPosition");
   await page.locator("#timeline-current-time").evaluate((input) => {
@@ -385,6 +388,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneDocument.timeline.objects).toHaveLength(1);
   const objectTracks = sceneDocument.timeline.objects[0].tracks as Array<{
     kind: string;
+    enabled: boolean;
     keyframes: Array<{ time: number; value: number[]; interpolation: string }>;
   }>;
   const positionTrack = objectTracks.find((track) => track.kind === "position")!;
@@ -397,6 +401,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const textureRotationTrack = objectTracks.find((track) => track.kind === "objectTextureRotation")!;
   const visibilityTrack = objectTracks.find((track) => track.kind === "objectVisibility")!;
   expect(positionTrack.keyframes).toHaveLength(4);
+  expect(positionTrack.enabled).toBe(false);
   expect(positionTrack.keyframes[1].value[0]).toBe(2);
   expect(positionTrack.keyframes[1].interpolation).toBe("smooth");
   const pastedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.5) < 0.001)!;
