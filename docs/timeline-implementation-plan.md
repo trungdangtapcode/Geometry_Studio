@@ -13,6 +13,7 @@ The follow-up AE-style slices are also partially implemented:
 - Timeline schema v4 adds directional, point, spot, and ambient light tracks.
 - Timeline schema v5 adds object Color, Opacity, and Visibility tracks.
 - Timeline schema v6 adds object Roughness and Metalness tracks.
+- Timeline schema v7 adds Texture Repeat, Offset, and Rotation tracks.
 - Auto-Key, duplicate, previous/next keyframe navigation, interpolation editing,
   zoom controls, and clear-track commands are implemented.
 
@@ -34,7 +35,7 @@ Version one should implement a clean transform timeline only:
 
 Out of scope for the original first version:
 
-- Texture transform, bone, morph target, and audio tracks
+- Per-axis texture/transform expansion, bone, morph target, and audio tracks
 - Graph editor curves
 - Nested sequence composition
 - WebM or GIF export
@@ -191,7 +192,7 @@ After the transform timeline is stable, future versions can add:
 
 - Camera tracks for cinematic shots.
 - Light intensity, color, and position tracks.
-- Texture transform and advanced material map tracks.
+- Texture source switching and advanced material map tracks.
 - Visibility tracks.
 - Auto-key mode.
 - Easing presets and a graph editor.

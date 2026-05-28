@@ -76,6 +76,8 @@ function serializeEntry(entry: SceneEntry): SerializedObject {
     visible: entry.root.visible,
     textureName: entry.textureName === "uploaded" ? "none" : entry.textureName,
     textureRepeat: [entry.textureRepeat.x, entry.textureRepeat.y],
+    textureOffset: [entry.textureOffset.x, entry.textureOffset.y],
+    textureRotation: entry.textureRotation,
     animation: entry.animation,
     position: vectorToArray(entry.root.position),
     rotation: [entry.root.rotation.x, entry.root.rotation.y, entry.root.rotation.z],

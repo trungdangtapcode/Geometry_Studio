@@ -107,7 +107,7 @@ test("supports undo redo scene loading and evaluation tour", async ({ page }) =>
 });
 
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(360_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
     const downloads: string[] = [];
@@ -252,6 +252,60 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   });
   await expect(objectMetalness).toHaveValue("0.55");
 
+  await page.locator('[data-texture="uv"]').click();
+  await page.locator("#timeline-track-kind").selectOption("objectTextureRepeat");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.texture-repeat[data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.texture-repeat[data-axis="y"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await page.locator("#timeline-track-kind").selectOption("objectTextureOffset");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "4.25";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.texture-offset[data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "0.15";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.texture-offset[data-axis="y"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "0.3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await page.locator("#timeline-track-kind").selectOption("objectTextureRotation");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "4.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#texture-rotation").evaluate((input) => {
+    (input as HTMLInputElement).value = "45";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
   await page.locator("#timeline-track-kind").selectOption("objectVisibility");
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "0";
@@ -268,6 +322,10 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(objectVisible).not.toBeChecked();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "4.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#save-scene")?.click();
@@ -278,7 +336,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const sceneDocument = JSON.parse(sceneJson as string);
 
   expect(sceneDocument.version).toBe(2);
-  expect(sceneDocument.timeline.version).toBe(6);
+  expect(sceneDocument.timeline.version).toBe(7);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.autoKey).toBe(true);
   expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
@@ -299,6 +357,9 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   const opacityTrack = objectTracks.find((track) => track.kind === "objectOpacity")!;
   const roughnessTrack = objectTracks.find((track) => track.kind === "objectRoughness")!;
   const metalnessTrack = objectTracks.find((track) => track.kind === "objectMetalness")!;
+  const textureRepeatTrack = objectTracks.find((track) => track.kind === "objectTextureRepeat")!;
+  const textureOffsetTrack = objectTracks.find((track) => track.kind === "objectTextureOffset")!;
+  const textureRotationTrack = objectTracks.find((track) => track.kind === "objectTextureRotation")!;
   const visibilityTrack = objectTracks.find((track) => track.kind === "objectVisibility")!;
   expect(positionTrack.keyframes).toHaveLength(3);
   expect(positionTrack.keyframes[1].value[0]).toBe(2);
@@ -311,8 +372,18 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(roughnessTrack.keyframes[1].value[0]).toBe(0.85);
   expect(metalnessTrack.keyframes).toHaveLength(2);
   expect(metalnessTrack.keyframes[1].value[0]).toBe(0.55);
+  expect(textureRepeatTrack.keyframes).toHaveLength(2);
+  expect(textureRepeatTrack.keyframes[1].value).toEqual([2, 3, 0]);
+  expect(textureOffsetTrack.keyframes).toHaveLength(2);
+  expect(textureOffsetTrack.keyframes[1].value).toEqual([0.15, 0.3, 0]);
+  expect(textureRotationTrack.keyframes).toHaveLength(2);
+  expect(textureRotationTrack.keyframes[1].value[0]).toBeCloseTo(Math.PI / 4, 3);
   expect(visibilityTrack.keyframes).toHaveLength(2);
   expect(visibilityTrack.keyframes[1].value[0]).toBe(0);
+  expect(sceneDocument.objects[0].textureName).toBe("uv");
+  expect(sceneDocument.objects[0].textureRepeat).toEqual([2, 3]);
+  expect(sceneDocument.objects[0].textureOffset).toEqual([0.15, 0.3]);
+  expect(sceneDocument.objects[0].textureRotation).toBeCloseTo(Math.PI / 4, 3);
 
   await page.locator("#timeline-track-kind").selectOption("position");
   await page.locator("#timeline-clear-track").click({ force: true });

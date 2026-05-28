@@ -44,6 +44,9 @@ const OBJECT_TRACKS: TimelineTrackKind[] = [
   "objectOpacity",
   "objectRoughness",
   "objectMetalness",
+  "objectTextureRepeat",
+  "objectTextureOffset",
+  "objectTextureRotation",
   "objectVisibility"
 ];
 const CAMERA_TRACKS: TimelineTrackKind[] = ["cameraPosition", "cameraTarget", "cameraLens"];
@@ -70,6 +73,9 @@ const TRACK_COLORS: Record<TimelineTrackKind, string> = {
   objectOpacity: "#64748b",
   objectRoughness: "#8b5cf6",
   objectMetalness: "#0f766e",
+  objectTextureRepeat: "#d97706",
+  objectTextureOffset: "#0891b2",
+  objectTextureRotation: "#be123c",
   objectVisibility: "#16a34a",
   cameraPosition: "#4f8df7",
   cameraTarget: "#a86de8",
@@ -94,6 +100,9 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   objectOpacity: "Opacity",
   objectRoughness: "Roughness",
   objectMetalness: "Metalness",
+  objectTextureRepeat: "Texture Repeat",
+  objectTextureOffset: "Texture Offset",
+  objectTextureRotation: "Texture Rotation",
   objectVisibility: "Visibility",
   cameraPosition: "Camera Position",
   cameraTarget: "Camera Target",

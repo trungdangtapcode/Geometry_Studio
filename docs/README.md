@@ -28,6 +28,8 @@ PDF.
 - [Object Property Timeline Tracks](object-property-timeline-tracks.md)
   documents schema v6 object Color, Opacity, Roughness, Metalness, and
   Visibility tracks.
+- [Texture Timeline Tracks](texture-timeline-tracks.md) documents schema v7
+  texture Repeat, Offset, and Rotation tracks.
 
 ## Current Recommendation
 
@@ -61,8 +63,8 @@ object appearance, camera, and light tracks:
   against the same keyframe schema so non-transform properties remain
   synchronized with scrubbing, Auto-Key, Undo, Redo, save, and load.
 
-The longer-term documents remain useful for the next stages: texture transform
-tracks, per-axis expansion, curve editing, and export workflows.
+The longer-term documents remain useful for the next stages: per-axis expansion,
+curve editing, nested model tracks, and export workflows.
 
 ## Reading Order
 

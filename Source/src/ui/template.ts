@@ -52,6 +52,9 @@ export function studioTemplate(): string {
                   <option value="objectOpacity">Opacity</option>
                   <option value="objectRoughness">Roughness</option>
                   <option value="objectMetalness">Metalness</option>
+                  <option value="objectTextureRepeat">Texture Repeat</option>
+                  <option value="objectTextureOffset">Texture Offset</option>
+                  <option value="objectTextureRotation">Texture Rotation</option>
                   <option value="objectVisibility">Visibility</option>
                 </optgroup>
                 <optgroup label="Camera">
@@ -253,6 +256,18 @@ export function studioTemplate(): string {
             <label>
               <span>Repeat Y</span>
               <input class="texture-repeat" type="number" data-axis="y" min="0.25" max="8" step="0.25" value="1" />
+            </label>
+            <label>
+              <span>Offset X</span>
+              <input class="texture-offset" type="number" data-axis="x" min="-4" max="4" step="0.05" value="0" />
+            </label>
+            <label>
+              <span>Offset Y</span>
+              <input class="texture-offset" type="number" data-axis="y" min="-4" max="4" step="0.05" value="0" />
+            </label>
+            <label>
+              <span>Rotation</span>
+              <input id="texture-rotation" type="number" min="-360" max="360" step="5" value="0" />
             </label>
           </div>
         </section>

@@ -16,6 +16,9 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   objectOpacity: "Object Opacity",
   objectRoughness: "Object Roughness",
   objectMetalness: "Object Metalness",
+  objectTextureRepeat: "Texture Repeat",
+  objectTextureOffset: "Texture Offset",
+  objectTextureRotation: "Texture Rotation",
   objectVisibility: "Object Visibility",
   cameraPosition: "Camera Position",
   cameraTarget: "Camera Target",
@@ -41,6 +44,9 @@ const OBJECT_TRACK_KINDS = new Set<TimelineTrackKind>([
   "objectOpacity",
   "objectRoughness",
   "objectMetalness",
+  "objectTextureRepeat",
+  "objectTextureOffset",
+  "objectTextureRotation",
   "objectVisibility"
 ]);
 const CAMERA_TRACK_KINDS = new Set<TimelineTrackKind>(["cameraPosition", "cameraTarget", "cameraLens"]);
@@ -59,7 +65,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 6,
+    version: 7,
     duration: 8,
     fps: 30,
     currentTime: 0,
@@ -90,7 +96,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 6,
+    version: 7,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     fps: Math.round(finiteNumber(source.fps, defaults.fps, 1, 120)),
     currentTime: finiteNumber(source.currentTime, defaults.currentTime, 0, 120),
@@ -308,6 +314,9 @@ function isTimelineTrackKind(value: unknown): value is TimelineTrackKind {
     value === "objectOpacity" ||
     value === "objectRoughness" ||
     value === "objectMetalness" ||
+    value === "objectTextureRepeat" ||
+    value === "objectTextureOffset" ||
+    value === "objectTextureRotation" ||
     value === "objectVisibility" ||
     value === "cameraPosition" ||
     value === "cameraTarget" ||

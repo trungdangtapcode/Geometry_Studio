@@ -11,13 +11,7 @@ export function createMaterial(entry: SceneEntry, tracker?: ResourceTracker): TH
     opacity: entry.opacity
   };
 
-  if (entry.texture) {
-    entry.texture.wrapS = THREE.RepeatWrapping;
-    entry.texture.wrapT = THREE.RepeatWrapping;
-    entry.texture.repeat.copy(entry.textureRepeat);
-    entry.texture.colorSpace = THREE.SRGBColorSpace;
-    entry.texture.needsUpdate = true;
-  }
+  syncTextureTransform(entry);
 
   if (entry.materialMode === "normal") {
     const params = { side: THREE.DoubleSide, transparent: entry.opacity < 1, opacity: entry.opacity };
@@ -161,4 +155,16 @@ export function makeTexturePreset(name: string): THREE.Texture {
   texture.wrapT = THREE.RepeatWrapping;
   texture.needsUpdate = true;
   return texture;
+}
+
+export function syncTextureTransform(entry: SceneEntry): void {
+  if (!entry.texture) return;
+  entry.texture.wrapS = THREE.RepeatWrapping;
+  entry.texture.wrapT = THREE.RepeatWrapping;
+  entry.texture.repeat.copy(entry.textureRepeat);
+  entry.texture.offset.copy(entry.textureOffset);
+  entry.texture.center.set(0.5, 0.5);
+  entry.texture.rotation = entry.textureRotation;
+  entry.texture.colorSpace = THREE.SRGBColorSpace;
+  entry.texture.needsUpdate = true;
 }

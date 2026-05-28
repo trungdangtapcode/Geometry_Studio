@@ -46,7 +46,7 @@ import type {
 import { createRenderPipeline } from "./renderer/pipeline";
 import { loadModelFromFile } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
-import { buildGeometryVisual, buildModelVisual, makeTexturePreset } from "./scene/materials";
+import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
 import { KeyframeTimelinePanel } from "./ui/timelinePanel";
 import { studioTemplate } from "./ui/template";
@@ -255,6 +255,8 @@ function boot(root: HTMLDivElement): void {
       texture,
       textureName,
       textureRepeat: new THREE.Vector2(1, 1),
+      textureOffset: new THREE.Vector2(0, 0),
+      textureRotation: 0,
       animation: config.animation ?? "none",
       basePosition: root.position.clone(),
       baseScale: root.scale.clone(),
@@ -299,6 +301,18 @@ function boot(root: HTMLDivElement): void {
           item.metalness = entry.metalness;
         }
         item.needsUpdate = true;
+      });
+    });
+  }
+
+  function applyEntryTextureTransform(entry: SceneEntry): void {
+    syncTextureTransform(entry);
+    entry.root.traverse((object) => {
+      const material = (object as THREE.Mesh | THREE.LineSegments | THREE.Points).material;
+      if (!material) return;
+      const materials = Array.isArray(material) ? material : [material];
+      materials.forEach((item) => {
+        if ("map" in item && item.map) item.needsUpdate = true;
       });
     });
   }
@@ -479,8 +493,34 @@ function boot(root: HTMLDivElement): void {
         updateSelectedEntry((entry) => {
           const axis = input.dataset.axis as "x" | "y";
           entry.textureRepeat[axis] = Number(input.value);
-          rebuildEntryVisual(entry);
+          applyEntryTextureTransform(entry);
+          if (sceneTimeline.autoKey) {
+            setTimelineKeyframe("objectTextureRepeat", { notify: false, record: false, refresh: false });
+          }
         });
+      });
+    });
+
+    document.querySelectorAll<HTMLInputElement>(".texture-offset").forEach((input) => {
+      input.addEventListener("change", () => {
+        updateSelectedEntry((entry) => {
+          const axis = input.dataset.axis as "x" | "y";
+          entry.textureOffset[axis] = Number(input.value);
+          applyEntryTextureTransform(entry);
+          if (sceneTimeline.autoKey) {
+            setTimelineKeyframe("objectTextureOffset", { notify: false, record: false, refresh: false });
+          }
+        });
+      });
+    });
+
+    query<HTMLInputElement>("#texture-rotation").addEventListener("change", (event) => {
+      updateSelectedEntry((entry) => {
+        entry.textureRotation = THREE.MathUtils.degToRad(Number((event.target as HTMLInputElement).value));
+        applyEntryTextureTransform(entry);
+        if (sceneTimeline.autoKey) {
+          setTimelineKeyframe("objectTextureRotation", { notify: false, record: false, refresh: false });
+        }
       });
     });
 
@@ -770,6 +810,11 @@ function boot(root: HTMLDivElement): void {
       const axis = input.dataset.axis as "x" | "y";
       input.value = String(entry?.textureRepeat[axis] ?? 1);
     });
+    document.querySelectorAll<HTMLInputElement>(".texture-offset").forEach((input) => {
+      const axis = input.dataset.axis as "x" | "y";
+      input.value = String(entry?.textureOffset[axis] ?? 0);
+    });
+    query<HTMLInputElement>("#texture-rotation").value = String(THREE.MathUtils.radToDeg(entry?.textureRotation ?? 0));
   }
 
   function syncHistoryButtons(): void {
@@ -1242,6 +1287,8 @@ function boot(root: HTMLDivElement): void {
     entry.root.scale.fromArray(object.scale);
     entry.root.visible = object.visible ?? true;
     entry.textureRepeat.set(object.textureRepeat[0], object.textureRepeat[1]);
+    entry.textureOffset.fromArray(object.textureOffset ?? [0, 0]);
+    entry.textureRotation = object.textureRotation ?? 0;
     entry.basePosition.copy(entry.root.position);
     entry.baseScale.copy(entry.root.scale);
     rebuildEntryVisual(entry);
@@ -1629,6 +1676,9 @@ function boot(root: HTMLDivElement): void {
     if (kind === "objectOpacity") return [entry.opacity, 0, 0];
     if (kind === "objectRoughness") return [entry.roughness, 0, 0];
     if (kind === "objectMetalness") return [entry.metalness, 0, 0];
+    if (kind === "objectTextureRepeat") return [entry.textureRepeat.x, entry.textureRepeat.y, 0];
+    if (kind === "objectTextureOffset") return [entry.textureOffset.x, entry.textureOffset.y, 0];
+    if (kind === "objectTextureRotation") return [entry.textureRotation, 0, 0];
     if (kind === "objectVisibility") return [entry.root.visible ? 1 : 0, 0, 0];
     return [0, 0, 0];
   }
@@ -1694,6 +1744,7 @@ function boot(root: HTMLDivElement): void {
       const entry = entries.get(objectTimeline.objectId);
       if (!entry) return;
       let appearanceChanged = false;
+      let textureChanged = false;
       objectTimeline.tracks.forEach((track) => {
         if (!isObjectPropertyTrackKind(track.kind)) return;
         const value = evaluateTimelineTrack(track, sceneTimeline.currentTime);
@@ -1710,11 +1761,21 @@ function boot(root: HTMLDivElement): void {
         } else if (track.kind === "objectMetalness") {
           entry.metalness = clamp(value[0], 0, 1);
           appearanceChanged = true;
+        } else if (track.kind === "objectTextureRepeat") {
+          entry.textureRepeat.set(Math.max(0.001, value[0]), Math.max(0.001, value[1]));
+          textureChanged = true;
+        } else if (track.kind === "objectTextureOffset") {
+          entry.textureOffset.set(value[0], value[1]);
+          textureChanged = true;
+        } else if (track.kind === "objectTextureRotation") {
+          entry.textureRotation = value[0];
+          textureChanged = true;
         } else if (track.kind === "objectVisibility") {
           entry.root.visible = value[0] >= 0.5;
         }
       });
       if (appearanceChanged) applyEntryAppearance(entry);
+      if (textureChanged) applyEntryTextureTransform(entry);
     });
   }
 
@@ -1861,11 +1922,17 @@ function boot(root: HTMLDivElement): void {
     | "objectOpacity"
     | "objectRoughness"
     | "objectMetalness"
+    | "objectTextureRepeat"
+    | "objectTextureOffset"
+    | "objectTextureRotation"
     | "objectVisibility" {
     return kind === "objectColor" ||
       kind === "objectOpacity" ||
       kind === "objectRoughness" ||
       kind === "objectMetalness" ||
+      kind === "objectTextureRepeat" ||
+      kind === "objectTextureOffset" ||
+      kind === "objectTextureRotation" ||
       kind === "objectVisibility";
   }
 
@@ -1914,6 +1981,9 @@ function boot(root: HTMLDivElement): void {
     if (kind === "objectOpacity") return "Object opacity";
     if (kind === "objectRoughness") return "Object roughness";
     if (kind === "objectMetalness") return "Object metalness";
+    if (kind === "objectTextureRepeat") return "Texture repeat";
+    if (kind === "objectTextureOffset") return "Texture offset";
+    if (kind === "objectTextureRotation") return "Texture rotation";
     if (kind === "objectVisibility") return "Object visibility";
     return capitalize(kind);
   }
@@ -2067,6 +2137,8 @@ function boot(root: HTMLDivElement): void {
       visible: entry.root.visible,
       textureName: entry.textureName === "uploaded" ? "none" : entry.textureName,
       textureRepeat: [entry.textureRepeat.x, entry.textureRepeat.y],
+      textureOffset: [entry.textureOffset.x, entry.textureOffset.y],
+      textureRotation: entry.textureRotation,
       animation: entry.animation,
       position: [entry.root.position.x, entry.root.position.y, entry.root.position.z],
       rotation: [entry.root.rotation.x, entry.root.rotation.y, entry.root.rotation.z],

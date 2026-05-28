@@ -3,7 +3,8 @@
 ## Status
 
 Object appearance timeline tracks were introduced in schema v5 and expanded in
-schema v6. This adds a second class of object-owned tracks beyond transforms:
+schema v6. They remain supported in current schema v7. This adds a second class
+of object-owned tracks beyond transforms:
 
 - Color.
 - Opacity.
@@ -105,12 +106,11 @@ Recommended manual check:
 3. Add Color, Opacity, Roughness, Metalness, and Visibility keyframes at time 0.
 4. Move the playhead and change the inspector controls.
 5. Scrub the timeline and confirm the object changes appearance.
-6. Save JSON and verify `timeline.version` is `6`.
+6. Save JSON and verify the current timeline schema version.
 
 ## Remaining Property Track Work
 
 The next useful additions are:
 
-- Texture transform tracks.
 - Per-axis expansion for Position, Rotation, and Scale.
 - Graph/curve editing for finer interpolation control.
