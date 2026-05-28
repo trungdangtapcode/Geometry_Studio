@@ -86,6 +86,8 @@ export function studioTemplate(): string {
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
               <button class="mini-button" id="timeline-copy-keyframes" type="button"><span data-icon="ClipboardCopy"></span><span>Copy</span></button>
               <button class="mini-button" id="timeline-paste-keyframes" type="button"><span data-icon="ClipboardPaste"></span><span>Paste</span></button>
+              <button class="mini-button icon-mini" id="timeline-nudge-left" type="button" aria-label="Nudge keyframe left" title="Nudge keyframe left"><span data-icon="MoveLeft"></span></button>
+              <button class="mini-button icon-mini" id="timeline-nudge-right" type="button" aria-label="Nudge keyframe right" title="Nudge keyframe right"><span data-icon="MoveRight"></span></button>
               <button class="mini-button" id="timeline-duplicate-keyframe" type="button"><span data-icon="Copy"></span><span>Duplicate</span></button>
               <button class="mini-button" id="timeline-toggle-track" type="button"><span data-icon="Eye"></span><span>Track On</span></button>
               <button class="mini-button danger" id="timeline-clear-track" type="button"><span data-icon="Eraser"></span><span>Clear Track</span></button>

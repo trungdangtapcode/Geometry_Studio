@@ -36,6 +36,8 @@ PDF.
   frame-step controls, Work Out jump, and timecode display.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
+- [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step
+  retiming controls for selected or playhead keyframes.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
   enable/disable behavior.
 - [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
@@ -59,6 +61,8 @@ animation runtime where it fits:
 - Timeline keyframe clipboard support copies selected or playhead keyframes and
   pastes them at the current playhead time while preserving relative timing and
   interpolation.
+- Frame-step keyframe nudge controls retime selected or playhead keyframes
+  without dragging.
 - Track enable/disable controls mute individual property tracks without deleting
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation
@@ -71,6 +75,8 @@ object appearance, camera, and light tracks:
 
 - `animation/timelineSchema.ts` owns timeline defaults, migration, cloning, and
   track helpers.
+- `animation/timelineEditing.ts` owns pure keyframe edit operations such as
+  source resolution, copy/paste payloads, duplicate, and frame nudge.
 - `animation/clipFactory.ts` compiles Position, Rotation, and Scale tracks into
   Three.js keyframe tracks.
 - `animation/timelinePlayer.ts` evaluates clips with one `AnimationMixer` per

@@ -19,6 +19,9 @@ should stay close to this structure:
   tracks, keyframes, easing, playback state, and migrations.
 - `animation/timelineSchema.ts`: default timeline values, validation helpers,
   scene JSON v1-to-v2 migration, and normalization of loaded data.
+- `animation/timelineEditing.ts`: pure keyframe edit operations such as source
+  resolution, copy/paste payloads, duplication, collision-aware nudging, and
+  target-track creation.
 - `animation/clipFactory.ts`: converts timeline tracks into Three.js
   `AnimationClip` objects.
 - `animation/timelinePlayer.ts`: owns `AnimationMixer` instances, playback state,
@@ -33,8 +36,9 @@ should stay close to this structure:
   and edit keyframes so Undo and Redo remain consistent.
 
 The important boundary is that `ui/timelinePanel.ts` must not directly mutate
-scene objects. It should dispatch commands, and those commands should update the
-store, rebuild runtime clips, and refresh the timeline adapter.
+scene objects. It should dispatch callbacks. Pure timeline document edits should
+live in `animation/timelineEditing.ts`; the editor shell should only coordinate
+history snapshots, runtime rebuilds, scene-object side effects, and UI refresh.
 
 ## Scene Document Versioning
 

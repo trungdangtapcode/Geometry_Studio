@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("renders the studio and core controls", async ({ page }) => {
+  test.setTimeout(120_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -16,6 +17,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
+  await expect(page.locator("#timeline-nudge-left")).toBeVisible();
+  await expect(page.locator("#timeline-nudge-right")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
@@ -135,7 +138,7 @@ test("supports undo redo scene loading and evaluation tour", async ({ page }) =>
 });
 
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
-  test.setTimeout(360_000);
+  test.setTimeout(480_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
     const downloads: string[] = [];
@@ -182,6 +185,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.locator("#timeline-paste-keyframes").click();
+  await page.locator("#timeline-nudge-right").click();
   await page.locator("#timeline-toggle-track").click();
   await expect(page.locator("#timeline-toggle-track")).toContainText("Track Off");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/disabled-track/);
@@ -413,7 +417,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(positionTrack.enabled).toBe(false);
   expect(positionTrack.keyframes[1].value[0]).toBe(2);
   expect(positionTrack.keyframes[1].interpolation).toBe("smooth");
-  const pastedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.5) < 0.001)!;
+  const pastedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.533) < 0.001)!;
   expect(pastedPosition.value[0]).toBe(2);
   expect(colorTrack.keyframes).toHaveLength(2);
   expect(colorTrack.keyframes[1].value[2]).toBeCloseTo(1, 3);

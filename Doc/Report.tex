@@ -215,9 +215,10 @@ delete, duplicate, copy, paste, drag, scrub, save, and reload keyframes.
 The left row labels select object, camera, and light tracks directly, and active
 tracks can be disabled non-destructively to test motion or appearance changes
 without deleting keyframes. Frame-accurate navigation is available through
-previous/next frame buttons and keyboard shortcuts. The editor stores rotation
-keyframes in readable Euler degrees and converts transform animation to Three.js
-playback tracks where appropriate.
+previous/next frame buttons and keyboard shortcuts, while selected keyframes can
+be nudged one frame left or right for precise retiming. The editor stores
+rotation keyframes in readable Euler degrees and converts transform animation to
+Three.js playback tracks where appropriate.
 
 \section{Advanced Features}
 
@@ -358,6 +359,7 @@ editor/types.ts & Shared application types such as SceneEntry, LightRig, and Sce
 editor/documents.ts & Scene JSON serialization and validation. \\
 editor/commands.ts & Undo/redo snapshot history. \\
 animation/timelineSchema.ts & Timeline defaults, validation, migration, snapping, and object-track helpers. \\
+animation/timelineEditing.ts & Pure keyframe editing operations such as source resolution, copy, paste, duplicate, and frame nudge. \\
 animation/clipFactory.ts & Converts timeline tracks into Three.js keyframe clips. \\
 animation/timelinePlayer.ts & Evaluates timeline clips with \texttt{AnimationMixer}. \\
 scene/primitives.ts & Primitive geometry, extra shapes, labels, and built-in sample model. \\

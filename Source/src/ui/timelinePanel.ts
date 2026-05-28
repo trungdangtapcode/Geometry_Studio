@@ -17,6 +17,7 @@ export interface KeyframeTimelineCallbacks {
   onCopyKeyframes(keyframeIds: string[]): void;
   onPasteKeyframes(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
+  onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onToggleTrack(kind: TimelineTrackKind): void;
   onTrackKindChanged(): void;
@@ -248,6 +249,12 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-paste-keyframes").addEventListener("click", () => {
       this.callbacks.onPasteKeyframes();
+    });
+    query<HTMLButtonElement>("#timeline-nudge-left").addEventListener("click", () => {
+      this.callbacks.onNudgeKeyframes(-1, [...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-nudge-right").addEventListener("click", () => {
+      this.callbacks.onNudgeKeyframes(1, [...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
       this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);
