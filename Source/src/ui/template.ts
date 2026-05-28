@@ -40,12 +40,16 @@ export function studioTemplate(): string {
             <div class="timeline-title">
               <strong>Keyframe Timeline</strong>
               <span id="timeline-selection">No keyframe selected</span>
+              <span class="timeline-timecode" id="timeline-timecode">00:00:00 | F0000</span>
             </div>
             <div class="timeline-toolbar">
               <button class="mini-button" id="timeline-start" type="button"><span data-icon="StepBack"></span><span>Start</span></button>
+              <button class="mini-button" id="timeline-end" type="button"><span data-icon="StepForward"></span><span>Out</span></button>
+              <button class="mini-button icon-mini" id="timeline-prev-frame" type="button" aria-label="Previous frame" title="Previous frame"><span data-icon="SkipBack"></span></button>
               <button class="mini-button icon-mini" id="timeline-prev-keyframe" type="button" aria-label="Previous keyframe" title="Previous keyframe"><span data-icon="ChevronLeft"></span></button>
               <button class="mini-button strong-mini" id="timeline-play-toggle" type="button"><span data-icon="Play"></span><span>Play</span></button>
               <button class="mini-button icon-mini" id="timeline-next-keyframe" type="button" aria-label="Next keyframe" title="Next keyframe"><span data-icon="ChevronRight"></span></button>
+              <button class="mini-button icon-mini" id="timeline-next-frame" type="button" aria-label="Next frame" title="Next frame"><span data-icon="SkipForward"></span></button>
               <select id="timeline-track-kind" aria-label="Keyframe track">
                 <optgroup label="Object">
                   <option value="position">Position</option>

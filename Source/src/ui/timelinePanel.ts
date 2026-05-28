@@ -17,6 +17,7 @@ export interface KeyframeTimelineCallbacks {
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
+  onStepFrame(direction: -1 | 1): void;
   onSetInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void;
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
@@ -135,7 +136,8 @@ export class KeyframeTimelinePanel {
   private readonly loopInput = query<HTMLInputElement>("#timeline-loop");
   private readonly snapStepInput = query<HTMLInputElement>("#timeline-snap-step");
   private readonly interpolationSelect = query<HTMLSelectElement>("#timeline-interpolation");
-  private readonly selectionLabel = query<HTMLDivElement>("#timeline-selection");
+  private readonly selectionLabel = query<HTMLSpanElement>("#timeline-selection");
+  private readonly timecodeLabel = query<HTMLSpanElement>("#timeline-timecode");
   private selectedKeyframeIds = new Set<string>();
   private updating = false;
 
@@ -178,6 +180,7 @@ export class KeyframeTimelinePanel {
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
+    this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.durationInput.value = formatNumber(timelineDocument.duration);
     this.workStartInput.value = formatNumber(timelineDocument.workStart);
     this.workEndInput.value = formatNumber(timelineDocument.workEnd);
@@ -214,6 +217,7 @@ export class KeyframeTimelinePanel {
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
+    this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.timeline.setTime(timelineDocument.currentTime);
     this.updating = false;
   }
@@ -234,12 +238,15 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());
     });
+    query<HTMLButtonElement>("#timeline-prev-frame").addEventListener("click", () => this.callbacks.onStepFrame(-1));
+    query<HTMLButtonElement>("#timeline-next-frame").addEventListener("click", () => this.callbacks.onStepFrame(1));
     query<HTMLButtonElement>("#timeline-prev-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(-1));
     query<HTMLButtonElement>("#timeline-next-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(1));
     query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.timeline.zoomOut(0.25));
     query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.timeline.zoomIn(0.25));
     query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimeline());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workStartInput.value)));
+    query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workEndInput.value)));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
     this.timeInput.addEventListener("change", () => this.callbacks.onTimeChanged(Number(this.timeInput.value)));
     this.durationInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ duration: Number(this.durationInput.value) }));
@@ -506,4 +513,18 @@ function isCameraTrack(kind: TimelineTrackKind): kind is "cameraPosition" | "cam
 
 function isLightTrack(kind: TimelineTrackKind): boolean {
   return LIGHT_TRACKS.includes(kind);
+}
+
+function formatTimecode(time: number, fps: number): string {
+  const safeFps = Math.max(1, Math.round(fps));
+  const absoluteFrame = Math.max(0, Math.round(time * safeFps));
+  const totalSeconds = Math.floor(absoluteFrame / safeFps);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const frame = absoluteFrame % safeFps;
+  return `${pad2(minutes)}:${pad2(seconds)}:${pad2(frame)} | F${String(absoluteFrame).padStart(4, "0")}`;
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
 }

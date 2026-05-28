@@ -138,6 +138,7 @@ function boot(root: HTMLDivElement): void {
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onClearTrack: clearTimelineTrack,
     onStepKeyframe: stepTimelineKeyframe,
+    onStepFrame: stepTimelineFrame,
     onSetInterpolation: setTimelineInterpolation,
     onDragStarted: beginTimelineDrag,
     onKeyframeMoved: moveTimelineKeyframe,
@@ -1628,6 +1629,11 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     setTimelineTime(target);
+  }
+
+  function stepTimelineFrame(direction: -1 | 1): void {
+    const step = 1 / Math.max(sceneTimeline.fps, 1);
+    setTimelineTime(sceneTimeline.currentTime + direction * step);
   }
 
   function beginTimelineDrag(): void {

@@ -8,6 +8,7 @@ After Effects and Premiere style work area around the existing timeline:
 - `Work In` defines where playback starts.
 - `Work Out` defines where playback loops or stops.
 - The Start button jumps to `Work In`.
+- The Out button jumps to `Work Out`.
 - Loop playback repeats over the work area instead of the full duration.
 
 ## Data Model
@@ -30,6 +31,7 @@ back to the full timeline.
 
 - Manual scrubbing can still visit the full timeline duration.
 - Pressing Start moves the playhead to `workStart`.
+- Pressing Out moves the playhead to `workEnd`.
 - Pressing Play outside the work area starts from `workStart`.
 - Loop mode wraps from `workEnd` back to `workStart`.
 - Non-loop mode stops playback at `workEnd`.
