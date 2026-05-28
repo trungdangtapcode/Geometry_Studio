@@ -155,6 +155,7 @@ function boot(root: HTMLDivElement): void {
     onClearTrack: clearTimelineTrack,
     onToggleTrack: toggleTimelineTrack,
     onTrackKindChanged: updateAllUI,
+    onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
     onStepFrame: stepTimelineFrame,
     onSetInterpolation: setTimelineInterpolation,
@@ -1753,6 +1754,14 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${track.label} track ${track.enabled ? "enabled" : "disabled"}`, "good");
+  }
+
+  function selectTimelineTrackLabel(targetId: string, _kind: TimelineTrackKind): void {
+    if (entries.has(targetId)) {
+      setSelected(targetId);
+      return;
+    }
+    updateAllUI();
   }
 
   function activeTimelineTrack(kind: TimelineTrackKind): TimelineTrackDocument | null {

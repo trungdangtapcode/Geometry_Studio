@@ -359,6 +359,24 @@ label {
   text-align: left;
 }
 
+.timeline-track-label:hover,
+.timeline-track-label.active {
+  background: rgba(32, 191, 169, 0.12);
+}
+
+.timeline-track-label.active {
+  box-shadow: inset 3px 0 0 var(--teal);
+}
+
+.timeline-track-label.disabled-track {
+  opacity: 0.58;
+}
+
+.timeline-track-label.disabled-track .track-swatch {
+  background: transparent !important;
+  border: 1px solid currentColor;
+}
+
 .timeline-track-label span:last-child {
   display: grid;
   gap: 1px;

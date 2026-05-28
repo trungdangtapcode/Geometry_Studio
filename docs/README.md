@@ -38,6 +38,8 @@ PDF.
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
   enable/disable behavior.
+- [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
+  label selection and active/disabled row states.
 - [Preview Export](preview-export.md) documents WebM work-area recording.
 
 ## Current Recommendation
@@ -59,6 +61,8 @@ animation runtime where it fits:
   interpolation.
 - Track enable/disable controls mute individual property tracks without deleting
   saved keyframes.
+- Row-label selection makes the left timeline column a direct track navigation
+  surface for object, camera, and light tracks.
 
 ## Implementation Status
 

@@ -17,6 +17,14 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
+  const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
+  await rotationTrackLabel.click();
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
+  await expect(rotationTrackLabel).toHaveClass(/active/);
+  const cameraTrackLabel = page.locator('.camera-track-label[data-track-kind="cameraPosition"]');
+  await cameraTrackLabel.click();
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("cameraPosition");
+  await expect(cameraTrackLabel).toHaveClass(/active/);
   await page.locator("#timeline-next-frame").click();
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0);
@@ -176,6 +184,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await page.locator("#timeline-paste-keyframes").click();
   await page.locator("#timeline-toggle-track").click();
   await expect(page.locator("#timeline-toggle-track")).toContainText("Track Off");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/disabled-track/);
 
   await page.locator("#timeline-track-kind").selectOption("cameraPosition");
   await page.locator("#timeline-current-time").evaluate((input) => {
