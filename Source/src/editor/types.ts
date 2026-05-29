@@ -48,6 +48,14 @@ export type TimelineTrackKind =
   | "spotIntensity"
   | "ambientIntensity";
 export type TimelineInterpolation = "hold" | "linear" | "easeIn" | "easeOut" | "smooth";
+export type RenderToneMappingMode = "aces" | "linear" | "reinhard" | "none";
+export type ShadowQuality = "low" | "medium" | "high" | "ultra";
+
+export interface RenderSettings {
+  toneMapping: RenderToneMappingMode;
+  exposure: number;
+  shadowQuality: ShadowQuality;
+}
 
 export interface SceneEntry {
   id: string;
@@ -101,7 +109,7 @@ export interface LoadingStatus {
 }
 
 export interface SceneDocument {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   savedAt: string;
   selectedId: string | null;
   playing: boolean;
@@ -129,6 +137,7 @@ export interface SceneDocument {
     point: SerializedLight;
     spot: SerializedLight;
   };
+  rendering: RenderSettings;
   objects: SerializedObject[];
   timeline: SceneTimelineDocument;
 }

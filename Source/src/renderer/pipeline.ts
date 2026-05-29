@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { DEFAULT_RENDER_SETTINGS } from "./renderSettings";
 
 export interface RenderPipeline {
   renderer: THREE.WebGLRenderer;
@@ -22,7 +23,7 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = DEFAULT_RENDER_SETTINGS.exposure;
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));

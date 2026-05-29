@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { cloneTimelineDocument, createDefaultTimeline, normalizeTimelineDocument } from "../animation/timelineSchema";
-import type { LightRig, SceneDocument, SceneEntry, SerializedLight, SerializedObject, StageRig } from "./types";
+import { normalizeRenderSettings } from "../renderer/renderSettings";
+import type { LightRig, RenderSettings, SceneDocument, SceneEntry, SerializedLight, SerializedObject, StageRig } from "./types";
 
 export interface DocumentContext {
   entries: Iterable<SceneEntry>;
@@ -13,12 +14,13 @@ export interface DocumentContext {
   frustumVisible: boolean;
   motionPathVisible: boolean;
   lightRig: LightRig;
+  renderSettings: RenderSettings;
   timeline?: SceneDocument["timeline"];
 }
 
 export function createSceneDocument(context: DocumentContext): SceneDocument {
   return {
-    version: 2,
+    version: 3,
     savedAt: new Date().toISOString(),
     selectedId: context.selectedId,
     playing: context.playing,
@@ -46,6 +48,7 @@ export function createSceneDocument(context: DocumentContext): SceneDocument {
       point: serializeLight(context.lightRig.point),
       spot: serializeLight(context.lightRig.spot)
     },
+    rendering: normalizeRenderSettings(context.renderSettings),
     objects: Array.from(context.entries).map(serializeEntry),
     timeline: cloneTimelineDocument(context.timeline ?? createDefaultTimeline())
   };
@@ -54,11 +57,12 @@ export function createSceneDocument(context: DocumentContext): SceneDocument {
 export function validateSceneDocument(value: unknown): SceneDocument {
   if (!value || typeof value !== "object") throw new Error("Scene file is not an object.");
   const document = value as SceneDocument & { timeline?: unknown };
-  if (document.version !== 1 && document.version !== 2) throw new Error("Unsupported scene document version.");
+  if (document.version !== 1 && document.version !== 2 && document.version !== 3) throw new Error("Unsupported scene document version.");
   if (!Array.isArray(document.objects)) throw new Error("Scene file is missing objects.");
   return {
     ...document,
-    version: 2,
+    version: 3,
+    rendering: normalizeRenderSettings(document.rendering),
     timeline: normalizeTimelineDocument(document.timeline, new Set(document.objects.map((object) => object.id)))
   };
 }

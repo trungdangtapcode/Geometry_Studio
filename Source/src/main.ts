@@ -74,10 +74,13 @@ import type {
   MaterialMode,
   ObjectKind,
   PrimitiveType,
+  RenderSettings,
+  RenderToneMappingMode,
   RenderMode,
   SceneDocument,
   SceneEntry,
   SerializedObject,
+  ShadowQuality,
   TimelineInterpolation,
   TimelineKeyframeDocument,
   TimelineTrackDocument,
@@ -85,6 +88,7 @@ import type {
   ToastTone
 } from "./editor/types";
 import { createRenderPipeline } from "./renderer/pipeline";
+import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
 import { loadModelFromFile } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
@@ -147,6 +151,7 @@ function boot(root: HTMLDivElement): void {
   const transport = new TimelineTransport();
   const entries = new Map<string, SceneEntry>();
   let sceneTimeline = createDefaultTimeline();
+  let renderSettings = createDefaultRenderSettings();
   let selectedId = "";
   let idCounter = 1;
   let transformSpace: "world" | "local" = "world";
@@ -167,6 +172,7 @@ function boot(root: HTMLDivElement): void {
   const clock = new THREE.Clock();
   const stage = createStage();
   const lightRig = createLights(scene);
+  applyRenderSettings(renderer, lightRig, renderSettings);
   const motionPathRig = createMotionPathRig();
   const frustumHelper = new THREE.CameraHelper(camera);
   frustumHelper.visible = false;
@@ -671,6 +677,15 @@ function boot(root: HTMLDivElement): void {
       recordHistory();
       lightRig.sweep = (event.target as HTMLInputElement).checked;
     });
+    query<HTMLSelectElement>("#tone-mapping").addEventListener("change", (event) => {
+      updateRenderSettings({ toneMapping: (event.target as HTMLSelectElement).value as RenderToneMappingMode });
+    });
+    query<HTMLInputElement>("#render-exposure").addEventListener("change", (event) => {
+      updateRenderSettings({ exposure: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLSelectElement>("#shadow-quality").addEventListener("change", (event) => {
+      updateRenderSettings({ shadowQuality: (event.target as HTMLSelectElement).value as ShadowQuality });
+    });
     query<HTMLInputElement>("#grid-toggle").addEventListener("change", (event) => {
       recordHistory();
       stage.grid.visible = (event.target as HTMLInputElement).checked;
@@ -721,6 +736,7 @@ function boot(root: HTMLDivElement): void {
     syncSelectionSummary();
     syncSegmentedButtons();
     syncTextureUI();
+    syncRenderUI();
     syncHistoryButtons();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
@@ -869,6 +885,21 @@ function boot(root: HTMLDivElement): void {
         updateAllUI();
       });
     });
+  }
+
+  function syncRenderUI(): void {
+    query<HTMLSelectElement>("#tone-mapping").value = renderSettings.toneMapping;
+    query<HTMLInputElement>("#render-exposure").value = String(renderSettings.exposure);
+    query<HTMLSelectElement>("#shadow-quality").value = renderSettings.shadowQuality;
+    query<HTMLDivElement>("#renderer-mode").textContent = `WebGL raster | ${toneMappingLabel(renderSettings.toneMapping)} | Exposure ${formatNumber(renderSettings.exposure)} | Shadows ${shadowQualityLabel(renderSettings.shadowQuality)}`;
+  }
+
+  function updateRenderSettings(patch: Partial<RenderSettings>): void {
+    recordHistory();
+    renderSettings = normalizeRenderSettings({ ...renderSettings, ...patch });
+    applyRenderSettings(renderer, lightRig, renderSettings);
+    syncRenderUI();
+    updateTelemetry();
   }
 
   function syncSelectionSummary(): void {
@@ -1377,6 +1408,8 @@ function boot(root: HTMLDivElement): void {
     recordHistory();
     clearSceneEntries();
     sceneTimeline = createDefaultTimeline();
+    renderSettings = createDefaultRenderSettings();
+    applyRenderSettings(renderer, lightRig, renderSettings);
     addPrimitive("cube", new THREE.Vector3(0, 0.02, 0), { color: "#4bd0a0" }, false);
     const sphere = addPrimitive("sphere", new THREE.Vector3(3.2, 0.02, -1.2), { color: "#df6b80", textureName: "checker" }, false);
     bakeObjectAnimationPreset(sphere, "pulse");
@@ -1486,6 +1519,7 @@ function boot(root: HTMLDivElement): void {
       frustumVisible: frustumHelper.visible,
       motionPathVisible,
       lightRig,
+      renderSettings,
       timeline: sceneTimeline
     });
   }
@@ -1524,6 +1558,8 @@ function boot(root: HTMLDivElement): void {
     frustumHelper.visible = document.display?.frustum ?? false;
     motionPathVisible = document.display?.motionPath ?? true;
     applyLightDocument(document);
+    renderSettings = normalizeRenderSettings(document.rendering);
+    applyRenderSettings(renderer, lightRig, renderSettings);
     transport.set(document.playing, 1, 1);
     document.objects.forEach((object) => restoreObject(object));
     sceneTimeline = normalizeTimelineDocument(document.timeline, new Set(entries.keys()));
@@ -1538,6 +1574,7 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updatePlayButton();
     syncLights(lightRig, entries.values());
+    applyRenderSettings(renderer, lightRig, renderSettings);
     syncOutline();
     updateAllUI();
   }
@@ -1937,7 +1974,7 @@ function boot(root: HTMLDivElement): void {
 
   function setTimelineKeyframe(
     kind: TimelineTrackKind,
-    options: { notify?: boolean; record?: boolean; refresh?: boolean; time?: number } = {}
+    options: { notify?: boolean; record?: boolean; refresh?: boolean; select?: boolean; time?: number } = {}
   ): void {
     const time = snapTimelineTime(sceneTimeline, options.time ?? sceneTimeline.currentTime);
     if (isCameraTrackKind(kind)) {
@@ -1948,14 +1985,16 @@ function boot(root: HTMLDivElement): void {
       const track = ensureTimelineTrack(cameraTimeline, kind);
       const value = timelineValueForCamera(kind);
       const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-      if (existing) existing.value = value;
-      else track.keyframes.push(createTimelineKeyframe(time, value));
+      const keyframe = existing ?? createTimelineKeyframe(time, value);
+      keyframe.value = value;
+      if (!existing) track.keyframes.push(keyframe);
       sortTimelineKeyframes(track);
       sceneTimeline.currentTime = time;
       rebuildTimelineRuntime();
       timelinePlayer.setTime(sceneTimeline.currentTime);
       applyCameraTimeline();
       if (options.refresh !== false) updateAllUI();
+      if (options.select !== false) timelinePanel.selectKeyframes([keyframe.id]);
       if (options.notify !== false) showToast(`${cameraTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
       return;
     }
@@ -1968,14 +2007,16 @@ function boot(root: HTMLDivElement): void {
       const track = ensureTimelineTrack(lightTimeline, kind);
       const value = timelineValueForLight(kind);
       const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-      if (existing) existing.value = value;
-      else track.keyframes.push(createTimelineKeyframe(time, value));
+      const keyframe = existing ?? createTimelineKeyframe(time, value);
+      keyframe.value = value;
+      if (!existing) track.keyframes.push(keyframe);
       sortTimelineKeyframes(track);
       sceneTimeline.currentTime = time;
       rebuildTimelineRuntime();
       timelinePlayer.setTime(sceneTimeline.currentTime);
       applyLightTimeline();
       if (options.refresh !== false) updateAllUI();
+      if (options.select !== false) timelinePanel.selectKeyframes([keyframe.id]);
       if (options.notify !== false) showToast(`${lightTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
       return;
     }
@@ -1992,11 +2033,9 @@ function boot(root: HTMLDivElement): void {
     const track = ensureTimelineTrack(objectTimeline, kind);
     const value = timelineValueForEntry(entry, kind);
     const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-    if (existing) {
-      existing.value = value;
-    } else {
-      track.keyframes.push(createTimelineKeyframe(time, value));
-    }
+    const keyframe = existing ?? createTimelineKeyframe(time, value);
+    keyframe.value = value;
+    if (!existing) track.keyframes.push(keyframe);
     sortTimelineKeyframes(track);
     if (isObjectTransformTrackKind(kind)) entry.animation = "none";
     sceneTimeline.currentTime = time;
@@ -2004,6 +2043,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyObjectPropertyTimeline();
     if (options.refresh !== false) updateAllUI();
+    if (options.select !== false) timelinePanel.selectKeyframes([keyframe.id]);
     if (options.notify !== false) showToast(`${objectTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
   }
 
@@ -2947,6 +2987,9 @@ function boot(root: HTMLDivElement): void {
       ["Points", info.render.points],
       ["Geometries", info.memory.geometries],
       ["Textures", info.memory.textures],
+      ["Tone", toneMappingLabel(renderSettings.toneMapping)],
+      ["Exposure", formatNumber(renderSettings.exposure)],
+      ["Shadow", shadowQualityLabel(renderSettings.shadowQuality)],
       ["Objects", entries.size]
     ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   }

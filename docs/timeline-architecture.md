@@ -44,12 +44,14 @@ history snapshots, runtime rebuilds, scene-object side effects, and UI refresh.
 
 ## Scene Document Versioning
 
-The scene document writes `version: 2`. The nested timeline document is
-versioned independently because timeline capabilities are growing faster than
-the outer scene format.
+The scene document writes `version: 3` after adding persisted Rendering Lab
+settings. The nested timeline document is versioned independently because
+timeline capabilities are growing faster than the outer scene format.
 
-Version 1 scene files do not contain keyframe timeline data. Loading them
-creates a default empty timeline. The current timeline schema is version 9:
+Version 1 scene files do not contain keyframe timeline data. Version 1 and
+version 2 scene files do not contain Rendering Lab data. Loading them creates
+default empty timeline data and default renderer settings. The current timeline
+schema is version 9:
 
 ```ts
 interface SceneTimelineDocument {

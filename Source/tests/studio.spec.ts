@@ -20,6 +20,10 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Cube", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Render mode" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Record WebM" })).toBeVisible();
+  await expect(page.locator("#renderer-mode")).toContainText("WebGL raster");
+  await expect(page.locator("#tone-mapping")).toHaveValue("aces");
+  await expect(page.locator("#render-exposure")).toHaveValue("1.05");
+  await expect(page.locator("#shadow-quality")).toHaveValue("high");
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
   await expect(page.locator("#timeline-prev-frame")).toBeVisible();
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
@@ -1380,6 +1384,12 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
 
   await page.goto("/");
   await expect(page.getByText("Keyframe Timeline")).toBeVisible();
+  await page.locator("#tone-mapping").selectOption("reinhard");
+  await page.locator("#shadow-quality").selectOption("medium");
+  await page.locator("#render-exposure").evaluate((input) => {
+    (input as HTMLInputElement).value = "1.35";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 
   await page.locator("#timeline-add-keyframe").click();
   await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
@@ -1663,7 +1673,12 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneJson).toBeTruthy();
   const sceneDocument = JSON.parse(sceneJson as string);
 
-  expect(sceneDocument.version).toBe(2);
+  expect(sceneDocument.version).toBe(3);
+  expect(sceneDocument.rendering).toEqual({
+    toneMapping: "reinhard",
+    exposure: 1.35,
+    shadowQuality: "medium"
+  });
   expect(sceneDocument.display.motionPath).toBe(true);
   expect(sceneDocument.timeline.version).toBe(9);
   expect(sceneDocument.timeline.duration).toBe(8);

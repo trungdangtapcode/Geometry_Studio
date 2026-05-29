@@ -250,6 +250,7 @@ export class KeyframeTimelinePanel {
     this.lastSelectedId = selectedId;
     this.lastPlaying = playing;
     this.lastEntryNames = new Map(entryList.map((entry) => [entry.id, entry.name]));
+    this.pruneSelectedKeyframes(timelineDocument);
     this.root.classList.toggle("playing", playing);
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
@@ -1031,6 +1032,19 @@ export class KeyframeTimelinePanel {
       : "No keyframe selected";
     this.syncKeyframeEditor(timelineDocument, selectedId, sources);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
+  }
+
+  private pruneSelectedKeyframes(timelineDocument: SceneTimelineDocument): void {
+    if (this.selectedKeyframeIds.size === 0) return;
+    const validIds = new Set<string>();
+    timelineDocument.camera.tracks.forEach((track) => track.keyframes.forEach((keyframe) => validIds.add(keyframe.id)));
+    timelineDocument.lights.tracks.forEach((track) => track.keyframes.forEach((keyframe) => validIds.add(keyframe.id)));
+    timelineDocument.objects.forEach((objectTimeline) => {
+      objectTimeline.tracks.forEach((track) => track.keyframes.forEach((keyframe) => validIds.add(keyframe.id)));
+    });
+    this.selectedKeyframeIds.forEach((id) => {
+      if (!validIds.has(id)) this.selectedKeyframeIds.delete(id);
+    });
   }
 
   private syncKeyframeEditor(timelineDocument: SceneTimelineDocument, selectedId: string, resolvedSources?: TimelineDetailSource[]): void {

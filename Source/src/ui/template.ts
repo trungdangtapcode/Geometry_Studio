@@ -400,6 +400,38 @@ export function studioTemplate(): string {
 
         <section class="panel-section">
           <div class="section-title">
+            <span data-icon="SlidersHorizontal"></span>
+            <h3>Rendering Lab</h3>
+          </div>
+          <div class="render-summary" id="renderer-mode">WebGL raster viewport</div>
+          <div class="form-grid">
+            <label>
+              <span>Tone Map</span>
+              <select id="tone-mapping" aria-label="Tone mapping">
+                <option value="aces">ACES</option>
+                <option value="linear">Linear</option>
+                <option value="reinhard">Reinhard</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+            <label>
+              <span>Exposure</span>
+              <input id="render-exposure" type="range" min="0.1" max="3" step="0.05" value="1.05" />
+            </label>
+            <label>
+              <span>Shadows</span>
+              <select id="shadow-quality" aria-label="Shadow quality">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="ultra">Ultra</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-title">
             <span data-icon="Clapperboard"></span>
             <h3>Animation</h3>
           </div>

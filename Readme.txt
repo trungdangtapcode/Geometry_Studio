@@ -46,12 +46,13 @@ Using a local static server is recommended instead of double-clicking index.html
 - Perspective projection: editable camera position, FOV, Near, and Far values with Front, Top, Iso, and Reset presets.
 - Affine transformations: Move, Rotate, and Scale with TransformControls, numeric X/Y/Z inputs, and World/Local space modes.
 - Lighting: Ambient, Directional, Point, and Spot lights with color, intensity, position, helper, and shadow controls.
+- Rendering Lab: Tone mapping, exposure, shadow quality, and renderer telemetry controls for real-time WebGL raster rendering.
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
 - Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with X/Y/Z transform rows, Focus/Keyed/All row filtering, named timeline markers, clickable track rows, per-row diamond key buttons, Set TRS grouped transform keying, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, playhead scrubbing, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview, and JSON save/load.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, position motion paths, progress UI, and toast messages.
-- Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, baked preset motion, and keyframe timelines.
+- Scene persistence: Save JSON and Load JSON for objects, camera, lights, rendering settings, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
 - Duplicate/Rename: duplicate or rename the selected object from the Outliner.
 - Drag and Drop: drop model files or texture images directly on the viewport.

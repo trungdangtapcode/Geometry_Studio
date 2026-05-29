@@ -1298,6 +1298,19 @@ svg {
   white-space: nowrap;
 }
 
+.render-summary {
+  min-height: var(--control-height);
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  padding: 0 var(--control-padding-x);
+  font-size: var(--ui-small-font);
+  font-weight: 800;
+}
+
 .rename-line {
   display: grid;
   gap: calc(var(--grid-gap) - 2px);
