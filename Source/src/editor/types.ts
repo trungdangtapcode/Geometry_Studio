@@ -57,6 +57,10 @@ export interface PostProcessingSettings {
   bloomStrength: number;
   bloomRadius: number;
   bloomThreshold: number;
+  ssao: boolean;
+  ssaoRadius: number;
+  ssaoMinDistance: number;
+  ssaoMaxDistance: number;
   vignette: boolean;
   vignetteDarkness: number;
 }

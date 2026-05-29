@@ -4,6 +4,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { SSAOPass } from "three/addons/postprocessing/SSAOPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { VignetteShader } from "three/addons/shaders/VignetteShader.js";
 import { DEFAULT_RENDER_SETTINGS } from "./renderSettings";
@@ -12,6 +13,7 @@ import { DEFAULT_POST_PROCESSING_SETTINGS } from "./postProcessing";
 export interface RenderPipeline {
   renderer: THREE.WebGLRenderer;
   composer: EffectComposer;
+  ssaoPass: SSAOPass;
   bloomPass: UnrealBloomPass;
   vignettePass: ShaderPass;
   outlinePass: OutlinePass;
@@ -35,6 +37,13 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
+  const ssaoPass = new SSAOPass(scene, camera, canvas.clientWidth, canvas.clientHeight);
+  ssaoPass.enabled = DEFAULT_POST_PROCESSING_SETTINGS.ssao;
+  ssaoPass.kernelRadius = DEFAULT_POST_PROCESSING_SETTINGS.ssaoRadius;
+  ssaoPass.minDistance = DEFAULT_POST_PROCESSING_SETTINGS.ssaoMinDistance;
+  ssaoPass.maxDistance = DEFAULT_POST_PROCESSING_SETTINGS.ssaoMaxDistance;
+  composer.addPass(ssaoPass);
+
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
     DEFAULT_POST_PROCESSING_SETTINGS.bloomStrength,
@@ -59,16 +68,17 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
-  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, bloomPass, camera);
+  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, ssaoPass, bloomPass, camera);
   resize();
 
-  return { renderer, composer, bloomPass, vignettePass, outlinePass, outputPass, resize };
+  return { renderer, composer, ssaoPass, bloomPass, vignettePass, outlinePass, outputPass, resize };
 }
 
 export function resizeRendererToDisplaySize(
   renderer: THREE.WebGLRenderer,
   composer: EffectComposer,
   outlinePass: OutlinePass,
+  ssaoPass: SSAOPass,
   bloomPass: UnrealBloomPass,
   camera: THREE.PerspectiveCamera,
   maxPixelCount = 2560 * 1440
@@ -89,6 +99,7 @@ export function resizeRendererToDisplaySize(
     renderer.setSize(width, height, false);
     composer.setSize(width, height);
     outlinePass.setSize(width, height);
+    resizeSsaoPass(ssaoPass, width, height);
     resizeBloomPass(bloomPass, width, height);
   }
 
@@ -97,6 +108,16 @@ export function resizeRendererToDisplaySize(
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
   }
+}
+
+function resizeSsaoPass(ssaoPass: SSAOPass, width: number, height: number, maxPixelCount = 1280 * 720): void {
+  const pixelCount = width * height;
+  if (pixelCount <= maxPixelCount) {
+    ssaoPass.setSize(width, height);
+    return;
+  }
+  const scale = Math.sqrt(maxPixelCount / pixelCount);
+  ssaoPass.setSize(Math.max(1, Math.floor(width * scale)), Math.max(1, Math.floor(height * scale)));
 }
 
 function resizeBloomPass(bloomPass: UnrealBloomPass, width: number, height: number, maxPixelCount = 1280 * 720): void {

@@ -714,6 +714,18 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#post-bloom-radius").addEventListener("change", (event) => {
       updatePostProcessingSettings({ bloomRadius: Number((event.target as HTMLInputElement).value) });
     });
+    query<HTMLInputElement>("#post-ssao-toggle").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ ssao: (event.target as HTMLInputElement).checked });
+    });
+    query<HTMLInputElement>("#post-ssao-radius").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ ssaoRadius: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-ssao-min").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ ssaoMinDistance: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-ssao-max").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ ssaoMaxDistance: Number((event.target as HTMLInputElement).value) });
+    });
     query<HTMLInputElement>("#post-vignette-toggle").addEventListener("change", (event) => {
       updatePostProcessingSettings({ vignette: (event.target as HTMLInputElement).checked });
     });
@@ -934,6 +946,10 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#post-bloom-strength").value = String(renderSettings.postProcessing.bloomStrength);
     query<HTMLInputElement>("#post-bloom-threshold").value = String(renderSettings.postProcessing.bloomThreshold);
     query<HTMLInputElement>("#post-bloom-radius").value = String(renderSettings.postProcessing.bloomRadius);
+    query<HTMLInputElement>("#post-ssao-toggle").checked = renderSettings.postProcessing.ssao;
+    query<HTMLInputElement>("#post-ssao-radius").value = String(renderSettings.postProcessing.ssaoRadius);
+    query<HTMLInputElement>("#post-ssao-min").value = String(renderSettings.postProcessing.ssaoMinDistance);
+    query<HTMLInputElement>("#post-ssao-max").value = String(renderSettings.postProcessing.ssaoMaxDistance);
     query<HTMLInputElement>("#post-vignette-toggle").checked = renderSettings.postProcessing.vignette;
     query<HTMLInputElement>("#post-vignette-darkness").value = String(renderSettings.postProcessing.vignetteDarkness);
     query<HTMLDivElement>("#renderer-mode").textContent = `WebGL raster | ${toneMappingLabel(renderSettings.toneMapping)} | Exposure ${formatNumber(renderSettings.exposure)} | Shadows ${shadowQualityLabel(renderSettings.shadowQuality)} | Environment ${environmentPreset(renderSettings.environment).label} | ${postProcessingLabel(renderSettings.postProcessing)}`;

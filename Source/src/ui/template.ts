@@ -459,6 +459,19 @@ export function studioTemplate(): string {
               <span>Bloom Radius</span>
               <input id="post-bloom-radius" type="range" min="0" max="1" step="0.01" value="0.22" />
             </label>
+            <label class="toggle-line"><input id="post-ssao-toggle" type="checkbox" /><span>SSAO</span></label>
+            <label>
+              <span>SSAO Radius</span>
+              <input id="post-ssao-radius" type="range" min="1" max="32" step="1" value="8" />
+            </label>
+            <label>
+              <span>SSAO Min</span>
+              <input id="post-ssao-min" type="range" min="0" max="0.1" step="0.001" value="0.005" />
+            </label>
+            <label>
+              <span>SSAO Max</span>
+              <input id="post-ssao-max" type="range" min="0.01" max="1" step="0.01" value="0.12" />
+            </label>
             <label class="toggle-line"><input id="post-vignette-toggle" type="checkbox" /><span>Vignette</span></label>
             <label>
               <span>Vignette Dark</span>

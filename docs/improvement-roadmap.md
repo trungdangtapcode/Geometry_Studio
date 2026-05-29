@@ -25,6 +25,7 @@ Implemented and tested:
 - Generated PMREM environment lighting presets for PBR image-based lighting.
 - OBJ + MTL multi-file import with source-material preservation.
 - Post-processing toggles for Bloom and Vignette.
+- Optional SSAO post-processing for contact shading in the real-time viewport.
 - Timeline row search for dense AE-style track navigation.
 - Timeline row switches for direct enable, solo, lock, and key actions.
 - WebM work-area recording progress in the viewport status controls.
@@ -126,13 +127,14 @@ Acceptance:
 
 ## Phase 4: Post-Processing Toggles
 
-Implemented. The renderer uses `EffectComposer` with selected-object outline,
-Bloom, Vignette, and `OutputPass`.
+Implemented. The renderer uses `EffectComposer` with SSAO, selected-object
+outline, Bloom, Vignette, and `OutputPass`.
 
 Candidate effects:
 
 - Bloom with `UnrealBloomPass`. Implemented.
-- SSAO-style ambient occlusion if performance remains acceptable. Deferred.
+- SSAO-style ambient occlusion if performance remains acceptable. Implemented
+  with Three.js `SSAOPass` and a capped internal render size.
 - Vignette or simple color grading shader. Vignette implemented.
 - Optional FXAA/SMAA anti-aliasing pass if visual quality improves.
 

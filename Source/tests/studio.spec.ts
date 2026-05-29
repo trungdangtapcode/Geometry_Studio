@@ -38,6 +38,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#post-bloom-strength")).toHaveValue("0.65");
   await page.locator("#post-vignette-toggle").check();
   await expect(page.locator("#renderer-mode")).toContainText("Vignette On");
+  await expect(page.locator("#post-ssao-toggle")).not.toBeChecked();
+  await expect(page.locator("#post-ssao-radius")).toHaveValue("8");
   await page.locator("#post-bloom-toggle").uncheck();
   await page.locator("#post-vignette-toggle").uncheck();
   await expect(page.locator("#renderer-mode")).toContainText("Post Off");
@@ -213,6 +215,52 @@ test("renders the studio and core controls", async ({ page }) => {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("button", { name: "Cube", exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("toggles SSAO post processing controls", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#post-ssao-toggle")).not.toBeChecked();
+  await page.locator("#post-ssao-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("SSAO On");
+  await page.locator("#post-ssao-radius").evaluate((input) => {
+    (input as HTMLInputElement).value = "12";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#post-ssao-max").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.18";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#post-ssao-radius")).toHaveValue("12");
+  await expect(page.locator("#post-ssao-max")).toHaveValue("0.18");
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  expect(sceneDocument.rendering.postProcessing.ssao).toBe(true);
+  expect(sceneDocument.rendering.postProcessing.ssaoRadius).toBe(12);
+  expect(sceneDocument.rendering.postProcessing.ssaoMaxDistance).toBe(0.18);
+  await page.locator("#post-ssao-toggle").uncheck();
+  await expect(page.locator("#renderer-mode")).toContainText("Post Off");
   expect(errors).toEqual([]);
 });
 
@@ -1850,6 +1898,10 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
       bloomStrength: 0.42,
       bloomRadius: 0.22,
       bloomThreshold: 0.72,
+      ssao: false,
+      ssaoRadius: 8,
+      ssaoMinDistance: 0.005,
+      ssaoMaxDistance: 0.12,
       vignette: false,
       vignetteDarkness: 0.75
     }
