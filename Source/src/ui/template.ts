@@ -95,6 +95,7 @@ export function studioTemplate(): string {
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-smooth" type="button" data-interpolation="smooth"><span data-icon="Spline"></span><span>Ease</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-hold" type="button" data-interpolation="hold"><span data-icon="StepForward"></span><span>Hold</span></button>
+              <button class="mini-button" id="timeline-graph-toggle" type="button" aria-pressed="false"><span data-icon="Activity"></span><span>Graph</span></button>
               <button class="mini-button" id="timeline-add-marker" type="button"><span data-icon="Flag"></span><span>Marker</span></button>
               <button class="mini-button danger" id="timeline-delete-marker" type="button"><span data-icon="Trash2"></span><span>Marker</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
@@ -143,6 +144,19 @@ export function studioTemplate(): string {
               </svg>
               <span id="timeline-ease-label">Linear</span>
             </div>
+          </div>
+          <div class="timeline-graph-panel" id="timeline-graph-panel" aria-label="Selected track value graph">
+            <div class="timeline-graph-header">
+              <strong id="timeline-graph-title">Value Graph</strong>
+              <span id="timeline-graph-range">No keyed track</span>
+            </div>
+            <svg id="timeline-value-graph" viewBox="0 0 520 96" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <path class="timeline-graph-grid" d="M0 16 H520 M0 48 H520 M0 80 H520 M104 0 V96 M208 0 V96 M312 0 V96 M416 0 V96" />
+              <path class="timeline-graph-path graph-x" id="timeline-graph-x" d="" />
+              <path class="timeline-graph-path graph-y" id="timeline-graph-y" d="" />
+              <path class="timeline-graph-path graph-z" id="timeline-graph-z" d="" />
+              <line class="timeline-graph-playhead" id="timeline-graph-playhead" x1="0" y1="0" x2="0" y2="96" />
+            </svg>
           </div>
           <div class="timeline-body">
             <div class="timeline-track-labels" id="timeline-track-labels"></div>

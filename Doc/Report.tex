@@ -237,10 +237,13 @@ keyboard shortcuts, while selected keyframes can be nudged one frame left or
 right for precise retiming. A compact keyframe editor allows precise numeric
 edits to keyframe time and vector or scalar values. Linear, Easy Ease, and Hold
 interpolation are available through direct timeline buttons, synchronized with a
-compact curve preview and F9-style keyboard shortcuts. The editor stores rotation
-keyframes in readable Euler degrees and compiles rotation playback to per-axis
-Euler channels, preserving authored full turns such as \(0^\circ\) to
-\(360^\circ\).
+compact curve preview and F9-style keyboard shortcuts. The timeline also
+provides an active-track value graph that samples the same runtime interpolation
+function used by playback, so Hold, Linear, and Easy Ease segments shown in the
+graph match the object, camera, light, or material values seen while scrubbing.
+The editor stores rotation keyframes in readable Euler degrees and evaluates
+rotation playback per axis, preserving authored full turns such as \(0^\circ\)
+to \(360^\circ\).
 
 \section{Advanced Features}
 

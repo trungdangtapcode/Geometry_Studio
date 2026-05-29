@@ -61,6 +61,8 @@ PDF.
   documents direct Linear, Easy Ease, and Hold timing controls.
 - [Timeline Runtime Interpolation](timeline-runtime-interpolation.md) documents
   per-keyframe transform/runtime interpolation semantics.
+- [Timeline Value Graph](timeline-value-graph.md) documents the active-track
+  graph preview that samples the same runtime evaluator as playback.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
   and All row visibility modes for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
@@ -102,6 +104,8 @@ animation runtime where it fits:
   preserving vector-based JSON persistence and Three.js playback.
 - Linear, Easy Ease, and Hold interpolation have direct toolbar controls,
   synchronized dropdown state, keyboard shortcuts, and a compact curve preview.
+- The active track can be inspected in a value graph that samples the same
+  per-keyframe evaluator as runtime playback and motion-path preview.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
 - Selected objects with two or more Position keys show a viewport motion path,
@@ -129,7 +133,7 @@ object appearance, camera, and light tracks:
 - `animation/timelinePlayer.ts` evaluates Position, Rotation, and Scale tracks
   directly from the timeline document.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
-  timeline to editor callbacks.
+  timeline, value graph, and editor callbacks.
 - `ui/density.ts` owns UI-density persistence and root layout mode application.
 - `main.ts` evaluates camera, light, color, opacity, and visibility tracks
   against the same keyframe schema so non-transform properties remain

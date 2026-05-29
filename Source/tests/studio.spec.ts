@@ -28,6 +28,11 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-ease-smooth")).toBeVisible();
   await expect(page.locator("#timeline-ease-hold")).toBeVisible();
   await expect(page.locator("#timeline-ease-preview")).toBeVisible();
+  await expect(page.locator("#timeline-graph-toggle")).toBeVisible();
+  await page.locator("#timeline-graph-toggle").click();
+  await expect(page.locator("#keyframe-dock")).toHaveClass(/graph-visible/);
+  await expect(page.locator("#timeline-graph-panel")).toBeVisible();
+  await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position");
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
@@ -198,6 +203,12 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(3, 1);
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position");
+  await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
+  await expect(page.locator("#timeline-graph-x")).not.toHaveAttribute("d", "");
   expect(errors).toEqual([]);
 });
 

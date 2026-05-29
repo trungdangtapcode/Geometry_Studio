@@ -26,7 +26,8 @@ used by:
 - `animation/timelinePlayer.ts` for object Position, Rotation, and Scale
   playback,
 - `main.ts` for camera, light, material, texture, and visibility tracks,
-- `scene/motionPath.ts` for viewport motion-path preview sampling.
+- `scene/motionPath.ts` for viewport motion-path preview sampling,
+- `ui/timelinePanel.ts` for the selected-track value graph.
 
 This replaces the previous transform-only `AnimationMixer` path. Three.js
 keyframe tracks choose interpolation per track, while this project needs

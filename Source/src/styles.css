@@ -94,6 +94,7 @@ svg {
   --timeline-track-label-width: 178px;
   --timeline-track-row-height: 32px;
   --timeline-track-top-padding: 28px;
+  --timeline-graph-height: 96px;
   --timeline-select-width: 112px;
   --control-height: 34px;
   --control-radius: 8px;
@@ -157,6 +158,7 @@ svg {
   --timeline-track-label-width: 154px;
   --timeline-track-row-height: 28px;
   --timeline-track-top-padding: 24px;
+  --timeline-graph-height: 82px;
   --timeline-select-width: 104px;
   --control-height: 30px;
   --control-padding-x: 8px;
@@ -215,6 +217,7 @@ svg {
   --timeline-track-label-width: 136px;
   --timeline-track-row-height: 24px;
   --timeline-track-top-padding: 20px;
+  --timeline-graph-height: 70px;
   --timeline-select-width: 96px;
   --control-height: 26px;
   --control-padding-x: 7px;
@@ -372,7 +375,7 @@ svg {
   min-height: 190px;
   max-height: min(72vh, calc(100vh - var(--dock-bottom) - 22px));
   display: grid;
-  grid-template-rows: auto auto auto 1fr;
+  grid-template-rows: auto auto auto auto 1fr;
   gap: var(--dock-gap);
   overflow: hidden;
   border: 1px solid var(--line);
@@ -436,6 +439,7 @@ svg {
 
 .keyframe-dock.collapsed .timeline-settings,
 .keyframe-dock.collapsed .timeline-keyframe-editor,
+.keyframe-dock.collapsed .timeline-graph-panel,
 .keyframe-dock.collapsed .timeline-body {
   display: none;
 }
@@ -643,6 +647,92 @@ svg {
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.timeline-graph-panel {
+  display: none;
+  grid-template-columns: minmax(120px, var(--timeline-track-label-width)) minmax(0, 1fr);
+  align-items: stretch;
+  min-height: var(--timeline-graph-height);
+  padding: 0 var(--timeline-header-padding-x);
+}
+
+.keyframe-dock.graph-visible .timeline-graph-panel {
+  display: grid;
+}
+
+.timeline-graph-header {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: var(--control-radius) 0 0 var(--control-radius);
+  background: rgba(244, 247, 249, 0.9);
+  padding: 0 var(--timeline-header-padding-x);
+}
+
+.timeline-graph-header strong,
+.timeline-graph-header span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-graph-header strong {
+  color: var(--charcoal);
+  font-size: var(--ui-small-font);
+}
+
+.timeline-graph-header span {
+  color: var(--muted);
+  font-size: var(--ui-tiny-font);
+  font-weight: 800;
+}
+
+.timeline-graph-panel svg {
+  width: 100%;
+  height: var(--timeline-graph-height);
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0 var(--control-radius) var(--control-radius) 0;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.timeline-graph-grid,
+.timeline-graph-path,
+.timeline-graph-playhead {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeline-graph-grid {
+  stroke: rgba(26, 35, 42, 0.12);
+  stroke-width: 1;
+}
+
+.timeline-graph-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.timeline-graph-path.graph-x {
+  stroke: var(--teal);
+}
+
+.timeline-graph-path.graph-y {
+  stroke: var(--amber);
+}
+
+.timeline-graph-path.graph-z {
+  stroke: var(--violet);
+}
+
+.timeline-graph-playhead {
+  stroke: var(--rose);
+  stroke-width: 1.5;
 }
 
 .timeline-body {
@@ -1045,7 +1135,8 @@ svg {
 
 .segment.active,
 .texture-swatch.active,
-.interpolation-button.active {
+.interpolation-button.active,
+#timeline-graph-toggle.active {
   color: #ffffff;
   background: #20272c;
   border-color: #20272c;

@@ -14,6 +14,7 @@ import type {
   TimelineTrackDocument,
   TimelineTrackKind
 } from "../editor/types";
+import { evaluateTimelineTrack } from "../animation/interpolation";
 import { clamp, formatNumber, hydrateIcons, query } from "../utils/dom";
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
@@ -76,6 +77,10 @@ type TimelineDetailSource = {
   track: TimelineTrackDocument;
   keyframe: TimelineKeyframeDocument;
 };
+type ValueGraphSample = {
+  time: number;
+  value: [number, number, number];
+};
 
 const OBJECT_TRACKS: TimelineTrackKind[] = [
   "position",
@@ -107,9 +112,13 @@ const CAMERA_TARGET_ID = "__camera__";
 const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
+const GRAPH_VISIBLE_STORAGE_KEY = "geometry-studio-timeline-graph-visible";
 const MIN_DOCK_HEIGHT = 190;
 const DEFAULT_ROW_HEIGHT = 30;
 const DEFAULT_HEADER_HEIGHT = 28;
+const GRAPH_WIDTH = 520;
+const GRAPH_HEIGHT = 96;
+const GRAPH_SAMPLE_COUNT = 96;
 const TIMELINE_AXES: TimelineAxis[] = ["x", "y", "z"];
 const OBJECT_AXIS_TRACKS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
 const AXIS_INDEX: Record<TimelineAxis, number> = { x: 0, y: 1, z: 2 };
@@ -193,6 +202,16 @@ export class KeyframeTimelinePanel {
   private readonly interpolationSelect = query<HTMLSelectElement>("#timeline-interpolation");
   private readonly easePath = query<SVGPathElement>("#timeline-ease-path");
   private readonly easeLabel = query<HTMLSpanElement>("#timeline-ease-label");
+  private readonly graphToggleButton = query<HTMLButtonElement>("#timeline-graph-toggle");
+  private readonly graphPanel = query<HTMLDivElement>("#timeline-graph-panel");
+  private readonly graphTitle = query<HTMLElement>("#timeline-graph-title");
+  private readonly graphRange = query<HTMLSpanElement>("#timeline-graph-range");
+  private readonly graphPaths = {
+    x: query<SVGPathElement>("#timeline-graph-x"),
+    y: query<SVGPathElement>("#timeline-graph-y"),
+    z: query<SVGPathElement>("#timeline-graph-z")
+  };
+  private readonly graphPlayhead = query<SVGLineElement>("#timeline-graph-playhead");
   private readonly selectionLabel = query<HTMLSpanElement>("#timeline-selection");
   private readonly timecodeLabel = query<HTMLSpanElement>("#timeline-timecode");
   private readonly keyframeLabel = query<HTMLElement>("#timeline-key-label");
@@ -217,6 +236,7 @@ export class KeyframeTimelinePanel {
   private activeMarkerId: string | null = null;
   private selectedAxis: TimelineAxis | null = null;
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
+  private graphVisible = loadTimelineGraphVisible();
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
   private timelineScroller: HTMLElement | null = null;
   private syncingScroll = false;
@@ -227,6 +247,7 @@ export class KeyframeTimelinePanel {
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
     this.applyStoredDockHeight();
+    this.syncGraphVisibility();
     this.timeline = new Timeline({
       id: this.canvasHost,
       min: 0,
@@ -307,6 +328,8 @@ export class KeyframeTimelinePanel {
     this.bindTimelineScroller();
     this.renderMarkers(timelineDocument);
     this.syncSelectionWidgets(timelineDocument, selectedId);
+    this.renderGraph(timelineDocument, selectedId);
+    this.lockDockScroll();
     this.updating = false;
   }
 
@@ -330,6 +353,8 @@ export class KeyframeTimelinePanel {
     this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, this.lastSelectedId));
     this.syncKeyframeEditor(timelineDocument, this.lastSelectedId);
+    this.renderGraph(timelineDocument, this.lastSelectedId);
+    this.lockDockScroll();
     this.updating = false;
   }
 
@@ -461,6 +486,13 @@ export class KeyframeTimelinePanel {
         this.applyInterpolation(button.dataset.interpolation as TimelineInterpolation);
       });
     });
+    this.graphToggleButton.addEventListener("click", () => {
+      this.graphVisible = !this.graphVisible;
+      storeTimelineGraphVisible(this.graphVisible);
+      this.syncGraphVisibility();
+      if (this.lastTimelineDocument) this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
+      window.setTimeout(() => this.refreshCanvas(), 0);
+    });
 
     this.timeline.onTimeChanged((event) => {
       if (this.updating) return;
@@ -536,9 +568,15 @@ export class KeyframeTimelinePanel {
   }
 
   private refreshCanvas(): void {
+    this.lockDockScroll();
     this.timeline.rescale();
     this.timeline.redraw();
     this.bindTimelineScroller();
+  }
+
+  private lockDockScroll(): void {
+    if (this.root.scrollTop !== 0) this.root.scrollTop = 0;
+    if (this.root.scrollLeft !== 0) this.root.scrollLeft = 0;
   }
 
   private bindTimelineScroller(): void {
@@ -1027,6 +1065,74 @@ export class KeyframeTimelinePanel {
     this.timeline.redraw();
   }
 
+  private syncGraphVisibility(): void {
+    this.root.classList.toggle("graph-visible", this.graphVisible);
+    this.graphPanel.setAttribute("aria-hidden", String(!this.graphVisible));
+    this.graphToggleButton.classList.toggle("active", this.graphVisible);
+    this.graphToggleButton.setAttribute("aria-pressed", String(this.graphVisible));
+  }
+
+  private renderGraph(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    if (!this.graphVisible) return;
+    const selectedKind = this.selectedTrackKind();
+    const track = this.playheadTrack(timelineDocument, selectedId);
+    const title = `${this.graphTargetName(selectedKind, selectedId)} | ${trackLabel(selectedKind, this.selectedAxis ?? undefined)}`;
+    this.graphTitle.textContent = title;
+    const [start, end] = graphWorkRange(timelineDocument);
+    this.positionGraphPlayhead(timelineDocument.currentTime, start, end);
+
+    if (!track) {
+      this.clearGraph("No selected track");
+      return;
+    }
+    if (!track.enabled) {
+      this.clearGraph("Track disabled");
+      return;
+    }
+    if (track.keyframes.length < 2) {
+      this.clearGraph(`${formatKeyCount(track.keyframes.length)} | add another key`);
+      return;
+    }
+
+    const samples = sampleTrack(track, start, end, GRAPH_SAMPLE_COUNT);
+    if (!samples.length) {
+      this.clearGraph("No graph samples");
+      return;
+    }
+
+    const axisConfig = trackAxisConfig(track.kind);
+    const focusedAxisIndex = this.selectedAxis ? AXIS_INDEX[this.selectedAxis] : null;
+    const activeRanges: string[] = [];
+    TIMELINE_AXES.forEach((axis, index) => {
+      const axisEnabled = index < axisConfig.enabledAxes && (focusedAxisIndex === null || focusedAxisIndex === index);
+      if (!axisEnabled) {
+        this.graphPaths[axis].setAttribute("d", "");
+        return;
+      }
+      const values = samples.map((sample) => ({ time: sample.time, value: sample.value[index] }));
+      this.graphPaths[axis].setAttribute("d", graphPath(values, start, end));
+      activeRanges.push(formatAxisRange(axisConfig.labels[index], values.map((sample) => sample.value)));
+    });
+    this.graphRange.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | ${activeRanges.join(" | ")}`;
+  }
+
+  private graphTargetName(kind: TimelineTrackKind, selectedId: string): string {
+    if (isCameraTrack(kind)) return "Camera";
+    if (isLightTrack(kind)) return "Lights";
+    return this.lastEntryNames.get(selectedId) ?? "Object";
+  }
+
+  private positionGraphPlayhead(currentTime: number, start: number, end: number): void {
+    const x = graphX(clamp(currentTime, start, end), start, end);
+    this.graphPlayhead.setAttribute("x1", formatNumber(x));
+    this.graphPlayhead.setAttribute("x2", formatNumber(x));
+  }
+
+  private clearGraph(message: string): void {
+    TIMELINE_AXES.forEach((axis) => this.graphPaths[axis].setAttribute("d", ""));
+    this.graphRange.textContent = message;
+  }
+
   private rowDescriptors(kinds: TimelineTrackKind[], expandObjectAxes: boolean): TimelineRowDescriptor[] {
     return kinds.flatMap((kind) =>
       expandObjectAxes && OBJECT_AXIS_TRACKS.has(kind)
@@ -1105,6 +1211,22 @@ function clearTimelineDockHeight(): void {
   }
 }
 
+function loadTimelineGraphVisible(): boolean {
+  try {
+    return window.localStorage.getItem(GRAPH_VISIBLE_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function storeTimelineGraphVisible(visible: boolean): void {
+  try {
+    window.localStorage.setItem(GRAPH_VISIBLE_STORAGE_KEY, String(visible));
+  } catch {
+    // Graph visibility is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
   return value === "keyed" || value === "all" || value === "focus" ? value : "focus";
 }
@@ -1159,6 +1281,54 @@ function trackAxisConfig(kind: TimelineTrackKind): { labels: [string, string, st
 
 function trackLabel(kind: TimelineTrackKind, axis?: TimelineAxis): string {
   return axis ? `${TRACK_LABELS[kind]} ${axis.toUpperCase()}` : TRACK_LABELS[kind];
+}
+
+function graphWorkRange(timelineDocument: SceneTimelineDocument): [number, number] {
+  const duration = Math.max(timelineDocument.duration, 0.5);
+  const start = clamp(Number.isFinite(timelineDocument.workStart) ? timelineDocument.workStart : 0, 0, duration);
+  const end = clamp(Number.isFinite(timelineDocument.workEnd) ? timelineDocument.workEnd : duration, 0, duration);
+  return end > start ? [start, end] : [0, duration];
+}
+
+function sampleTrack(track: TimelineTrackDocument, start: number, end: number, count: number): ValueGraphSample[] {
+  const safeCount = Math.max(2, Math.round(count));
+  const samples: ValueGraphSample[] = [];
+  for (let index = 0; index < safeCount; index += 1) {
+    const time = start + ((end - start) * index) / (safeCount - 1);
+    const value = evaluateTimelineTrack(track, time);
+    if (value) samples.push({ time, value });
+  }
+  return samples;
+}
+
+function graphPath(samples: { time: number; value: number }[], start: number, end: number): string {
+  if (!samples.length) return "";
+  const values = samples.map((sample) => sample.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return samples.map((sample, index) => {
+    const command = index === 0 ? "M" : "L";
+    return `${command}${formatNumber(graphX(sample.time, start, end))} ${formatNumber(graphY(sample.value, min, max))}`;
+  }).join(" ");
+}
+
+function graphX(time: number, start: number, end: number): number {
+  return ((time - start) / Math.max(end - start, 0.001)) * GRAPH_WIDTH;
+}
+
+function graphY(value: number, min: number, max: number): number {
+  const span = Math.max(max - min, 0.001);
+  const padding = 10;
+  return GRAPH_HEIGHT - padding - ((value - min) / span) * (GRAPH_HEIGHT - padding * 2);
+}
+
+function formatAxisRange(label: string, values: number[]): string {
+  if (!values.length) return `${label} --`;
+  return `${label} ${formatNumber(Math.min(...values))}..${formatNumber(Math.max(...values))}`;
+}
+
+function formatKeyCount(count: number): string {
+  return `${count} key${count === 1 ? "" : "s"}`;
 }
 
 function commonValue(values: number[]): string {
