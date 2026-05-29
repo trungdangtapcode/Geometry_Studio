@@ -12,6 +12,7 @@ import {
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
   resolveTimelineKeyframeSources,
+  reverseResolvedKeyframes,
   type TimelineClipboard,
   type TimelineKeyframeEditPatch
 } from "./animation/timelineEditing";
@@ -171,6 +172,7 @@ function boot(root: HTMLDivElement): void {
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
+    onReverseKeyframes: reverseTimelineKeyframes,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -1092,6 +1094,11 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey && key === "enter") {
       event.preventDefault();
       moveTimelineKeyframesToPlayhead(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
+    if (event.shiftKey && key === "r") {
+      event.preventDefault();
+      reverseTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (key === "b") {
@@ -2053,6 +2060,33 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
     showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} moved to ${formatNumber(playheadTime)}s${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function reverseTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before reversing timing.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = reverseResolvedKeyframes(sceneTimeline, sources);
+    if (result.edited === 0) {
+      updateAllUI();
+      showToast("No keyframe timing changed.", "bad");
+      return;
+    }
+
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(result.currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
+    showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} time-reversed${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function editTimelineKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void {

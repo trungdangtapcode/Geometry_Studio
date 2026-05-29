@@ -38,6 +38,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
   await expect(page.locator("#timeline-nudge-right")).toBeVisible();
   await expect(page.locator("#timeline-move-to-playhead")).toBeVisible();
+  await expect(page.locator("#timeline-reverse-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
   await expect(page.locator("#timeline-add-marker")).toBeVisible();
   await expect(page.locator("#timeline-delete-marker")).toBeVisible();
@@ -498,6 +499,7 @@ test("supports I/O work area keyboard shortcuts", async ({ page }) => {
 });
 
 test("moves selected timeline keyframes to the playhead", async ({ page }) => {
+  test.setTimeout(120_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -555,6 +557,18 @@ test("moves selected timeline keyframes to the playhead", async ({ page }) => {
       .sort((left, right) => left - right)
   );
   expect(shortcutTimes).toEqual([2, 4, 6]);
+  await page.keyboard.press("Shift+R");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await positionX.inputValue())).toBeCloseTo(4, 1);
+  await page.locator("#timeline-reverse-keyframes").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await positionX.inputValue())).toBeCloseTo(0, 1);
 
   expect(errors).toEqual([]);
 });

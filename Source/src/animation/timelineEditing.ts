@@ -294,6 +294,43 @@ export function moveResolvedKeyframesToTime(
   return editResolvedKeyframes(timeline, sources, { time });
 }
 
+export function reverseResolvedKeyframes(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): EditTimelineResult {
+  if (sources.length < 2) {
+    return { edited: 0, skipped: 0, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const start = Math.min(...sources.map((source) => source.keyframe.time));
+  const end = Math.max(...sources.map((source) => source.keyframe.time));
+  const movingIds = new Set(sources.map((source) => source.keyframe.id));
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  let edited = 0;
+  let skipped = 0;
+
+  sources.forEach((source) => {
+    const nextTime = snapTimelineTime(timeline, start + end - source.keyframe.time);
+    const blocked = nextTime < 0 ||
+      nextTime > timeline.duration ||
+      source.track.keyframes.some((keyframe) => !movingIds.has(keyframe.id) && Math.abs(keyframe.time - nextTime) < 0.001);
+    if (blocked) {
+      skipped += 1;
+      return;
+    }
+
+    if (Math.abs(source.keyframe.time - nextTime) < 0.001) return;
+    source.keyframe.time = nextTime;
+    changedTracks.add(source.track);
+    if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+    edited += 1;
+  });
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return { edited, skipped, currentTime: timeline.currentTime, changedTransformObjectIds: [...changedTransformObjectIds] };
+}
+
 function collectKeyframesById(
   tracks: TimelineTrackDocument[],
   ids: Set<string>,

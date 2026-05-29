@@ -50,6 +50,8 @@ PDF.
   retiming controls for selected or playhead keyframes.
 - [Timeline Keyframe Alignment](timeline-keyframe-align.md) documents moving
   selected keyframe blocks to the playhead while preserving relative timing.
+- [Timeline Keyframe Reverse](timeline-keyframe-reverse.md) documents
+  time-reversing selected keyframe blocks.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
@@ -99,6 +101,8 @@ animation runtime where it fits:
   without dragging.
 - Move Keys to Playhead aligns selected keyframe blocks to an exact beat while
   preserving their internal timing.
+- Time Reverse Keyframes mirrors selected timing blocks while keeping values
+  and interpolation attached to each keyframe.
 - Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,
   delete, interpolation, and nudge workflows faster.
 - Delete and Backspace remove selected timeline keyframes before falling back to
