@@ -15,6 +15,8 @@ button beside the row label.
 - If the row track is locked, the button shows a lock icon and is disabled.
 - Pressing an inspector diamond also selects the matching timeline track, so the
   dope sheet, graph, and keyframe editor stay in sync.
+- With Auto-Key enabled, first transform edits after Work In seed the original
+  pose at Work In before writing the edited playhead key.
 - The command reuses the existing `setTimelineKeyframe` editor path, so Undo,
   snapping, JSON persistence, runtime rebuilds, and motion-path updates remain
   consistent with timeline row keying.

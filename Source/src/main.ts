@@ -173,6 +173,7 @@ function boot(root: HTMLDivElement): void {
   let previewRecordingRange: { start: number; end: number } | null = null;
   let timelineClipboard: TimelineClipboard | null = null;
   let pendingDragSnapshot: SceneDocument | null = null;
+  let pendingTransformAutoKeySeedValues: Record<TransformProperty, [number, number, number]> | null = null;
   let pendingTimelineDragSnapshot: SceneDocument | null = null;
   let evaluationTourTimers: number[] = [];
 
@@ -465,10 +466,15 @@ function boot(root: HTMLDivElement): void {
 
     transformControls.addEventListener("dragging-changed", (event) => {
       controls.enabled = !event.value;
-      if (event.value) pendingDragSnapshot = snapshot();
+      if (event.value) {
+        pendingDragSnapshot = snapshot();
+        const entry = selectedEntry();
+        pendingTransformAutoKeySeedValues = entry ? captureTransformValues(entry) : null;
+      }
       if (!event.value && pendingDragSnapshot) {
         history.record(pendingDragSnapshot);
         pendingDragSnapshot = null;
+        pendingTransformAutoKeySeedValues = null;
         syncHistoryButtons();
         if (sceneTimeline.autoKey) updateAllUI();
       }
@@ -476,7 +482,10 @@ function boot(root: HTMLDivElement): void {
     });
     transformControls.addEventListener("objectChange", () => {
       if (sceneTimeline.autoKey) {
-        setTimelineKeyframe(trackKindForTransformMode(), { notify: false, record: false, refresh: false });
+        const kind = trackKindForTransformMode();
+        const entry = selectedEntry();
+        if (entry) seedInitialTransformAutoKey(entry, kind, pendingTransformAutoKeySeedValues?.[kind]);
+        setTimelineKeyframe(kind, { notify: false, record: false, refresh: false });
       }
       syncTransformUI();
       syncSelectedBases();
@@ -838,14 +847,38 @@ function boot(root: HTMLDivElement): void {
   function updateTransformValue(prop: TransformProperty, axis: TransformAxis, value: number): void {
     const current = selectedEntry();
     if (!current) return;
+    const previousValue = timelineValueForEntry(current, prop);
     recordHistory();
     if (prop === "rotation") current.root.rotation[axis] = THREE.MathUtils.degToRad(value);
     else current.root[prop][axis] = value;
     syncSelectedBases();
     if (sceneTimeline.autoKey) {
+      seedInitialTransformAutoKey(current, prop, previousValue);
       setTimelineKeyframe(prop, { notify: false, record: false, refresh: false });
     }
     updateAllUI();
+  }
+
+  function captureTransformValues(entry: SceneEntry): Record<TransformProperty, [number, number, number]> {
+    return {
+      position: timelineValueForEntry(entry, "position"),
+      rotation: timelineValueForEntry(entry, "rotation"),
+      scale: timelineValueForEntry(entry, "scale")
+    };
+  }
+
+  function seedInitialTransformAutoKey(entry: SceneEntry, kind: TransformProperty, value = timelineValueForEntry(entry, kind)): void {
+    const currentTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const seedTime = snapTimelineTime(sceneTimeline, clamp(sceneTimeline.workStart, 0, sceneTimeline.duration));
+    if (currentTime <= seedTime + 0.001) return;
+
+    const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+    const existingTrack = objectTimeline.tracks.find((candidate) => candidate.kind === kind);
+    if (existingTrack?.locked || existingTrack?.keyframes.length) return;
+
+    const track = ensureTimelineTrack(objectTimeline, kind);
+    track.keyframes.push(createTimelineKeyframe(seedTime, [...value] as [number, number, number]));
+    sortTimelineKeyframes(track);
   }
 
   function syncCameraUI(): void {
@@ -2918,7 +2951,7 @@ function boot(root: HTMLDivElement): void {
     return [...new Set(times.map(roundTime))].sort((left, right) => left - right);
   }
 
-  function trackKindForTransformMode(): TimelineTrackKind {
+  function trackKindForTransformMode(): TransformProperty {
     const mode = transformControls.getMode();
     if (mode === "rotate") return "rotation";
     if (mode === "scale") return "scale";
