@@ -5,6 +5,7 @@ import {
   type TimelineModel,
   type TimelineRow
 } from "animation-timeline-js";
+import { evaluateTimelineTrack } from "../animation/interpolation";
 import type {
   SceneEntry,
   SceneTimelineDocument,
@@ -15,6 +16,7 @@ import type {
   TimelineTrackKind
 } from "../editor/types";
 import { hasSoloTimelineTracks } from "../animation/timelineSchema";
+import { timelineValueForEntry } from "../animation/timelineTracks";
 import { clamp, formatNumber, hydrateIcons, query } from "../utils/dom";
 import {
   AXIS_INDEX,
@@ -376,6 +378,7 @@ export class KeyframeTimelinePanel {
     this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.timeline.setTime(timelineDocument.currentTime);
     this.syncRowKeyButtons(timelineDocument);
+    this.syncRowValueReadouts(timelineDocument);
     this.renderMarkers(timelineDocument);
     this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, this.lastSelectedId));
@@ -807,7 +810,8 @@ export class KeyframeTimelinePanel {
             solo: track?.solo ?? false,
             muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
             hasKeyframes: Boolean(track?.keyframes.length),
-            hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime)
+            hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
+            valueText: this.objectRowValueText(entry, row.kind, row.axis)
           });
         });
       })
@@ -827,6 +831,7 @@ export class KeyframeTimelinePanel {
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
+        valueText: this.timelineRowValueText(track, kind, timelineDocument.currentTime),
         extraClass: "camera-track-label"
       });
     }).join("");
@@ -845,6 +850,7 @@ export class KeyframeTimelinePanel {
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
+        valueText: this.timelineRowValueText(track, kind, timelineDocument.currentTime),
         extraClass: "light-track-label"
       });
     }).join("");
@@ -864,9 +870,11 @@ export class KeyframeTimelinePanel {
     muted: boolean;
     hasKeyframes: boolean;
     hasPlayheadKey: boolean;
+    valueText?: string;
     extraClass?: string;
   }): string {
     const label = trackLabel(options.kind, options.axis);
+    const detail = options.valueText ? `${label} | ${options.valueText}` : label;
     const keyText = options.locked
       ? "Track locked"
       : options.hasPlayheadKey
@@ -877,7 +885,7 @@ export class KeyframeTimelinePanel {
         <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
         <span class="track-label-text">
           <strong>${options.targetName}</strong>
-          <small>${label}</small>
+          <small>${detail}</small>
         </span>
         <span class="timeline-row-switches">
           <button class="timeline-row-switch" type="button" data-row-action="toggle" aria-label="${options.enabled ? "Disable" : "Enable"} track: ${options.targetName} ${label}" title="${options.enabled ? "Disable track" : "Enable track"}" ${options.hasKeyframes ? "" : "disabled"}>
@@ -895,6 +903,48 @@ export class KeyframeTimelinePanel {
         </button>
       </div>
     `;
+  }
+
+  private syncRowValueReadouts(timelineDocument: SceneTimelineDocument): void {
+    const entryById = new Map(this.lastEntries.map((entry) => [entry.id, entry]));
+    this.labels.querySelectorAll<HTMLElement>(".timeline-track-label").forEach((row) => {
+      const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
+      const targetId = row.dataset.objectId;
+      const valueLabel = row.querySelector<HTMLElement>(".track-label-text small");
+      if (!kind || !targetId || !valueLabel) return;
+      const axis = parseTimelineAxis(row.dataset.trackAxis);
+      const label = trackLabel(kind, axis ?? undefined);
+      let valueText = "";
+      if (targetId === CAMERA_TARGET_ID) {
+        valueText = this.timelineRowValueText(
+          timelineDocument.camera.tracks.find((track) => track.kind === kind),
+          kind,
+          timelineDocument.currentTime,
+          axis ?? undefined
+        );
+      } else if (targetId === LIGHT_TARGET_ID) {
+        valueText = this.timelineRowValueText(
+          timelineDocument.lights.tracks.find((track) => track.kind === kind),
+          kind,
+          timelineDocument.currentTime,
+          axis ?? undefined
+        );
+      } else {
+        const entry = entryById.get(targetId);
+        valueText = entry ? this.objectRowValueText(entry, kind, axis ?? undefined) : "";
+      }
+      valueLabel.textContent = valueText ? `${label} | ${valueText}` : label;
+    });
+  }
+
+  private objectRowValueText(entry: SceneEntry, kind: TimelineTrackKind, axis?: TimelineAxis): string {
+    return formatRowValue(kind, timelineValueForEntry(entry, kind), axis);
+  }
+
+  private timelineRowValueText(track: TimelineTrackDocument | undefined, kind: TimelineTrackKind, time: number, axis?: TimelineAxis): string {
+    if (!track?.keyframes.length) return "";
+    const value = evaluateTimelineTrack(track, time);
+    return value ? formatRowValue(kind, value, axis) : "";
   }
 
   private labelClass(active: boolean, enabled: boolean, locked: boolean, solo: boolean, muted: boolean, hasKeyframes: boolean, extra = ""): string {
@@ -1498,6 +1548,27 @@ function rangeSelection(track: TimelineTrackDocument, current: Set<string>, keyf
 
 function hasPlayheadKey(track: TimelineTrackDocument | undefined, currentTime: number): boolean {
   return Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - currentTime) < 0.001));
+}
+
+function formatRowValue(kind: TimelineTrackKind, value: [number, number, number], axis?: TimelineAxis): string {
+  if (kind === "objectColor" || kind.endsWith("Color")) return formatColorValue(value);
+  if (kind === "objectVisibility") return value[0] >= 0.5 ? "On" : "Off";
+  if (kind === "objectTextureRotation") return `${formatNumber(radToDeg(value[0]))} deg`;
+  if (axis) return formatNumber(value[AXIS_INDEX[axis]]);
+  const axisCount = trackAxisConfig(kind).enabledAxes;
+  return value.slice(0, axisCount).map((channel) => formatNumber(channel)).join(", ");
+}
+
+function formatColorValue(value: [number, number, number]): string {
+  return `#${value.map((channel) => componentToHex(channel)).join("")}`;
+}
+
+function componentToHex(value: number): string {
+  return Math.round(clamp(value, 0, 1) * 255).toString(16).padStart(2, "0");
+}
+
+function radToDeg(value: number): number {
+  return value * 180 / Math.PI;
 }
 
 function cssNumber(element: HTMLElement, property: string, fallback: number): number {

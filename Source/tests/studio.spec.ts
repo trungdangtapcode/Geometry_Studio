@@ -681,6 +681,47 @@ test("shows WebM work area recording progress", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("shows live timeline row values while editing and scrubbing", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const positionXRowValue = page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"] .track-label-text small');
+  const rotationYRowValue = page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="rotation"][data-track-axis="y"] .track-label-text small');
+  await expect(positionXRowValue).toContainText("Position X | 0");
+  await page.locator('.transform-input[data-prop="rotation"][data-axis="y"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "45";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(rotationYRowValue).toContainText("Rotation Y | 45");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-transform").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-transform").click();
+  await expect(positionXRowValue).toContainText("Position X | 4");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(positionXRowValue).toContainText("Position X | 2");
+  expect(errors).toEqual([]);
+});
+
 test("records grouped position rotation and scale keyframes", async ({ page }) => {
   test.setTimeout(240_000);
   const errors: string[] = [];

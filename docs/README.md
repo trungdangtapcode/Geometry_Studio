@@ -94,6 +94,8 @@ PDF.
   search field for quickly isolating object, camera, and light tracks.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
   enable, solo, lock, and key controls.
+- [Timeline Row Value Readouts](timeline-row-value-readouts.md) documents live
+  dope-sheet property values while editing and scrubbing.
 - [Timeline Track Metadata](timeline-track-metadata.md) documents the shared
   track groups, labels, colors, and type guards used by the timeline UI.
 - [Timeline Transform Keying](timeline-transform-keying.md) documents the
@@ -169,6 +171,9 @@ animation runtime where it fits:
   surface for object, camera, and light tracks.
 - Row-level diamond buttons add or update keys directly from the property row,
   matching common motion-graphics editor workflows.
+- Timeline row labels show live property values, so scrubbed Position, Rotation,
+  Scale, material, texture, camera, and light values can be inspected directly
+  from the dope sheet.
 - The `Set TRS` command records the selected object's Position, Rotation, and
   Scale together at the playhead for pose-to-pose motion authoring.
 - Object transform tracks expand into X/Y/Z rows in the timeline panel while
