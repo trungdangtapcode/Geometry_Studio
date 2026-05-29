@@ -16,6 +16,7 @@ import {
   pasteTimelineClipboard,
   resolveTimelineKeyframeSources,
   reverseResolvedKeyframes,
+  roveResolvedKeyframesAcrossTime,
   snapResolvedKeyframesToFrames,
   type EditTimelineResult,
   type TimelineClipboard,
@@ -180,6 +181,7 @@ function boot(root: HTMLDivElement): void {
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onCenterKeyframesOnPlayhead: centerTimelineKeyframesOnPlayhead,
+    onRoveKeyframesAcrossTime: roveTimelineKeyframesAcrossTime,
     onReverseKeyframes: reverseTimelineKeyframes,
     onSnapKeyframesToFrames: snapTimelineKeyframesToFrames,
     onDistributeKeyframes: distributeTimelineKeyframes,
@@ -1112,6 +1114,11 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey && key === "c") {
       event.preventDefault();
       centerTimelineKeyframesOnPlayhead(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
+    if (event.shiftKey && key === "v") {
+      event.preventDefault();
+      roveTimelineKeyframesAcrossTime(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (event.shiftKey && key === "r") {
@@ -2141,6 +2148,23 @@ function boot(root: HTMLDivElement): void {
       result,
       "No keyframe timing changed.",
       (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} centered on ${formatNumber(playheadTime)}s${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
+  }
+
+  function roveTimelineKeyframesAcrossTime(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 3 || sources.length < 3) {
+      showToast("Select at least three keyframes before roving timing.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = roveResolvedKeyframesAcrossTime(sceneTimeline, sources);
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      (editResult) => editResult.skipped ? `No keyframe roved, ${editResult.skipped} skipped.` : "Selected keyframes are already evenly roved.",
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} roved across time${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
     );
   }
 

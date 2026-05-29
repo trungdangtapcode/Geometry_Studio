@@ -52,6 +52,8 @@ PDF.
   selected keyframe blocks to the playhead while preserving relative timing.
 - [Timeline Keyframe Center](timeline-keyframe-center.md) documents centering
   selected keyframe timing blocks on the playhead.
+- [Timeline Keyframe Rove](timeline-keyframe-rove.md) documents AE-style
+  endpoint-preserving roving of selected interior timing columns.
 - [Timeline Keyframe Reverse](timeline-keyframe-reverse.md) documents
   time-reversing selected keyframe blocks.
 - [Timeline Keyframe Snap](timeline-keyframe-snap.md) documents snapping
@@ -111,6 +113,8 @@ animation runtime where it fits:
   preserving their internal timing.
 - Center Selected Keyframes on Playhead aligns the midpoint of a selected
   timing block to the edit beat while preserving internal spacing.
+- Rove Across Time keeps selected endpoints fixed while evenly spacing interior
+  timing columns, adapting a common After Effects keyframe assistant workflow.
 - Time Reverse Keyframes mirrors selected timing blocks while keeping values
   and interpolation attached to each keyframe.
 - Snap Selected Keyframes to Frames cleans dragged or imported key timing to the

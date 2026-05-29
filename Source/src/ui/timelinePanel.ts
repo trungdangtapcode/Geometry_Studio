@@ -38,6 +38,7 @@ export interface KeyframeTimelineCallbacks {
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
   onCenterKeyframesOnPlayhead(keyframeIds: string[]): void;
+  onRoveKeyframesAcrossTime(keyframeIds: string[]): void;
   onReverseKeyframes(keyframeIds: string[]): void;
   onSnapKeyframesToFrames(keyframeIds: string[]): void;
   onDistributeKeyframes(keyframeIds: string[]): void;
@@ -468,6 +469,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-center-keyframes").addEventListener("click", () => {
       this.callbacks.onCenterKeyframesOnPlayhead([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-rove-keyframes").addEventListener("click", () => {
+      this.callbacks.onRoveKeyframesAcrossTime([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-reverse-keyframes").addEventListener("click", () => {
       this.callbacks.onReverseKeyframes([...this.selectedKeyframeIds]);

@@ -311,6 +311,30 @@ export function centerResolvedKeyframesOnTime(
   return moveResolvedKeyframesToTime(timeline, sources, targetAnchor);
 }
 
+export function roveResolvedKeyframesAcrossTime(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): EditTimelineResult {
+  if (sources.length < 3) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const groups = groupSourcesByOriginalTime(sources);
+  if (groups.length < 3) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const start = groups[0].time;
+  const end = groups[groups.length - 1].time;
+  if (Math.abs(end - start) < 0.001) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  return retimeSourceGroups(timeline, sources, groups, (_group, index, allGroups) =>
+    start + ((end - start) * index) / Math.max(allGroups.length - 1, 1)
+  );
+}
+
 export function reverseResolvedKeyframes(
   timeline: SceneTimelineDocument,
   sources: TimelineKeyframeSource[]

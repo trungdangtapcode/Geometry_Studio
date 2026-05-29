@@ -106,6 +106,7 @@ export function studioTemplate(): string {
               <button class="mini-button icon-mini" id="timeline-nudge-right" type="button" aria-label="Nudge keyframe right" title="Nudge keyframe right"><span data-icon="MoveRight"></span></button>
               <button class="mini-button" id="timeline-move-to-playhead" type="button"><span data-icon="Crosshair"></span><span>To Playhead</span></button>
               <button class="mini-button" id="timeline-center-keyframes" type="button"><span data-icon="AlignCenterHorizontal"></span><span>Center</span></button>
+              <button class="mini-button" id="timeline-rove-keyframes" type="button"><span data-icon="GitCommitHorizontal"></span><span>Rove</span></button>
               <button class="mini-button" id="timeline-reverse-keyframes" type="button"><span data-icon="ArrowLeftRight"></span><span>Reverse</span></button>
               <button class="mini-button" id="timeline-snap-keyframes" type="button"><span data-icon="Magnet"></span><span>Snap</span></button>
               <button class="mini-button" id="timeline-distribute-keyframes" type="button"><span data-icon="AlignHorizontalSpaceAround"></span><span>Distribute</span></button>
