@@ -55,6 +55,8 @@ PDF.
 - [Timeline Transform Keying](timeline-transform-keying.md) documents the
   `Set TRS` command for recording Position, Rotation, and Scale as one object
   pose.
+- [Timeline Axis Rows](timeline-axis-rows.md) documents X/Y/Z timeline rows for
+  object Position, Rotation, and Scale.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
   and All row visibility modes for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
@@ -94,6 +96,8 @@ animation runtime where it fits:
   matching common motion-graphics editor workflows.
 - The `Set TRS` command records the selected object's Position, Rotation, and
   Scale together at the playhead for pose-to-pose motion authoring.
+- Object transform tracks expand into X/Y/Z rows in the timeline panel while
+  preserving vector-based JSON persistence and Three.js playback.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
 - Selected objects with two or more Position keys show a viewport motion path,

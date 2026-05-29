@@ -55,14 +55,21 @@ type TimelineUiKeyframe = TimelineKeyframe & {
   id: string;
   targetId: string;
   trackKind: TimelineTrackKind;
+  axis?: TimelineAxis;
 };
 
 type TimelineUiRow = TimelineRow & {
   targetId: string;
   trackKind: TimelineTrackKind;
+  axis?: TimelineAxis;
 };
 
 type TimelineRowFilter = "focus" | "keyed" | "all";
+type TimelineAxis = "x" | "y" | "z";
+type TimelineRowDescriptor = {
+  kind: TimelineTrackKind;
+  axis?: TimelineAxis;
+};
 
 type TimelineDetailSource = {
   targetName: string;
@@ -103,6 +110,9 @@ const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
 const MIN_DOCK_HEIGHT = 190;
 const DEFAULT_ROW_HEIGHT = 30;
 const DEFAULT_HEADER_HEIGHT = 28;
+const TIMELINE_AXES: TimelineAxis[] = ["x", "y", "z"];
+const OBJECT_AXIS_TRACKS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
+const AXIS_INDEX: Record<TimelineAxis, number> = { x: 0, y: 1, z: 2 };
 
 const TRACK_COLORS: Record<TimelineTrackKind, string> = {
   position: "#20bfa9",
@@ -203,6 +213,7 @@ export class KeyframeTimelinePanel {
   private lastPlaying = false;
   private lastEntryNames = new Map<string, string>();
   private activeMarkerId: string | null = null;
+  private selectedAxis: TimelineAxis | null = null;
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
   private timelineScroller: HTMLElement | null = null;
@@ -390,9 +401,11 @@ export class KeyframeTimelinePanel {
       const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
       if (!row) return;
       const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
+      const axis = parseTimelineAxis(row.dataset.trackAxis);
       const targetId = row.dataset.objectId;
       if (!kind || !targetId) return;
       this.trackSelect.value = kind;
+      this.selectedAxis = axis;
       this.callbacks.onTrackLabelSelected(targetId, kind);
       if (keyButton) this.callbacks.onAddKeyframe(kind);
     });
@@ -401,10 +414,12 @@ export class KeyframeTimelinePanel {
       const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
       if (!row || event.target instanceof HTMLButtonElement) return;
       const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
+      const axis = parseTimelineAxis(row.dataset.trackAxis);
       const targetId = row.dataset.objectId;
       if (!kind || !targetId) return;
       event.preventDefault();
       this.trackSelect.value = kind;
+      this.selectedAxis = axis;
       this.callbacks.onTrackLabelSelected(targetId, kind);
     });
     query<HTMLButtonElement>("#timeline-prev-frame").addEventListener("click", () => this.callbacks.onStepFrame(-1));
@@ -427,6 +442,7 @@ export class KeyframeTimelinePanel {
     this.snapInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapEnabled: this.snapInput.checked }));
     this.autoKeyInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ autoKey: this.autoKeyInput.checked }));
     this.trackSelect.addEventListener("change", () => {
+      this.selectedAxis = null;
       if (!this.updating) this.callbacks.onTrackKindChanged();
     });
     this.rowFilterSelect.addEventListener("change", () => {
@@ -443,7 +459,9 @@ export class KeyframeTimelinePanel {
       this.callbacks.onTimeChanged(event.val);
     });
     this.timeline.onSelected((event) => {
-      this.selectedKeyframeIds = new Set(event.selected.map((keyframe) => (keyframe as TimelineUiKeyframe).id).filter(Boolean));
+      const selectedKeyframes = event.selected.map((keyframe) => keyframe as TimelineUiKeyframe);
+      this.selectedKeyframeIds = new Set(selectedKeyframes.map((keyframe) => keyframe.id).filter(Boolean));
+      this.selectedAxis = commonSelectedAxis(selectedKeyframes);
       if (this.lastTimelineDocument) this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
     });
     this.timeline.onDragStarted(() => this.callbacks.onDragStarted());
@@ -627,13 +645,15 @@ export class KeyframeTimelinePanel {
       .flatMap((entry) => {
         const objectTimeline = objectTimelines.get(entry.id);
         const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
-        return visibleKinds.map((kind) => {
-          const track = objectTimeline?.tracks.find((candidate) => candidate.kind === kind);
+        const visibleRows = this.rowDescriptors(visibleKinds, true);
+        return visibleRows.map((row) => {
+          const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
           return this.renderTrackLabel({
             targetId: entry.id,
             targetName: entry.name,
-            kind,
-            active: entry.id === selectedId && activeKind === kind,
+            kind: row.kind,
+            axis: row.axis,
+            active: entry.id === selectedId && activeKind === row.kind,
             enabled: track?.enabled ?? true,
             hasKeyframes: Boolean(track?.keyframes.length)
           });
@@ -671,15 +691,16 @@ export class KeyframeTimelinePanel {
     targetId: string;
     targetName: string;
     kind: TimelineTrackKind;
+    axis?: TimelineAxis;
     active: boolean;
     enabled: boolean;
     hasKeyframes: boolean;
     extraClass?: string;
   }): string {
-    const label = TRACK_LABELS[options.kind];
+    const label = trackLabel(options.kind, options.axis);
     const keyText = options.hasKeyframes ? "Update keyframe" : "Add keyframe";
     return `
-      <div class="${this.labelClass(options.active, options.enabled, options.hasKeyframes, options.extraClass ?? "")}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" aria-label="${options.targetName} ${label}">
+      <div class="${this.labelClass(options.active, options.enabled, options.hasKeyframes, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
         <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
         <span class="track-label-text">
           <strong>${options.targetName}</strong>
@@ -708,11 +729,13 @@ export class KeyframeTimelinePanel {
     entries.forEach((entry) => {
       const objectTimeline = objectTimelines.get(entry.id);
       const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
-      visibleKinds.forEach((kind, index) => {
-        const track = objectTimeline?.tracks.find((candidate) => candidate.kind === kind);
+      const visibleRows = this.rowDescriptors(visibleKinds, true);
+      visibleRows.forEach((row, index) => {
+        const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
         rows.push({
           targetId: entry.id,
-          trackKind: kind,
+          trackKind: row.kind,
+          axis: row.axis,
           min: 0,
           max: timelineDocument.duration,
           keyframesDraggable: true,
@@ -724,19 +747,20 @@ export class KeyframeTimelinePanel {
             keyframesStyle: {
               width: 14,
               height: 14,
-              fillColor: TRACK_COLORS[kind],
+              fillColor: TRACK_COLORS[row.kind],
               selectedFillColor: "#ffffff",
               strokeColor: "rgba(26,35,42,0.35)",
-              selectedStrokeColor: TRACK_COLORS[kind],
+              selectedStrokeColor: TRACK_COLORS[row.kind],
               strokeThickness: 2
             }
           },
           keyframes: track?.keyframes.map((keyframe): TimelineUiKeyframe => ({
             id: keyframe.id,
             targetId: entry.id,
-            trackKind: kind,
+            trackKind: row.kind,
+            axis: row.axis,
             val: keyframe.time,
-            style: this.keyframeStyle(kind, keyframe.interpolation),
+            style: this.keyframeStyle(row.kind, keyframe.interpolation),
             selected: this.selectedKeyframeIds.has(keyframe.id),
             selectable: true,
             draggable: true
@@ -877,10 +901,12 @@ export class KeyframeTimelinePanel {
     const sources = resolvedSources ?? this.detailSources(timelineDocument, selectedId);
     const first = sources[0];
     const axisConfig = first ? trackAxisConfig(first.track.kind) : trackAxisConfig(this.selectedTrackKind());
+    const focusedAxisIndex = this.selectedAxis ? AXIS_INDEX[this.selectedAxis] : null;
     (["x", "y", "z"] as const).forEach((axis, index) => {
+      const axisEnabled = sources.length > 0 && index < axisConfig.enabledAxes && (focusedAxisIndex === null || focusedAxisIndex === index);
       this.keyframeAxisLabels[axis].textContent = axisConfig.labels[index];
-      this.keyframeValueInputs[axis].disabled = sources.length === 0 || index >= axisConfig.enabledAxes;
-      this.keyframeValueInputs[axis].value = sources.length && index < axisConfig.enabledAxes
+      this.keyframeValueInputs[axis].disabled = !axisEnabled;
+      this.keyframeValueInputs[axis].value = axisEnabled
         ? commonValue(sources.map((source) => source.keyframe.value[index]))
         : "";
       this.keyframeValueInputs[axis].placeholder = sources.length > 1 ? "Mixed" : "";
@@ -892,7 +918,7 @@ export class KeyframeTimelinePanel {
     if (!first) {
       this.keyframeLabel.textContent = "No keyframe selected";
     } else if (sources.length === 1) {
-      this.keyframeLabel.textContent = `${first.targetName} | ${TRACK_LABELS[first.track.kind]}`;
+      this.keyframeLabel.textContent = `${first.targetName} | ${trackLabel(first.track.kind, this.selectedAxis ?? undefined)}`;
     } else {
       this.keyframeLabel.textContent = `${sources.length} selected keyframes`;
     }
@@ -991,6 +1017,14 @@ export class KeyframeTimelinePanel {
     this.timeline.scrollLeft = 0;
     this.timeline.redraw();
   }
+
+  private rowDescriptors(kinds: TimelineTrackKind[], expandObjectAxes: boolean): TimelineRowDescriptor[] {
+    return kinds.flatMap((kind) =>
+      expandObjectAxes && OBJECT_AXIS_TRACKS.has(kind)
+        ? TIMELINE_AXES.map((axis) => ({ kind, axis }))
+        : [{ kind }]
+    );
+  }
 }
 
 function isCameraTrack(kind: TimelineTrackKind): kind is "cameraPosition" | "cameraTarget" | "cameraLens" {
@@ -1050,6 +1084,16 @@ function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
   return value === "keyed" || value === "all" || value === "focus" ? value : "focus";
 }
 
+function parseTimelineAxis(value: string | undefined): TimelineAxis | null {
+  return value === "x" || value === "y" || value === "z" ? value : null;
+}
+
+function commonSelectedAxis(keyframes: TimelineUiKeyframe[]): TimelineAxis | null {
+  const first = keyframes[0]?.axis;
+  if (!first) return null;
+  return keyframes.every((keyframe) => keyframe.axis === first) ? first : null;
+}
+
 function cssNumber(element: HTMLElement, property: string, fallback: number): number {
   const value = Number.parseFloat(getComputedStyle(element).getPropertyValue(property));
   return Number.isFinite(value) && value > 0 ? value : fallback;
@@ -1070,6 +1114,10 @@ function trackAxisConfig(kind: TimelineTrackKind): { labels: [string, string, st
     return { labels: ["Value", "-", "-"], enabledAxes: 1 };
   }
   return { labels: ["X", "Y", "Z"], enabledAxes: 3 };
+}
+
+function trackLabel(kind: TimelineTrackKind, axis?: TimelineAxis): string {
+  return axis ? `${TRACK_LABELS[kind]} ${axis.toUpperCase()}` : TRACK_LABELS[kind];
 }
 
 function commonValue(values: number[]): string {

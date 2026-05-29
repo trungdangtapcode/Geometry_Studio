@@ -644,6 +644,21 @@ svg {
   box-shadow: inset 3px 0 0 var(--teal);
 }
 
+.timeline-track-label.axis-track-label {
+  grid-template-columns: 8px minmax(0, 1fr) var(--icon-mini-size);
+  padding-left: calc(var(--timeline-header-padding-x) + 10px);
+}
+
+.timeline-track-label.axis-track-label .track-swatch {
+  width: 7px;
+  height: 7px;
+  opacity: 0.82;
+}
+
+.timeline-track-label.axis-track-label .track-label-text strong {
+  font-weight: 700;
+}
+
 .timeline-track-label.disabled-track {
   opacity: 0.58;
 }

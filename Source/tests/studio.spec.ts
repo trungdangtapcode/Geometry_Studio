@@ -35,8 +35,10 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#motion-path-toggle")).toBeChecked();
   await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
   await page.locator("#timeline-row-filter").selectOption("keyed");
-  await expect(page.locator('.timeline-track-label[data-track-kind="position"]')).toHaveCount(1);
-  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]')).toHaveCount(1);
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]')).toHaveCount(3);
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]')).toHaveCount(3);
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"][data-track-axis="y"]')).toBeVisible();
   await page.locator("#timeline-row-filter").selectOption("focus");
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
@@ -127,6 +129,8 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
 
   await page.locator("#timeline-set-transform").click();
   await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
+  await expect(page.getByRole("button", { name: "Cube Position X", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cube Scale Z", exact: true })).toBeVisible();
   await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
   await page.locator("#timeline-track-kind").selectOption("rotation");
   await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
