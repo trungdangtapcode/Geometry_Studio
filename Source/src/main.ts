@@ -169,6 +169,7 @@ function boot(root: HTMLDivElement): void {
     onPasteKeyframes: pasteTimelineKeyframes,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
+    onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -1085,6 +1086,11 @@ function boot(root: HTMLDivElement): void {
     if (key === "f9") {
       event.preventDefault();
       setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), event.shiftKey ? "linear" : event.altKey ? "hold" : "smooth");
+      return;
+    }
+    if (event.shiftKey && key === "enter") {
+      event.preventDefault();
+      moveTimelineKeyframesToPlayhead(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (key === "b") {
@@ -2018,6 +2024,14 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${result.nudged} keyframe${result.nudged === 1 ? "" : "s"} nudged ${direction > 0 ? "right" : "left"}${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function moveTimelineKeyframesToPlayhead(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    if (keyframeIds.length === 0) {
+      showToast("Select keyframes before moving them to the playhead.", "bad");
+      return;
+    }
+    editTimelineKeyframes(keyframeIds, { time: sceneTimeline.currentTime });
   }
 
   function editTimelineKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void {

@@ -37,6 +37,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
   await expect(page.locator("#timeline-nudge-right")).toBeVisible();
+  await expect(page.locator("#timeline-move-to-playhead")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
   await expect(page.locator("#timeline-add-marker")).toBeVisible();
   await expect(page.locator("#timeline-delete-marker")).toBeVisible();
@@ -492,6 +493,68 @@ test("supports I/O work area keyboard shortcuts", async ({ page }) => {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("o");
   await expect(page.locator("#timeline-work-end")).toHaveValue("3.5");
+
+  expect(errors).toEqual([]);
+});
+
+test("moves selected timeline keyframes to the playhead", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-add-keyframe")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  for (const [time, value] of [[2, 2], [4, 4]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+  await page.locator("#timeline-move-to-playhead").click();
+  await expect(page.locator("#timeline-current-time")).toHaveValue("1");
+
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  const graphTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
+    [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
+      .sort((left, right) => left - right)
+  );
+  expect(graphTimes).toEqual([1, 3, 5]);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Shift+Enter");
+  const shortcutTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
+    [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
+      .sort((left, right) => left - right)
+  );
+  expect(shortcutTimes).toEqual([2, 4, 6]);
 
   expect(errors).toEqual([]);
 });

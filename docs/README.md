@@ -48,6 +48,8 @@ PDF.
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step
   retiming controls for selected or playhead keyframes.
+- [Timeline Keyframe Alignment](timeline-keyframe-align.md) documents moving
+  selected keyframe blocks to the playhead while preserving relative timing.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
@@ -95,6 +97,8 @@ animation runtime where it fits:
   next edit.
 - Frame-step keyframe nudge controls retime selected or playhead keyframes
   without dragging.
+- Move Keys to Playhead aligns selected keyframe blocks to an exact beat while
+  preserving their internal timing.
 - Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,
   delete, interpolation, and nudge workflows faster.
 - Delete and Backspace remove selected timeline keyframes before falling back to
