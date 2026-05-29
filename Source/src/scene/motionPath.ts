@@ -8,6 +8,7 @@ export interface MotionPathRig {
   line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
   keyPoints: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
   labels: THREE.Group;
+  ghosts: THREE.Group;
 }
 
 const SAMPLE_RATE = 12;
@@ -48,8 +49,12 @@ export function createMotionPathRig(): MotionPathRig {
   labels.name = "Motion Path Time Labels";
   labels.renderOrder = 52;
 
-  group.add(line, keyPoints, labels);
-  return { group, line, keyPoints, labels };
+  const ghosts = new THREE.Group();
+  ghosts.name = "Motion Path Pose Ghosts";
+  ghosts.renderOrder = 49;
+
+  group.add(ghosts, line, keyPoints, labels);
+  return { group, line, keyPoints, labels, ghosts };
 }
 
 export function updateMotionPath(
@@ -63,12 +68,11 @@ export function updateMotionPath(
     return;
   }
 
-  const track = timeline.objects
-    .find((objectTimeline) => objectTimeline.objectId === selectedEntry.id)
-    ?.tracks.find((candidate) => candidate.kind === "position");
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === selectedEntry.id);
+  const track = objectTimeline?.tracks.find((candidate) => candidate.kind === "position");
 
   const soloActive = hasSoloTimelineTracks(timeline);
-  if (!track || track.keyframes.length < 2 || !isTimelineTrackRuntimeActive(track, soloActive)) {
+  if (!objectTimeline || !track || track.keyframes.length < 2 || !isTimelineTrackRuntimeActive(track, soloActive)) {
     clearMotionPath(rig);
     return;
   }
@@ -85,6 +89,7 @@ export function updateMotionPath(
   replaceGeometryPositions(rig.line, linePositions);
   replaceGeometryPositions(rig.keyPoints, keyPositions);
   updateKeyLabels(rig.labels, keyframes);
+  updatePoseGhosts(rig.ghosts, selectedEntry, objectTimeline.tracks, keyframes, soloActive);
   rig.group.visible = true;
 }
 
@@ -92,11 +97,13 @@ export function clearMotionPath(rig: MotionPathRig): void {
   replaceGeometryPositions(rig.line, []);
   replaceGeometryPositions(rig.keyPoints, []);
   clearKeyLabels(rig.labels);
+  clearPoseGhosts(rig.ghosts);
   rig.group.visible = false;
 }
 
 export function disposeMotionPathRig(rig: MotionPathRig): void {
   clearKeyLabels(rig.labels);
+  clearPoseGhosts(rig.ghosts);
   rig.line.geometry.dispose();
   rig.line.material.dispose();
   rig.keyPoints.geometry.dispose();
@@ -117,6 +124,94 @@ function sampleTrackPositions(track: TimelineTrackDocument, keyframes: TimelineK
     }
   }
   return positions;
+}
+
+function updatePoseGhosts(
+  group: THREE.Group,
+  entry: SceneEntry,
+  tracks: TimelineTrackDocument[],
+  keyframes: TimelineKeyframeDocument[],
+  soloActive: boolean
+): void {
+  clearPoseGhosts(group);
+  const basis = objectBoxBasis(entry);
+  if (!basis) return;
+
+  const rotationTrack = activeTrack(tracks, "rotation", soloActive);
+  const scaleTrack = activeTrack(tracks, "scale", soloActive);
+  visibleLabelKeyframes(keyframes).forEach((keyframe) => {
+    const ghost = createPoseGhost(basis, keyframe, rotationTrack, scaleTrack, entry);
+    if (ghost) group.add(ghost);
+  });
+}
+
+function createPoseGhost(
+  basis: { size: THREE.Vector3; centerOffset: THREE.Vector3; currentScale: THREE.Vector3 },
+  keyframe: TimelineKeyframeDocument,
+  rotationTrack: TimelineTrackDocument | undefined,
+  scaleTrack: TimelineTrackDocument | undefined,
+  entry: SceneEntry
+): THREE.LineSegments | null {
+  const scale = evaluatedTrackVector(scaleTrack, keyframe.time, [entry.root.scale.x, entry.root.scale.y, entry.root.scale.z]);
+  const size = new THREE.Vector3(
+    Math.max(0.08, basis.size.x * Math.abs(scale[0] / basis.currentScale.x)),
+    Math.max(0.08, basis.size.y * Math.abs(scale[1] / basis.currentScale.y)),
+    Math.max(0.08, basis.size.z * Math.abs(scale[2] / basis.currentScale.z))
+  );
+  if (!Number.isFinite(size.x + size.y + size.z)) return null;
+
+  const boxGeometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+  const geometry = new THREE.EdgesGeometry(boxGeometry);
+  boxGeometry.dispose();
+  const material = new THREE.LineBasicMaterial({
+    color: 0x12b8a6,
+    transparent: true,
+    opacity: 0.36,
+    depthTest: false
+  });
+  const ghost = new THREE.LineSegments(geometry, material);
+  ghost.name = `Motion Path Pose Ghost ${formatTime(keyframe.time)}s`;
+  ghost.renderOrder = 49;
+  ghost.position.fromArray(keyframe.value);
+  ghost.position.add(basis.centerOffset);
+  const rotation = evaluatedTrackVector(rotationTrack, keyframe.time, [
+    THREE.MathUtils.radToDeg(entry.root.rotation.x),
+    THREE.MathUtils.radToDeg(entry.root.rotation.y),
+    THREE.MathUtils.radToDeg(entry.root.rotation.z)
+  ]);
+  ghost.rotation.set(
+    THREE.MathUtils.degToRad(rotation[0]),
+    THREE.MathUtils.degToRad(rotation[1]),
+    THREE.MathUtils.degToRad(rotation[2])
+  );
+  return ghost;
+}
+
+function objectBoxBasis(entry: SceneEntry): { size: THREE.Vector3; centerOffset: THREE.Vector3; currentScale: THREE.Vector3 } | null {
+  const box = new THREE.Box3().setFromObject(entry.root);
+  if (box.isEmpty()) return null;
+  const worldSize = box.getSize(new THREE.Vector3());
+  const centerOffset = box.getCenter(new THREE.Vector3()).sub(entry.root.position);
+  const currentScale = new THREE.Vector3(
+    safeScale(entry.root.scale.x),
+    safeScale(entry.root.scale.y),
+    safeScale(entry.root.scale.z)
+  );
+  const size = new THREE.Vector3(
+    Math.max(0.08, worldSize.x / currentScale.x),
+    Math.max(0.08, worldSize.y / currentScale.y),
+    Math.max(0.08, worldSize.z / currentScale.z)
+  );
+  return { size, centerOffset, currentScale };
+}
+
+function activeTrack(tracks: TimelineTrackDocument[], kind: "rotation" | "scale", soloActive: boolean): TimelineTrackDocument | undefined {
+  const track = tracks.find((candidate) => candidate.kind === kind);
+  return track && isTimelineTrackRuntimeActive(track, soloActive) ? track : undefined;
+}
+
+function evaluatedTrackVector(track: TimelineTrackDocument | undefined, time: number, fallback: [number, number, number]): [number, number, number] {
+  return track ? evaluateTimelineTrack(track, time) ?? fallback : fallback;
 }
 
 function updateKeyLabels(group: THREE.Group, keyframes: TimelineKeyframeDocument[]): void {
@@ -184,6 +279,17 @@ function clearKeyLabels(group: THREE.Group): void {
   group.clear();
 }
 
+function clearPoseGhosts(group: THREE.Group): void {
+  group.children.forEach((child) => {
+    if (child instanceof THREE.LineSegments) {
+      child.geometry.dispose();
+      if (Array.isArray(child.material)) child.material.forEach((material) => material.dispose());
+      else child.material.dispose();
+    }
+  });
+  group.clear();
+}
+
 function replaceGeometryPositions(
   object: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial> | THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>,
   positions: number[]
@@ -205,6 +311,10 @@ function emptyGeometry(): THREE.BufferGeometry {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function safeScale(value: number): number {
+  return Math.max(Math.abs(value), 0.001);
 }
 
 function formatTime(value: number): string {
