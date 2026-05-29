@@ -25,7 +25,7 @@ metadata to focused modules. Keeping track metadata separate makes it easier to:
 - `OBJECT_TRACKS`
 - `CAMERA_TRACKS`
 - `LIGHT_TRACKS`
-- `OBJECT_AXIS_TRACKS`
+- `CHANNEL_EXPANDED_TRACKS`
 - `TRACK_COLORS`
 - `TRACK_LABELS`
 - `isCameraTrack`
@@ -39,6 +39,6 @@ into `main.ts`.
 
 ## Testing
 
-This refactor should not change behavior. Validation is typecheck plus the
-timeline smoke path that renders track rows, key colors, row labels, graph
+Validation is typecheck plus the timeline smoke paths that render expanded
+object, texture, camera, and light channel rows, key colors, row labels, graph
 titles, and keyframe editor labels.

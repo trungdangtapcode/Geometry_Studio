@@ -130,6 +130,8 @@ PDF.
   pose seeding for first transform auto-key edits.
 - [Timeline Axis Rows](timeline-axis-rows.md) documents X/Y/Z timeline rows for
   object Position, Rotation, and Scale.
+- [Timeline Channel Rows](timeline-channel-rows.md) documents expanded channel
+  rows for vector object, texture, camera, and light tracks.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
   documents direct Linear, Ease In, Ease Out, Easy Ease, and Hold timing
   controls.
@@ -230,6 +232,9 @@ animation runtime where it fits:
   Scale together at the playhead for pose-to-pose motion authoring.
 - Object transform tracks expand into X/Y/Z rows in the timeline panel while
   preserving vector-based JSON persistence and Three.js playback.
+- Vector-valued object, texture, camera, and light tracks expand into focused
+  channel rows such as Color R/G/B, Texture U/V, Camera Lens FOV/Near/Far, and
+  light Color R/G/B.
 - Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation have direct
   toolbar controls, synchronized dropdown state, keyboard shortcuts, and a
   compact curve preview.

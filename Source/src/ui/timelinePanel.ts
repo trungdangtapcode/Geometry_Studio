@@ -30,11 +30,11 @@ import {
 } from "./timelineValueGraph";
 import {
   CAMERA_TRACKS,
+  CHANNEL_EXPANDED_TRACKS,
   isCameraTrack,
   isLightTrack,
   isObjectTrack,
   LIGHT_TRACKS,
-  OBJECT_AXIS_TRACKS,
   OBJECT_TRACKS,
   TRACK_COLORS,
   trackLabel
@@ -924,41 +924,43 @@ export class KeyframeTimelinePanel {
         });
       })
       .join("");
-    const cameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId)
-      .filter((kind) => this.matchesRowSearch("Camera", kind));
-    const cameraLabels = cameraKinds.map((kind) => {
-      const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === kind);
+    const cameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId);
+    const cameraRows = this.filteredRowDescriptors("Camera", cameraKinds, true);
+    const cameraLabels = cameraRows.map((row) => {
+      const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === row.kind);
       return this.renderTrackLabel({
         targetId: CAMERA_TARGET_ID,
         targetName: "Camera",
-        kind,
-        active: isCameraTrack(activeKind) && activeKind === kind,
+        kind: row.kind,
+        axis: row.axis,
+        active: isCameraTrack(activeKind) && activeKind === row.kind,
         enabled: track?.enabled ?? true,
         locked: track?.locked ?? false,
         solo: track?.solo ?? false,
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
-        valueText: this.timelineRowValueText(track, kind, timelineDocument.currentTime),
+        valueText: this.timelineRowValueText(track, row.kind, timelineDocument.currentTime, row.axis),
         extraClass: "camera-track-label"
       });
     }).join("");
-    const lightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId)
-      .filter((kind) => this.matchesRowSearch("Lights", kind));
-    const lightLabels = lightKinds.map((kind) => {
-      const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === kind);
+    const lightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId);
+    const lightRows = this.filteredRowDescriptors("Lights", lightKinds, true);
+    const lightLabels = lightRows.map((row) => {
+      const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === row.kind);
       return this.renderTrackLabel({
         targetId: LIGHT_TARGET_ID,
         targetName: "Lights",
-        kind,
-        active: isLightTrack(activeKind) && activeKind === kind,
+        kind: row.kind,
+        axis: row.axis,
+        active: isLightTrack(activeKind) && activeKind === row.kind,
         enabled: track?.enabled ?? true,
         locked: track?.locked ?? false,
         solo: track?.solo ?? false,
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
-        valueText: this.timelineRowValueText(track, kind, timelineDocument.currentTime),
+        valueText: this.timelineRowValueText(track, row.kind, timelineDocument.currentTime, row.axis),
         extraClass: "light-track-label"
       });
     }).join("");
@@ -1126,76 +1128,80 @@ export class KeyframeTimelinePanel {
         });
       });
     });
-    const visibleCameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId)
-      .filter((kind) => this.matchesRowSearch("Camera", kind));
-    visibleCameraKinds.forEach((kind, index) => {
-      const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === kind);
+    const visibleCameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId);
+    const visibleCameraRows = this.filteredRowDescriptors("Camera", visibleCameraKinds, true);
+    visibleCameraRows.forEach((row, index) => {
+      const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === row.kind);
       const locked = Boolean(track?.locked);
       rows.push({
         targetId: CAMERA_TARGET_ID,
-        trackKind: kind,
+        trackKind: row.kind,
+        axis: row.axis,
         min: 0,
         max: timelineDocument.duration,
         keyframesDraggable: !locked,
         groupsDraggable: !locked,
         style: {
           height: rowHeight,
-          marginBottom: index === visibleCameraKinds.length - 1 ? 0 : 2,
+          marginBottom: index === visibleCameraRows.length - 1 ? 0 : 2,
           fillColor: index % 2 === 0 ? "rgba(238,244,255,0.74)" : "rgba(244,239,255,0.74)",
           keyframesStyle: {
             width: 14,
             height: 14,
-            fillColor: TRACK_COLORS[kind],
+            fillColor: TRACK_COLORS[row.kind],
             selectedFillColor: "#ffffff",
             strokeColor: "rgba(26,35,42,0.35)",
-            selectedStrokeColor: TRACK_COLORS[kind],
+            selectedStrokeColor: TRACK_COLORS[row.kind],
             strokeThickness: 2
           }
         },
         keyframes: track?.keyframes.map((keyframe): TimelineUiKeyframe => ({
           id: keyframe.id,
           targetId: CAMERA_TARGET_ID,
-          trackKind: kind,
+          trackKind: row.kind,
+          axis: row.axis,
           val: keyframe.time,
-          style: this.keyframeStyle(kind, keyframe.interpolation),
+          style: this.keyframeStyle(row.kind, keyframe.interpolation),
           selected: this.selectedKeyframeIds.has(keyframe.id),
           selectable: true,
           draggable: !locked
         })) ?? []
       });
     });
-    const visibleLightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId)
-      .filter((kind) => this.matchesRowSearch("Lights", kind));
-    visibleLightKinds.forEach((kind, index) => {
-      const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === kind);
+    const visibleLightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId);
+    const visibleLightRows = this.filteredRowDescriptors("Lights", visibleLightKinds, true);
+    visibleLightRows.forEach((row, index) => {
+      const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === row.kind);
       const locked = Boolean(track?.locked);
       rows.push({
         targetId: LIGHT_TARGET_ID,
-        trackKind: kind,
+        trackKind: row.kind,
+        axis: row.axis,
         min: 0,
         max: timelineDocument.duration,
         keyframesDraggable: !locked,
         groupsDraggable: !locked,
         style: {
           height: rowHeight,
-          marginBottom: index === visibleLightKinds.length - 1 ? 0 : 2,
+          marginBottom: index === visibleLightRows.length - 1 ? 0 : 2,
           fillColor: index % 2 === 0 ? "rgba(255,247,229,0.78)" : "rgba(244,249,255,0.78)",
           keyframesStyle: {
             width: 14,
             height: 14,
-            fillColor: TRACK_COLORS[kind],
+            fillColor: TRACK_COLORS[row.kind],
             selectedFillColor: "#ffffff",
             strokeColor: "rgba(26,35,42,0.35)",
-            selectedStrokeColor: TRACK_COLORS[kind],
+            selectedStrokeColor: TRACK_COLORS[row.kind],
             strokeThickness: 2
           }
         },
         keyframes: track?.keyframes.map((keyframe): TimelineUiKeyframe => ({
           id: keyframe.id,
           targetId: LIGHT_TARGET_ID,
-          trackKind: kind,
+          trackKind: row.kind,
+          axis: row.axis,
           val: keyframe.time,
-          style: this.keyframeStyle(kind, keyframe.interpolation),
+          style: this.keyframeStyle(row.kind, keyframe.interpolation),
           selected: this.selectedKeyframeIds.has(keyframe.id),
           selectable: true,
           draggable: !locked
@@ -1540,10 +1546,10 @@ export class KeyframeTimelinePanel {
     this.refreshCanvas();
   }
 
-  private rowDescriptors(kinds: TimelineTrackKind[], expandObjectAxes: boolean): TimelineRowDescriptor[] {
+  private rowDescriptors(kinds: TimelineTrackKind[], expandAxes: boolean): TimelineRowDescriptor[] {
     return kinds.flatMap((kind) =>
-      expandObjectAxes && OBJECT_AXIS_TRACKS.has(kind)
-        ? TIMELINE_AXES.map((axis) => ({ kind, axis }))
+      expandAxes && CHANNEL_EXPANDED_TRACKS.has(kind)
+        ? TIMELINE_AXES.slice(0, trackAxisConfig(kind).enabledAxes).map((axis) => ({ kind, axis }))
         : [{ kind }]
     );
   }
@@ -1702,10 +1708,10 @@ function roundTimelineTime(time: number): number {
 }
 
 function formatRowValue(kind: TimelineTrackKind, value: [number, number, number], axis?: TimelineAxis): string {
+  if (axis) return formatNumber(value[AXIS_INDEX[axis]]);
   if (kind === "objectColor" || kind.endsWith("Color")) return formatColorValue(value);
   if (kind === "objectVisibility") return value[0] >= 0.5 ? "On" : "Off";
   if (kind === "objectTextureRotation") return `${formatNumber(radToDeg(value[0]))} deg`;
-  if (axis) return formatNumber(value[AXIS_INDEX[axis]]);
   const axisCount = trackAxisConfig(kind).enabledAxes;
   return value.slice(0, axisCount).map((channel) => formatNumber(channel)).join(", ");
 }

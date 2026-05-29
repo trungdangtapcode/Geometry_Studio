@@ -123,7 +123,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await page.keyboard.press("Control+F");
   await expect(page.locator("#timeline-row-search")).toBeFocused();
   await page.locator("#timeline-row-search").fill("camera");
-  await expect(page.locator('.camera-track-label[data-track-kind="cameraPosition"]')).toBeVisible();
+  await expect(page.locator('.camera-track-label[data-track-kind="cameraPosition"][data-track-axis="x"]')).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-object-id="object-1"]')).toHaveCount(0);
   await page.locator("#timeline-row-search").fill("point intensity");
   await expect(page.locator('.light-track-label[data-track-kind="pointIntensity"]')).toBeVisible();
@@ -152,14 +152,14 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#selection-summary")).toContainText("Keyframed");
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
   await expect(page.locator("#timeline-key-label")).toContainText("Cube | Rotation");
-  const cameraTrackLabel = page.locator('.camera-track-label[data-track-kind="cameraPosition"]');
+  const cameraTrackLabel = page.locator('.camera-track-label[data-track-kind="cameraPosition"][data-track-axis="x"]');
   await page.locator("#timeline-track-kind").selectOption("cameraPosition");
   await expect(cameraTrackLabel).toBeVisible();
   await cameraTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("cameraPosition");
   await expect(cameraTrackLabel).toHaveClass(/active/);
   await cameraTrackLabel.locator(".timeline-row-key").click();
-  await expect(page.locator("#timeline-key-label")).toContainText("Camera | Camera Position");
+  await expect(page.locator("#timeline-key-label")).toContainText("Camera | Camera Position X");
   const dockHeight = await page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height);
   const resizeBox = await page.locator("#timeline-resize-handle").boundingBox();
   expect(resizeBox).toBeTruthy();
@@ -372,8 +372,8 @@ test("sets keyframes for visible timeline rows", async ({ page }) => {
 
   await page.goto("/");
   await page.locator("#timeline-row-search").fill("texture");
-  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
-  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureOffset"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"][data-track-axis="x"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureOffset"][data-track-axis="x"]')).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRotation"]')).toBeVisible();
   await page.locator("#timeline-set-visible").click();
   await expect(page.locator("#timeline-key-label")).toContainText("selected keyframes");
@@ -407,20 +407,22 @@ test("selects keyframes on visible timeline rows", async ({ page }) => {
     '.timeline-track-label[data-track-kind="objectTextureOffset"], ' +
     '.timeline-track-label[data-track-kind="objectTextureRotation"]'
   );
-  const visibleRowCount = await visibleTextureRows.count();
-  expect(visibleRowCount).toBeGreaterThan(0);
+  const visibleTrackCount = await visibleTextureRows.evaluateAll((rows) =>
+    new Set(rows.map((row) => `${(row as HTMLElement).dataset.objectId}:${(row as HTMLElement).dataset.trackKind}`)).size
+  );
+  expect(visibleTrackCount).toBeGreaterThan(0);
 
   await page.locator("#timeline-set-visible").click();
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount} keyframes selected`);
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "2";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.locator("#timeline-set-visible").click();
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount} keyframes selected`);
 
   await page.locator("#timeline-select-visible").click();
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount * 2} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount * 2} keyframes selected`);
   await page.locator("#timeline-work-start").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -431,7 +433,7 @@ test("selects keyframes on visible timeline rows", async ({ page }) => {
   });
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("Control+Alt+Shift+A");
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount} keyframes selected`);
   expect(errors).toEqual([]);
 });
 
@@ -460,21 +462,23 @@ test("selects visible-row keyframes at the playhead time", async ({ page }) => {
     '.timeline-track-label[data-track-kind="objectTextureOffset"], ' +
     '.timeline-track-label[data-track-kind="objectTextureRotation"]'
   );
-  const visibleRowCount = await visibleTextureRows.count();
-  expect(visibleRowCount).toBeGreaterThan(0);
+  const visibleTrackCount = await visibleTextureRows.evaluateAll((rows) =>
+    new Set(rows.map((row) => `${(row as HTMLElement).dataset.objectId}:${(row as HTMLElement).dataset.trackKind}`)).size
+  );
+  expect(visibleTrackCount).toBeGreaterThan(0);
 
   await page.locator("#timeline-set-visible").click();
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount} keyframes selected`);
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "2";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.locator("#timeline-set-visible").click();
   await page.locator("#timeline-select-visible").click();
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount * 2} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount * 2} keyframes selected`);
 
   await page.locator("#timeline-select-time").click();
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount} keyframes selected`);
   await page.locator("#timeline-delete-keyframe").click();
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#save-scene")?.click();
@@ -493,7 +497,7 @@ test("selects visible-row keyframes at the playhead time", async ({ page }) => {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.keyboard.press("Control+Alt+K");
-  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount} keyframes selected`);
   expect(errors).toEqual([]);
 });
 
@@ -550,7 +554,7 @@ test("duplicates visible-row keyframes at the playhead time", async ({ page }) =
 
   await page.goto("/");
   await page.locator("#timeline-row-search").fill("cube texture");
-  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"][data-track-axis="x"]')).toBeVisible();
   await page.locator("#timeline-set-visible").click();
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
   await page.locator("#timeline-duplicate-time").click();
@@ -590,7 +594,7 @@ test("deletes visible-row keyframes at the playhead time", async ({ page }) => {
 
   await page.goto("/");
   await page.locator("#timeline-row-search").fill("cube texture");
-  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"][data-track-axis="x"]')).toBeVisible();
   await page.locator("#timeline-set-visible").click();
   await page.locator("#timeline-duplicate-time").click();
   await page.locator("#timeline-delete-time").click();
@@ -630,7 +634,7 @@ test("copies visible-row keyframes at the playhead time for paste", async ({ pag
 
   await page.goto("/");
   await page.locator("#timeline-row-search").fill("cube texture");
-  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"][data-track-axis="x"]')).toBeVisible();
   await page.locator("#timeline-set-visible").click();
   await page.locator("#timeline-copy-time").click();
   await page.locator("#timeline-current-time").evaluate((input) => {
@@ -773,7 +777,7 @@ test("cuts visible-row keyframes at the playhead time for paste", async ({ page 
 
   await page.goto("/");
   await page.locator("#timeline-row-search").fill("cube texture");
-  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"][data-track-axis="x"]')).toBeVisible();
   await page.locator("#timeline-set-visible").click();
   await expect(page.locator("#timeline-timecode")).toContainText("3 visible keys");
   await page.locator("#timeline-duplicate-time").click();
@@ -807,6 +811,48 @@ test("cuts visible-row keyframes at the playhead time for paste", async ({ page 
     const track = objectTimeline.tracks.find((candidate: { kind: string }) => candidate.kind === kind);
     expect(track.keyframes.map((keyframe: { time: number }) => keyframe.time)).toEqual([0.033, 1]);
   });
+  expect(errors).toEqual([]);
+});
+
+test("expands vector timeline tracks into channel rows", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-row-filter").selectOption("all");
+
+  const objectColorR = page.locator('.timeline-track-label[data-track-kind="objectColor"][data-track-axis="x"]').first();
+  const textureRepeatU = page.locator('.timeline-track-label[data-track-kind="objectTextureRepeat"][data-track-axis="x"]').first();
+  const cameraFov = page.locator('.camera-track-label[data-track-kind="cameraLens"][data-track-axis="x"]').first();
+  const cameraNear = page.locator('.camera-track-label[data-track-kind="cameraLens"][data-track-axis="y"]').first();
+  const sunColorB = page.locator('.light-track-label[data-track-kind="directionalColor"][data-track-axis="z"]').first();
+
+  await expect(objectColorR).toBeVisible();
+  await expect(objectColorR.locator(".track-label-text small")).toContainText("Color R");
+  await expect(textureRepeatU).toBeVisible();
+  await expect(textureRepeatU.locator(".track-label-text small")).toContainText("Texture Repeat U");
+  await expect(page.locator('.timeline-track-label[data-track-kind="objectTextureRepeat"][data-track-axis="z"]')).toHaveCount(0);
+  await expect(cameraFov).toBeVisible();
+  await expect(cameraFov.locator(".track-label-text small")).toContainText("Camera Lens FOV");
+  await expect(cameraNear.locator(".track-label-text small")).toContainText("Camera Lens Near");
+  await expect(sunColorB).toBeVisible();
+  await expect(sunColorB.locator(".track-label-text small")).toContainText("Sun Color B");
+
+  await cameraFov.locator(".timeline-row-key").click();
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("cameraLens");
+  await expect(page.locator("#timeline-key-label")).toContainText("Camera | Camera Lens FOV");
+  await expect(page.locator("#timeline-key-x-label")).toContainText("FOV");
+  await expect(page.locator("#timeline-key-x")).toBeEnabled();
+  await expect(page.locator("#timeline-key-y")).toBeDisabled();
+  await page.locator("#timeline-graph-toggle").click();
+  await expect(page.locator("#timeline-graph-title")).toContainText("Camera | Camera Lens FOV");
+
+  await page.locator("#timeline-row-search").fill("texture repeat u");
+  await expect(page.locator('.timeline-track-label[data-track-kind="objectTextureRepeat"][data-track-axis="x"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-track-kind="objectTextureRepeat"][data-track-axis="y"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

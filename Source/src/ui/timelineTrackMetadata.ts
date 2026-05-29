@@ -29,7 +29,23 @@ export const LIGHT_TRACKS: TimelineTrackKind[] = [
   "ambientIntensity"
 ];
 
-export const OBJECT_AXIS_TRACKS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
+export const CHANNEL_EXPANDED_TRACKS = new Set<TimelineTrackKind>([
+  "position",
+  "rotation",
+  "scale",
+  "objectColor",
+  "objectTextureRepeat",
+  "objectTextureOffset",
+  "cameraPosition",
+  "cameraTarget",
+  "cameraLens",
+  "directionalPosition",
+  "directionalColor",
+  "pointPosition",
+  "pointColor",
+  "spotPosition",
+  "spotColor"
+]);
 
 export const TRACK_COLORS: Record<TimelineTrackKind, string> = {
   position: "#20bfa9",
@@ -98,5 +114,13 @@ export function isObjectTrack(kind: TimelineTrackKind): boolean {
 }
 
 export function trackLabel(kind: TimelineTrackKind, axis?: string): string {
-  return axis ? `${TRACK_LABELS[kind]} ${axis.toUpperCase()}` : TRACK_LABELS[kind];
+  return axis ? `${TRACK_LABELS[kind]} ${axisLabel(kind, axis)}` : TRACK_LABELS[kind];
+}
+
+function axisLabel(kind: TimelineTrackKind, axis: string): string {
+  const index = axis === "y" ? 1 : axis === "z" ? 2 : 0;
+  if (kind === "objectColor" || kind.endsWith("Color")) return ["R", "G", "B"][index] ?? axis.toUpperCase();
+  if (kind === "cameraLens") return ["FOV", "Near", "Far"][index] ?? axis.toUpperCase();
+  if (kind === "objectTextureRepeat" || kind === "objectTextureOffset") return ["U", "V", "-"][index] ?? axis.toUpperCase();
+  return axis.toUpperCase();
 }
