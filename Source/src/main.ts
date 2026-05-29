@@ -95,6 +95,7 @@ import { applyPostProcessingSettings, normalizePostProcessingSettings, postProce
 import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
 import { loadModelFromFiles } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
+import { applyLightingPreset, lightingPresetById, lightRigMatchesPreset } from "./scene/lightingPresets";
 import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetById } from "./scene/materialPresets";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
@@ -677,6 +678,17 @@ function boot(root: HTMLDivElement): void {
         updateAllUI();
       });
     });
+    document.querySelectorAll<HTMLButtonElement>("[data-lighting-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const preset = button.dataset.lightingPreset ? lightingPresetById(button.dataset.lightingPreset) : null;
+        if (!preset) return;
+        recordHistory();
+        applyLightingPreset(lightRig, preset);
+        syncLights(lightRig, entries.values());
+        updateAllUI();
+        showToast(`${preset.label} lighting applied`, "good");
+      });
+    });
 
     query<HTMLInputElement>("#light-intensity").addEventListener("change", (event) => {
       recordHistory();
@@ -1000,6 +1012,10 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#shadow-toggle").checked = lightRig.shadows;
     query<HTMLInputElement>("#helper-toggle").checked = lightRig.helpers;
     query<HTMLInputElement>("#light-sweep").checked = lightRig.sweep;
+    document.querySelectorAll<HTMLButtonElement>(".lighting-preset").forEach((button) => {
+      const preset = button.dataset.lightingPreset ? lightingPresetById(button.dataset.lightingPreset) : null;
+      button.classList.toggle("active", Boolean(preset && lightRigMatchesPreset(lightRig, preset)));
+    });
 
     const grid = query<HTMLDivElement>("#light-grid");
     grid.innerHTML = ["x", "y", "z"]

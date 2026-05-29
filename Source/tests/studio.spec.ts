@@ -273,6 +273,51 @@ test("toggles SSAO post processing controls", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("applies lighting presets and persists light rig values", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Studio", exact: true })).toHaveClass(/active/);
+  await page.getByRole("button", { name: "Product", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Product", exact: true })).toHaveClass(/active/);
+  await expect(page.locator("#light-intensity")).toHaveValue("5.4");
+  await expect(page.locator("#light-color")).toHaveValue("#ffffff");
+  await expect(page.locator("#ambient-intensity")).toHaveValue("0.32");
+  await expect(page.locator("#light-sweep")).not.toBeChecked();
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  expect(sceneDocument.lights.active).toBe("directional");
+  expect(sceneDocument.lights.shadows).toBe(true);
+  expect(sceneDocument.lights.sweep).toBe(false);
+  expect(sceneDocument.lights.ambientIntensity).toBeCloseTo(0.32, 3);
+  expect(sceneDocument.lights.directional.color).toBe("#ffffff");
+  expect(sceneDocument.lights.directional.intensity).toBeCloseTo(5.4, 3);
+  expect(sceneDocument.lights.directional.position).toEqual([5, 8, 6]);
+  expect(sceneDocument.lights.point.color).toBe("#cfe8ff");
+  expect(sceneDocument.lights.point.position).toEqual([-5.5, 4.5, 3]);
+  expect(errors).toEqual([]);
+});
+
 test("shows row key diamonds only at playhead keys", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

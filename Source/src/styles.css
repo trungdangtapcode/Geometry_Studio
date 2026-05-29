@@ -1303,6 +1303,7 @@ svg {
 
 .segment.active,
 .texture-swatch.active,
+.lighting-preset.active,
 .material-preset.active,
 .interpolation-button.active,
 #timeline-graph-toggle.active {
@@ -1314,6 +1315,7 @@ svg {
 .compact-row,
 .camera-presets,
 .doc-actions,
+.lighting-presets,
 .material-presets {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1322,6 +1324,7 @@ svg {
 }
 
 .camera-presets,
+.lighting-presets,
 .material-presets {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1730,6 +1733,7 @@ svg {
   .compact-row,
   .camera-presets,
   .doc-actions,
+  .lighting-presets,
   .material-presets {
     grid-template-columns: 1fr 1fr;
   }

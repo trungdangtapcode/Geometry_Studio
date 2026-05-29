@@ -396,10 +396,17 @@ export function studioTemplate(): string {
             <button class="segment" type="button" data-light="point">Point</button>
             <button class="segment" type="button" data-light="spot">Spot</button>
           </div>
+          <div class="lighting-presets">
+            <button class="mini-button lighting-preset active" type="button" data-lighting-preset="studio">Studio</button>
+            <button class="mini-button lighting-preset" type="button" data-lighting-preset="product">Product</button>
+            <button class="mini-button lighting-preset" type="button" data-lighting-preset="dramatic">Dramatic</button>
+            <button class="mini-button lighting-preset" type="button" data-lighting-preset="soft">Soft</button>
+            <button class="mini-button lighting-preset" type="button" data-lighting-preset="night">Night</button>
+          </div>
           <div class="form-grid">
             <label><span>Intensity</span><input id="light-intensity" type="range" min="0" max="12" step="0.1" value="4" /></label>
             <label><span>Color</span><input id="light-color" type="color" value="#ffffff" /></label>
-            <label><span>Ambient</span><input id="ambient-intensity" type="range" min="0" max="3" step="0.05" value="0.45" /></label>
+            <label><span>Ambient</span><input id="ambient-intensity" type="range" min="0" max="3" step="0.01" value="0.45" /></label>
             <label class="toggle-line"><input id="shadow-toggle" type="checkbox" checked /><span>Shadows</span></label>
             <label class="toggle-line"><input id="helper-toggle" type="checkbox" checked /><span>Helpers</span></label>
             <label class="toggle-line"><input id="light-sweep" type="checkbox" /><span>Light Sweep</span></label>

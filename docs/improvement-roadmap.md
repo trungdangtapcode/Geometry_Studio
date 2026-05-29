@@ -23,6 +23,7 @@ Implemented and tested:
   and scene JSON persistence.
 - PBR material presets for Ceramic, Metal, Plastic, Glass, and Clay.
 - Generated PMREM environment lighting presets for PBR image-based lighting.
+- Named direct-light rigs for Studio, Product, Dramatic, Soft, and Night looks.
 - OBJ + MTL multi-file import with source-material preservation.
 - Post-processing toggles for Bloom and Vignette.
 - Optional SSAO post-processing for contact shading in the real-time viewport.
@@ -76,6 +77,7 @@ Features:
 - PBR material presets: ceramic, metal, plastic, glass-like transparent,
   matte clay.
 - Environment lighting toggle.
+- Direct lighting presets for quick key/fill/rim demonstrations.
 - Clear on-screen telemetry for draw calls, triangles, textures, and shadow
   state.
 

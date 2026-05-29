@@ -25,6 +25,8 @@ PDF.
   Plastic, Glass, Clay, and legacy material comparison presets.
 - [Environment Lighting Presets](environment-lighting.md) documents generated
   PMREM studio lighting for PBR materials without runtime network assets.
+- [Lighting Presets](lighting-presets.md) documents named ambient,
+  directional, point, and spot light rigs for evaluator demos.
 - [OBJ + MTL Import](obj-mtl-import.md) documents multi-file OBJ material
   loading and imported source-material preservation.
 - [Post-Processing Toggles](post-processing.md) documents SSAO, Bloom,
