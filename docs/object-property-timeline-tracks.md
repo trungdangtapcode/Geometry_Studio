@@ -17,14 +17,14 @@ the timeline can animate multiple exposed properties of the selected layer.
 
 ## Design
 
-Object Position, Rotation, and Scale still compile to Three.js
-`AnimationClip`/`AnimationMixer` tracks. Color, Opacity, and Visibility are
-renderer/editor properties, so they are evaluated directly from the same
-timeline document during scrubbing and playback.
+Object Position, Rotation, and Scale are evaluated directly from the timeline
+document so per-keyframe Hold, Linear, and Easy Ease timing works consistently.
+Color, Opacity, and Visibility use the same evaluator and are applied to
+renderer/editor properties during scrubbing and playback.
 
 This keeps the architecture split clear:
 
-- Transform tracks: native Three.js mixer playback.
+- Transform tracks: direct transform application.
 - Object appearance tracks: direct property application.
 - Camera and light tracks: direct property application.
 

@@ -278,12 +278,14 @@ selection, dragging, snapping, and playhead interaction. Geometry Studio owns th
 actual scene timeline schema so saved JSON files remain stable and independent
 from the UI library.
 
-At runtime, timeline tracks are compiled into native Three.js animation clips:
+At runtime, transform and property tracks are evaluated directly from the saved
+timeline document:
 \begin{itemize}
-  \item Position and Scale use \texttt{VectorKeyframeTrack}.
-  \item Rotation uses per-axis \texttt{NumberKeyframeTrack} channels targeting
-  Euler rotation values in radians.
-  \item Each keyed object is evaluated by an \texttt{AnimationMixer}.
+  \item Position and Scale write vector values to the selected object.
+  \item Rotation stores readable Euler degrees and converts them to radians at
+  playback time, preserving full-turn animations.
+  \item Hold, Linear, and Easy Ease interpolation are evaluated per keyframe
+  segment, so mixed timing within a single track is supported.
 \end{itemize}
 
 If an object has active transform timeline tracks, timeline playback overrides
@@ -390,8 +392,8 @@ editor/documents.ts & Scene JSON serialization and validation. \\
 editor/commands.ts & Undo/redo snapshot history. \\
 animation/timelineSchema.ts & Timeline defaults, validation, migration, snapping, and object-track helpers. \\
 animation/timelineEditing.ts & Pure keyframe editing operations such as source resolution, copy, paste, duplicate, frame nudge, and numeric keyframe edits. \\
-animation/clipFactory.ts & Converts timeline tracks into Three.js keyframe clips. \\
-animation/timelinePlayer.ts & Evaluates timeline clips with \texttt{AnimationMixer}. \\
+animation/interpolation.ts & Shared per-keyframe evaluator for Hold, Linear, and Easy Ease timing. \\
+animation/timelinePlayer.ts & Applies object Position, Rotation, and Scale tracks directly to scene objects. \\
 scene/primitives.ts & Primitive geometry, extra shapes, labels, and built-in sample model. \\
 scene/materials.ts & Materials, texture presets, and solid/point/line visual construction. \\
 scene/lights.ts & Stage, light rig, shadows, helpers, and light sweep. \\

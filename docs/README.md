@@ -59,6 +59,8 @@ PDF.
   object Position, Rotation, and Scale.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
   documents direct Linear, Easy Ease, and Hold timing controls.
+- [Timeline Runtime Interpolation](timeline-runtime-interpolation.md) documents
+  per-keyframe transform/runtime interpolation semantics.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
   and All row visibility modes for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
@@ -74,12 +76,10 @@ animation runtime where it fits:
 
 - `animation-timeline-js` gives the project MIT-licensed, TypeScript-friendly
   keyframe timeline primitives without pulling in a large application framework.
-- Three.js `AnimationClip`, `VectorKeyframeTrack`, `NumberKeyframeTrack`, and
-  `AnimationMixer` keep runtime playback aligned with the renderer already used
-  by Geometry Studio.
-- Object Position, Rotation, and Scale tracks use Three.js clips and mixers.
-  Rotation uses per-axis Euler channels so full turns such as `0 -> 360` animate
-  as authored.
+- Object Position, Rotation, and Scale tracks use the same per-segment runtime
+  evaluator as camera, light, material, texture, visibility, and motion-path
+  preview tracks. Rotation stays stored as readable Euler degrees so full turns
+  such as `0 -> 360` animate as authored.
 - Camera, light, and object appearance tracks use the same timeline document and
   UI adapter, then apply evaluated values directly to renderer-owned properties
   during scrubbing/playback.
@@ -124,10 +124,10 @@ object appearance, camera, and light tracks:
 - `animation/timelineEditing.ts` owns pure keyframe edit operations such as
   source resolution, copy/paste payloads, duplicate, frame nudge, and numeric
   keyframe editing.
-- `animation/clipFactory.ts` compiles Position, Rotation, and Scale tracks into
-  Three.js keyframe tracks.
-- `animation/timelinePlayer.ts` evaluates clips with one `AnimationMixer` per
-  keyed object.
+- `animation/interpolation.ts` owns the shared per-keyframe interpolation
+  evaluator.
+- `animation/timelinePlayer.ts` evaluates Position, Rotation, and Scale tracks
+  directly from the timeline document.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
 - `ui/density.ts` owns UI-density persistence and root layout mode application.

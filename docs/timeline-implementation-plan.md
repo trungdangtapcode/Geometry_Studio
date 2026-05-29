@@ -4,7 +4,7 @@
 
 The first transform timeline slice has been implemented. Geometry Studio now has
 a bottom keyframe dock for Position, Rotation, and Scale tracks, scene JSON
-version 2 timeline persistence, Three.js `AnimationMixer` playback, basic
+version 2 timeline persistence, direct per-keyframe transform playback, basic
 Undo/Redo integration, and Playwright coverage for saving transform keyframes.
 
 The follow-up AE-style slices are also partially implemented:
@@ -111,10 +111,9 @@ Acceptance:
 
 Deliverables:
 
-- Add `timelinePlayer` with one `AnimationMixer` per keyed object.
-- Compile tracks into Three.js clips and rebuild affected object clips after
-  timeline edits.
-- Scrub mixers with `mixer.setTime(currentTime)`.
+- Add `timelinePlayer` with direct transform-track evaluation for keyed objects.
+- Rebuild affected object runtime references after timeline edits.
+- Scrub by evaluating tracks at `currentTime`.
 - Integrate timeline playback into the existing render loop.
 - Apply conflict rules with preset object animations.
 - Update duplicate, delete, rename, import, reset, and load flows to respect

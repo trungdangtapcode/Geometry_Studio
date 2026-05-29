@@ -23,12 +23,10 @@ should stay close to this structure:
 - `animation/timelineEditing.ts`: pure keyframe edit operations such as source
   resolution, copy/paste payloads, duplication, collision-aware nudging, numeric
   keyframe editing, and target-track creation.
-- `animation/clipFactory.ts`: converts timeline tracks into Three.js
-  `AnimationClip` objects.
-- `animation/timelinePlayer.ts`: owns `AnimationMixer` instances, playback state,
-  scrubbing, loop behavior, and applying evaluated transforms.
-- `animation/interpolation.ts`: maps editor interpolation names to Three.js
-  interpolation constants and future easing policies.
+- `animation/interpolation.ts`: evaluates Hold, Linear, and Easy Ease timing per
+  keyframe segment.
+- `animation/timelinePlayer.ts`: owns transform playback state, scrubbing, loop
+  behavior, and applying evaluated transforms.
 - `ui/timelinePanel.ts`: integrates `animation-timeline-js`, renders rows,
   receives library events, and dispatches editor commands.
 - `ui/timelineToolbar.ts`: play, pause, time display, duration, FPS, loop, snap,
@@ -139,35 +137,29 @@ Migration rule:
 4. The timeline panel dispatches a command such as `AddKeyframeCommand` or
    `MoveKeyframesCommand`.
 5. The editor store updates the `SceneTimelineDocument`.
-6. The clip factory recompiles only the affected object's clips.
-7. The timeline player updates its `AnimationMixer` for that object.
-8. During playback or scrubbing, the timeline player evaluates mixers with
-   `mixer.setTime(currentTime)` and the viewport renders the result.
+6. The timeline runtime rebuilds the affected object's transform playback
+   references.
+7. During playback or scrubbing, the timeline player evaluates tracks at
+   `currentTime` and applies the result to scene objects.
 9. Save JSON writes the timeline document with the rest of the scene.
 
 This makes the scene JSON the durable state and prevents the UI library from
 becoming hidden storage.
 
-## Runtime Clip Strategy
+## Runtime Evaluation Strategy
 
-Use one `AnimationMixer` per object that has timeline tracks. The mixer root is
-the object or imported model group. Track names can then be relative:
-
-- `.position`
-- `.scale`
-- `.rotation[x]`, `.rotation[y]`, `.rotation[z]`
-
-Position and scale tracks compile to `VectorKeyframeTrack`.
+Use one direct timeline runtime entry per object that has transform tracks.
+Position and Scale write vector values directly to the object group.
 
 Rotation tracks are stored as Euler XYZ degrees in the scene document for easy
-inspection and editing. At clip-build time, each axis compiles to a
-`NumberKeyframeTrack` targeting the matching Euler rotation channel in radians.
+inspection and editing. At playback time, each axis converts to radians and is
+assigned to the matching Euler rotation channel.
 This preserves authored multi-turn motion such as `0 -> 360`, which a quaternion
 track would reduce to equivalent start/end orientations.
 
-The player should rebuild clips when timeline data changes, but it should not
-recreate every mixer every frame. Rebuild only affected object clips after an
-edit, import, delete, duplicate, load, or reset.
+The player should rebuild runtime references when timeline data changes, but it
+should not allocate per frame. Rebuild only after an edit, import, delete,
+duplicate, load, or reset.
 
 ## Conflict Rules
 

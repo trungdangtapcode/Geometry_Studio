@@ -14,6 +14,7 @@ import {
   type TimelineClipboard,
   type TimelineKeyframeEditPatch
 } from "./animation/timelineEditing";
+import { evaluateTimelineTrack } from "./animation/interpolation";
 import { TimelinePlayer } from "./animation/timelinePlayer";
 import {
   copyTimelineObject,
@@ -1916,7 +1917,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function setTimelineInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void {
-    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    const sources = resolveInterpolationTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
@@ -1933,6 +1934,12 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${capitalize(interpolation)} interpolation applied`, "good");
+  }
+
+  function resolveInterpolationTimelineKeyframeSources(keyframeIds: string[]) {
+    const playheadSources = resolveActiveTimelineKeyframeSources([]);
+    if (playheadSources.length > 0) return playheadSources;
+    return keyframeIds.length ? resolveActiveTimelineKeyframeSources(keyframeIds) : [];
   }
 
   function clearTimelineTrack(kind: TimelineTrackKind): void {
@@ -2220,28 +2227,6 @@ function boot(root: HTMLDivElement): void {
       if (appearanceChanged) applyEntryAppearance(entry);
       if (textureChanged) applyEntryTextureTransform(entry);
     });
-  }
-
-  function evaluateTimelineTrack(track: TimelineTrackDocument, time: number): [number, number, number] | null {
-    if (!track.enabled) return null;
-    const keyframes = [...track.keyframes].sort((left, right) => left.time - right.time);
-    if (keyframes.length === 0) return null;
-    if (time <= keyframes[0].time) return [...keyframes[0].value] as [number, number, number];
-    const last = keyframes[keyframes.length - 1];
-    if (time >= last.time) return [...last.value] as [number, number, number];
-    const rightIndex = keyframes.findIndex((keyframe) => keyframe.time >= time);
-    const left = keyframes[rightIndex - 1];
-    const right = keyframes[rightIndex];
-    if (!left || !right) return [...last.value] as [number, number, number];
-    if (left.interpolation === "hold") return [...left.value] as [number, number, number];
-    const span = Math.max(right.time - left.time, 0.001);
-    const rawT = clamp((time - left.time) / span, 0, 1);
-    const t = left.interpolation === "smooth" ? rawT * rawT * (3 - 2 * rawT) : rawT;
-    return [
-      left.value[0] + (right.value[0] - left.value[0]) * t,
-      left.value[1] + (right.value[1] - left.value[1]) * t,
-      left.value[2] + (right.value[2] - left.value[2]) * t
-    ];
   }
 
   function resolveActiveTimelineKeyframeSources(keyframeIds: string[]) {

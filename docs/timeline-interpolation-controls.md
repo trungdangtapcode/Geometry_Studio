@@ -23,9 +23,9 @@ toolbar buttons instead of only a dropdown setting.
 - `Shift+F9`: apply Linear.
 - `Alt+F9`: apply Hold.
 
-The shortcuts use the same command path as the toolbar buttons. They edit
-selected keyframes first; if no keyframe is selected, they edit the keyframe at
-the playhead on the active track.
+The shortcuts use the same command path as the toolbar buttons. If the active
+track has a keyframe at the playhead, that playhead key is edited. Otherwise,
+the command edits selected keyframes.
 
 ## Architecture
 

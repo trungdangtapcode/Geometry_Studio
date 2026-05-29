@@ -15,10 +15,10 @@ The supported tracks are:
 
 ## Why This Design
 
-Object transform animation already uses Three.js `AnimationClip` and
-`AnimationMixer`, which is the correct native runtime for object transforms.
-Lights are different because Geometry Studio exposes active light state,
-helpers, shadows, sweep mode, and inspector controls directly from the editor.
+Object transform animation, light animation, and object appearance animation now
+share the same direct timeline evaluator. Lights still need a separate adapter
+because Geometry Studio exposes active light state, helpers, shadows, sweep
+mode, and inspector controls directly from the editor.
 
 For this slice, light tracks use the same timeline schema and
 `animation-timeline-js` UI, then apply evaluated values directly to Three.js

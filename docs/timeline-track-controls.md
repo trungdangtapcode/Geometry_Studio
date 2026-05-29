@@ -20,7 +20,7 @@ or look changes without clearing a track.
 
 ## Runtime Rules
 
-- Transform tracks are filtered before Three.js `AnimationClip` generation.
+- Transform tracks return no evaluated value while disabled.
 - Camera, light, material, texture, and visibility tracks return no evaluated
   value while disabled.
 - Save/Load round trips preserve the `enabled` flag through the existing

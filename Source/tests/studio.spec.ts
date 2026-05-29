@@ -167,6 +167,37 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(1, 1);
   expect(Number(await page.locator('.transform-input[data-prop="rotation"][data-axis="y"]').inputValue())).toBeCloseTo(45, 1);
   expect(Number(await page.locator('.transform-input[data-prop="scale"][data-axis="z"]').inputValue())).toBeCloseTo(1.375, 2);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-transform").click();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-ease-hold").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-ease-linear").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(0, 1);
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(3, 1);
   expect(errors).toEqual([]);
 });
 
