@@ -170,6 +170,7 @@ export function studioTemplate(): string {
               <path class="timeline-graph-path graph-x" id="timeline-graph-x" d="" />
               <path class="timeline-graph-path graph-y" id="timeline-graph-y" d="" />
               <path class="timeline-graph-path graph-z" id="timeline-graph-z" d="" />
+              <rect class="timeline-graph-marquee" id="timeline-graph-marquee" x="0" y="0" width="0" height="0" />
               <g class="timeline-graph-keys" id="timeline-graph-keys"></g>
               <line class="timeline-graph-playhead" id="timeline-graph-playhead" x1="0" y1="0" x2="0" y2="96" />
             </svg>

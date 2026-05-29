@@ -86,6 +86,8 @@ PDF.
   per-keyframe transform/runtime interpolation semantics.
 - [Timeline Value Graph](timeline-value-graph.md) documents the active-track
   graph preview that samples the same runtime evaluator as playback.
+- [Timeline Graph Marquee Selection](timeline-graph-marquee-selection.md)
+  documents drag-box selection for graph keys.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
   and All row visibility modes for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object

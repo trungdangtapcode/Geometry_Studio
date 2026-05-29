@@ -21,6 +21,8 @@ import {
   TIMELINE_AXES,
   trackAxisConfig,
   type TimelineAxis,
+  type TimelineGraphKeySelection,
+  type TimelineGraphSelectionMode,
   type TimelineKeySelectionMode
 } from "./timelineValueGraph";
 
@@ -252,6 +254,7 @@ export class KeyframeTimelinePanel {
       title: query<HTMLElement>("#timeline-graph-title"),
       range: query<HTMLElement>("#timeline-graph-range"),
       svg: query<SVGSVGElement>("#timeline-value-graph"),
+      marquee: query<SVGRectElement>("#timeline-graph-marquee"),
       keyLayer: query<SVGGElement>("#timeline-graph-keys"),
       paths: {
         x: query<SVGPathElement>("#timeline-graph-x"),
@@ -265,6 +268,7 @@ export class KeyframeTimelinePanel {
         window.setTimeout(() => this.refreshCanvas(), 0);
       },
       onKeyframeSelected: (keyframeId, mode) => this.selectGraphKeyframe(keyframeId, mode),
+      onKeyframesMarqueeSelected: (keyframes, mode) => this.selectGraphKeyframes(keyframes, mode),
       onDragStarted: () => this.callbacks.onDragStarted(),
       onKeyframeMoved: (keyframeId, time) => this.callbacks.onKeyframeMoved(keyframeId, time),
       onKeyframeValueChanged: (keyframeId, axis, value) => this.callbacks.onKeyframeValueChanged(keyframeId, axis, value),
@@ -1218,6 +1222,18 @@ export class KeyframeTimelinePanel {
     this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
   }
 
+  private selectGraphKeyframes(keyframes: TimelineGraphKeySelection[], mode: TimelineGraphSelectionMode): void {
+    if (keyframes.length === 0 && mode === "add") return;
+    const next = mode === "add" ? new Set(this.selectedKeyframeIds) : new Set<string>();
+    keyframes.forEach((keyframe) => next.add(keyframe.keyframeId));
+    this.selectedKeyframeIds = next;
+    this.selectedAxis = commonGraphSelectionAxis(keyframes);
+    if (!this.lastTimelineDocument) return;
+    this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
+    this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
+    this.refreshCanvas();
+  }
+
   private rowDescriptors(kinds: TimelineTrackKind[], expandObjectAxes: boolean): TimelineRowDescriptor[] {
     return kinds.flatMap((kind) =>
       expandObjectAxes && OBJECT_AXIS_TRACKS.has(kind)
@@ -1331,6 +1347,12 @@ function interpolationLabel(interpolation: TimelineInterpolation): string {
 }
 
 function commonSelectedAxis(keyframes: TimelineUiKeyframe[]): TimelineAxis | null {
+  const first = keyframes[0]?.axis;
+  if (!first) return null;
+  return keyframes.every((keyframe) => keyframe.axis === first) ? first : null;
+}
+
+function commonGraphSelectionAxis(keyframes: TimelineGraphKeySelection[]): TimelineAxis | null {
   const first = keyframes[0]?.axis;
   if (!first) return null;
   return keyframes.every((keyframe) => keyframe.axis === first) ? first : null;

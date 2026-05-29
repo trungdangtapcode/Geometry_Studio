@@ -373,6 +373,62 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
+test("marquee selects value graph keyframes", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-add-keyframe")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  for (const [time, value] of [[0.5, 0.5], [2, 2], [4, 4]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  await page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]').click();
+  await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
+  const firstKey = page.locator('.timeline-graph-key.graph-x[data-key-time="0.5"]').first();
+  const secondKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  await expect(firstKey).toBeVisible();
+  await expect(secondKey).toBeVisible();
+  const firstBox = await firstKey.boundingBox();
+  const secondBox = await secondKey.boundingBox();
+  const graphBox = await page.locator("#timeline-value-graph").boundingBox();
+  expect(firstBox).toBeTruthy();
+  expect(secondBox).toBeTruthy();
+  expect(graphBox).toBeTruthy();
+
+  const startX = Math.max(graphBox!.x + 4, Math.min(firstBox!.x, secondBox!.x) - 18);
+  const startY = Math.max(graphBox!.y + 4, Math.min(firstBox!.y, secondBox!.y) - 18);
+  const endX = Math.min(graphBox!.x + graphBox!.width - 4, Math.max(firstBox!.x + firstBox!.width, secondBox!.x + secondBox!.width) + 18);
+  const endY = Math.min(graphBox!.y + graphBox!.height - 4, Math.max(firstBox!.y + firstBox!.height, secondBox!.y + secondBox!.height) + 18);
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(endX, endY);
+  await page.mouse.up();
+
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  const selectedTimes = await page.locator(".timeline-graph-key.graph-x.selected").evaluateAll((nodes) =>
+    nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))).sort((left, right) => left - right)
+  );
+  expect(selectedTimes).toEqual([0.5, 2]);
+  expect(errors).toEqual([]);
+});
+
 test("supports undo redo scene loading and evaluation tour", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();

@@ -22,6 +22,9 @@ actually do before pressing Play.
 - Clicking a graph key selects it. Ctrl/Cmd-click toggles a key in or out of
   the current selection, and Shift-click selects the time range between the
   current anchor key and the clicked key.
+- Dragging on empty graph space draws a marquee rectangle and selects every
+  visible graph key inside it. Shift/Ctrl/Cmd marquee adds matching keys to the
+  current selection.
 - Dragging a key that is already part of a multi-key selection retimes and edits
   the selected keys together, preserving their relative timing where possible.
 - Alt-dragging one selected graph key stretches selected-key timing
@@ -57,8 +60,10 @@ The data path is:
 4. Each enabled channel is normalized into SVG coordinates.
 5. Key points are rendered at authored keyframe times and values.
 6. Clicking graph keys updates the shared timeline keyframe selection set.
-7. Dragging a graph key emits keyframe time and value mutations for one axis.
-8. The SVG paths are redrawn whenever the timeline document, playhead, selected
+7. Drag-marquee selection updates the same shared selection set from visible
+   graph points.
+8. Dragging a graph key emits keyframe time and value mutations for one axis.
+9. The SVG paths are redrawn whenever the timeline document, playhead, selected
    track, selected axis, graph visibility, or dragged value changes.
 
 This keeps the preview deterministic: if the graph shows a Hold segment, the
@@ -87,6 +92,8 @@ The Playwright smoke workflow verifies that:
 - The graph reports the active keyed track count.
 - Shift-clicking graph keys selects a keyframe range that can be deleted without
   deleting the scene object.
+- Drag-marquee selection can select multiple visible graph keys without using
+  `Ctrl+A` or precise point clicking.
 - Dragging one selected graph key after `Ctrl+A` moves the selected active-track
   keys together while preserving their spacing.
 - Alt-dragging one selected graph key after `Ctrl+A` stretches selected-key

@@ -703,6 +703,7 @@ svg {
 .timeline-graph-grid,
 .timeline-graph-path,
 .timeline-graph-playhead,
+.timeline-graph-marquee,
 .timeline-graph-key {
   fill: none;
   vector-effect: non-scaling-stroke;
@@ -735,6 +736,19 @@ svg {
   stroke: var(--rose);
   stroke-width: 1.5;
   pointer-events: none;
+}
+
+.timeline-graph-marquee {
+  display: none;
+  fill: rgba(32, 191, 169, 0.16);
+  stroke: var(--teal);
+  stroke-dasharray: 4 3;
+  stroke-width: 1.2;
+  pointer-events: none;
+}
+
+.timeline-graph-marquee.active {
+  display: block;
 }
 
 .timeline-graph-key,
