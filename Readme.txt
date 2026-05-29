@@ -75,6 +75,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Alt+F9: apply Hold interpolation.
 - Home / End: jump to Work In or Work Out.
 - B / N: set Work In or Work Out to the current playhead time.
+- I / O: set Work In or Work Out to the current playhead time.
 - Shift+B: fit Work In/Out to the selected timeline keyframes.
 - U: cycle timeline row visibility through Focus, Keyed, and All Rows.
 - Plus / Minus / 0: zoom the timeline in, zoom out, or fit the duration.

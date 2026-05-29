@@ -128,8 +128,8 @@ animation runtime where it fits:
 - Timeline markers add named cue points for animation beats and demo segments,
   with `M`, `Shift+M`, `Alt+M`, and `Shift+Alt+M` shortcuts for keyboard
   authoring, navigation, and cleanup.
-- Work area editing supports Start/Out buttons plus `B`, `N`, and `Shift+B`
-  keyboard workflows for fast preview-range authoring.
+- Work area editing supports Start/Out buttons plus `B`, `N`, `I`, `O`, and
+  `Shift+B` keyboard workflows for fast preview-range authoring.
 - J/K/L transport shortcuts provide forward, pause, reverse, and repeated-key
   `1x` / `2x` / `4x` shuttle playback inside the active work area.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,

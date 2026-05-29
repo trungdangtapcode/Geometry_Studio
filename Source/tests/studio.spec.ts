@@ -468,6 +468,34 @@ test("supports timeline marker keyboard shortcuts", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("supports I/O work area keyboard shortcuts", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-work-start")).toBeVisible();
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("i");
+  await expect(page.locator("#timeline-work-start")).toHaveValue("1.5");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("o");
+  await expect(page.locator("#timeline-work-end")).toHaveValue("3.5");
+
+  expect(errors).toEqual([]);
+});
+
 test("supports JKL timeline transport shortcuts", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (message) => {

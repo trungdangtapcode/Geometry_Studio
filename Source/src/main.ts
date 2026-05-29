@@ -1098,6 +1098,16 @@ function boot(root: HTMLDivElement): void {
       setTimelineWorkAreaEdge("end");
       return;
     }
+    if (key === "i") {
+      event.preventDefault();
+      setTimelineWorkAreaEdge("start");
+      return;
+    }
+    if (key === "o") {
+      event.preventDefault();
+      setTimelineWorkAreaEdge("end");
+      return;
+    }
     if (key === "u") {
       event.preventDefault();
       showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good");

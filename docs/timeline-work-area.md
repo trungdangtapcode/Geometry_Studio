@@ -12,6 +12,8 @@ After Effects and Premiere style work area around the existing timeline:
 - The Out button jumps to `Work Out`.
 - `B` sets Work In to the current playhead time.
 - `N` sets Work Out to the current playhead time.
+- `I` also sets Work In to the current playhead time.
+- `O` also sets Work Out to the current playhead time.
 - `Shift+B` fits Work In/Out to the currently selected timeline keyframes.
 - Loop playback repeats over the work area instead of the full duration.
 
@@ -36,8 +38,8 @@ back to the full timeline.
 - Manual scrubbing can still visit the full timeline duration.
 - Pressing Start moves the playhead to `workStart`.
 - Pressing Out moves the playhead to `workEnd`.
-- Pressing `B` or `N` updates the work area edge with timeline snapping
-  applied.
+- Pressing `B` / `I` or `N` / `O` updates the work area edge with timeline
+  snapping applied.
 - Pressing `Shift+B` reads the selected keyframe times and sets the work area to
   the selected span. A one-key selection creates a minimum visible span using
   the snap step or one frame.
@@ -49,16 +51,16 @@ back to the full timeline.
 ## Testing
 
 The Playwright timeline workflows verify that Work In/Out values are editable,
-keyboard-settable with `B` and `N`, fit to selected keys with `Shift+B`, and
-round trip through exported scene JSON.
+keyboard-settable with `B`/`N` and `I`/`O`, fit to selected keys with
+`Shift+B`, and round trip through exported scene JSON.
 
 Recommended manual check:
 
 1. Set Work In to `0.5`.
 2. Set Work Out to `4.5`.
 3. Press Start and confirm the playhead jumps to `0.5`.
-4. Move the playhead, press `B`, and confirm Work In follows it.
-5. Move the playhead, press `N`, and confirm Work Out follows it.
+4. Move the playhead, press `B` or `I`, and confirm Work In follows it.
+5. Move the playhead, press `N` or `O`, and confirm Work Out follows it.
 6. Select several keyframes, press `Shift+B`, and confirm the work area wraps
    the selected key span.
 7. Press Play with Loop enabled and confirm playback wraps at `4.5`.
