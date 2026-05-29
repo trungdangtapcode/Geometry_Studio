@@ -209,6 +209,27 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position");
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   await expect(page.locator("#timeline-graph-x")).not.toHaveAttribute("d", "");
+  await page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]').click();
+  await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
+  const middleGraphKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  await expect(middleGraphKey).toBeVisible();
+  const keyBox = await middleGraphKey.boundingBox();
+  expect(keyBox).toBeTruthy();
+  await page.mouse.move(keyBox!.x + keyBox!.width / 2, keyBox!.y + keyBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(keyBox!.x + keyBox!.width / 2, keyBox!.y - 22);
+  await page.mouse.up();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeGreaterThan(2.1);
+  await page.locator("#undo-btn").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(2, 1);
   expect(errors).toEqual([]);
 });
 

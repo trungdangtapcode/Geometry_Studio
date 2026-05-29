@@ -4,6 +4,8 @@ export function evaluateTimelineTrack(track: TimelineTrackDocument, time: number
   if (!track.enabled) return null;
   const keyframes = [...track.keyframes].sort((left, right) => left.time - right.time);
   if (keyframes.length === 0) return null;
+  const exact = keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+  if (exact) return [...exact.value] as [number, number, number];
   if (time <= keyframes[0].time) return [...keyframes[0].value] as [number, number, number];
   const last = keyframes[keyframes.length - 1];
   if (time >= last.time) return [...last.value] as [number, number, number];

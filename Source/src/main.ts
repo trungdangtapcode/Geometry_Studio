@@ -167,6 +167,7 @@ function boot(root: HTMLDivElement): void {
     onSetInterpolation: setTimelineInterpolation,
     onDragStarted: beginTimelineDrag,
     onKeyframeMoved: moveTimelineKeyframe,
+    onKeyframeValueChanged: moveTimelineKeyframeValue,
     onDragFinished: finishTimelineDrag,
     onSettingsChanged: updateTimelineSettings,
     onTogglePlayback: togglePlay
@@ -2076,6 +2077,22 @@ function boot(root: HTMLDivElement): void {
     syncMotionPath();
   }
 
+  function moveTimelineKeyframeValue(keyframeId: string, axis: "x" | "y" | "z", value: number): void {
+    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
+    const match = findTimelineKeyframe(keyframeId);
+    if (!match || !Number.isFinite(value)) return;
+    const axisIndex = axis === "x" ? 0 : axis === "y" ? 1 : 2;
+    match.keyframe.value[axisIndex] = value;
+    if (match.objectId && isObjectTransformTrackKind(match.track.kind)) clearPresetAnimationsForTimelineObjects([match.objectId]);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
+    syncMotionPath();
+  }
+
   function finishTimelineDrag(): void {
     if (pendingTimelineDragSnapshot) {
       history.record(pendingTimelineDragSnapshot);
@@ -2096,19 +2113,19 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.rebuild(sceneTimeline, entries.values());
   }
 
-  function findTimelineKeyframe(keyframeId: string): { keyframe: TimelineKeyframeDocument; track: TimelineTrackDocument } | null {
+  function findTimelineKeyframe(keyframeId: string): { keyframe: TimelineKeyframeDocument; track: TimelineTrackDocument; objectId: string | null } | null {
     for (const track of sceneTimeline.camera.tracks) {
       const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
-      if (keyframe) return { keyframe, track };
+      if (keyframe) return { keyframe, track, objectId: null };
     }
     for (const track of sceneTimeline.lights.tracks) {
       const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
-      if (keyframe) return { keyframe, track };
+      if (keyframe) return { keyframe, track, objectId: null };
     }
     for (const objectTimeline of sceneTimeline.objects) {
       for (const track of objectTimeline.tracks) {
         const keyframe = track.keyframes.find((candidate) => candidate.id === keyframeId);
-        if (keyframe) return { keyframe, track };
+        if (keyframe) return { keyframe, track, objectId: objectTimeline.objectId };
       }
     }
     return null;

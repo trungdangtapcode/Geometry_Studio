@@ -702,7 +702,8 @@ svg {
 
 .timeline-graph-grid,
 .timeline-graph-path,
-.timeline-graph-playhead {
+.timeline-graph-playhead,
+.timeline-graph-key {
   fill: none;
   vector-effect: non-scaling-stroke;
 }
@@ -733,6 +734,34 @@ svg {
 .timeline-graph-playhead {
   stroke: var(--rose);
   stroke-width: 1.5;
+}
+
+.timeline-graph-key {
+  fill: #ffffff;
+  stroke-width: 2;
+  cursor: ns-resize;
+  pointer-events: auto;
+}
+
+.timeline-graph-key.graph-x {
+  stroke: var(--teal);
+}
+
+.timeline-graph-key.graph-y {
+  stroke: var(--amber);
+}
+
+.timeline-graph-key.graph-z {
+  stroke: var(--violet);
+}
+
+.timeline-graph-key.selected {
+  fill: var(--charcoal);
+}
+
+.timeline-graph-key.locked {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .timeline-body {

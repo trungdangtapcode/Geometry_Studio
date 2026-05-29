@@ -155,6 +155,7 @@ export function studioTemplate(): string {
               <path class="timeline-graph-path graph-x" id="timeline-graph-x" d="" />
               <path class="timeline-graph-path graph-y" id="timeline-graph-y" d="" />
               <path class="timeline-graph-path graph-z" id="timeline-graph-z" d="" />
+              <g class="timeline-graph-keys" id="timeline-graph-keys"></g>
               <line class="timeline-graph-playhead" id="timeline-graph-playhead" x1="0" y1="0" x2="0" y2="96" />
             </svg>
           </div>

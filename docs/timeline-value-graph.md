@@ -2,9 +2,10 @@
 
 ## Purpose
 
-The timeline now includes a compact value graph for the active track. This is a
-graph-editor preview, not a second animation system. It helps users verify what
-the authored keys will actually do before pressing Play.
+The timeline now includes a compact value graph for the active track. It is a
+graph-editor surface for inspecting and editing key values, not a second
+animation system. It helps users verify and adjust what the authored keys will
+actually do before pressing Play.
 
 ## Behavior
 
@@ -17,11 +18,21 @@ the authored keys will actually do before pressing Play.
 - The vertical playhead line follows scrubbing and playback.
 - Hold, Linear, and Easy Ease segments are drawn from the same evaluator used by
   runtime playback.
+- Key points are drawn on top of the curves.
+- Dragging a key point vertically edits that keyframe channel value. For
+  precise transform edits, select the X, Y, or Z row first so overlapping
+  channel points collapse to the focused channel.
+- A graph drag is stored as one undoable edit through the same drag snapshot
+  mechanism used by dope-sheet keyframe dragging.
+- Visibility tracks are drawn as value curves but remain locked because they are
+  discrete on/off data, not continuous animation values.
 
 ## Architecture
 
-`ui/timelinePanel.ts` owns the graph UI because it is an editor surface tied to
-the active track and playhead. It samples `animation/interpolation.ts` through
+`ui/timelineValueGraph.ts` owns graph rendering, key point DOM, channel
+normalization, visibility persistence, and graph drag interaction.
+`ui/timelinePanel.ts` resolves the active track and bridges graph events into
+editor callbacks. The graph samples `animation/interpolation.ts` through
 `evaluateTimelineTrack`, which is also used by playback and motion-path
 preview.
 
@@ -32,23 +43,27 @@ The data path is:
    camera, or light target.
 3. The graph samples the work range with `evaluateTimelineTrack`.
 4. Each enabled channel is normalized into SVG coordinates.
-5. The SVG paths are redrawn whenever the timeline document, playhead, selected
-   track, selected axis, or graph visibility changes.
+5. Key points are rendered at authored keyframe times and values.
+6. Dragging a graph key emits a keyframe value mutation for one axis.
+7. The SVG paths are redrawn whenever the timeline document, playhead, selected
+   track, selected axis, graph visibility, or dragged value changes.
 
 This keeps the preview deterministic: if the graph shows a Hold segment, the
 object also holds during playback.
 
 ## Current Scope
 
-This first graph version is intentionally lightweight:
+This graph version is intentionally focused:
 
-- It previews values but does not yet allow Bezier handle editing.
+- It edits keyed channel values but does not yet allow Bezier handle editing.
+- It keeps time retiming in the dope sheet; graph dragging edits values
+  vertically.
 - It uses per-channel normalization so small changes remain visible.
-- It focuses on validation and authoring clarity before adding editable curve
-  tangents.
+- It expands the visible value range slightly so graph keys can be dragged above
+  or below the current key values without immediately hitting the panel edge.
 
-The next upgrade should add draggable graph keys and tangent handles only after
-the dope-sheet workflow is stable.
+The next upgrade should add optional time dragging and tangent handles after the
+dope-sheet workflow and value editing remain stable.
 
 ## Tests
 
@@ -58,3 +73,5 @@ The Playwright smoke workflow verifies that:
 - The graph panel opens without breaking the resizable timeline dock.
 - A keyed Position track draws a non-empty X-channel SVG path.
 - The graph reports the active keyed track count.
+- A graph key point can be dragged vertically to change a Position key value.
+- Undo restores the value before the graph drag.
