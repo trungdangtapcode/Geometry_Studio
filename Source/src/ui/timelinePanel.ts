@@ -6,6 +6,7 @@ import {
   type TimelineRow
 } from "animation-timeline-js";
 import { evaluateTimelineTrack } from "../animation/interpolation";
+import { objectLayerRange } from "../animation/timelineLayers";
 import type {
   SceneEntry,
   SceneTimelineDocument,
@@ -149,6 +150,7 @@ export class KeyframeTimelinePanel {
   private readonly resizeHandle = query<HTMLButtonElement>("#timeline-resize-handle");
   private readonly labels = query<HTMLDivElement>("#timeline-track-labels");
   private readonly markerStrip = query<HTMLDivElement>("#timeline-marker-strip");
+  private readonly layerStrip = query<HTMLDivElement>("#timeline-layer-strip");
   private readonly canvasHost = query<HTMLDivElement>("#timeline-canvas");
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
@@ -306,6 +308,7 @@ export class KeyframeTimelinePanel {
     const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
     const rowHeight = this.timelineRowHeight();
     const headerHeight = this.timelineHeaderHeight();
+    this.renderLayerStrip(timelineDocument, entryList, selectedId);
     this.labels.innerHTML = this.renderLabels(timelineDocument, visibleEntries, selectedId);
     hydrateIcons(this.labels);
     this.syncTimecode(timelineDocument);
@@ -569,6 +572,12 @@ export class KeyframeTimelinePanel {
       if (!button) return;
       const time = Number(button.dataset.time);
       if (Number.isFinite(time)) this.callbacks.onTimeChanged(time);
+    });
+    this.layerStrip.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-layer-bar");
+      const objectId = button?.dataset.objectId;
+      if (!objectId) return;
+      this.callbacks.onTrackLabelSelected(objectId, this.selectedTrackKind());
     });
     this.keyframeTimeInput.addEventListener("change", () => {
       this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { time: Number(this.keyframeTimeInput.value) });
@@ -840,6 +849,47 @@ export class KeyframeTimelinePanel {
       this.markerStrip.appendChild(button);
     });
     this.syncMarkerEditor(timelineDocument, activeMarker);
+  }
+
+  private renderLayerStrip(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string): void {
+    const rowHeight = Math.max(18, this.timelineRowHeight());
+    const maxVisibleRows = 5;
+    const visibleRows = Math.max(1, Math.min(entries.length, maxVisibleRows));
+    const stripHeight = entries.length > 0 ? visibleRows * rowHeight + 6 : 0;
+    this.root.style.setProperty("--timeline-layer-strip-height", `${stripHeight}px`);
+    this.layerStrip.innerHTML = "";
+    if (entries.length === 0) return;
+
+    const duration = Math.max(timelineDocument.duration, 0.001);
+    const content = document.createElement("div");
+    content.className = "timeline-layer-strip-content";
+    content.style.height = `${entries.length * rowHeight + 6}px`;
+
+    entries.forEach((entry, index) => {
+      const range = objectLayerRange(timelineDocument, entry.id) ?? { start: 0, end: 0 };
+      const start = clamp(range.start, 0, duration);
+      const end = clamp(Math.max(range.end, start), 0, duration);
+      const left = (start / duration) * 100;
+      const width = Math.max(((end - start) / duration) * 100, 0.8);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "timeline-layer-bar";
+      button.classList.toggle("active", entry.id === selectedId);
+      button.dataset.objectId = entry.id;
+      button.dataset.layerStart = formatNumber(start);
+      button.dataset.layerEnd = formatNumber(end);
+      button.style.top = `${3 + index * rowHeight}px`;
+      button.style.left = `${left}%`;
+      button.style.width = `${Math.min(width, 100 - left)}%`;
+      button.style.borderLeftColor = entry.color.getStyle();
+      button.title = `${entry.name}: ${formatNumber(start)}-${formatNumber(end)}s`;
+      button.innerHTML = `
+        <span class="timeline-layer-bar-name">${escapeHtml(entry.name)}</span>
+        <span class="timeline-layer-bar-time">${formatNumber(start)}-${formatNumber(end)}s</span>
+      `;
+      content.appendChild(button);
+    });
+    this.layerStrip.appendChild(content);
   }
 
   private syncMarkerEditor(timelineDocument: SceneTimelineDocument, marker = this.currentMarker(timelineDocument)): void {

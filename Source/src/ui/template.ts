@@ -201,6 +201,7 @@ export function studioTemplate(): string {
             <div class="timeline-track-labels" id="timeline-track-labels"></div>
             <div class="timeline-workspace">
               <div class="timeline-marker-strip" id="timeline-marker-strip" aria-label="Timeline markers"></div>
+              <div class="timeline-layer-strip" id="timeline-layer-strip" aria-label="Object layer ranges"></div>
               <div class="timeline-canvas" id="timeline-canvas"></div>
             </div>
           </div>

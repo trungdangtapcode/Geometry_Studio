@@ -71,6 +71,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-layer-out")).toBeVisible();
   await expect(page.locator("#timeline-split-layer")).toBeVisible();
   await expect(page.locator("#timeline-layer-work")).toBeVisible();
+  await expect(page.locator("#timeline-layer-strip")).toBeVisible();
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toContainText("Cube");
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
   await expect(page.locator("#timeline-ease-in")).toBeVisible();
   await expect(page.locator("#timeline-ease-out")).toBeVisible();
@@ -903,6 +905,8 @@ test("trims and splits selected object layers", async ({ page }) => {
   });
   await page.locator("#timeline-layer-in").click();
   await expect(page.locator("#timeline-key-label")).toContainText("selected keyframes");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-start", "2");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-end", "8");
   let sceneDocument = await exportedScene();
   let track = visibilityTrack(sceneDocument, "object-1");
   expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
@@ -918,6 +922,8 @@ test("trims and splits selected object layers", async ({ page }) => {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.locator("#timeline-layer-out").click();
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-start", "0");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-end", "5");
   sceneDocument = await exportedScene();
   track = visibilityTrack(sceneDocument, "object-1");
   expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
@@ -952,6 +958,9 @@ test("trims and splits selected object layers", async ({ page }) => {
     [0, 0, "hold"],
     [3, 1, "hold"]
   ]);
+  await expect(page.locator(`.timeline-layer-bar[data-object-id="${splitObjectId}"]`)).toContainText("Cube Split");
+  await page.locator('.timeline-layer-bar[data-object-id="object-1"]').click();
+  await expect(page.locator("#selection-summary")).toContainText("Cube");
   await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
   expect(errors).toEqual([]);
 });

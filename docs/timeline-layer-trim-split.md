@@ -1,4 +1,4 @@
-# Timeline Layer Ranges
+# Timeline Layer Ranges And Overview
 
 ## Purpose
 
@@ -16,6 +16,9 @@ track. The current implementation maps layer timing commands onto
   visible after the split.
 - `Layer Work` sets the Work In/Out range to the selected object's visible
   layer range.
+- The layer overview strip renders each object as a clickable duration bar
+  above the keyframe rows. The bar reads the same Visibility range, so Layer In,
+  Layer Out, Split, save/load, and playback stay consistent.
 - Keyboard shortcuts:
   - `Alt+[` trims the selected layer in.
   - `Alt+]` trims the selected layer out.
@@ -44,6 +47,12 @@ object's Visibility track. If the playhead is inside a visible interval, that
 interval is used; otherwise the first visible interval is used. Objects without
 a Visibility track use the full timeline duration as their layer range.
 
+The overview strip is intentionally a DOM layer above `animation-timeline-js`,
+not a custom fork of the library. `animation-timeline-js` remains responsible
+for keyed track rows, drag selection, snapping, and playhead rendering. The DOM
+strip adds AE-style object timing affordances while keeping the existing
+timeline engine intact.
+
 ## Constraints
 
 - The selected object must exist.
@@ -55,7 +64,9 @@ a Visibility track use the full timeline duration as their layer range.
 
 ## Testing
 
-The Playwright workflow trims a layer in and out, sets the work area to the
+The Playwright workflow verifies the overview strip, trims a layer in and out,
+checks that the bar updates to the matching range, sets the work area to the
 layer range, jumps to layer in/out points, exports scene JSON, verifies hold
 visibility keys, reloads, splits the layer, verifies both original and
-duplicate visibility ranges, and confirms the duplicate layer is selected.
+duplicate visibility ranges, clicks the original layer bar, and confirms object
+selection changes.

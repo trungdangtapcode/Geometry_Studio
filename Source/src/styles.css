@@ -94,6 +94,7 @@ svg {
   --timeline-track-label-width: 178px;
   --timeline-track-row-height: 32px;
   --timeline-track-top-padding: 28px;
+  --timeline-layer-strip-height: 0px;
   --timeline-graph-height: 96px;
   --timeline-select-width: 112px;
   --control-height: 34px;
@@ -859,7 +860,7 @@ svg {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(var(--timeline-track-top-padding) + var(--control-height));
+  padding-top: calc(var(--timeline-track-top-padding) + var(--control-height) + var(--timeline-layer-strip-height));
   border: 1px solid var(--line);
   border-right: 0;
   border-radius: var(--control-radius) 0 0 var(--control-radius);
@@ -1043,19 +1044,85 @@ svg {
 
 .timeline-workspace {
   display: grid;
-  grid-template-rows: var(--control-height) minmax(0, 1fr);
+  grid-template-rows: var(--control-height) var(--timeline-layer-strip-height) minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
 }
 
-.timeline-marker-strip {
+.timeline-marker-strip,
+.timeline-layer-strip {
   position: relative;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line);
+  background: rgba(244, 247, 249, 0.94);
+}
+
+.timeline-marker-strip {
   border-bottom: 0;
   border-radius: 0 var(--control-radius) 0 0;
-  background: rgba(244, 247, 249, 0.94);
+}
+
+.timeline-layer-strip {
+  border-bottom: 0;
+  background:
+    linear-gradient(to right, rgba(26, 35, 42, 0.08) 1px, transparent 1px) 0 0 / 12.5% 100%,
+    rgba(233, 239, 243, 0.92);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.timeline-layer-strip-content {
+  position: relative;
+  min-height: 100%;
+}
+
+.timeline-layer-bar {
+  position: absolute;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  height: calc(var(--timeline-track-row-height) - 5px);
+  min-width: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(26, 35, 42, 0.18);
+  border-left-width: 4px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--ui-tiny-font);
+  font-weight: 800;
+  padding: 0 7px 0 5px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.timeline-layer-bar:hover,
+.timeline-layer-bar.active {
+  border-color: rgba(32, 191, 169, 0.55);
+  background: rgba(32, 191, 169, 0.16);
+}
+
+.timeline-layer-bar.active {
+  color: #ffffff;
+  background: var(--charcoal);
+}
+
+.timeline-layer-bar-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeline-layer-bar-time {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.timeline-layer-bar.active .timeline-layer-bar-time {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .timeline-marker {
