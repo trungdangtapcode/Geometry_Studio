@@ -259,6 +259,56 @@ Ns 42
   expect(errors).toEqual([]);
 });
 
+test("shows WebM work area recording progress", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page.addInitScript(() => {
+    class FakeMediaRecorder extends EventTarget {
+      static isTypeSupported(): boolean {
+        return true;
+      }
+
+      state: RecordingState = "inactive";
+      private readonly mimeType: string;
+
+      constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
+        super();
+        this.mimeType = options?.mimeType ?? "video/webm";
+      }
+
+      start(): void {
+        this.state = "recording";
+      }
+
+      stop(): void {
+        this.state = "inactive";
+        const dataEvent = new Event("dataavailable") as Event & { data: Blob };
+        Object.defineProperty(dataEvent, "data", { value: new Blob(["webm"], { type: this.mimeType }) });
+        this.dispatchEvent(dataEvent);
+        this.dispatchEvent(new Event("stop"));
+      }
+    }
+
+    Object.defineProperty(window, "MediaRecorder", { value: FakeMediaRecorder, configurable: true });
+    Object.defineProperty(HTMLCanvasElement.prototype, "captureStream", {
+      configurable: true,
+      value: () => ({ getTracks: () => [{ stop: () => undefined }] })
+    });
+  });
+
+  await page.goto("/");
+  await page.locator("#record-video-btn").click();
+  await expect(page.locator("#status-line")).toContainText(/Recording WebM \d+%/);
+  await expect(page.locator("#record-video-btn")).toContainText(/Stop \d+%/);
+  await page.locator("#record-video-btn").click();
+  await expect(page.locator("#record-video-btn")).toContainText("Record WebM");
+  await expect(page.locator("#status-line")).toContainText("Ready");
+  expect(errors).toEqual([]);
+});
+
 test("records grouped position rotation and scale keyframes", async ({ page }) => {
   test.setTimeout(240_000);
   const errors: string[] = [];

@@ -108,7 +108,8 @@ PDF.
   and All row visibility modes for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
   position path rendering for visible spatial keyframe feedback.
-- [Preview Export](preview-export.md) documents WebM work-area recording.
+- [Preview Export](preview-export.md) documents WebM work-area recording and
+  recording progress UI.
 - [UI Density Control](ui-density.md) documents the Blender-style compact
   control-density system.
 

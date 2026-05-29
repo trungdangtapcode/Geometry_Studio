@@ -169,6 +169,7 @@ function boot(root: HTMLDivElement): void {
   let recordingPreview = false;
   let previewRecorder: MediaRecorder | null = null;
   let previewChunks: Blob[] = [];
+  let previewRecordingRange: { start: number; end: number } | null = null;
   let timelineClipboard: TimelineClipboard | null = null;
   let pendingDragSnapshot: SceneDocument | null = null;
   let pendingTimelineDragSnapshot: SceneDocument | null = null;
@@ -2944,6 +2945,8 @@ function boot(root: HTMLDivElement): void {
       showToast("WebM recording is not supported in this browser.", "bad");
       return;
     }
+    const workStart = clamp(sceneTimeline.workStart, 0, sceneTimeline.duration);
+    const workEnd = clamp(sceneTimeline.workEnd, workStart + 0.001, sceneTimeline.duration);
     const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
       ? "video/webm;codecs=vp9"
       : MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
@@ -2974,8 +2977,9 @@ function boot(root: HTMLDivElement): void {
       showToast("WebM preview exported", "good");
     });
     recordingPreview = true;
+    previewRecordingRange = { start: workStart, end: workEnd };
     updateRecordingButton();
-    setTimelineTime(sceneTimeline.workStart);
+    setTimelineTime(workStart);
     transport.set(true, 1, 1);
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
@@ -2986,6 +2990,7 @@ function boot(root: HTMLDivElement): void {
   function stopPreviewRecording(manual: boolean): void {
     if (!recordingPreview && !previewRecorder) return;
     recordingPreview = false;
+    previewRecordingRange = null;
     if (manual) {
       transport.pause();
       timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
@@ -3110,7 +3115,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function updatePlayButton(): void {
-    query<HTMLDivElement>("#status-line").textContent = transport.statusLabel();
+    query<HTMLDivElement>("#status-line").textContent = recordingPreview ? recordingStatusLabel() : transport.statusLabel();
     const label = transport.buttonLabel();
     const iconName = transport.iconName();
     const button = query<HTMLButtonElement>("#play-toggle");
@@ -3119,13 +3124,26 @@ function boot(root: HTMLDivElement): void {
     const timelineButton = query<HTMLButtonElement>("#timeline-play-toggle");
     timelineButton.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
     hydrateIcons(timelineButton);
+    if (recordingPreview) updateRecordingButton();
   }
 
   function updateRecordingButton(): void {
     const button = query<HTMLButtonElement>("#record-video-btn");
     button.classList.toggle("strong", recordingPreview);
-    button.innerHTML = `<span data-icon="${recordingPreview ? "Square" : "Video"}"></span><span>${recordingPreview ? "Stop WebM" : "Record WebM"}</span>`;
+    button.innerHTML = `<span data-icon="${recordingPreview ? "Square" : "Video"}"></span><span>${recordingPreview ? `Stop ${recordingProgressPercent()}%` : "Record WebM"}</span>`;
     hydrateIcons(button);
+  }
+
+  function recordingProgressPercent(): number {
+    const range = previewRecordingRange ?? { start: sceneTimeline.workStart, end: sceneTimeline.workEnd };
+    const span = Math.max(range.end - range.start, 0.001);
+    return Math.round(clamp((sceneTimeline.currentTime - range.start) / span, 0, 1) * 100);
+  }
+
+  function recordingStatusLabel(): string {
+    const range = previewRecordingRange ?? { start: sceneTimeline.workStart, end: sceneTimeline.workEnd };
+    const elapsed = clamp(sceneTimeline.currentTime - range.start, 0, Math.max(range.end - range.start, 0));
+    return `Recording WebM ${recordingProgressPercent()}% | ${formatNumber(elapsed)}s / ${formatNumber(Math.max(range.end - range.start, 0))}s`;
   }
 
   function serializeObjectForDuplicate(entry: SceneEntry): SerializedObject {

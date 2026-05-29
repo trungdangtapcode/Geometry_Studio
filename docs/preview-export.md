@@ -24,14 +24,16 @@ a server or external encoder.
 - Loop mode is ignored while recording so the output is one clean work-area
   pass.
 - The recording button toggles between `Record WebM` and `Stop WebM`.
+- During recording, the viewport status line and recording button show the
+  current work-area progress percentage.
 - If the browser does not support MediaRecorder/canvas capture, the app shows a
   toast instead of failing.
 
 ## Testing
 
-The Playwright smoke test verifies the WebM export control is visible. Manual
-recording remains the stronger verification because browser support for
-MediaRecorder differs across environments.
+Playwright verifies the WebM export control and progress UI with a stubbed
+browser recorder. Manual recording remains the stronger verification because
+real MediaRecorder support differs across environments.
 
 Recommended manual check:
 

@@ -59,6 +59,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Evaluation Tour: automatically builds a scene that demonstrates all grading requirements.
 - Cinematic Demo: creates a polished animated showcase scene.
 - Screenshot Export: saves the current viewport as a PNG image.
+- WebM Preview Export: records the active Work In/Out range with progress shown in the status line and record button.
 - Telemetry: displays FPS, draw calls, triangles, lines, points, geometry count, texture count, and object count.
 - UI Density: choose Blender, Compact, or Comfortable sizing from the inspector header. Blender density is the default for a smaller professional editing layout.
 
