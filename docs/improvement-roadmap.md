@@ -25,6 +25,7 @@ Implemented and tested:
 - Generated PMREM environment lighting presets for PBR image-based lighting.
 - OBJ + MTL multi-file import with source-material preservation.
 - Post-processing toggles for Bloom and Vignette.
+- Timeline row search for dense AE-style track navigation.
 
 ## Research Basis
 
@@ -149,12 +150,13 @@ Acceptance:
 
 After rendering improvements, refine the timeline:
 
-- Auto-key toggle.
-- Duplicate keyframes.
-- Clear selected track.
-- Fit timeline to duration.
-- Camera tracks for cinematic demos.
-- Light intensity and color tracks.
+- Auto-key toggle. Implemented.
+- Duplicate keyframes. Implemented.
+- Clear selected track. Implemented.
+- Fit timeline to duration. Implemented.
+- Camera tracks for cinematic demos. Implemented.
+- Light intensity and color tracks. Implemented.
+- Row search for dense object/camera/light track sets. Implemented.
 - Screenshot in report showing timeline save/load round trip.
 
 ## Phase 6: Optional Path-Traced Preview

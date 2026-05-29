@@ -515,6 +515,35 @@ svg {
   width: var(--timeline-select-width);
 }
 
+.timeline-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--control-height);
+  width: clamp(120px, 13vw, 190px);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--panel-strong);
+  color: var(--muted);
+  padding: 0 8px;
+}
+
+.timeline-search svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.timeline-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
 .timeline-toolbar .mini-button {
   min-height: var(--mini-button-height);
   padding: 0 var(--mini-button-padding-x);
@@ -1580,7 +1609,8 @@ svg {
   }
 
   .timeline-toolbar .mini-button,
-  .timeline-toolbar select {
+  .timeline-toolbar select,
+  .timeline-search {
     flex: 1 1 92px;
   }
 

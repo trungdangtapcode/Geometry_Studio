@@ -92,6 +92,10 @@ export function studioTemplate(): string {
                 <option value="keyed">Keyed Rows</option>
                 <option value="all">All Rows</option>
               </select>
+              <label class="timeline-search" aria-label="Search timeline rows">
+                <span data-icon="Search"></span>
+                <input id="timeline-row-search" type="search" placeholder="Search rows" autocomplete="off" />
+              </label>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
               <button class="mini-button" id="timeline-set-transform" type="button"><span data-icon="Box"></span><span>Set TRS</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>

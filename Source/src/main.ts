@@ -1174,6 +1174,11 @@ function boot(root: HTMLDivElement): void {
       redo();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && key === "f") {
+      event.preventDefault();
+      timelinePanel.focusRowSearch();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "a") {
       event.preventDefault();
       if (event.shiftKey) selectTimelineWorkAreaKeyframes();

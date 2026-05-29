@@ -103,6 +103,18 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-row-filter")).toHaveValue("all");
   await page.keyboard.press("u");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
+  await page.keyboard.press("Control+F");
+  await expect(page.locator("#timeline-row-search")).toBeFocused();
+  await page.locator("#timeline-row-search").fill("camera");
+  await expect(page.locator('.camera-track-label[data-track-kind="cameraPosition"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"]')).toHaveCount(0);
+  await page.locator("#timeline-row-search").fill("point intensity");
+  await expect(page.locator('.light-track-label[data-track-kind="pointIntensity"]')).toBeVisible();
+  await page.locator("#timeline-row-search").fill("not-a-row");
+  await expect(page.locator("#timeline-track-labels")).toContainText('No rows match "not-a-row"');
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"]')).toBeVisible();
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   const timelineZoom = async () => page.locator("#keyframe-dock").evaluate((element) => Number((element as HTMLElement).dataset.zoomLevel));
   const initialTimelineZoom = await timelineZoom();

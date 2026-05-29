@@ -114,6 +114,7 @@ type TimelineDetailSource = {
 const CAMERA_TARGET_ID = "__camera__";
 const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
+const ROW_SEARCH_STORAGE_KEY = "geometry-studio-timeline-row-search";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
 const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
 const MIN_DOCK_HEIGHT = 190;
@@ -129,6 +130,7 @@ export class KeyframeTimelinePanel {
   private readonly canvasHost = query<HTMLDivElement>("#timeline-canvas");
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
+  private readonly rowSearchInput = query<HTMLInputElement>("#timeline-row-search");
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
@@ -171,6 +173,7 @@ export class KeyframeTimelinePanel {
   private activeMarkerId: string | null = null;
   private selectedAxis: TimelineAxis | null = null;
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
+  private rowSearchText = loadTimelineRowSearch();
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
   private timelineScroller: HTMLElement | null = null;
@@ -265,6 +268,7 @@ export class KeyframeTimelinePanel {
     this.autoKeyInput.checked = timelineDocument.autoKey;
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
     this.rowFilterSelect.value = this.rowFilter;
+    this.rowSearchInput.value = this.rowSearchText;
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
     this.syncAddKeyframeButton(timelineDocument, selectedId);
     this.syncToggleTrackButton(timelineDocument, selectedId);
@@ -343,6 +347,11 @@ export class KeyframeTimelinePanel {
     const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
     this.applyRowFilter(next);
     return rowFilterLabel(next);
+  }
+
+  focusRowSearch(): void {
+    this.rowSearchInput.focus();
+    this.rowSearchInput.select();
   }
 
   zoomTimeline(direction: -1 | 1): void {
@@ -526,6 +535,15 @@ export class KeyframeTimelinePanel {
     this.rowFilterSelect.addEventListener("change", () => {
       this.applyRowFilter(parseTimelineRowFilter(this.rowFilterSelect.value));
     });
+    this.rowSearchInput.addEventListener("input", () => {
+      this.applyRowSearch(this.rowSearchInput.value);
+    });
+    this.rowSearchInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      this.applyRowSearch("");
+      this.rowSearchInput.blur();
+    });
     this.interpolationSelect.addEventListener("change", () => {
       this.applyInterpolation(this.interpolationSelect.value as TimelineInterpolation);
     });
@@ -622,6 +640,13 @@ export class KeyframeTimelinePanel {
     if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
   }
 
+  private applyRowSearch(value: string): void {
+    this.rowSearchText = normalizeRowSearch(value);
+    this.rowSearchInput.value = this.rowSearchText;
+    storeTimelineRowSearch(this.rowSearchText);
+    if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+  }
+
   private lockDockScroll(): void {
     if (this.root.scrollTop !== 0) this.root.scrollTop = 0;
     if (this.root.scrollLeft !== 0) this.root.scrollLeft = 0;
@@ -659,6 +684,7 @@ export class KeyframeTimelinePanel {
 
   private visibleEntries(timelineDocument: SceneTimelineDocument, entries: Iterable<SceneEntry>, selectedId: string): SceneEntry[] {
     const entryList = Array.from(entries);
+    if (this.hasRowSearch()) return entryList;
     if (this.rowFilter === "all") return entryList;
 
     const keyedIds = new Set(timelineDocument.objects.map((object) => object.objectId));
@@ -711,6 +737,7 @@ export class KeyframeTimelinePanel {
     targetId: string,
     selectedId: string
   ): TimelineTrackKind[] {
+    if (this.hasRowSearch()) return kinds;
     if (this.rowFilter === "all") return kinds;
     const trackByKind = new Map(tracks.map((track) => [track.kind, track]));
     const hasKeyframes = (kind: TimelineTrackKind) => Boolean(trackByKind.get(kind)?.keyframes.length);
@@ -722,6 +749,27 @@ export class KeyframeTimelinePanel {
 
     if (targetId === selectedId) return kinds;
     return kinds.filter((kind) => hasKeyframes(kind) || isActive(kind));
+  }
+
+  private filteredRowDescriptors(targetName: string, kinds: TimelineTrackKind[], includeAxes: boolean): TimelineRowDescriptor[] {
+    return this.rowDescriptors(kinds, includeAxes).filter((row) => this.matchesRowSearch(targetName, row.kind, row.axis));
+  }
+
+  private matchesRowSearch(targetName: string, kind: TimelineTrackKind, axis?: TimelineAxis): boolean {
+    if (!this.hasRowSearch()) return true;
+    const search = this.rowSearchText.toLowerCase();
+    const label = trackLabel(kind, axis);
+    const tokens = [
+      targetName,
+      label,
+      kind,
+      axis ?? ""
+    ].join(" ").toLowerCase();
+    return tokens.includes(search);
+  }
+
+  private hasRowSearch(): boolean {
+    return this.rowSearchText.length > 0;
   }
 
   private isActiveRow(targetId: string, kind: TimelineTrackKind, selectedId: string): boolean {
@@ -740,7 +788,7 @@ export class KeyframeTimelinePanel {
       .flatMap((entry) => {
         const objectTimeline = objectTimelines.get(entry.id);
         const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
-        const visibleRows = this.rowDescriptors(visibleKinds, true);
+        const visibleRows = this.filteredRowDescriptors(entry.name, visibleKinds, true);
         return visibleRows.map((row) => {
           const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
           return this.renderTrackLabel({
@@ -758,7 +806,9 @@ export class KeyframeTimelinePanel {
         });
       })
       .join("");
-    const cameraLabels = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId).map((kind) => {
+    const cameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId)
+      .filter((kind) => this.matchesRowSearch("Camera", kind));
+    const cameraLabels = cameraKinds.map((kind) => {
       const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === kind);
       return this.renderTrackLabel({
         targetId: CAMERA_TARGET_ID,
@@ -773,7 +823,9 @@ export class KeyframeTimelinePanel {
         extraClass: "camera-track-label"
       });
     }).join("");
-    const lightLabels = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId).map((kind) => {
+    const lightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId)
+      .filter((kind) => this.matchesRowSearch("Lights", kind));
+    const lightLabels = lightKinds.map((kind) => {
       const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === kind);
       return this.renderTrackLabel({
         targetId: LIGHT_TARGET_ID,
@@ -788,7 +840,8 @@ export class KeyframeTimelinePanel {
         extraClass: "light-track-label"
       });
     }).join("");
-    return `${objectLabels || `<div class="timeline-empty">Select an object to keyframe</div>`}${cameraLabels}${lightLabels}`;
+    const emptyMessage = this.hasRowSearch() ? `No rows match "${escapeHtml(this.rowSearchText)}"` : "Select an object to keyframe";
+    return `${objectLabels}${cameraLabels}${lightLabels}` || `<div class="timeline-empty">${emptyMessage}</div>`;
   }
 
   private renderTrackLabel(options: {
@@ -839,7 +892,7 @@ export class KeyframeTimelinePanel {
     entries.forEach((entry) => {
       const objectTimeline = objectTimelines.get(entry.id);
       const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
-      const visibleRows = this.rowDescriptors(visibleKinds, true);
+      const visibleRows = this.filteredRowDescriptors(entry.name, visibleKinds, true);
       visibleRows.forEach((row, index) => {
         const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
         const locked = Boolean(track?.locked);
@@ -853,7 +906,7 @@ export class KeyframeTimelinePanel {
           groupsDraggable: !locked,
           style: {
             height: rowHeight,
-            marginBottom: index === visibleKinds.length - 1 ? 8 : 2,
+            marginBottom: index === visibleRows.length - 1 ? 8 : 2,
             fillColor: index % 2 === 0 ? "rgba(255,255,255,0.66)" : "rgba(235,241,244,0.64)",
             keyframesStyle: {
               width: 14,
@@ -879,7 +932,8 @@ export class KeyframeTimelinePanel {
         });
       });
     });
-    const visibleCameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId);
+    const visibleCameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId)
+      .filter((kind) => this.matchesRowSearch("Camera", kind));
     visibleCameraKinds.forEach((kind, index) => {
       const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === kind);
       const locked = Boolean(track?.locked);
@@ -916,7 +970,8 @@ export class KeyframeTimelinePanel {
         })) ?? []
       });
     });
-    const visibleLightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId);
+    const visibleLightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId)
+      .filter((kind) => this.matchesRowSearch("Lights", kind));
     visibleLightKinds.forEach((kind, index) => {
       const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === kind);
       const locked = Boolean(track?.locked);
@@ -1274,6 +1329,27 @@ function storeTimelineRowFilter(filter: TimelineRowFilter): void {
   }
 }
 
+function loadTimelineRowSearch(): string {
+  try {
+    return normalizeRowSearch(window.localStorage.getItem(ROW_SEARCH_STORAGE_KEY) ?? "");
+  } catch {
+    return "";
+  }
+}
+
+function storeTimelineRowSearch(value: string): void {
+  try {
+    if (value) window.localStorage.setItem(ROW_SEARCH_STORAGE_KEY, value);
+    else window.localStorage.removeItem(ROW_SEARCH_STORAGE_KEY);
+  } catch {
+    // Row search is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function normalizeRowSearch(value: string): string {
+  return value.replace(/\s+/g, " ").trim().slice(0, 64);
+}
+
 function loadTimelineDockHeight(): number | null {
   try {
     const value = Number(window.localStorage.getItem(DOCK_HEIGHT_STORAGE_KEY));
@@ -1374,6 +1450,14 @@ function commonValue(values: number[]): string {
   if (values.length === 0) return "";
   const first = values[0];
   return values.every((value) => Math.abs(value - first) < 0.0001) ? formatNumber(first) : "";
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function formatTimecode(time: number, fps: number): string {
