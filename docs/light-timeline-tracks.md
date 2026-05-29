@@ -99,7 +99,7 @@ They use the same commands as other tracks:
 - Duplicate selected keyframes.
 - Previous/next keyframe navigation.
 - Clear active track.
-- Linear, Smooth, and Hold interpolation.
+- Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation.
 - Snap, loop, duration, FPS, and Auto-Key.
 
 ## Testing

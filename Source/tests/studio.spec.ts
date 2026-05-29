@@ -556,6 +556,16 @@ test("evaluates ease in and ease out timeline interpolation", async ({ page }) =
   });
   expect(Number(await positionX.inputValue())).toBeCloseTo(1.5, 1);
 
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Control+F9");
+  await expect(page.locator("#timeline-ease-in")).toHaveClass(/active/);
+  await page.keyboard.press("Control+Shift+F9");
+  await expect(page.locator("#timeline-ease-out")).toHaveClass(/active/);
+
   expect(errors).toEqual([]);
 });
 

@@ -1137,6 +1137,18 @@ export class KeyframeTimelinePanel {
         strokeThickness: 2
       };
     }
+    if (interpolation === "easeIn" || interpolation === "easeOut") {
+      return {
+        shape: TimelineKeyframeShape.Rhomb,
+        width: interpolation === "easeIn" ? 13 : 15,
+        height: interpolation === "easeIn" ? 15 : 13,
+        fillColor: baseColor,
+        selectedFillColor: "#ffffff",
+        strokeColor: interpolation === "easeIn" ? "#111827" : "#f8fafc",
+        selectedStrokeColor: baseColor,
+        strokeThickness: 2
+      };
+    }
     return {
       shape: TimelineKeyframeShape.Rhomb,
       width: 14,

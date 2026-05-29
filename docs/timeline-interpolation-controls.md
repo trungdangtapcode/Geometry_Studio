@@ -16,6 +16,8 @@ first-class timeline toolbar buttons instead of only a dropdown setting.
 - `Hold` keeps the previous value until the next keyframe.
 - The compact keyframe editor includes a curve preview that updates with the
   active interpolation mode.
+- The dope-sheet key markers use distinct styling for Hold, Ease In, Ease Out,
+  Easy Ease, and Linear so timing intent is visible without opening the editor.
 - The interpolation dropdown remains available and stays synchronized with the
   direct buttons.
 
@@ -39,8 +41,8 @@ The feature stays inside the existing timeline command boundary:
   synchronization.
 - `main.ts` owns shortcut dispatch and timeline mutation through
   `setTimelineInterpolation`.
-- The timeline schema is unchanged because interpolation already exists on each
-  keyframe.
+- The timeline schema keeps the same interpolation field but now accepts the
+  expanded value set: `linear`, `easeIn`, `easeOut`, `smooth`, and `hold`.
 
 ## Testing
 

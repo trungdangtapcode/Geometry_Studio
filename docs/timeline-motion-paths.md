@@ -19,6 +19,8 @@ motion direction, distance, and timing.
 - Uses the same interpolation semantics as timeline playback:
   - `hold` keeps the previous position until the next key.
   - `linear` samples straight interpolation.
+  - `easeIn` starts slowly and accelerates toward the next key.
+  - `easeOut` starts quickly and decelerates toward the next key.
   - `smooth` samples smoothstep interpolation.
 - Draws a teal curve for the sampled path.
 - Draws amber points at the authored key positions.
