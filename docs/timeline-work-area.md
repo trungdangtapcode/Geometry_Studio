@@ -15,6 +15,8 @@ After Effects and Premiere style work area around the existing timeline:
 - `I` also sets Work In to the current playhead time.
 - `O` also sets Work Out to the current playhead time.
 - `Shift+B` fits Work In/Out to the currently selected timeline keyframes.
+- `Select Work` selects active-track keyframes inside Work In/Out.
+- `Ctrl+Shift+A` / `Cmd+Shift+A` runs the same work-area selection command.
 - Loop playback repeats over the work area instead of the full duration.
 
 ## Data Model
@@ -43,6 +45,9 @@ back to the full timeline.
 - Pressing `Shift+B` reads the selected keyframe times and sets the work area to
   the selected span. A one-key selection creates a minimum visible span using
   the snap step or one frame.
+- Pressing `Ctrl+Shift+A` / `Cmd+Shift+A` selects keyframes on the active track
+  whose times are inside the current Work In/Out range. This keeps range-based
+  edit operations scoped to the same track model as `Ctrl+A`.
 - Pressing Play outside the work area starts from `workStart`.
 - Loop mode wraps from `workEnd` back to `workStart`.
 - Non-loop mode stops playback at `workEnd`.
@@ -52,7 +57,8 @@ back to the full timeline.
 
 The Playwright timeline workflows verify that Work In/Out values are editable,
 keyboard-settable with `B`/`N` and `I`/`O`, fit to selected keys with
-`Shift+B`, and round trip through exported scene JSON.
+`Shift+B`, selectable with `Select Work` and `Ctrl+Shift+A`, and round trip
+through exported scene JSON.
 
 Recommended manual check:
 
@@ -63,5 +69,7 @@ Recommended manual check:
 5. Move the playhead, press `N` or `O`, and confirm Work Out follows it.
 6. Select several keyframes, press `Shift+B`, and confirm the work area wraps
    the selected key span.
-7. Press Play with Loop enabled and confirm playback wraps at `4.5`.
-8. Save JSON and verify `timeline.version` is `9`.
+7. Press `Ctrl+Shift+A` and confirm only active-track keys inside Work In/Out
+   are selected.
+8. Press Play with Loop enabled and confirm playback wraps at `4.5`.
+9. Save JSON and verify `timeline.version` is `9`.

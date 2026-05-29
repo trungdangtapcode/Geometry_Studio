@@ -35,6 +35,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position");
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
+  await expect(page.locator("#timeline-select-workarea")).toBeVisible();
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
   await expect(page.locator("#timeline-nudge-right")).toBeVisible();
   await expect(page.locator("#timeline-move-to-playhead")).toBeVisible();
@@ -667,6 +668,60 @@ test("duplicates selected timeline keyframes from the keyboard", async ({ page }
       .sort((left, right) => left - right)
   );
   expect(duplicatedTimes).toEqual([0, 0.03, 2, 2.03]);
+
+  expect(errors).toEqual([]);
+});
+
+test("selects active-track keyframes inside the work area", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-add-keyframe")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  for (const [time, value] of [[0, 0], [1, 1], [3, 3], [5, 5]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  await page.locator("#timeline-work-start").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-work-end").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-select-workarea").click();
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  const selectedToolbarTimes = await page.locator(".timeline-graph-key.graph-x.selected").evaluateAll((nodes) =>
+    nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))).sort((left, right) => left - right)
+  );
+  expect(selectedToolbarTimes).toEqual([1, 3]);
+
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
+  await page.keyboard.press("Control+Shift+A");
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  const selectedShortcutTimes = await page.locator(".timeline-graph-key.graph-x.selected").evaluateAll((nodes) =>
+    nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))).sort((left, right) => left - right)
+  );
+  expect(selectedShortcutTimes).toEqual([1, 3]);
 
   expect(errors).toEqual([]);
 });

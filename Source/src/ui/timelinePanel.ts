@@ -33,6 +33,7 @@ export interface KeyframeTimelineCallbacks {
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onPasteKeyframes(): void;
+  onSelectWorkAreaKeyframes(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
@@ -371,6 +372,21 @@ export class KeyframeTimelinePanel {
     this.selectedKeyframeIds = new Set(track?.keyframes.map((keyframe) => keyframe.id) ?? []);
     this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
     this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
+    this.refreshCanvas();
+    return this.selectedKeyframeIds.size;
+  }
+
+  selectActiveTrackKeyframesInWorkArea(): number {
+    if (!this.lastTimelineDocument) return 0;
+    const track = this.playheadTrack(this.lastTimelineDocument, this.lastSelectedId);
+    const workStart = Math.min(this.lastTimelineDocument.workStart, this.lastTimelineDocument.workEnd);
+    const workEnd = Math.max(this.lastTimelineDocument.workStart, this.lastTimelineDocument.workEnd);
+    this.selectedKeyframeIds = new Set(track?.keyframes
+      .filter((keyframe) => keyframe.time >= workStart - 0.001 && keyframe.time <= workEnd + 0.001)
+      .map((keyframe) => keyframe.id) ?? []);
+    this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
+    this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
+    this.refreshCanvas();
     return this.selectedKeyframeIds.size;
   }
 
@@ -434,6 +450,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-paste-keyframes").addEventListener("click", () => {
       this.callbacks.onPasteKeyframes();
+    });
+    query<HTMLButtonElement>("#timeline-select-workarea").addEventListener("click", () => {
+      this.callbacks.onSelectWorkAreaKeyframes();
     });
     query<HTMLButtonElement>("#timeline-nudge-left").addEventListener("click", () => {
       this.callbacks.onNudgeKeyframes(-1, [...this.selectedKeyframeIds]);

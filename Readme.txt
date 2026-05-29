@@ -80,6 +80,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - B / N: set Work In or Work Out to the current playhead time.
 - I / O: set Work In or Work Out to the current playhead time.
 - Shift+B: fit Work In/Out to the selected timeline keyframes.
+- Ctrl+Shift+A: select active-track keyframes inside Work In/Out.
 - U: cycle timeline row visibility through Focus, Keyed, and All Rows.
 - Plus / Minus / 0: zoom the timeline in, zoom out, or fit the duration.
 - M: add or update a timeline marker at the current playhead time.

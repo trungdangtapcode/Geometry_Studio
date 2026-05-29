@@ -170,6 +170,7 @@ function boot(root: HTMLDivElement): void {
     onDeleteKeyframes: deleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onPasteKeyframes: pasteTimelineKeyframes,
+    onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
@@ -1061,11 +1062,8 @@ function boot(root: HTMLDivElement): void {
     }
     if ((event.ctrlKey || event.metaKey) && key === "a") {
       event.preventDefault();
-      const selectedCount = timelinePanel.selectAllActiveTrackKeyframes();
-      showToast(selectedCount
-        ? `${selectedCount} keyframe${selectedCount === 1 ? "" : "s"} selected on active track`
-        : "No keyframes on the active track.",
-        selectedCount ? "good" : "bad");
+      if (event.shiftKey) selectTimelineWorkAreaKeyframes();
+      else selectAllActiveTimelineKeyframes();
       return;
     }
     if ((event.ctrlKey || event.metaKey) && key === "c") {
@@ -1709,6 +1707,22 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.workEnd = roundTime(end);
     updateAllUI();
     showToast(`Work area fit to ${sources.length} selected keyframe${sources.length === 1 ? "" : "s"}`, "good");
+  }
+
+  function selectAllActiveTimelineKeyframes(): void {
+    const selectedCount = timelinePanel.selectAllActiveTrackKeyframes();
+    showToast(selectedCount
+      ? `${selectedCount} keyframe${selectedCount === 1 ? "" : "s"} selected on active track`
+      : "No keyframes on the active track.",
+      selectedCount ? "good" : "bad");
+  }
+
+  function selectTimelineWorkAreaKeyframes(): void {
+    const selectedCount = timelinePanel.selectActiveTrackKeyframesInWorkArea();
+    showToast(selectedCount
+      ? `${selectedCount} work-area keyframe${selectedCount === 1 ? "" : "s"} selected on active track`
+      : "No active-track keyframes inside the work area.",
+      selectedCount ? "good" : "bad");
   }
 
   function addTimelineKeyframe(kind: TimelineTrackKind): void {
