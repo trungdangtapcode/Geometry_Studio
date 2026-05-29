@@ -23,6 +23,8 @@ existing keys.
 - The edited value is then written at the current playhead time.
 - If the track already has any keyframes, Auto-Key updates only the current
   playhead key as before.
+- When Auto-Key is enabled, the timeline dock shows an active recording state so
+  the user can see that edits will write keys.
 - Manual `Set Key`, row diamonds, and `Set TRS` keep their explicit behavior.
 - The operation uses the same Undo snapshot as the transform edit.
 

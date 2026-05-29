@@ -385,6 +385,29 @@ svg {
   backdrop-filter: blur(18px);
 }
 
+.keyframe-dock.auto-key-active {
+  border-color: rgba(223, 107, 128, 0.78);
+  box-shadow: 0 22px 70px rgba(16, 24, 31, 0.14), 0 0 0 2px rgba(223, 107, 128, 0.18);
+}
+
+.keyframe-dock.auto-key-active .timeline-title::after {
+  content: "AUTO-KEY";
+  display: inline-grid;
+  place-items: center;
+  min-height: 20px;
+  margin-left: 8px;
+  padding: 0 7px;
+  border-radius: var(--control-radius);
+  background: rgba(223, 107, 128, 0.14);
+  color: #a51d35;
+  font-size: var(--ui-tiny-font);
+  font-weight: 900;
+}
+
+.keyframe-dock.auto-key-active #timeline-auto-key + span {
+  color: #a51d35;
+}
+
 .timeline-resize-handle {
   position: absolute;
   top: 0;

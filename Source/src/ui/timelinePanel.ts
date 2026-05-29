@@ -255,6 +255,7 @@ export class KeyframeTimelinePanel {
     this.lastEntryNames = new Map(entryList.map((entry) => [entry.id, entry.name]));
     this.pruneSelectedKeyframes(timelineDocument);
     this.root.classList.toggle("playing", playing);
+    this.root.classList.toggle("auto-key-active", timelineDocument.autoKey);
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
@@ -368,6 +369,7 @@ export class KeyframeTimelinePanel {
   setPlaybackTime(timelineDocument: SceneTimelineDocument, playing: boolean): void {
     this.updating = true;
     this.root.classList.toggle("playing", playing);
+    this.root.classList.toggle("auto-key-active", timelineDocument.autoKey);
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);

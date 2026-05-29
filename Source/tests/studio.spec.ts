@@ -347,6 +347,7 @@ test("seeds initial pose for first transform auto-key edit", async ({ page }) =>
 
   await page.goto("/");
   await page.locator("#timeline-auto-key").check();
+  await expect(page.locator("#keyframe-dock")).toHaveClass(/auto-key-active/);
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
     input.dispatchEvent(new Event("change", { bubbles: true }));
