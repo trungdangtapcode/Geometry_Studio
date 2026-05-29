@@ -19,6 +19,7 @@ import {
   roveResolvedKeyframesAcrossTime,
   selectedResolvedKeyframeRange,
   snapResolvedKeyframesToFrames,
+  staggerResolvedKeyframesFromTime,
   type EditTimelineResult,
   type TimelineClipboard,
   type TimelineKeyframeEditPatch,
@@ -216,6 +217,7 @@ function boot(root: HTMLDivElement): void {
     onSnapKeyframesToFrames: snapTimelineKeyframesToFrames,
     onDistributeKeyframes: distributeTimelineKeyframes,
     onFitKeyframesToWorkArea: fitTimelineKeyframesToWorkArea,
+    onStaggerKeyframesFromPlayhead: staggerTimelineKeyframesFromPlayhead,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -1388,6 +1390,11 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey && key === "f") {
       event.preventDefault();
       fitTimelineKeyframesToWorkArea(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
+    if (event.shiftKey && key === "g") {
+      event.preventDefault();
+      staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (key === "b") {
@@ -2684,6 +2691,26 @@ function boot(root: HTMLDivElement): void {
       result,
       (editResult) => editResult.skipped ? `No keyframe fitted, ${editResult.skipped} skipped.` : "Selected keyframes already fit Work In/Out.",
       (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} fitted to Work In/Out${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
+  }
+
+  function staggerTimelineKeyframesFromPlayhead(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before staggering timing.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "staggering keyframes")) return;
+
+    const step = Math.max(sceneTimeline.snapEnabled ? sceneTimeline.snapStep : 1 / sceneTimeline.fps, 0.001);
+    const playheadTime = sceneTimeline.currentTime;
+    recordHistory();
+    const result = staggerResolvedKeyframesFromTime(sceneTimeline, sources, playheadTime, step);
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      (editResult) => editResult.skipped ? `No keyframe staggered, ${editResult.skipped} skipped.` : "Selected keyframes are already staggered from the playhead.",
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} staggered from ${formatNumber(playheadTime)}s${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
     );
   }
 

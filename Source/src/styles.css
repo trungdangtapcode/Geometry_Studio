@@ -507,11 +507,18 @@ svg {
 
 .timeline-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: end;
+  justify-content: start;
   gap: calc(var(--grid-gap) - 2px);
   min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.timeline-toolbar > * {
+  flex: 0 0 auto;
 }
 
 .timeline-settings {
@@ -1700,7 +1707,9 @@ svg {
 
   .timeline-toolbar {
     grid-column: 1 / -1;
+    flex-wrap: wrap;
     justify-content: stretch;
+    overflow-x: visible;
   }
 
   .timeline-toolbar .mini-button,

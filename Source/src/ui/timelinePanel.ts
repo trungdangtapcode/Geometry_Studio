@@ -67,6 +67,7 @@ export interface KeyframeTimelineCallbacks {
   onSnapKeyframesToFrames(keyframeIds: string[]): void;
   onDistributeKeyframes(keyframeIds: string[]): void;
   onFitKeyframesToWorkArea(keyframeIds: string[]): void;
+  onStaggerKeyframesFromPlayhead(keyframeIds: string[]): void;
   onEditKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void;
   onAddMarker(label: string, color?: string): void;
   onDeleteMarker(markerId: string | null): void;
@@ -533,6 +534,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-fit-keyframes").addEventListener("click", () => {
       this.callbacks.onFitKeyframesToWorkArea([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-stagger-keyframes").addEventListener("click", () => {
+      this.callbacks.onStaggerKeyframesFromPlayhead([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-add-marker").addEventListener("click", () => {
       this.callbacks.onAddMarker(this.markerLabelInput.value.trim(), this.markerColorInput.value);

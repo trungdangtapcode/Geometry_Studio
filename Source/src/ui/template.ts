@@ -129,6 +129,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-snap-keyframes" type="button"><span data-icon="Magnet"></span><span>Snap</span></button>
               <button class="mini-button" id="timeline-distribute-keyframes" type="button"><span data-icon="AlignHorizontalSpaceAround"></span><span>Distribute</span></button>
               <button class="mini-button" id="timeline-fit-keyframes" type="button"><span data-icon="StretchHorizontal"></span><span>Fit Keys</span></button>
+              <button class="mini-button" id="timeline-stagger-keyframes" type="button" title="Stagger selected keyframe columns from the playhead by the snap step"><span data-icon="ListOrdered"></span><span>Stagger</span></button>
               <button class="mini-button" id="timeline-duplicate-keyframe" type="button"><span data-icon="Copy"></span><span>Duplicate</span></button>
               <button class="mini-button" id="timeline-toggle-track" type="button"><span data-icon="Eye"></span><span>Track On</span></button>
               <button class="mini-button" id="timeline-solo-track" type="button"><span data-icon="Circle"></span><span>Solo Off</span></button>

@@ -520,6 +520,26 @@ export function fitResolvedKeyframesToRange(
   });
 }
 
+export function staggerResolvedKeyframesFromTime(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  startTime: number,
+  step: number
+): EditTimelineResult {
+  if (sources.length < 2) {
+    return { edited: 0, skipped: 0, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const groups = groupSourcesByOriginalTime(sources);
+  if (groups.length < 2) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const safeStep = Math.max(step, 0.001);
+  const start = snapTimelineTime(timeline, startTime);
+  return retimeSourceGroups(timeline, sources, groups, (_group, index) => start + index * safeStep);
+}
+
 type TimelineSourceTimeGroup = { time: number; sources: TimelineKeyframeSource[] };
 
 function retimeSourceGroups(

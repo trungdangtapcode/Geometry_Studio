@@ -82,6 +82,9 @@ PDF.
   evenly spacing selected keyframe timing columns across Work In/Out.
 - [Timeline Keyframe Fit](timeline-keyframe-fit.md) documents proportional
   time-stretching of selected keyframe timing columns into Work In/Out.
+- [Timeline Keyframe Stagger](timeline-keyframe-stagger.md) documents
+  sequencing selected keyframe timing columns from the playhead by the snap
+  step.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
@@ -179,6 +182,8 @@ animation runtime where it fits:
   In/Out while keeping grouped pose keys aligned.
 - Fit Selected Keyframes to Work Area proportionally scales selected timing
   columns into Work In/Out while preserving authored spacing.
+- Stagger Selected Keyframes sequences selected timing columns from the playhead
+  by the active snap step, giving quick cascade and follow-through timing.
 - Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,
   delete, interpolation, and nudge workflows faster.
 - Delete and Backspace remove selected timeline keyframes before falling back to
