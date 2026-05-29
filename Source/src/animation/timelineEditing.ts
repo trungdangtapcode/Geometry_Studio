@@ -294,6 +294,23 @@ export function moveResolvedKeyframesToTime(
   return editResolvedKeyframes(timeline, sources, { time });
 }
 
+export function centerResolvedKeyframesOnTime(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  time: number
+): EditTimelineResult {
+  if (sources.length === 0) {
+    return { edited: 0, skipped: 0, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const start = Math.min(...sources.map((source) => source.keyframe.time));
+  const end = Math.max(...sources.map((source) => source.keyframe.time));
+  const span = end - start;
+  const maxAnchor = Math.max(0, timeline.duration - span);
+  const targetAnchor = Math.max(0, Math.min(time - span / 2, maxAnchor));
+  return moveResolvedKeyframesToTime(timeline, sources, targetAnchor);
+}
+
 export function reverseResolvedKeyframes(
   timeline: SceneTimelineDocument,
   sources: TimelineKeyframeSource[]

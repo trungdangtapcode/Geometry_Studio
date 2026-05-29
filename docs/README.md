@@ -50,6 +50,8 @@ PDF.
   retiming controls for selected or playhead keyframes.
 - [Timeline Keyframe Alignment](timeline-keyframe-align.md) documents moving
   selected keyframe blocks to the playhead while preserving relative timing.
+- [Timeline Keyframe Center](timeline-keyframe-center.md) documents centering
+  selected keyframe timing blocks on the playhead.
 - [Timeline Keyframe Reverse](timeline-keyframe-reverse.md) documents
   time-reversing selected keyframe blocks.
 - [Timeline Keyframe Snap](timeline-keyframe-snap.md) documents snapping
@@ -107,6 +109,8 @@ animation runtime where it fits:
   without dragging.
 - Move Keys to Playhead aligns selected keyframe blocks to an exact beat while
   preserving their internal timing.
+- Center Selected Keyframes on Playhead aligns the midpoint of a selected
+  timing block to the edit beat while preserving internal spacing.
 - Time Reverse Keyframes mirrors selected timing blocks while keeping values
   and interpolation attached to each keyframe.
 - Snap Selected Keyframes to Frames cleans dragged or imported key timing to the
@@ -168,8 +172,8 @@ object appearance, camera, and light tracks:
 - `animation/timelineSchema.ts` owns timeline defaults, migration, cloning, and
   track helpers.
 - `animation/timelineEditing.ts` owns pure keyframe edit operations such as
-  source resolution, copy/paste payloads, duplicate, frame nudge, and numeric
-  keyframe editing.
+  source resolution, copy/paste payloads, duplicate, frame nudge, shared edit
+  retiming helpers, and numeric keyframe editing.
 - `animation/timelineTracks.ts` owns shared timeline track categories, labels,
   preset-to-track mapping, and object value capture helpers so the editor shell
   does not duplicate track taxonomy.
