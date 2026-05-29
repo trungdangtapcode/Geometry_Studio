@@ -89,9 +89,18 @@ test("renders the studio and core controls", async ({ page }) => {
     if (!(canvas instanceof HTMLCanvasElement)) return false;
     const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
     if (!gl) return false;
-    const pixels = new Uint8Array(4);
-    gl.readPixels(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    return pixels.some((value) => value > 0);
+    const samplePoints = [
+      [0.25, 0.35],
+      [0.5, 0.5],
+      [0.7, 0.42],
+      [0.42, 0.68],
+      [0.62, 0.72]
+    ];
+    return samplePoints.some(([x, y]) => {
+      const pixels = new Uint8Array(4);
+      gl.readPixels(Math.floor(canvas.width * x), Math.floor(canvas.height * y), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      return pixels[3] > 0 && (pixels[0] > 0 || pixels[1] > 0 || pixels[2] > 0);
+    });
   });
 
   await page.getByRole("button", { name: "Sphere", exact: true }).click();
@@ -254,6 +263,33 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await page.locator("#timeline-toggle-track").click();
   await expect(page.locator("#timeline-toggle-track")).toContainText("Track Off");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/disabled-track/);
+
+  await page.locator("#timeline-track-kind").selectOption("rotation");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const rotationY = page.locator('.transform-input[data-prop="rotation"][data-axis="y"]');
+  await rotationY.evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await rotationY.evaluate((input) => {
+    (input as HTMLInputElement).value = "360";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await rotationY.inputValue())).toBeCloseTo(180, 0);
 
   await page.locator("#timeline-track-kind").selectOption("cameraPosition");
   await page.locator("#timeline-current-time").evaluate((input) => {
@@ -478,6 +514,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     keyframes: Array<{ time: number; value: number[]; interpolation: string }>;
   }>;
   const positionTrack = objectTracks.find((track) => track.kind === "position")!;
+  const rotationTrack = objectTracks.find((track) => track.kind === "rotation")!;
   const colorTrack = objectTracks.find((track) => track.kind === "objectColor")!;
   const opacityTrack = objectTracks.find((track) => track.kind === "objectOpacity")!;
   const roughnessTrack = objectTracks.find((track) => track.kind === "objectRoughness")!;
@@ -494,6 +531,8 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(positionTrack.keyframes[1].interpolation).toBe("smooth");
   const pastedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.533) < 0.001)!;
   expect(pastedPosition.value[0]).toBe(2);
+  expect(rotationTrack.keyframes).toHaveLength(2);
+  expect(rotationTrack.keyframes[1].value[1]).toBeCloseTo(360, 3);
   expect(colorTrack.keyframes).toHaveLength(2);
   expect(colorTrack.keyframes[1].value[2]).toBeCloseTo(1, 3);
   expect(opacityTrack.keyframes).toHaveLength(2);

@@ -90,7 +90,7 @@ export function studioTemplate(): string {
                 <option value="keyed">Keyed Rows</option>
                 <option value="all">All Rows</option>
               </select>
-              <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Add</span></button>
+              <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
               <button class="mini-button" id="timeline-add-marker" type="button"><span data-icon="Flag"></span><span>Marker</span></button>
               <button class="mini-button danger" id="timeline-delete-marker" type="button"><span data-icon="Trash2"></span><span>Marker</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>

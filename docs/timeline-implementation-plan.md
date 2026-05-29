@@ -29,7 +29,7 @@ track types.
 Version one should implement a clean transform timeline only:
 
 - Position X/Y/Z
-- Rotation X/Y/Z in UI degrees, converted to quaternions for playback
+- Rotation X/Y/Z in UI degrees, compiled to Euler channel tracks for playback
 - Scale X/Y/Z
 - Per-object rows
 - Play, pause, scrub, loop, duration, FPS, and snap
@@ -61,8 +61,8 @@ Engineering notes:
 
 - Keep scene JSON as the source of truth.
 - Store rotation keyframes in degrees for readable JSON.
-- Convert rotation keyframes to `QuaternionKeyframeTrack` only in the clip
-  factory.
+- Compile rotation keyframes to per-axis `NumberKeyframeTrack` channels in the
+  clip factory so authored full turns such as `0 -> 360` remain visible.
 - Start with linear interpolation only, but keep the schema field for future
   hold and smooth modes.
 
@@ -169,7 +169,8 @@ Manual tests:
 
 - Create cube, sphere, and imported model.
 - Add position keyframes and scrub.
-- Add rotation keyframes and confirm smooth quaternion playback.
+- Add rotation keyframes and confirm a `0 -> 360` turn reaches about `180`
+  degrees halfway through playback.
 - Add scale keyframes and loop playback.
 - Save JSON, reload the scene, and replay.
 - Delete object with timeline data and confirm no orphan rows remain.

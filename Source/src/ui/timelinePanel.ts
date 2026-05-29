@@ -167,6 +167,7 @@ export class KeyframeTimelinePanel {
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
+  private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly timeInput = query<HTMLInputElement>("#timeline-current-time");
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
@@ -266,6 +267,7 @@ export class KeyframeTimelinePanel {
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
     this.rowFilterSelect.value = this.rowFilter;
     this.interpolationSelect.value = this.currentInterpolation(timelineDocument, selectedId);
+    this.syncAddKeyframeButton(timelineDocument, selectedId);
     this.syncToggleTrackButton(timelineDocument, selectedId);
 
     const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
@@ -310,6 +312,7 @@ export class KeyframeTimelinePanel {
     this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.timeline.setTime(timelineDocument.currentTime);
     this.renderMarkers(timelineDocument);
+    this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
     this.syncKeyframeEditor(timelineDocument, this.lastSelectedId);
     this.updating = false;
   }
@@ -325,7 +328,7 @@ export class KeyframeTimelinePanel {
       button.title = collapsed ? "Expand timeline" : "Collapse timeline";
       window.setTimeout(() => this.refreshCanvas(), 0);
     });
-    query<HTMLButtonElement>("#timeline-add-keyframe").addEventListener("click", () => {
+    this.addKeyframeButton.addEventListener("click", () => {
       this.callbacks.onAddKeyframe(this.selectedTrackKind());
     });
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
@@ -829,6 +832,15 @@ export class KeyframeTimelinePanel {
     this.toggleTrackButton.classList.toggle("danger", state.hasKeyframes && !state.enabled);
     this.toggleTrackButton.innerHTML = `<span data-icon="${state.enabled ? "Eye" : "EyeOff"}"></span><span>${state.enabled ? "Track On" : "Track Off"}</span>`;
     hydrateIcons(this.toggleTrackButton);
+  }
+
+  private syncAddKeyframeButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    const hasPlayheadKey = Boolean(this.playheadKeyframe(timelineDocument, selectedId));
+    this.addKeyframeButton.innerHTML = `<span data-icon="${hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span><span>${hasPlayheadKey ? "Update Key" : "Set Key"}</span>`;
+    this.addKeyframeButton.title = hasPlayheadKey
+      ? "Update the keyframe at the current playhead time"
+      : "Create a keyframe at the current playhead time";
+    hydrateIcons(this.addKeyframeButton);
   }
 
   private selectedTrackState(timelineDocument: SceneTimelineDocument, selectedId: string): { enabled: boolean; hasKeyframes: boolean } {

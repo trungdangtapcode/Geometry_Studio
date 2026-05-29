@@ -67,10 +67,12 @@ animation runtime where it fits:
 
 - `animation-timeline-js` gives the project MIT-licensed, TypeScript-friendly
   keyframe timeline primitives without pulling in a large application framework.
-- Three.js `AnimationClip`, `VectorKeyframeTrack`, `QuaternionKeyframeTrack`, and
+- Three.js `AnimationClip`, `VectorKeyframeTrack`, `NumberKeyframeTrack`, and
   `AnimationMixer` keep runtime playback aligned with the renderer already used
   by Geometry Studio.
 - Object Position, Rotation, and Scale tracks use Three.js clips and mixers.
+  Rotation uses per-axis Euler channels so full turns such as `0 -> 360` animate
+  as authored.
 - Camera, light, and object appearance tracks use the same timeline document and
   UI adapter, then apply evaluated values directly to renderer-owned properties
   during scrubbing/playback.

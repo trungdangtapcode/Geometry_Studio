@@ -64,7 +64,7 @@ Three.js already provides the playback primitives needed for the runtime layer:
 
 - `AnimationClip` stores the complete animation for one object.
 - `VectorKeyframeTrack` can animate `.position` and `.scale`.
-- `QuaternionKeyframeTrack` can animate `.quaternion`.
+- `NumberKeyframeTrack` can animate Euler channels such as `.rotation[y]`.
 - `AnimationMixer` evaluates clips over time.
 
 This is the correct runtime foundation because it avoids a custom interpolator
@@ -72,10 +72,11 @@ in the render loop and keeps playback aligned with Three.js object transforms.
 The UI should emit project-level timeline JSON, then a clip factory should
 compile that JSON into Three.js clips.
 
-The first version should use quaternion tracks for rotation. Euler rotations are
-easy for users to edit in degrees, but interpolating Euler values can produce
-surprising rotational paths. The editor can store user-friendly Euler degrees
-and convert them to quaternions when building runtime clips.
+The implementation stores rotation keys as user-friendly Euler degrees and uses
+per-axis `NumberKeyframeTrack` runtime channels. This is deliberate for an
+AE/Blender-style editor: values such as `0 -> 360` must preserve a full authored
+turn. A quaternion track would collapse those two orientations to the same value
+and make full-turn keyframes appear not to animate.
 
 ### Theatre.js
 
@@ -130,7 +131,7 @@ Use a two-layer approach:
 
 1. Timeline UI: `animation-timeline-js@2.3.5`.
 2. Runtime playback: Three.js `AnimationClip`, `VectorKeyframeTrack`,
-   `QuaternionKeyframeTrack`, and `AnimationMixer`.
+   `NumberKeyframeTrack`, and `AnimationMixer`.
 
 This keeps the feature realistic, legally safe, and maintainable. The app should
 own the scene timeline schema and treat the timeline library as an interaction
@@ -141,7 +142,7 @@ adapter, not as the source of truth.
 The first version intentionally implemented only transform tracks:
 
 - Position: X, Y, Z
-- Rotation: X, Y, Z in the UI, converted to quaternion tracks at runtime
+- Rotation: X, Y, Z in UI degrees, compiled to Euler channel tracks at runtime
 - Scale: X, Y, Z
 
 Camera, light, object appearance/material, and texture transform tracks have

@@ -155,14 +155,15 @@ the object or imported model group. Track names can then be relative:
 
 - `.position`
 - `.scale`
-- `.quaternion`
+- `.rotation[x]`, `.rotation[y]`, `.rotation[z]`
 
 Position and scale tracks compile to `VectorKeyframeTrack`.
 
 Rotation tracks are stored as Euler XYZ degrees in the scene document for easy
-inspection and editing. At clip-build time, each value is converted to a
-`THREE.Quaternion`, and the full rotation track compiles to
-`QuaternionKeyframeTrack`.
+inspection and editing. At clip-build time, each axis compiles to a
+`NumberKeyframeTrack` targeting the matching Euler rotation channel in radians.
+This preserves authored multi-turn motion such as `0 -> 360`, which a quaternion
+track would reduce to equivalent start/end orientations.
 
 The player should rebuild clips when timeline data changes, but it should not
 recreate every mixer every frame. Rebuild only affected object clips after an

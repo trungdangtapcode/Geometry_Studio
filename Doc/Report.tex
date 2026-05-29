@@ -230,8 +230,9 @@ Frame-accurate navigation is available through previous/next frame buttons and
 keyboard shortcuts, while selected keyframes can be nudged one frame left or
 right for precise retiming. A compact keyframe editor allows precise numeric
 edits to keyframe time and vector or scalar values. The editor stores rotation
-keyframes in readable Euler degrees and converts transform animation to Three.js
-playback tracks where appropriate.
+keyframes in readable Euler degrees and compiles rotation playback to per-axis
+Euler channels, preserving authored full turns such as \(0^\circ\) to
+\(360^\circ\).
 
 \section{Advanced Features}
 
@@ -272,7 +273,8 @@ from the UI library.
 At runtime, timeline tracks are compiled into native Three.js animation clips:
 \begin{itemize}
   \item Position and Scale use \texttt{VectorKeyframeTrack}.
-  \item Rotation uses \texttt{QuaternionKeyframeTrack}.
+  \item Rotation uses per-axis \texttt{NumberKeyframeTrack} channels targeting
+  Euler rotation values in radians.
   \item Each keyed object is evaluated by an \texttt{AnimationMixer}.
 \end{itemize}
 

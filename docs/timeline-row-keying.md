@@ -11,6 +11,9 @@ not need to switch to a global track dropdown before adding a key.
 - Clicking a row still selects that target and property track.
 - Clicking the diamond button on a row selects that row and immediately creates
   or updates a keyframe at the current playhead time.
+- The global key button uses `Set Key` when no key exists at the current
+  playhead time and `Update Key` when pressing it will overwrite the existing
+  key at that time.
 - Object rows select the matching scene object before writing the key.
 - Camera and light rows write to their global timeline tracks.
 - Rows that already contain keyframes use a filled diamond icon to communicate
