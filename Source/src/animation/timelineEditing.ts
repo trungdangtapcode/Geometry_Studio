@@ -90,6 +90,10 @@ export interface EditTimelineResult extends TimelineEditResult {
   currentTime: number;
 }
 
+export interface VisibilityRangeResult extends EditTimelineResult {
+  keyframeIds: string[];
+}
+
 const AXIS_INDEX: Record<"x" | "y" | "z", number> = { x: 0, y: 1, z: 2 };
 
 export function resolveTimelineKeyframeSources(
@@ -308,6 +312,52 @@ export function editResolvedKeyframes(
 
   const currentTime = targetAnchor ?? (sources.length ? Math.min(...sources.map((source) => source.keyframe.time)) : timeline.currentTime);
   return { edited, skipped, currentTime, changedTransformObjectIds: [...changedTransformObjectIds] };
+}
+
+export function setObjectVisibilityRange(
+  timeline: SceneTimelineDocument,
+  objectId: string,
+  visibleStart: number,
+  visibleEnd: number | null
+): VisibilityRangeResult {
+  const objectTimeline = ensureObjectTimeline(timeline, objectId);
+  const existingTrack = objectTimeline.tracks.find((candidate) => candidate.kind === "objectVisibility");
+  if (existingTrack?.locked) {
+    return { edited: 0, skipped: 1, currentTime: timeline.currentTime, changedTransformObjectIds: [], keyframeIds: [] };
+  }
+
+  const duration = Math.max(timeline.duration, 0);
+  const start = snapTimelineTime(timeline, Math.min(Math.max(visibleStart, 0), duration));
+  const end = visibleEnd === null ? null : snapTimelineTime(timeline, Math.min(Math.max(visibleEnd, 0), duration));
+  const track = ensureTimelineTrack(objectTimeline, "objectVisibility");
+  track.enabled = true;
+  track.keyframes = visibilityRangeKeyframes(start, end);
+  sortTimelineKeyframes(track);
+  return {
+    edited: track.keyframes.length,
+    skipped: 0,
+    currentTime: end ?? start,
+    changedTransformObjectIds: [],
+    keyframeIds: track.keyframes.map((keyframe) => keyframe.id)
+  };
+}
+
+function visibilityRangeKeyframes(start: number, end: number | null): TimelineKeyframeDocument[] {
+  if (end !== null && end <= start + 0.001) {
+    return [createVisibilityKeyframe(start, false)];
+  }
+
+  const keyframes: TimelineKeyframeDocument[] = [];
+  if (start > 0.001) keyframes.push(createVisibilityKeyframe(0, false));
+  keyframes.push(createVisibilityKeyframe(start, true));
+  if (end !== null) keyframes.push(createVisibilityKeyframe(end, false));
+  return keyframes;
+}
+
+function createVisibilityKeyframe(time: number, visible: boolean): TimelineKeyframeDocument {
+  const keyframe = createTimelineKeyframe(time, [visible ? 1 : 0, 0, 0]);
+  keyframe.interpolation = "hold";
+  return keyframe;
 }
 
 export function moveResolvedKeyframesToTime(

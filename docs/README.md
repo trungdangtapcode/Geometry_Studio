@@ -132,6 +132,9 @@ PDF.
   object Position, Rotation, and Scale.
 - [Timeline Channel Rows](timeline-channel-rows.md) documents expanded channel
   rows for vector object, texture, camera, and light tracks.
+- [Timeline Layer Trim And Split](timeline-layer-trim-split.md) documents
+  AE-style Layer In, Layer Out, and Split commands backed by Visibility hold
+  keyframes.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
   documents direct Linear, Ease In, Ease Out, Easy Ease, and Hold timing
   controls.
@@ -235,6 +238,9 @@ animation runtime where it fits:
 - Vector-valued object, texture, camera, and light tracks expand into focused
   channel rows such as Color R/G/B, Texture U/V, Camera Lens FOV/Near/Far, and
   light Color R/G/B.
+- Layer In, Layer Out, and Split commands provide AE-style object timing using
+  Visibility hold keyframes, with `Alt+[`, `Alt+]`, and `Ctrl/Cmd+Shift+D`
+  shortcuts.
 - Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation have direct
   toolbar controls, synchronized dropdown state, keyboard shortcuts, and a
   compact curve preview.

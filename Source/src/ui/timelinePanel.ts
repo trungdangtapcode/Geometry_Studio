@@ -47,6 +47,9 @@ export interface KeyframeTimelineCallbacks {
   onAddKeyframe(kind: TimelineTrackKind): void;
   onSetTransformKeyframes(): void;
   onSetVisibleKeyframes(rows: TimelineVisibleRowTarget[]): void;
+  onTrimLayerIn(): void;
+  onTrimLayerOut(): void;
+  onSplitLayer(): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onCopyVisibleTimeKeyframes(): void;
@@ -482,6 +485,9 @@ export class KeyframeTimelinePanel {
     this.setVisibleButton.addEventListener("click", () => {
       this.callbacks.onSetVisibleKeyframes(this.visibleRowTargets());
     });
+    query<HTMLButtonElement>("#timeline-layer-in").addEventListener("click", () => this.callbacks.onTrimLayerIn());
+    query<HTMLButtonElement>("#timeline-layer-out").addEventListener("click", () => this.callbacks.onTrimLayerOut());
+    query<HTMLButtonElement>("#timeline-split-layer").addEventListener("click", () => this.callbacks.onSplitLayer());
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
     });

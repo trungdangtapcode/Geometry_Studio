@@ -101,6 +101,9 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
               <button class="mini-button" id="timeline-set-transform" type="button"><span data-icon="Box"></span><span>Set TRS</span></button>
               <button class="mini-button" id="timeline-set-visible" type="button" title="Set keys on every currently visible timeline row"><span data-icon="ListChecks"></span><span>Set Visible</span></button>
+              <button class="mini-button" id="timeline-layer-in" type="button" title="Trim selected layer in at the playhead (Alt+[)"><span data-icon="LogIn"></span><span>Layer In</span></button>
+              <button class="mini-button" id="timeline-layer-out" type="button" title="Trim selected layer out at the playhead (Alt+])"><span data-icon="LogOut"></span><span>Layer Out</span></button>
+              <button class="mini-button" id="timeline-split-layer" type="button" title="Split selected layer at the playhead (Ctrl+Shift+D)"><span data-icon="Scissors"></span><span>Split</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-in" type="button" data-interpolation="easeIn"><span data-icon="CornerDownRight"></span><span>Ease In</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-out" type="button" data-interpolation="easeOut"><span data-icon="CornerRightDown"></span><span>Ease Out</span></button>

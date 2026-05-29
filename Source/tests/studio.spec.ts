@@ -67,6 +67,9 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-next-visible-keyframe")).toBeVisible();
   await expect(page.locator("#timeline-set-transform")).toBeVisible();
   await expect(page.locator("#timeline-set-visible")).toBeVisible();
+  await expect(page.locator("#timeline-layer-in")).toBeVisible();
+  await expect(page.locator("#timeline-layer-out")).toBeVisible();
+  await expect(page.locator("#timeline-split-layer")).toBeVisible();
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
   await expect(page.locator("#timeline-ease-in")).toBeVisible();
   await expect(page.locator("#timeline-ease-out")).toBeVisible();
@@ -853,6 +856,94 @@ test("expands vector timeline tracks into channel rows", async ({ page }) => {
   await page.locator("#timeline-row-search").fill("texture repeat u");
   await expect(page.locator('.timeline-track-label[data-track-kind="objectTextureRepeat"][data-track-axis="x"]').first()).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-track-kind="objectTextureRepeat"][data-track-axis="y"]')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("trims and splits selected object layers", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  const exportedScene = async () => {
+    const previousCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
+    await page.evaluate(() => {
+      document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+    });
+    const sceneText = await page.waitForFunction((count) => {
+      const downloads = (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads;
+      return downloads && downloads.length > count ? downloads.at(-1) : null;
+    }, previousCount);
+    const sceneJson = await sceneText.jsonValue();
+    return JSON.parse(sceneJson as string);
+  };
+  const visibilityTrack = (sceneDocument: {
+    timeline: { objects: Array<{ objectId: string; tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string }> }> }> };
+  }, objectId: string) =>
+    sceneDocument.timeline.objects
+      .find((object) => object.objectId === objectId)
+      ?.tracks.find((track) => track.kind === "objectVisibility");
+
+  await page.goto("/");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-layer-in").click();
+  await expect(page.locator("#timeline-key-label")).toContainText("selected keyframes");
+  let sceneDocument = await exportedScene();
+  let track = visibilityTrack(sceneDocument, "object-1");
+  expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
+    [0, 0, "hold"],
+    [2, 1, "hold"]
+  ]);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-layer-out").click();
+  sceneDocument = await exportedScene();
+  track = visibilityTrack(sceneDocument, "object-1");
+  expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
+    [0, 1, "hold"],
+    [5, 0, "hold"]
+  ]);
+
+  await page.reload();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Control+Shift+D");
+  sceneDocument = await exportedScene();
+  const splitObject = sceneDocument.objects.find((object: { name: string; id: string }) => object.name === "Cube Split");
+  expect(splitObject).toBeTruthy();
+  const splitObjectId = splitObject!.id;
+  const beforeTrack = visibilityTrack(sceneDocument, "object-1");
+  const afterTrack = visibilityTrack(sceneDocument, splitObjectId);
+  expect(sceneDocument.selectedId).toBe(splitObjectId);
+  expect(beforeTrack?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
+    [0, 1, "hold"],
+    [3, 0, "hold"]
+  ]);
+  expect(afterTrack?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
+    [0, 0, "hold"],
+    [3, 1, "hold"]
+  ]);
+  await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
   expect(errors).toEqual([]);
 });
 

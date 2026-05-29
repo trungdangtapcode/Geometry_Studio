@@ -19,6 +19,7 @@ import {
   reverseResolvedKeyframes,
   roveResolvedKeyframesAcrossTime,
   selectedResolvedKeyframeRange,
+  setObjectVisibilityRange,
   snapResolvedKeyframesToFrames,
   staggerResolvedKeyframesFromTime,
   type EditTimelineResult,
@@ -198,6 +199,9 @@ function boot(root: HTMLDivElement): void {
     onAddKeyframe: addTimelineKeyframe,
     onSetTransformKeyframes: setTransformTimelineKeyframes,
     onSetVisibleKeyframes: setVisibleTimelineKeyframes,
+    onTrimLayerIn: trimSelectedLayerInPoint,
+    onTrimLayerOut: trimSelectedLayerOutPoint,
+    onSplitLayer: splitSelectedLayerAtPlayhead,
     onDeleteKeyframes: deleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onCopyVisibleTimeKeyframes: copyVisibleTimelineTimeKeyframes,
@@ -1344,6 +1348,11 @@ function boot(root: HTMLDivElement): void {
       pasteTimelineKeyframes();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === "d") {
+      event.preventDefault();
+      splitSelectedLayerAtPlayhead();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "d") {
       event.preventDefault();
       duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
@@ -1357,6 +1366,16 @@ function boot(root: HTMLDivElement): void {
     if (key === "f9") {
       event.preventDefault();
       setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), interpolationFromF9Shortcut(event));
+      return;
+    }
+    if (event.altKey && key === "[") {
+      event.preventDefault();
+      trimSelectedLayerInPoint();
+      return;
+    }
+    if (event.altKey && key === "]") {
+      event.preventDefault();
+      trimSelectedLayerOutPoint();
       return;
     }
     if (event.shiftKey && key === "enter") {
@@ -2185,6 +2204,74 @@ function boot(root: HTMLDivElement): void {
 
     const skipped = lockedCount > 0 ? ` (${lockedCount} locked skipped)` : "";
     showToast(`${keyframeIds.length} visible ${keyframeIds.length === 1 ? "key" : "keys"} set at ${formatNumber(time)}s${skipped}`, "good");
+  }
+
+  function trimSelectedLayerInPoint(): void {
+    trimSelectedLayerVisibility("in");
+  }
+
+  function trimSelectedLayerOutPoint(): void {
+    trimSelectedLayerVisibility("out");
+  }
+
+  function trimSelectedLayerVisibility(edge: "in" | "out"): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before trimming layer timing.", "bad");
+      return;
+    }
+    const existingTrack = activeTimelineTrack("objectVisibility", entry.id);
+    if (!assertTimelineTrackUnlocked(existingTrack, "trimming layer timing")) return;
+
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    recordHistory();
+    const result = edge === "in"
+      ? setObjectVisibilityRange(sceneTimeline, entry.id, time, null)
+      : setObjectVisibilityRange(sceneTimeline, entry.id, 0, time);
+    sceneTimeline.currentTime = time;
+    finishLayerVisibilityEdit(result.keyframeIds);
+    showToast(`${entry.name} layer ${edge === "in" ? "in" : "out"} set at ${formatNumber(time)}s`, "good");
+  }
+
+  function splitSelectedLayerAtPlayhead(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before splitting a layer.", "bad");
+      return;
+    }
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    if (time <= 0.001 || time >= sceneTimeline.duration - 0.001) {
+      showToast("Move the playhead inside the timeline before splitting a layer.", "bad");
+      return;
+    }
+    const existingTrack = activeTimelineTrack("objectVisibility", entry.id);
+    if (!assertTimelineTrackUnlocked(existingTrack, "splitting the layer")) return;
+
+    recordHistory();
+    const copyId = `object-${idCounter++}`;
+    const copy = restoreObject({
+      ...serializeObjectForDuplicate(entry),
+      id: copyId,
+      name: `${entry.name} Split`
+    });
+    copyTimelineObject(sceneTimeline, entry.id, copy.id);
+    const before = setObjectVisibilityRange(sceneTimeline, entry.id, 0, time);
+    const after = setObjectVisibilityRange(sceneTimeline, copy.id, time, null);
+    sceneTimeline.currentTime = time;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    setSelected(copy.id);
+    timelinePanel.selectKeyframes([...before.keyframeIds, ...after.keyframeIds]);
+    showToast(`${entry.name} split at ${formatNumber(time)}s`, "good");
+  }
+
+  function finishLayerVisibilityEdit(keyframeIds: string[]): void {
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(keyframeIds);
   }
 
   function dedupeVisibleTimelineTargets(rows: TimelineVisibleRowTarget[]): TimelineVisibleRowTarget[] {
