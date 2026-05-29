@@ -24,6 +24,10 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-prev-frame")).toBeVisible();
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
   await expect(page.locator("#timeline-set-transform")).toBeVisible();
+  await expect(page.locator("#timeline-ease-linear")).toBeVisible();
+  await expect(page.locator("#timeline-ease-smooth")).toBeVisible();
+  await expect(page.locator("#timeline-ease-hold")).toBeVisible();
+  await expect(page.locator("#timeline-ease-preview")).toBeVisible();
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
@@ -304,7 +308,9 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await expect(page.locator("#timeline-zoom-in")).toBeVisible();
   await expect(page.locator("#timeline-zoom-out")).toBeVisible();
   await page.locator("#timeline-duplicate-keyframe").click();
-  await page.locator("#timeline-interpolation").selectOption("smooth");
+  await page.locator("#timeline-ease-smooth").click();
+  await expect(page.locator("#timeline-ease-smooth")).toHaveClass(/active/);
+  await expect(page.locator("#timeline-ease-label")).toContainText("Easy Ease");
   await page.locator("#timeline-copy-keyframes").click();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1.5";

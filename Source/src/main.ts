@@ -1046,6 +1046,11 @@ function boot(root: HTMLDivElement): void {
       saveScene();
       return;
     }
+    if (key === "f9") {
+      event.preventDefault();
+      setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), event.shiftKey ? "linear" : event.altKey ? "hold" : "smooth");
+      return;
+    }
     if (key === "t") setTransformMode("translate");
     if (key === "r") setTransformMode("rotate");
     if (key === "s") setTransformMode("scale");

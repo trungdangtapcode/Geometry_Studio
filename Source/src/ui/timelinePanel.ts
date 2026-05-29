@@ -191,6 +191,8 @@ export class KeyframeTimelinePanel {
   private readonly loopInput = query<HTMLInputElement>("#timeline-loop");
   private readonly snapStepInput = query<HTMLInputElement>("#timeline-snap-step");
   private readonly interpolationSelect = query<HTMLSelectElement>("#timeline-interpolation");
+  private readonly easePath = query<SVGPathElement>("#timeline-ease-path");
+  private readonly easeLabel = query<HTMLSpanElement>("#timeline-ease-label");
   private readonly selectionLabel = query<HTMLSpanElement>("#timeline-selection");
   private readonly timecodeLabel = query<HTMLSpanElement>("#timeline-timecode");
   private readonly keyframeLabel = query<HTMLElement>("#timeline-key-label");
@@ -279,7 +281,7 @@ export class KeyframeTimelinePanel {
     this.autoKeyInput.checked = timelineDocument.autoKey;
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
     this.rowFilterSelect.value = this.rowFilter;
-    this.interpolationSelect.value = this.currentInterpolation(timelineDocument, selectedId);
+    this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
     this.syncAddKeyframeButton(timelineDocument, selectedId);
     this.syncToggleTrackButton(timelineDocument, selectedId);
 
@@ -326,6 +328,7 @@ export class KeyframeTimelinePanel {
     this.timeline.setTime(timelineDocument.currentTime);
     this.renderMarkers(timelineDocument);
     this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
+    this.syncInterpolationControls(this.currentInterpolation(timelineDocument, this.lastSelectedId));
     this.syncKeyframeEditor(timelineDocument, this.lastSelectedId);
     this.updating = false;
   }
@@ -451,7 +454,12 @@ export class KeyframeTimelinePanel {
       if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
     });
     this.interpolationSelect.addEventListener("change", () => {
-      this.callbacks.onSetInterpolation([...this.selectedKeyframeIds], this.interpolationSelect.value as TimelineInterpolation);
+      this.applyInterpolation(this.interpolationSelect.value as TimelineInterpolation);
+    });
+    document.querySelectorAll<HTMLButtonElement>(".interpolation-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.applyInterpolation(button.dataset.interpolation as TimelineInterpolation);
+      });
     });
 
     this.timeline.onTimeChanged((event) => {
@@ -895,6 +903,7 @@ export class KeyframeTimelinePanel {
         ? "Playhead keyframe active"
       : "No keyframe selected";
     this.syncKeyframeEditor(timelineDocument, selectedId, sources);
+    this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
   }
 
   private syncKeyframeEditor(timelineDocument: SceneTimelineDocument, selectedId: string, resolvedSources?: TimelineDetailSource[]): void {
@@ -1025,6 +1034,22 @@ export class KeyframeTimelinePanel {
         : [{ kind }]
     );
   }
+
+  private applyInterpolation(interpolation: TimelineInterpolation): void {
+    if (!isTimelineInterpolation(interpolation)) return;
+    this.syncInterpolationControls(interpolation);
+    this.callbacks.onSetInterpolation([...this.selectedKeyframeIds], interpolation);
+  }
+
+  private syncInterpolationControls(interpolation: TimelineInterpolation): void {
+    const value = isTimelineInterpolation(interpolation) ? interpolation : "linear";
+    this.interpolationSelect.value = value;
+    document.querySelectorAll<HTMLButtonElement>(".interpolation-button").forEach((button) => {
+      button.classList.toggle("active", button.dataset.interpolation === value);
+    });
+    this.easePath.setAttribute("d", interpolationPath(value));
+    this.easeLabel.textContent = interpolationLabel(value);
+  }
 }
 
 function isCameraTrack(kind: TimelineTrackKind): kind is "cameraPosition" | "cameraTarget" | "cameraLens" {
@@ -1086,6 +1111,22 @@ function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
 
 function parseTimelineAxis(value: string | undefined): TimelineAxis | null {
   return value === "x" || value === "y" || value === "z" ? value : null;
+}
+
+function isTimelineInterpolation(value: string): value is TimelineInterpolation {
+  return value === "linear" || value === "smooth" || value === "hold";
+}
+
+function interpolationPath(interpolation: TimelineInterpolation): string {
+  if (interpolation === "hold") return "M4 28 H40 V6 H68";
+  if (interpolation === "smooth") return "M4 28 C20 28 22 6 36 17 C50 28 52 6 68 6";
+  return "M4 28 L68 6";
+}
+
+function interpolationLabel(interpolation: TimelineInterpolation): string {
+  if (interpolation === "hold") return "Hold";
+  if (interpolation === "smooth") return "Easy Ease";
+  return "Linear";
 }
 
 function commonSelectedAxis(keyframes: TimelineUiKeyframe[]): TimelineAxis | null {

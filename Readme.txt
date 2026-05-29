@@ -49,7 +49,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
-- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with X/Y/Z transform rows, Focus/Keyed/All row filtering, named timeline markers, clickable track rows, per-row diamond key buttons, Set TRS grouped transform keying, playhead scrubbing, set/update/delete/copy/paste/nudge keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview, and JSON save/load.
+- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with X/Y/Z transform rows, Focus/Keyed/All row filtering, named timeline markers, clickable track rows, per-row diamond key buttons, Set TRS grouped transform keying, Linear/Easy Ease/Hold controls with curve preview, playhead scrubbing, set/update/delete/copy/paste/nudge keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview, and JSON save/load.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, position motion paths, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
@@ -69,6 +69,9 @@ Using a local static server is recommended instead of double-clicking index.html
 - Left / Right: step the timeline one frame.
 - Shift+Left / Shift+Right: jump to the previous or next keyframe on the selected track.
 - Alt+Left / Alt+Right: nudge selected or playhead keyframes by one frame.
+- F9: apply Easy Ease interpolation to selected or playhead keyframes.
+- Shift+F9: apply Linear interpolation.
+- Alt+F9: apply Hold interpolation.
 - Home / End: jump to Work In or Work Out.
 - Ctrl+C / Ctrl+V: copy or paste timeline keyframes when focus is outside form fields.
 - Delete or Backspace: delete the selected object.
@@ -90,6 +93,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Import a .glb, .gltf, .obj, or .stl model.
 - Add Position / Rotation / Scale keyframes in the bottom timeline using Set Key / Update Key, Set TRS for grouped object poses, or a row diamond key button, copy/paste a keyframe, scrub the playhead, and verify motion plays.
 - Confirm Position, Rotation, and Scale appear as X/Y/Z rows in the timeline for easier transform inspection.
+- Apply Linear, Easy Ease, and Hold interpolation from the timeline toolbar and confirm the curve preview updates.
 - Add two Position keys for the selected object and confirm the viewport draws a motion path between them.
 - Nudge a keyframe left or right by one frame from the toolbar.
 - Click timeline row labels to switch active object, camera, and light tracks.

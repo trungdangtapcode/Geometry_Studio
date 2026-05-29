@@ -560,7 +560,7 @@ svg {
 
 .timeline-keyframe-editor {
   display: grid;
-  grid-template-columns: minmax(126px, 1fr) repeat(5, minmax(70px, 0.72fr));
+  grid-template-columns: minmax(126px, 1fr) repeat(5, minmax(70px, 0.72fr)) minmax(94px, 0.78fr);
   align-items: end;
   gap: calc(var(--grid-gap) - 2px);
   padding: 0 var(--timeline-header-padding-x);
@@ -598,6 +598,51 @@ svg {
 .timeline-keyframe-editor input:disabled {
   color: rgba(20, 24, 27, 0.44);
   background: rgba(255, 255, 255, 0.48);
+}
+
+.timeline-ease-preview {
+  min-height: var(--control-height);
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--grid-gap) - 2px);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0 calc(var(--control-padding-x) - 2px);
+}
+
+.timeline-ease-preview svg {
+  width: 58px;
+  height: 28px;
+}
+
+.ease-preview-grid,
+.ease-preview-path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.ease-preview-grid {
+  stroke: rgba(26, 35, 42, 0.18);
+  stroke-width: 1;
+}
+
+.ease-preview-path {
+  stroke: var(--teal);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.timeline-ease-preview span {
+  overflow: hidden;
+  color: var(--charcoal);
+  font-size: var(--ui-tiny-font);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .timeline-body {
@@ -999,7 +1044,8 @@ svg {
 }
 
 .segment.active,
-.texture-swatch.active {
+.texture-swatch.active,
+.interpolation-button.active {
   color: #ffffff;
   background: #20272c;
   border-color: #20272c;
