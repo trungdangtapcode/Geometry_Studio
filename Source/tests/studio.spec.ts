@@ -63,6 +63,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
   await expect(page.locator("#timeline-selected-start")).toBeVisible();
   await expect(page.locator("#timeline-selected-end")).toBeVisible();
+  await expect(page.locator("#timeline-prev-visible-keyframe")).toBeVisible();
+  await expect(page.locator("#timeline-next-visible-keyframe")).toBeVisible();
   await expect(page.locator("#timeline-set-transform")).toBeVisible();
   await expect(page.locator("#timeline-set-visible")).toBeVisible();
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
@@ -486,6 +488,39 @@ test("selects visible-row keyframes at the playhead time", async ({ page }) => {
   });
   await page.keyboard.press("Control+Alt+K");
   await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  expect(errors).toEqual([]);
+});
+
+test("navigates keyframes on visible timeline rows", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-row-search").fill("texture");
+  await expect(page.locator('.timeline-track-label[data-track-kind="objectTextureRepeat"]').first()).toBeVisible();
+  await page.locator("#timeline-set-visible").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-visible").click();
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-next-visible-keyframe").click();
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(2);
+  await page.locator("#timeline-prev-visible-keyframe").click();
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(0);
+
+  await page.keyboard.press("Control+Alt+ArrowRight");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(2);
+  await page.keyboard.press("Control+Alt+ArrowLeft");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(0);
   expect(errors).toEqual([]);
 });
 

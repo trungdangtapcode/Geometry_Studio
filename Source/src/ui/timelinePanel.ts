@@ -76,6 +76,7 @@ export interface KeyframeTimelineCallbacks {
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
+  onStepVisibleKeyframe(direction: -1 | 1): void;
   onStepSelectedKeyBoundary(direction: -1 | 1): void;
   onStepFrame(direction: -1 | 1): void;
   onSetInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void;
@@ -396,6 +397,17 @@ export class KeyframeTimelinePanel {
     return this.selectedKeyframeIds.size;
   }
 
+  visibleRowKeyframeTimes(): number[] {
+    if (!this.lastTimelineDocument) return [];
+    const timelineDocument = this.lastTimelineDocument;
+    const times = new Set<number>();
+    this.visibleRowTargets().forEach((target) => {
+      const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
+      track?.keyframes.forEach((keyframe) => times.add(roundTimelineTime(keyframe.time)));
+    });
+    return [...times].sort((left, right) => left - right);
+  }
+
   cycleRowFilter(): string {
     const currentIndex = ROW_FILTER_SEQUENCE.indexOf(this.rowFilter);
     const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
@@ -582,6 +594,8 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-next-frame").addEventListener("click", () => this.callbacks.onStepFrame(1));
     query<HTMLButtonElement>("#timeline-prev-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(-1));
     query<HTMLButtonElement>("#timeline-next-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(1));
+    query<HTMLButtonElement>("#timeline-prev-visible-keyframe").addEventListener("click", () => this.callbacks.onStepVisibleKeyframe(-1));
+    query<HTMLButtonElement>("#timeline-next-visible-keyframe").addEventListener("click", () => this.callbacks.onStepVisibleKeyframe(1));
     query<HTMLButtonElement>("#timeline-selected-start").addEventListener("click", () => this.callbacks.onStepSelectedKeyBoundary(-1));
     query<HTMLButtonElement>("#timeline-selected-end").addEventListener("click", () => this.callbacks.onStepSelectedKeyBoundary(1));
     query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.zoomTimeline(-1));
@@ -1625,6 +1639,10 @@ function rangeSelection(track: TimelineTrackDocument, current: Set<string>, keyf
 
 function hasPlayheadKey(track: TimelineTrackDocument | undefined, currentTime: number): boolean {
   return Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - currentTime) < 0.001));
+}
+
+function roundTimelineTime(time: number): number {
+  return Math.round(time * 1000) / 1000;
 }
 
 function formatRowValue(kind: TimelineTrackKind, value: [number, number, number], axis?: TimelineAxis): string {

@@ -49,7 +49,9 @@ export function studioTemplate(): string {
               <button class="mini-button icon-mini" id="timeline-prev-frame" type="button" aria-label="Previous frame" title="Previous frame"><span data-icon="SkipBack"></span></button>
               <button class="mini-button icon-mini" id="timeline-selected-start" type="button" aria-label="First selected keyframe" title="First selected keyframe (Shift+Home)"><span data-icon="ChevronsLeft"></span></button>
               <button class="mini-button icon-mini" id="timeline-prev-keyframe" type="button" aria-label="Previous keyframe" title="Previous keyframe"><span data-icon="ChevronLeft"></span></button>
+              <button class="mini-button icon-mini" id="timeline-prev-visible-keyframe" type="button" aria-label="Previous visible-row keyframe" title="Previous visible-row keyframe (Ctrl+Alt+Left)"><span data-icon="ListStart"></span></button>
               <button class="mini-button strong-mini" id="timeline-play-toggle" type="button"><span data-icon="Play"></span><span>Play</span></button>
+              <button class="mini-button icon-mini" id="timeline-next-visible-keyframe" type="button" aria-label="Next visible-row keyframe" title="Next visible-row keyframe (Ctrl+Alt+Right)"><span data-icon="ListEnd"></span></button>
               <button class="mini-button icon-mini" id="timeline-next-keyframe" type="button" aria-label="Next keyframe" title="Next keyframe"><span data-icon="ChevronRight"></span></button>
               <button class="mini-button icon-mini" id="timeline-selected-end" type="button" aria-label="Last selected keyframe" title="Last selected keyframe (Shift+End)"><span data-icon="ChevronsRight"></span></button>
               <button class="mini-button icon-mini" id="timeline-next-frame" type="button" aria-label="Next frame" title="Next frame"><span data-icon="SkipForward"></span></button>

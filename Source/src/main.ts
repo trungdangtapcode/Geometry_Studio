@@ -225,6 +225,7 @@ function boot(root: HTMLDivElement): void {
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
+    onStepVisibleKeyframe: stepVisibleTimelineKeyframe,
     onStepSelectedKeyBoundary: stepSelectedTimelineKeyBoundary,
     onStepFrame: stepTimelineFrame,
     onSetInterpolation: setTimelineInterpolation,
@@ -1462,7 +1463,8 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "arrowleft" || key === "arrowright") {
       event.preventDefault();
-      if (event.altKey) nudgeTimelineKeyframes(key === "arrowright" ? 1 : -1);
+      if (event.altKey && (event.ctrlKey || event.metaKey)) stepVisibleTimelineKeyframe(key === "arrowright" ? 1 : -1);
+      else if (event.altKey) nudgeTimelineKeyframes(key === "arrowright" ? 1 : -1);
       else if (event.shiftKey) stepTimelineKeyframe(key === "arrowright" ? 1 : -1);
       else stepTimelineFrame(key === "arrowright" ? 1 : -1);
       return;
@@ -2918,6 +2920,27 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     setTimelineTime(target);
+  }
+
+  function stepVisibleTimelineKeyframe(direction: -1 | 1): void {
+    const times = timelinePanel.visibleRowKeyframeTimes();
+    if (times.length === 0) {
+      showToast("No visible-row keyframes to navigate.", "bad");
+      return;
+    }
+
+    const current = sceneTimeline.currentTime;
+    const epsilon = 0.001;
+    const target = direction > 0
+      ? times.find((time) => time > current + epsilon)
+      : [...times].reverse().find((time) => time < current - epsilon);
+    if (target === undefined) {
+      showToast(direction > 0 ? "No later visible-row keyframe." : "No earlier visible-row keyframe.", "bad");
+      return;
+    }
+
+    setTimelineTime(target);
+    showToast(`Jumped to visible-row keyframe at ${formatNumber(target)}s`, "good");
   }
 
   function stepSelectedTimelineKeyBoundary(direction: -1 | 1): void {
