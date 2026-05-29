@@ -55,6 +55,7 @@ export interface KeyframeTimelineCallbacks {
   onSelectVisibleTimeKeyframes(): void;
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
+  onDuplicateVisibleTimeKeyframes(): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
   onCenterKeyframesOnPlayhead(keyframeIds: string[]): void;
@@ -382,11 +383,12 @@ export class KeyframeTimelinePanel {
     if (!this.lastTimelineDocument) return 0;
     const timelineDocument = this.lastTimelineDocument;
     const currentTime = timelineDocument.currentTime;
+    const tolerance = Math.max(0.001, timelineDocument.snapEnabled ? timelineDocument.snapStep * 0.5 : 0.001);
     const selectedIds = new Set<string>();
     this.visibleRowTargets().forEach((target) => {
       const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
       track?.keyframes.forEach((keyframe) => {
-        if (Math.abs(keyframe.time - currentTime) < 0.001) selectedIds.add(keyframe.id);
+        if (Math.abs(keyframe.time - currentTime) <= tolerance) selectedIds.add(keyframe.id);
       });
     });
     this.selectedKeyframeIds = selectedIds;
@@ -549,6 +551,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
       this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-duplicate-time").addEventListener("click", () => {
+      this.callbacks.onDuplicateVisibleTimeKeyframes();
     });
     query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());

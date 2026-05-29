@@ -83,6 +83,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-select-workarea")).toBeVisible();
   await expect(page.locator("#timeline-select-visible")).toBeVisible();
   await expect(page.locator("#timeline-select-time")).toBeVisible();
+  await expect(page.locator("#timeline-duplicate-time")).toBeVisible();
   await expect(page.locator("#timeline-preview-selection")).toBeVisible();
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
   await expect(page.locator("#timeline-nudge-right")).toBeVisible();
@@ -521,6 +522,46 @@ test("navigates keyframes on visible timeline rows", async ({ page }) => {
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(2);
   await page.keyboard.press("Control+Alt+ArrowLeft");
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("duplicates visible-row keyframes at the playhead time", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-row-search").fill("cube texture");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
+  await page.locator("#timeline-set-visible").click();
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+  await page.locator("#timeline-duplicate-time").click();
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  (["objectTextureRepeat", "objectTextureOffset", "objectTextureRotation"] as const).forEach((kind) => {
+    const track = objectTimeline.tracks.find((candidate: { kind: string }) => candidate.kind === kind);
+    expect(track.keyframes.map((keyframe: { time: number }) => keyframe.time)).toEqual([0, 0.033]);
+  });
   expect(errors).toEqual([]);
 });
 

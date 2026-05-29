@@ -115,6 +115,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-select-workarea" type="button"><span data-icon="ListFilter"></span><span>Select Work</span></button>
               <button class="mini-button" id="timeline-select-visible" type="button" title="Select all keyframes on currently visible timeline rows"><span data-icon="ListChecks"></span><span>Select Visible</span></button>
               <button class="mini-button" id="timeline-select-time" type="button" title="Select visible-row keyframes at the current playhead time"><span data-icon="Crosshair"></span><span>Select Time</span></button>
+              <button class="mini-button" id="timeline-duplicate-time" type="button" title="Duplicate visible-row keyframes at the current playhead time"><span data-icon="CopyPlus"></span><span>Dup Time</span></button>
               <button class="mini-button" id="timeline-preview-selection" type="button" title="Preview selected keyframe range (Shift+Space)"><span data-icon="Play"></span><span>Preview Sel</span></button>
               <button class="mini-button icon-mini" id="timeline-nudge-left" type="button" aria-label="Nudge keyframe left" title="Nudge keyframe left"><span data-icon="MoveLeft"></span></button>
               <button class="mini-button icon-mini" id="timeline-nudge-right" type="button" aria-label="Nudge keyframe right" title="Nudge keyframe right"><span data-icon="MoveRight"></span></button>

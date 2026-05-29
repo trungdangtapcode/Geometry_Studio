@@ -204,6 +204,7 @@ function boot(root: HTMLDivElement): void {
     onSelectVisibleTimeKeyframes: selectVisibleTimelineTimeKeyframes,
     onPreviewSelectedRange: previewSelectedTimelineKeyRange,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
+    onDuplicateVisibleTimeKeyframes: duplicateVisibleTimelineTimeKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onCenterKeyframesOnPlayhead: centerTimelineKeyframesOnPlayhead,
@@ -1292,6 +1293,7 @@ function boot(root: HTMLDivElement): void {
 
   function handleKeyboard(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
+    const code = event.code.toLowerCase();
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
     if ((event.ctrlKey || event.metaKey) && key === "z") {
       event.preventDefault();
@@ -1315,7 +1317,7 @@ function boot(root: HTMLDivElement): void {
       else selectAllActiveTimelineKeyframes();
       return;
     }
-    if ((event.ctrlKey || event.metaKey) && event.altKey && key === "k") {
+    if ((event.ctrlKey || event.metaKey) && event.altKey && (key === "k" || code === "keyk")) {
       event.preventDefault();
       selectVisibleTimelineTimeKeyframes();
       return;
@@ -2464,6 +2466,15 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes(result.keyframeIds);
     showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} duplicated`, "good");
+  }
+
+  function duplicateVisibleTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectVisibleRowKeyframesAtCurrentTime();
+    if (selectedCount === 0) {
+      showToast(`No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to duplicate.`, "bad");
+      return;
+    }
+    duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
   }
 
   function nudgeTimelineKeyframes(direction: -1 | 1, keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
