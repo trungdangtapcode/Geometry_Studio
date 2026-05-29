@@ -131,6 +131,9 @@ object appearance, camera, and light tracks:
 - `animation/timelineEditing.ts` owns pure keyframe edit operations such as
   source resolution, copy/paste payloads, duplicate, frame nudge, and numeric
   keyframe editing.
+- `animation/timelineTracks.ts` owns shared timeline track categories, labels,
+  preset-to-track mapping, and object value capture helpers so the editor shell
+  does not duplicate track taxonomy.
 - `animation/interpolation.ts` owns the shared per-keyframe interpolation
   evaluator.
 - `animation/timelinePlayer.ts` evaluates Position, Rotation, and Scale tracks

@@ -23,6 +23,9 @@ should stay close to this structure:
 - `animation/timelineEditing.ts`: pure keyframe edit operations such as source
   resolution, copy/paste payloads, duplication, collision-aware nudging, numeric
   keyframe editing, and target-track creation.
+- `animation/timelineTracks.ts`: shared track taxonomy, label functions,
+  preset-to-track mapping, and object value capture helpers used by the editor,
+  editing, and playback layers.
 - `animation/interpolation.ts`: evaluates Hold, Linear, and Easy Ease timing per
   keyframe segment.
 - `animation/timelinePlayer.ts`: owns transform playback state, scrubbing, loop

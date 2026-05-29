@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { evaluateTimelineTrack } from "./interpolation";
-import type { ObjectTimelineDocument, SceneTimelineDocument, SceneEntry, TimelineTrackKind } from "../editor/types";
+import type { ObjectTimelineDocument, SceneTimelineDocument, SceneEntry } from "../editor/types";
+import { isObjectTransformTrackKind } from "./timelineTracks";
 
 interface TimelineRuntime {
   entry: SceneEntry;
@@ -16,7 +17,7 @@ export class TimelinePlayer {
     timeline.objects.forEach((objectTimeline) => {
       const entry = entryMap.get(objectTimeline.objectId);
       if (!entry) return;
-      if (!objectTimeline.tracks.some((track) => isTransformTrackKind(track.kind) && track.enabled && track.keyframes.length > 0)) return;
+      if (!objectTimeline.tracks.some((track) => isObjectTransformTrackKind(track.kind) && track.enabled && track.keyframes.length > 0)) return;
       this.runtimes.set(entry.id, { entry, objectTimeline });
     });
     this.setTime(timeline.currentTime);
@@ -25,7 +26,7 @@ export class TimelinePlayer {
   setTime(time: number): void {
     this.runtimes.forEach(({ entry, objectTimeline }) => {
       objectTimeline.tracks.forEach((track) => {
-        if (!isTransformTrackKind(track.kind)) return;
+        if (!isObjectTransformTrackKind(track.kind)) return;
         const value = evaluateTimelineTrack(track, time);
         if (!value) return;
         if (track.kind === "position") {
@@ -46,8 +47,4 @@ export class TimelinePlayer {
   clear(): void {
     this.runtimes.clear();
   }
-}
-
-function isTransformTrackKind(kind: TimelineTrackKind): kind is "position" | "rotation" | "scale" {
-  return kind === "position" || kind === "rotation" || kind === "scale";
 }

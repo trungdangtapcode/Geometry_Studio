@@ -15,6 +15,7 @@ import {
   snapTimelineTime,
   sortTimelineKeyframes
 } from "./timelineSchema";
+import { isCameraTrackKind, isLightTrackKind, isObjectTransformTrackKind } from "./timelineTracks";
 
 export type TimelineKeyframeScope = "object" | "camera" | "lights";
 
@@ -71,7 +72,6 @@ export interface EditTimelineResult extends TimelineEditResult {
   currentTime: number;
 }
 
-const TRANSFORM_TRACK_KINDS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
 const AXIS_INDEX: Record<"x" | "y" | "z", number> = { x: 0, y: 1, z: 2 };
 
 export function resolveTimelineKeyframeSources(
@@ -153,7 +153,7 @@ export function pasteTimelineClipboard(
       track.keyframes.push(pastedKeyframe);
     }
     sortTimelineKeyframes(track);
-    if (selectedObjectId && clip.scope === "object" && isTransformTrackKind(clip.kind)) changedTransformObjectIds.add(selectedObjectId);
+    if (selectedObjectId && clip.scope === "object" && isObjectTransformTrackKind(clip.kind)) changedTransformObjectIds.add(selectedObjectId);
     pasted += 1;
   });
 
@@ -179,7 +179,7 @@ export function duplicateResolvedKeyframes(
     duplicate.interpolation = keyframe.interpolation;
     track.keyframes.push(duplicate);
     sortTimelineKeyframes(track);
-    if (scope === "object" && isTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+    if (scope === "object" && isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
     created += 1;
   });
 
@@ -209,7 +209,7 @@ export function nudgeResolvedKeyframes(
   updates.forEach(({ source, time }) => {
     source.keyframe.time = time;
     changedTracks.add(source.track);
-    if (source.scope === "object" && isTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+    if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
   });
   changedTracks.forEach(sortTimelineKeyframes);
 
@@ -269,7 +269,7 @@ export function editResolvedKeyframes(
 
     if (changed) {
       changedTracks.add(source.track);
-      if (source.scope === "object" && isTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+      if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
       edited += 1;
     }
   });
@@ -326,25 +326,4 @@ function nextAvailableKeyframeTime(timeline: SceneTimelineDocument, track: Timel
     if (timeline.duration - candidate < 0.001) break;
   }
   return null;
-}
-
-function isTransformTrackKind(kind: TimelineTrackKind): boolean {
-  return TRANSFORM_TRACK_KINDS.has(kind);
-}
-
-function isCameraTrackKind(kind: TimelineTrackKind): boolean {
-  return kind === "cameraPosition" || kind === "cameraTarget" || kind === "cameraLens";
-}
-
-function isLightTrackKind(kind: TimelineTrackKind): boolean {
-  return kind === "directionalPosition" ||
-    kind === "directionalColor" ||
-    kind === "directionalIntensity" ||
-    kind === "pointPosition" ||
-    kind === "pointColor" ||
-    kind === "pointIntensity" ||
-    kind === "spotPosition" ||
-    kind === "spotColor" ||
-    kind === "spotIntensity" ||
-    kind === "ambientIntensity";
 }
