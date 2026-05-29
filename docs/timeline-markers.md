@@ -21,6 +21,7 @@ the evaluator can reload a scene and keep its timeline annotations.
   at that time.
 - `Shift+M` jumps to the next marker.
 - `Alt+M` jumps to the previous marker.
+- `Shift+Alt+M` deletes the marker at the playhead.
 
 Keyboard marker commands are ignored while a text field or select menu has
 focus, so typing marker names does not trigger timeline navigation.

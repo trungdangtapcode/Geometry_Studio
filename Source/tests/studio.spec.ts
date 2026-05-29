@@ -490,6 +490,15 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(0.267, 2);
   await page.keyboard.press("Shift+M");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(2, 2);
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("m");
+  await expect(page.locator(".timeline-marker")).toHaveCount(3);
+  await page.keyboard.press("Shift+Alt+M");
+  await expect(page.locator(".timeline-marker")).toHaveCount(2);
   await page.locator("#timeline-auto-key").check();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";

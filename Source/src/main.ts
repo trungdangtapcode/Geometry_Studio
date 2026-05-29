@@ -1118,7 +1118,8 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "m" && !event.ctrlKey && !event.metaKey) {
       event.preventDefault();
-      if (event.altKey) stepTimelineMarker(-1);
+      if (event.altKey && event.shiftKey) deleteTimelineMarker(null);
+      else if (event.altKey) stepTimelineMarker(-1);
       else if (event.shiftKey) stepTimelineMarker(1);
       else addTimelineMarker("");
       return;

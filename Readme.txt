@@ -79,6 +79,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Plus / Minus / 0: zoom the timeline in, zoom out, or fit the duration.
 - M: add or update a timeline marker at the current playhead time.
 - Shift+M / Alt+M: jump to the next or previous timeline marker.
+- Shift+Alt+M: delete the timeline marker at the current playhead time.
 - Ctrl+A: select all keyframes on the active timeline track when focus is outside form fields.
 - Ctrl+C / Ctrl+X / Ctrl+V: copy, cut, or paste timeline keyframes when focus is outside form fields.
 - Delete or Backspace: delete selected timeline keyframes first; otherwise delete the selected object.
