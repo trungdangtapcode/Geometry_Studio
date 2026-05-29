@@ -1093,6 +1093,11 @@ function boot(root: HTMLDivElement): void {
       setTimelineWorkAreaEdge("end");
       return;
     }
+    if (key === "u") {
+      event.preventDefault();
+      showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good");
+      return;
+    }
     if (key === "t") setTransformMode("translate");
     if (key === "r") setTransformMode("rotate");
     if (key === "s") setTransformMode("scale");

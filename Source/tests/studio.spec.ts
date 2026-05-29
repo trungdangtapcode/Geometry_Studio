@@ -49,6 +49,13 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]')).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-track-kind="rotation"][data-track-axis="y"]')).toBeVisible();
   await page.locator("#timeline-row-filter").selectOption("focus");
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("u");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("keyed");
+  await page.keyboard.press("u");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("all");
+  await page.keyboard.press("u");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");

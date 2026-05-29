@@ -115,6 +115,7 @@ const CAMERA_TARGET_ID = "__camera__";
 const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
+const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
 const MIN_DOCK_HEIGHT = 190;
 const DEFAULT_ROW_HEIGHT = 30;
 const DEFAULT_HEADER_HEIGHT = 28;
@@ -369,6 +370,13 @@ export class KeyframeTimelinePanel {
     return this.selectedKeyframeIds.size;
   }
 
+  cycleRowFilter(): string {
+    const currentIndex = ROW_FILTER_SEQUENCE.indexOf(this.rowFilter);
+    const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
+    this.applyRowFilter(next);
+    return rowFilterLabel(next);
+  }
+
   setPlaybackTime(timelineDocument: SceneTimelineDocument, playing: boolean): void {
     this.updating = true;
     this.root.classList.toggle("playing", playing);
@@ -502,9 +510,7 @@ export class KeyframeTimelinePanel {
       if (!this.updating) this.callbacks.onTrackKindChanged();
     });
     this.rowFilterSelect.addEventListener("change", () => {
-      this.rowFilter = parseTimelineRowFilter(this.rowFilterSelect.value);
-      storeTimelineRowFilter(this.rowFilter);
-      if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+      this.applyRowFilter(parseTimelineRowFilter(this.rowFilterSelect.value));
     });
     this.interpolationSelect.addEventListener("change", () => {
       this.applyInterpolation(this.interpolationSelect.value as TimelineInterpolation);
@@ -593,6 +599,13 @@ export class KeyframeTimelinePanel {
     this.timeline.rescale();
     this.timeline.redraw();
     this.bindTimelineScroller();
+  }
+
+  private applyRowFilter(filter: TimelineRowFilter): void {
+    this.rowFilter = filter;
+    this.rowFilterSelect.value = filter;
+    storeTimelineRowFilter(filter);
+    if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
   }
 
   private lockDockScroll(): void {
@@ -1202,6 +1215,12 @@ function clearTimelineDockHeight(): void {
 
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
   return value === "keyed" || value === "all" || value === "focus" ? value : "focus";
+}
+
+function rowFilterLabel(filter: TimelineRowFilter): string {
+  if (filter === "keyed") return "Keyed Rows";
+  if (filter === "all") return "All Rows";
+  return "Focus Rows";
 }
 
 function parseTimelineAxis(value: string | undefined): TimelineAxis | null {

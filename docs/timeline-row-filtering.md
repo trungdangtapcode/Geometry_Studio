@@ -12,6 +12,8 @@ turning the dope sheet into a long, noisy list.
 - `Keyed Rows`: only tracks with keyframes are shown, plus the currently active
   track so a new keyframe can still be added.
 - `All Rows`: all object, camera, and light tracks are shown.
+- `U` cycles Focus -> Keyed -> All -> Focus when focus is outside form fields,
+  matching the reveal-animated-properties habit from motion-graphics tools.
 
 ## Implementation
 
@@ -19,3 +21,7 @@ Filtering is an editor preference in `ui/timelinePanel.ts`; it is persisted in
 local storage and intentionally excluded from scene JSON. The filter is applied
 to both the left row labels and the `animation-timeline-js` row model so label
 and canvas rows stay aligned.
+
+The keyboard cycle uses the same `applyRowFilter` path as the select control, so
+the persisted preference, dropdown state, row labels, canvas rows, and graph
+preview refresh together.
