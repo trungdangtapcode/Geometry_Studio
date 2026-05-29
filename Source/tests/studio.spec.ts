@@ -704,6 +704,53 @@ test("pastes visible-time object keys back to their original objects", async ({ 
   expect(errors).toEqual([]);
 });
 
+test("pastes compatible keys when an unrelated active track is locked", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-set-transform").click();
+  await page.locator("#timeline-copy-keyframes").click();
+  await page.locator("#timeline-track-kind").selectOption("rotation");
+  await page.locator("#timeline-lock-track").click();
+  await expect(page.locator("#timeline-lock-track")).toContainText("Locked");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-paste-keyframes").click();
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const trackTimes = (kind: string) =>
+    objectTimeline.tracks
+      .find((track: { kind: string }) => track.kind === kind)
+      ?.keyframes.map((keyframe: { time: number }) => keyframe.time) ?? [];
+  expect(trackTimes("position")).toEqual([0, 1]);
+  expect(trackTimes("rotation")).toEqual([0]);
+  expect(trackTimes("scale")).toEqual([0]);
+  expect(errors).toEqual([]);
+});
+
 test("cuts visible-row keyframes at the playhead time for paste", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

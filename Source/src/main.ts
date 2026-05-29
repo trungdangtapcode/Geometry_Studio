@@ -2440,7 +2440,6 @@ function boot(root: HTMLDivElement): void {
     }
 
     const baseTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
-    if (!assertTimelineTrackUnlocked(activeTimelineTrack(timelinePanel.selectedTrackKind()), "pasting keyframes")) return;
     recordHistory();
     const result = pasteTimelineClipboard(sceneTimeline, timelineClipboard, selectedEntry()?.id ?? null, baseTime, {
       validObjectIds: new Set(entries.keys())

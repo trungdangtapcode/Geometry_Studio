@@ -26,6 +26,8 @@ stored as ordinary timeline keyframes.
   to reuse motion or material animation on another object.
 - Visible-time Copy/Cut uses a target-preserving clipboard mode so filtered
   pose columns from multiple objects paste back onto their original objects.
+- Locked target tracks are skipped per key during paste; an unrelated active
+  track lock does not block compatible clipboard keys.
 - Camera and light keyframes paste back into their global camera/light tracks.
 
 ## Controls
@@ -72,4 +74,6 @@ The Playwright timeline workflow verifies that:
   duplicates.
 - Ctrl/Cmd+X cuts selected active-track keyframes and Undo restores them.
 - Visible-time Copy/Paste preserves multi-object pose-column targets.
+- Paste still applies compatible keys when an unrelated active track is locked,
+  while skipping clipboard keys whose actual destination track is locked.
 - The pasted keyframe survives scene JSON export.
