@@ -484,11 +484,17 @@ test("supports JKL timeline transport shortcuts", async ({ page }) => {
 
   const forwardStart = Number(await page.locator("#timeline-current-time").inputValue());
   await page.keyboard.press("l");
-  await expect(page.locator("#play-toggle")).toContainText("Pause");
+  await expect(page.locator("#play-toggle")).toContainText("Pause 1x");
+  await expect(page.locator("#status-line")).toContainText("Forward 1x");
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(forwardStart);
+  await page.keyboard.press("l");
+  await expect(page.locator("#status-line")).toContainText("Forward 2x");
+  await page.keyboard.press("l");
+  await expect(page.locator("#play-toggle")).toContainText("Pause 4x");
 
   await page.keyboard.press("k");
   await expect(page.locator("#play-toggle")).toContainText("Play");
+  await expect(page.locator("#status-line")).toContainText("Ready");
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "4";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -497,10 +503,14 @@ test("supports JKL timeline transport shortcuts", async ({ page }) => {
 
   const reverseStart = Number(await page.locator("#timeline-current-time").inputValue());
   await page.keyboard.press("j");
-  await expect(page.locator("#play-toggle")).toContainText("Pause");
+  await expect(page.locator("#play-toggle")).toContainText("Pause 1x");
+  await expect(page.locator("#status-line")).toContainText("Reverse 1x");
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeLessThan(reverseStart);
+  await page.keyboard.press("j");
+  await expect(page.locator("#status-line")).toContainText("Reverse 2x");
   await page.keyboard.press("k");
   await expect(page.locator("#play-toggle")).toContainText("Play");
+  await expect(page.locator("#status-line")).toContainText("Ready");
 
   expect(errors).toEqual([]);
 });

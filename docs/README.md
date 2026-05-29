@@ -130,8 +130,8 @@ animation runtime where it fits:
   authoring, navigation, and cleanup.
 - Work area editing supports Start/Out buttons plus `B`, `N`, and `Shift+B`
   keyboard workflows for fast preview-range authoring.
-- J/K/L transport shortcuts provide forward, pause, and reverse playback inside
-  the active work area.
+- J/K/L transport shortcuts provide forward, pause, reverse, and repeated-key
+  `1x` / `2x` / `4x` shuttle playback inside the active work area.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
   keeping playback inspectable from the timeline.
 - The keyframe dock has a persisted height resize handle, with row labels and

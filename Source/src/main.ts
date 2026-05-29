@@ -137,6 +137,7 @@ function boot(root: HTMLDivElement): void {
   let idCounter = 1;
   let playing = false;
   let playbackDirection: -1 | 1 = 1;
+  let playbackRate = 1;
   let transformSpace: "world" | "local" = "world";
   let lastFpsTime = performance.now();
   let frameCount = 0;
@@ -696,6 +697,7 @@ function boot(root: HTMLDivElement): void {
     syncTextureUI();
     syncHistoryButtons();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
+    updatePlayButton();
     syncMotionPath();
     updateTelemetry();
   }
@@ -1200,15 +1202,17 @@ function boot(root: HTMLDivElement): void {
   }
 
   function playTimeline(direction: -1 | 1, message = direction > 0 ? "Timeline running forward" : "Timeline running backward"): void {
-    setPlayback(true, direction, message);
+    const nextRate = nextPlaybackRate(direction);
+    setPlayback(true, direction, nextRate, `${message} ${formatPlaybackRate(nextRate)}`);
   }
 
   function pauseTimeline(message = "Timeline paused"): void {
-    setPlayback(false, playbackDirection, message);
+    setPlayback(false, playbackDirection, 1, message);
   }
 
-  function setPlayback(nextPlaying: boolean, direction: -1 | 1, message: string): void {
+  function setPlayback(nextPlaying: boolean, direction: -1 | 1, rate: number, message: string): void {
     playbackDirection = direction;
+    playbackRate = nextPlaying ? clampPlaybackRate(rate) : 1;
     playing = nextPlaying;
     if (playing && playbackDirection > 0 && (sceneTimeline.currentTime < sceneTimeline.workStart || sceneTimeline.currentTime >= sceneTimeline.workEnd)) {
       setTimelineTime(sceneTimeline.workStart);
@@ -1216,9 +1220,25 @@ function boot(root: HTMLDivElement): void {
     if (playing && playbackDirection < 0 && (sceneTimeline.currentTime <= sceneTimeline.workStart || sceneTimeline.currentTime > sceneTimeline.workEnd)) {
       setTimelineTime(sceneTimeline.workEnd);
     }
-    updatePlayButton();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
+    updatePlayButton();
     showToast(message, "good");
+  }
+
+  function nextPlaybackRate(direction: -1 | 1): number {
+    if (!playing || playbackDirection !== direction) return 1;
+    if (playbackRate < 2) return 2;
+    return 4;
+  }
+
+  function clampPlaybackRate(rate: number): number {
+    if (rate >= 4) return 4;
+    if (rate >= 2) return 2;
+    return 1;
+  }
+
+  function formatPlaybackRate(rate: number): string {
+    return `${clampPlaybackRate(rate)}x`;
   }
 
   function startCinematicDemo(): void {
@@ -1548,6 +1568,7 @@ function boot(root: HTMLDivElement): void {
       syncSegmentedButtons();
       syncSelectionSummary();
     }
+    updatePlayButton();
   }
 
   function advanceTimeline(delta: number): void {
@@ -1605,6 +1626,7 @@ function boot(root: HTMLDivElement): void {
       syncSegmentedButtons();
       syncSelectionSummary();
     }
+    updatePlayButton();
   }
 
   function updateTimelineSettings(patch: Partial<SceneDocument["timeline"]>): void {
@@ -2502,6 +2524,7 @@ function boot(root: HTMLDivElement): void {
     });
     recordingPreview = true;
     playbackDirection = 1;
+    playbackRate = 1;
     updateRecordingButton();
     setTimelineTime(sceneTimeline.workStart);
     playing = true;
@@ -2555,7 +2578,7 @@ function boot(root: HTMLDivElement): void {
     const elapsed = clock.elapsedTime;
 
     if (playing) {
-      const playbackDelta = delta * playbackDirection;
+      const playbackDelta = delta * playbackDirection * playbackRate;
       advanceTimeline(playbackDelta);
       entries.forEach((entry) => {
         if (!hasObjectTransformTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, playbackDelta, elapsed);
@@ -2631,9 +2654,15 @@ function boot(root: HTMLDivElement): void {
   }
 
   function updatePlayButton(): void {
+    const transportLabel = playing ? `${playbackDirection > 0 ? "Forward" : "Reverse"} ${formatPlaybackRate(playbackRate)}` : "Ready";
+    query<HTMLDivElement>("#status-line").textContent = transportLabel;
+    const label = playing ? `Pause ${formatPlaybackRate(playbackRate)}` : "Play";
     const button = query<HTMLButtonElement>("#play-toggle");
-    button.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
+    button.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${label}</span>`;
     hydrateIcons(button);
+    const timelineButton = query<HTMLButtonElement>("#timeline-play-toggle");
+    timelineButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${label}</span>`;
+    hydrateIcons(timelineButton);
   }
 
   function updateRecordingButton(): void {

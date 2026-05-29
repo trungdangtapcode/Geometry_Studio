@@ -12,6 +12,10 @@ timeline graph.
 - `J` plays the timeline backward through the active Work In/Out range.
 - `K` pauses playback.
 - `L` plays the timeline forward through the active Work In/Out range.
+- Repeated `J` or `L` presses shuttle the current direction through `1x`,
+  `2x`, and `4x`.
+- Pressing the opposite direction resets the shuttle speed to `1x` in that
+  direction.
 - `Space` keeps the existing play/pause behavior and starts forward playback
   when resuming from a paused state.
 
@@ -24,7 +28,9 @@ transport playback.
 The render loop now applies a signed playback delta. Forward playback advances
 toward Work Out; reverse playback moves toward Work In. Looping wraps inside
 the same work area in both directions. Non-loop playback stops at the reached
-work-area boundary.
+work-area boundary. Shuttle speed multiplies the signed delta before the
+timeline document is evaluated, so transform, camera, light, material, texture,
+visibility, and motion-path preview tracks all remain synchronized.
 
 WebM preview recording always starts with forward playback from Work In so
 exports remain deterministic.
