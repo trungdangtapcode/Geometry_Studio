@@ -56,6 +56,15 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-row-filter")).toHaveValue("all");
   await page.keyboard.press("u");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
+  const timelineZoom = async () => page.locator("#keyframe-dock").evaluate((element) => Number((element as HTMLElement).dataset.zoomLevel));
+  const initialTimelineZoom = await timelineZoom();
+  await page.keyboard.press("=");
+  await expect.poll(timelineZoom).toBeGreaterThan(initialTimelineZoom);
+  const zoomedTimelineValue = await timelineZoom();
+  await page.keyboard.press("-");
+  await expect.poll(timelineZoom).toBeLessThan(zoomedTimelineValue);
+  await page.keyboard.press("0");
+  await expect(page.locator("#timeline-zoom-fit")).toBeVisible();
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");

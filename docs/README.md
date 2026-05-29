@@ -40,6 +40,8 @@ PDF.
   dock height handle, row alignment, and scroll synchronization.
 - [Timeline Frame Navigation](timeline-frame-navigation.md) documents
   frame-step controls, Work Out jump, and timecode display.
+- [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and
+  keyboard timeline zoom behavior.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step
@@ -117,6 +119,8 @@ animation runtime where it fits:
   stretching, Shift drag constraints, and one undo step per drag.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views, with `U` cycling row visibility from the keyboard.
+- Timeline zoom supports toolbar controls plus `+`, `-`, and `0` shortcuts for
+  timeline scale changes without leaving the keyboard.
 - Selected objects with two or more Position keys show a viewport motion path,
   turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
 - Timeline markers add named cue points for animation beats and demo segments.

@@ -290,6 +290,7 @@ export class KeyframeTimelinePanel {
 
     this.timeline._formatUnitsText = (value: number) => `${formatNumber(value)}s`;
     this.bindEvents();
+    this.syncZoomState();
   }
 
   update(timelineDocument: SceneTimelineDocument, entries: Iterable<SceneEntry>, selectedId: string, playing: boolean): void {
@@ -375,6 +376,17 @@ export class KeyframeTimelinePanel {
     const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
     this.applyRowFilter(next);
     return rowFilterLabel(next);
+  }
+
+  zoomTimeline(direction: -1 | 1): void {
+    if (direction > 0) this.timeline.zoomIn(0.25);
+    else this.timeline.zoomOut(0.25);
+    this.syncZoomState();
+    this.refreshCanvas();
+  }
+
+  fitTimelineToDuration(): void {
+    this.fitTimeline();
   }
 
   setPlaybackTime(timelineDocument: SceneTimelineDocument, playing: boolean): void {
@@ -490,9 +502,9 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-next-frame").addEventListener("click", () => this.callbacks.onStepFrame(1));
     query<HTMLButtonElement>("#timeline-prev-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(-1));
     query<HTMLButtonElement>("#timeline-next-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(1));
-    query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.timeline.zoomOut(0.25));
-    query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.timeline.zoomIn(0.25));
-    query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimeline());
+    query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.zoomTimeline(-1));
+    query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.zoomTimeline(1));
+    query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimelineToDuration());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workStartInput.value)));
     query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workEndInput.value)));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
@@ -1096,7 +1108,12 @@ export class KeyframeTimelinePanel {
     const zoom = Math.max(0.05, Math.min(8, (clientWidth - 32) / (duration * 80)));
     this.timeline.setZoom(zoom);
     this.timeline.scrollLeft = 0;
+    this.syncZoomState();
     this.timeline.redraw();
+  }
+
+  private syncZoomState(): void {
+    this.root.dataset.zoomLevel = formatNumber(this.timeline.getZoom());
   }
 
   private renderGraph(timelineDocument: SceneTimelineDocument, selectedId: string): void {

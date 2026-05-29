@@ -1098,6 +1098,24 @@ function boot(root: HTMLDivElement): void {
       showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good");
       return;
     }
+    if (key === "=" || key === "+") {
+      event.preventDefault();
+      timelinePanel.zoomTimeline(1);
+      showToast("Timeline zoomed in", "good");
+      return;
+    }
+    if (key === "-" || key === "_") {
+      event.preventDefault();
+      timelinePanel.zoomTimeline(-1);
+      showToast("Timeline zoomed out", "good");
+      return;
+    }
+    if (key === "0") {
+      event.preventDefault();
+      timelinePanel.fitTimelineToDuration();
+      showToast("Timeline fit to duration", "good");
+      return;
+    }
     if (key === "t") setTransformMode("translate");
     if (key === "r") setTransformMode("rotate");
     if (key === "s") setTransformMode("scale");
