@@ -264,6 +264,29 @@ test("toggles SSAO post processing controls", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("shows row key diamonds only at playhead keys", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const positionRow = page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"]');
+  const rowKey = positionRow.locator(".timeline-row-key");
+  await expect(positionRow).toBeVisible();
+  await expect(rowKey).toHaveAttribute("title", "Set key at playhead");
+  await rowKey.click();
+  await expect(rowKey).toHaveAttribute("title", "Update key at playhead");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(rowKey).toHaveAttribute("title", "Set key at playhead");
+  expect(errors).toEqual([]);
+});
+
 test("imports OBJ with companion MTL files", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

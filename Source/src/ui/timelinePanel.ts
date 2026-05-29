@@ -373,6 +373,7 @@ export class KeyframeTimelinePanel {
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.timeline.setTime(timelineDocument.currentTime);
+    this.syncRowKeyButtons(timelineDocument);
     this.renderMarkers(timelineDocument);
     this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, this.lastSelectedId));
@@ -803,7 +804,8 @@ export class KeyframeTimelinePanel {
             locked: track?.locked ?? false,
             solo: track?.solo ?? false,
             muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
-            hasKeyframes: Boolean(track?.keyframes.length)
+            hasKeyframes: Boolean(track?.keyframes.length),
+            hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime)
           });
         });
       })
@@ -822,6 +824,7 @@ export class KeyframeTimelinePanel {
         solo: track?.solo ?? false,
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
+        hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
         extraClass: "camera-track-label"
       });
     }).join("");
@@ -839,6 +842,7 @@ export class KeyframeTimelinePanel {
         solo: track?.solo ?? false,
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
+        hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
         extraClass: "light-track-label"
       });
     }).join("");
@@ -857,10 +861,15 @@ export class KeyframeTimelinePanel {
     solo: boolean;
     muted: boolean;
     hasKeyframes: boolean;
+    hasPlayheadKey: boolean;
     extraClass?: string;
   }): string {
     const label = trackLabel(options.kind, options.axis);
-    const keyText = options.locked ? "Track locked" : options.hasKeyframes ? "Update keyframe" : "Add keyframe";
+    const keyText = options.locked
+      ? "Track locked"
+      : options.hasPlayheadKey
+        ? "Update key at playhead"
+        : "Set key at playhead";
     return `
       <div class="${this.labelClass(options.active, options.enabled, options.locked, options.solo, options.muted, options.hasKeyframes, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
         <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
@@ -880,7 +889,7 @@ export class KeyframeTimelinePanel {
           </button>
         </span>
         <button class="timeline-row-key" type="button" aria-label="${keyText}: ${options.targetName} ${label}" title="${keyText}" ${options.locked ? "disabled" : ""}>
-          <span data-icon="${options.locked ? "Lock" : options.hasKeyframes ? "Diamond" : "DiamondPlus"}"></span>
+          <span data-icon="${options.locked ? "Lock" : options.hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span>
         </button>
       </div>
     `;
@@ -1069,6 +1078,37 @@ export class KeyframeTimelinePanel {
       ? "Update the keyframe at the current playhead time"
       : "Create a keyframe at the current playhead time";
     hydrateIcons(this.addKeyframeButton);
+  }
+
+  private syncRowKeyButtons(timelineDocument: SceneTimelineDocument): void {
+    this.labels.querySelectorAll<HTMLElement>(".timeline-track-label").forEach((row) => {
+      const button = row.querySelector<HTMLButtonElement>(".timeline-row-key");
+      const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
+      const targetId = row.dataset.objectId;
+      if (!button || !kind || !targetId) return;
+
+      const track = this.trackForTarget(timelineDocument, targetId, kind);
+      const locked = Boolean(track?.locked);
+      const playheadKey = hasPlayheadKey(track, timelineDocument.currentTime);
+      const stateKey = `${locked}-${playheadKey}`;
+      if (button.dataset.keyState === stateKey) return;
+
+      const keyText = locked ? "Track locked" : playheadKey ? "Update key at playhead" : "Set key at playhead";
+      const rowLabel = row.getAttribute("aria-label") ?? trackLabel(kind, parseTimelineAxis(row.dataset.trackAxis) ?? undefined);
+      button.dataset.keyState = stateKey;
+      button.title = keyText;
+      button.setAttribute("aria-label", `${keyText}: ${rowLabel}`);
+      button.innerHTML = `<span data-icon="${locked ? "Lock" : playheadKey ? "Diamond" : "DiamondPlus"}"></span>`;
+      hydrateIcons(button);
+    });
+  }
+
+  private trackForTarget(timelineDocument: SceneTimelineDocument, targetId: string, kind: TimelineTrackKind): TimelineTrackDocument | undefined {
+    if (targetId === CAMERA_TARGET_ID) return timelineDocument.camera.tracks.find((track) => track.kind === kind);
+    if (targetId === LIGHT_TARGET_ID) return timelineDocument.lights.tracks.find((track) => track.kind === kind);
+    return timelineDocument.objects
+      .find((objectTimeline) => objectTimeline.objectId === targetId)
+      ?.tracks.find((track) => track.kind === kind);
   }
 
   private selectedTrackState(timelineDocument: SceneTimelineDocument, selectedId: string): { enabled: boolean; locked: boolean; solo: boolean; muted: boolean; hasKeyframes: boolean } {
@@ -1452,6 +1492,10 @@ function rangeSelection(track: TimelineTrackDocument, current: Set<string>, keyf
   return new Set(ordered
     .filter((keyframe) => keyframe.time >= start - 0.001 && keyframe.time <= end + 0.001)
     .map((keyframe) => keyframe.id));
+}
+
+function hasPlayheadKey(track: TimelineTrackDocument | undefined, currentTime: number): boolean {
+  return Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - currentTime) < 0.001));
 }
 
 function cssNumber(element: HTMLElement, property: string, fallback: number): number {

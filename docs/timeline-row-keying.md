@@ -18,8 +18,9 @@ not need to switch to a global track dropdown before adding a key.
   for the selected object when the user wants to key a complete pose.
 - Object rows select the matching scene object before writing the key.
 - Camera and light rows write to their global timeline tracks.
-- Rows that already contain keyframes use a filled diamond icon to communicate
-  that pressing the button updates/adds another key on an existing track.
+- A row diamond is filled only when the current playhead time already has a key
+  on that row. This makes the difference between setting a new key and updating
+  the current key explicit.
 
 ## Architecture
 
