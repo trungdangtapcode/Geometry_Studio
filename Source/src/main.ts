@@ -6,6 +6,7 @@ import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { updateEntryAnimation } from "./animation/timeline";
 import {
   createTimelineClipboard,
+  distributeResolvedKeyframesAcrossRange,
   duplicateResolvedKeyframes,
   editResolvedKeyframes,
   moveResolvedKeyframesToTime,
@@ -176,6 +177,7 @@ function boot(root: HTMLDivElement): void {
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onReverseKeyframes: reverseTimelineKeyframes,
     onSnapKeyframesToFrames: snapTimelineKeyframesToFrames,
+    onDistributeKeyframes: distributeTimelineKeyframes,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -1109,6 +1111,11 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey && key === "s") {
       event.preventDefault();
       snapTimelineKeyframesToFrames(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
+    if (event.shiftKey && key === "d") {
+      event.preventDefault();
+      distributeTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (key === "b") {
@@ -2140,6 +2147,33 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
     showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} snapped to frames${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function distributeTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before distributing timing.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = distributeResolvedKeyframesAcrossRange(sceneTimeline, sources, sceneTimeline.workStart, sceneTimeline.workEnd);
+    if (result.edited === 0) {
+      updateAllUI();
+      showToast(result.skipped ? `No keyframe distributed, ${result.skipped} skipped.` : "Selected keyframes already match the work area spacing.", "bad");
+      return;
+    }
+
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(result.currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
+    showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} distributed across Work In/Out${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function editTimelineKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void {

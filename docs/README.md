@@ -54,6 +54,8 @@ PDF.
   time-reversing selected keyframe blocks.
 - [Timeline Keyframe Snap](timeline-keyframe-snap.md) documents snapping
   selected keyframes to frame boundaries.
+- [Timeline Keyframe Distribution](timeline-keyframe-distribute.md) documents
+  evenly spacing selected keyframe timing columns across Work In/Out.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
@@ -107,6 +109,8 @@ animation runtime where it fits:
   and interpolation attached to each keyframe.
 - Snap Selected Keyframes to Frames cleans dragged or imported key timing to the
   active FPS grid without changing key values.
+- Distribute Selected Keyframes spaces selected timing columns across Work
+  In/Out while keeping grouped pose keys aligned.
 - Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,
   delete, interpolation, and nudge workflows faster.
 - Delete and Backspace remove selected timeline keyframes before falling back to

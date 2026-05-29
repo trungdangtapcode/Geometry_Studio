@@ -382,6 +382,86 @@ export function snapResolvedKeyframesToFrames(
   };
 }
 
+export function distributeResolvedKeyframesAcrossRange(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  startTime: number,
+  endTime: number
+): EditTimelineResult {
+  if (sources.length < 2) {
+    return { edited: 0, skipped: 0, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const start = Math.max(0, Math.min(startTime, endTime, timeline.duration));
+  const end = Math.max(start, Math.min(Math.max(startTime, endTime), timeline.duration));
+  if (Math.abs(end - start) < 0.001) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const movingIds = new Set(sources.map((source) => source.keyframe.id));
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  const groups = groupSourcesByOriginalTime(sources);
+  if (groups.length < 2) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+  let edited = 0;
+  let skipped = 0;
+  const editedTimes: number[] = [];
+
+  sources.forEach((source) => {
+    if (!occupiedTimes.has(source.track)) {
+      occupiedTimes.set(source.track, new Set(
+        source.track.keyframes
+          .filter((keyframe) => !movingIds.has(keyframe.id))
+          .map((keyframe) => timelineTimeKey(keyframe.time))
+      ));
+    }
+  });
+
+  groups.forEach((group, index) => {
+    const ratio = index / Math.max(groups.length - 1, 1);
+    const nextTime = snapTimelineTime(timeline, start + (end - start) * ratio);
+    group.sources.forEach((source) => {
+      const trackOccupancy = occupiedTimes.get(source.track)!;
+      const timeKey = timelineTimeKey(nextTime);
+      const blocked = nextTime < 0 || nextTime > timeline.duration || trackOccupancy.has(timeKey);
+      if (blocked) {
+        skipped += 1;
+        return;
+      }
+
+      trackOccupancy.add(timeKey);
+      if (Math.abs(source.keyframe.time - nextTime) < 0.001) return;
+      source.keyframe.time = nextTime;
+      changedTracks.add(source.track);
+      if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+      edited += 1;
+      editedTimes.push(nextTime);
+    });
+  });
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return {
+    edited,
+    skipped,
+    currentTime: editedTimes.length ? Math.min(...editedTimes) : timeline.currentTime,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
+function groupSourcesByOriginalTime(sources: TimelineKeyframeSource[]): Array<{ time: number; sources: TimelineKeyframeSource[] }> {
+  const groups = new Map<number, TimelineKeyframeSource[]>();
+  sources.forEach((source) => {
+    const key = timelineTimeKey(source.keyframe.time);
+    groups.set(key, [...(groups.get(key) ?? []), source]);
+  });
+  return [...groups.entries()]
+    .map(([time, groupSources]) => ({ time, sources: groupSources }))
+    .sort((left, right) => left.time - right.time);
+}
+
 function timelineTimeKey(time: number): number {
   return Math.round(time * 1000);
 }
