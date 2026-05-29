@@ -102,6 +102,7 @@ import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normaliz
 import { KeyframeTimelinePanel } from "./ui/timelinePanel";
 import { bindUiDensityControl } from "./ui/density";
 import { studioTemplate } from "./ui/template";
+import { renderTransformInspector, type TransformAxis, type TransformProperty } from "./ui/transformInspector";
 import { capitalize, clamp, downloadText, formatNumber, hasWebGL2, hydrateIcons, query, safeJsonParse } from "./utils/dom";
 import { ResourceTracker } from "./utils/resourceTracker";
 
@@ -815,76 +816,36 @@ function boot(root: HTMLDivElement): void {
   }
 
   function syncTransformUI(): void {
-    const entry = selectedEntry();
     const grid = query<HTMLDivElement>("#transform-grid");
-    const rows = [
-      ["position", "Position", entry?.root.position ?? new THREE.Vector3()],
-      ["rotation", "Rotation", entry?.root.rotation ?? new THREE.Euler()],
-      ["scale", "Scale", entry?.root.scale ?? new THREE.Vector3(1, 1, 1)]
-    ] as const;
-
-    grid.innerHTML = rows
-      .map(([key, label, value]) => {
-        const values = key === "rotation"
-          ? [THREE.MathUtils.radToDeg((value as THREE.Euler).x), THREE.MathUtils.radToDeg((value as THREE.Euler).y), THREE.MathUtils.radToDeg((value as THREE.Euler).z)]
-          : [(value as THREE.Vector3).x, (value as THREE.Vector3).y, (value as THREE.Vector3).z];
-        const keyState = transformKeyState(key);
-        const keyText = keyState.locked
-          ? "Track locked"
-          : keyState.hasPlayheadKey
-            ? "Update key at playhead"
-            : "Set key at playhead";
-        return `
-          <div class="grid-label transform-row-label">
-            <span>${label}</span>
-            <button class="transform-key-button" type="button" data-prop="${key}" aria-label="${keyText}: ${label}" title="${keyText}" ${keyState.locked ? "disabled" : ""}>
-              <span data-icon="${keyState.locked ? "Lock" : keyState.hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span>
-            </button>
-          </div>
-          ${["x", "y", "z"].map((axis, index) => `
-            <label class="axis-input">
-              <span>${axis.toUpperCase()}</span>
-              <input class="transform-input" data-prop="${key}" data-axis="${axis}" type="number" step="0.1" value="${formatNumber(values[index])}" />
-            </label>
-          `).join("")}
-        `;
-      })
-      .join("");
-    hydrateIcons(grid);
-
-    grid.querySelectorAll<HTMLButtonElement>(".transform-key-button").forEach((button) => {
-      button.addEventListener("click", () => {
-        const kind = button.dataset.prop as "position" | "rotation" | "scale";
+    renderTransformInspector(grid, selectedEntry(), {
+      keyState: transformKeyState,
+      onSetKey: (kind) => {
         query<HTMLSelectElement>("#timeline-track-kind").value = kind;
         setTimelineKeyframe(kind);
-      });
-    });
-
-    grid.querySelectorAll<HTMLInputElement>(".transform-input").forEach((input) => {
-      input.addEventListener("change", () => {
-        const current = selectedEntry();
-        if (!current) return;
-        recordHistory();
-        const prop = input.dataset.prop as "position" | "rotation" | "scale";
-        const axis = input.dataset.axis as "x" | "y" | "z";
-        const value = Number(input.value);
-        if (prop === "rotation") current.root.rotation[axis] = THREE.MathUtils.degToRad(value);
-        else current.root[prop][axis] = value;
-        syncSelectedBases();
-        if (sceneTimeline.autoKey) {
-          setTimelineKeyframe(prop, { notify: false, record: false, refresh: false });
-        }
-        updateAllUI();
-      });
+      },
+      onValueChanged: updateTransformValue
     });
   }
 
-  function transformKeyState(kind: "position" | "rotation" | "scale"): { locked: boolean; hasPlayheadKey: boolean } {
+  function transformKeyState(kind: TransformProperty): { locked: boolean; hasPlayheadKey: boolean } {
     const track = activeTimelineTrack(kind);
     return {
       locked: Boolean(track?.locked),
       hasPlayheadKey: Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - sceneTimeline.currentTime) < 0.001))
     };
+  }
+
+  function updateTransformValue(prop: TransformProperty, axis: TransformAxis, value: number): void {
+    const current = selectedEntry();
+    if (!current) return;
+    recordHistory();
+    if (prop === "rotation") current.root.rotation[axis] = THREE.MathUtils.degToRad(value);
+    else current.root[prop][axis] = value;
+    syncSelectedBases();
+    if (sceneTimeline.autoKey) {
+      setTimelineKeyframe(prop, { notify: false, record: false, refresh: false });
+    }
+    updateAllUI();
   }
 
   function syncCameraUI(): void {

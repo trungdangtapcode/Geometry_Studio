@@ -19,6 +19,16 @@ button beside the row label.
   snapping, JSON persistence, runtime rebuilds, and motion-path updates remain
   consistent with timeline row keying.
 
+## Architecture
+
+`Source/src/ui/transformInspector.ts` owns the DOM rendering and event binding
+for the transform value grid. The editor shell passes the selected object,
+current key state, and mutation callbacks into that adapter.
+
+This keeps the inspector UI separate from `main.ts`, while `main.ts` remains the
+single owner of scene mutation, Undo/Redo history, auto-keying, and timeline
+runtime rebuilds.
+
 ## User Workflow
 
 1. Select an object.
