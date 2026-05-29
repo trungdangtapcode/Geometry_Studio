@@ -19,6 +19,8 @@ schema v9. The schema stores `TimelineTrackDocument.enabled` for playback,
 - When one or more keyed tracks are soloed, only soloed enabled tracks evaluate.
 - Non-solo tracks keep their keyframes visible and editable, but the value graph
   reports `Muted by solo` when the track is excluded from runtime evaluation.
+- Muted rows use a dashed swatch and reduced saturation so solo state is visible
+  directly in the dope-sheet track list.
 - `Unlocked` / `Locked` toggles editing protection for the active track.
 - Locked tracks keep playing and drawing their value graph.
 - Locked tracks reject key creation, update, deletion, retiming, value editing,
@@ -49,8 +51,8 @@ toggled off and that exported scene JSON preserves `enabled: false` while
 keeping all keyframes.
 
 Solo coverage verifies that soloing the active Position track marks its rows,
-keeps its value graph live, and mutes the Rotation graph until Rotation is
-soloed as well.
+marks non-solo keyed rows as muted, keeps the soloed value graph live, and
+mutes the Rotation graph until Rotation is soloed as well.
 
 Additional lock coverage verifies that a locked Position track keeps its keys,
 rejects delete and set-key attempts, renders locked graph points, and can be

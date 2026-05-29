@@ -536,11 +536,12 @@ test("solos timeline tracks for focused playback filtering", async ({ page }) =>
   await page.locator("#timeline-solo-track").click();
   await expect(page.locator("#timeline-solo-track")).toContainText("Solo On");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/solo-track/);
+  await expect(page.getByRole("button", { name: "Cube Rotation Y", exact: true })).toHaveClass(/muted-track/);
   await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
 
   await page.getByRole("button", { name: "Cube Rotation Y", exact: true }).click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
-  await expect(page.locator("#timeline-solo-track")).toContainText("Solo Off");
+  await expect(page.locator("#timeline-solo-track")).toContainText("Muted");
   await expect(page.locator("#timeline-graph-range")).toContainText("Muted by solo");
 
   await page.locator("#timeline-solo-track").click();

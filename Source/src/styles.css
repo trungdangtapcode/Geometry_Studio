@@ -848,6 +848,11 @@ svg {
   opacity: 0.58;
 }
 
+.timeline-track-label.muted-track {
+  opacity: 0.62;
+  filter: saturate(0.72);
+}
+
 .timeline-track-label.locked-track {
   background: rgba(26, 35, 42, 0.06);
 }
@@ -876,6 +881,11 @@ svg {
 .timeline-track-label.disabled-track .track-swatch {
   background: transparent !important;
   border: 1px solid currentColor;
+}
+
+.timeline-track-label.muted-track .track-swatch {
+  background: transparent !important;
+  border: 1px dashed currentColor;
 }
 
 .track-label-text {

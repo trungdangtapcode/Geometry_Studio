@@ -14,6 +14,7 @@ import type {
   TimelineTrackDocument,
   TimelineTrackKind
 } from "../editor/types";
+import { hasSoloTimelineTracks } from "../animation/timelineSchema";
 import { clamp, formatNumber, hydrateIcons, query } from "../utils/dom";
 import {
   AXIS_INDEX,
@@ -732,6 +733,7 @@ export class KeyframeTimelinePanel {
 
   private renderLabels(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string): string {
     const activeKind = this.selectedTrackKind();
+    const soloActive = hasSoloTimelineTracks(timelineDocument);
     const objectTimelines = new Map(timelineDocument.objects.map((object) => [object.objectId, object]));
     const objectLabels = entries
       .flatMap((entry) => {
@@ -749,6 +751,7 @@ export class KeyframeTimelinePanel {
             enabled: track?.enabled ?? true,
             locked: track?.locked ?? false,
             solo: track?.solo ?? false,
+            muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
             hasKeyframes: Boolean(track?.keyframes.length)
           });
         });
@@ -764,6 +767,7 @@ export class KeyframeTimelinePanel {
         enabled: track?.enabled ?? true,
         locked: track?.locked ?? false,
         solo: track?.solo ?? false,
+        muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         extraClass: "camera-track-label"
       });
@@ -778,6 +782,7 @@ export class KeyframeTimelinePanel {
         enabled: track?.enabled ?? true,
         locked: track?.locked ?? false,
         solo: track?.solo ?? false,
+        muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         extraClass: "light-track-label"
       });
@@ -794,13 +799,14 @@ export class KeyframeTimelinePanel {
     enabled: boolean;
     locked: boolean;
     solo: boolean;
+    muted: boolean;
     hasKeyframes: boolean;
     extraClass?: string;
   }): string {
     const label = trackLabel(options.kind, options.axis);
     const keyText = options.locked ? "Track locked" : options.hasKeyframes ? "Update keyframe" : "Add keyframe";
     return `
-      <div class="${this.labelClass(options.active, options.enabled, options.locked, options.solo, options.hasKeyframes, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
+      <div class="${this.labelClass(options.active, options.enabled, options.locked, options.solo, options.muted, options.hasKeyframes, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
         <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
         <span class="track-label-text">
           <strong>${options.targetName}</strong>
@@ -813,13 +819,14 @@ export class KeyframeTimelinePanel {
     `;
   }
 
-  private labelClass(active: boolean, enabled: boolean, locked: boolean, solo: boolean, hasKeyframes: boolean, extra = ""): string {
+  private labelClass(active: boolean, enabled: boolean, locked: boolean, solo: boolean, muted: boolean, hasKeyframes: boolean, extra = ""): string {
     return [
       "timeline-track-label",
       extra,
       active ? "active" : "",
       hasKeyframes ? "has-keyframes" : "",
       hasKeyframes && solo ? "solo-track" : "",
+      muted ? "muted-track" : "",
       locked ? "locked-track" : "",
       hasKeyframes && !enabled ? "disabled-track" : ""
     ].filter(Boolean).join(" ");
@@ -980,7 +987,9 @@ export class KeyframeTimelinePanel {
     const state = this.selectedTrackState(timelineDocument, selectedId);
     this.soloTrackButton.disabled = !state.hasKeyframes;
     this.soloTrackButton.classList.toggle("active", state.hasKeyframes && state.solo);
-    this.soloTrackButton.innerHTML = `<span data-icon="${state.solo ? "CircleDot" : "Circle"}"></span><span>${state.solo ? "Solo On" : "Solo Off"}</span>`;
+    this.soloTrackButton.classList.toggle("danger", state.hasKeyframes && state.muted);
+    const label = state.solo ? "Solo On" : state.muted ? "Muted" : "Solo Off";
+    this.soloTrackButton.innerHTML = `<span data-icon="${state.solo ? "CircleDot" : "Circle"}"></span><span>${label}</span>`;
     hydrateIcons(this.soloTrackButton);
   }
 
@@ -993,7 +1002,7 @@ export class KeyframeTimelinePanel {
     hydrateIcons(this.addKeyframeButton);
   }
 
-  private selectedTrackState(timelineDocument: SceneTimelineDocument, selectedId: string): { enabled: boolean; locked: boolean; solo: boolean; hasKeyframes: boolean } {
+  private selectedTrackState(timelineDocument: SceneTimelineDocument, selectedId: string): { enabled: boolean; locked: boolean; solo: boolean; muted: boolean; hasKeyframes: boolean } {
     const selectedTrack = this.selectedTrackKind();
     const track = isCameraTrack(selectedTrack)
       ? timelineDocument.camera.tracks.find((candidate) => candidate.kind === selectedTrack)
@@ -1002,11 +1011,14 @@ export class KeyframeTimelinePanel {
         : timelineDocument.objects
           .find((object) => object.objectId === selectedId)
           ?.tracks.find((candidate) => candidate.kind === selectedTrack);
+    const soloActive = hasSoloTimelineTracks(timelineDocument);
+    const hasKeyframes = Boolean(track && track.keyframes.length > 0);
     return {
       enabled: track?.enabled ?? true,
       locked: track?.locked ?? false,
       solo: track?.solo ?? false,
-      hasKeyframes: Boolean(track && track.keyframes.length > 0)
+      muted: Boolean(soloActive && track?.enabled && hasKeyframes && !track.solo),
+      hasKeyframes
     };
   }
 
