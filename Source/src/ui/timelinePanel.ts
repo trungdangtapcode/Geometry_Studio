@@ -20,7 +20,8 @@ import {
   TimelineValueGraph,
   TIMELINE_AXES,
   trackAxisConfig,
-  type TimelineAxis
+  type TimelineAxis,
+  type TimelineKeySelectionMode
 } from "./timelineValueGraph";
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
@@ -252,7 +253,7 @@ export class KeyframeTimelinePanel {
         if (this.lastTimelineDocument) this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
         window.setTimeout(() => this.refreshCanvas(), 0);
       },
-      onKeyframeSelected: (keyframeId) => this.selectGraphKeyframe(keyframeId),
+      onKeyframeSelected: (keyframeId, mode) => this.selectGraphKeyframe(keyframeId, mode),
       onDragStarted: () => this.callbacks.onDragStarted(),
       onKeyframeMoved: (keyframeId, time) => this.callbacks.onKeyframeMoved(keyframeId, time),
       onKeyframeValueChanged: (keyframeId, axis, value) => this.callbacks.onKeyframeValueChanged(keyframeId, axis, value),
@@ -1088,8 +1089,15 @@ export class KeyframeTimelinePanel {
     return this.lastEntryNames.get(selectedId) ?? "Object";
   }
 
-  private selectGraphKeyframe(keyframeId: string): void {
-    this.selectedKeyframeIds = new Set([keyframeId]);
+  private selectGraphKeyframe(keyframeId: string, mode: TimelineKeySelectionMode): void {
+    const track = this.lastTimelineDocument ? this.playheadTrack(this.lastTimelineDocument, this.lastSelectedId) : undefined;
+    if (mode === "toggle") {
+      this.selectedKeyframeIds = toggledSelection(this.selectedKeyframeIds, keyframeId);
+    } else if (mode === "range" && track) {
+      this.selectedKeyframeIds = rangeSelection(track, this.selectedKeyframeIds, keyframeId);
+    } else {
+      this.selectedKeyframeIds = new Set([keyframeId]);
+    }
     if (!this.lastTimelineDocument) return;
     this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
     this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
@@ -1201,6 +1209,26 @@ function commonSelectedAxis(keyframes: TimelineUiKeyframe[]): TimelineAxis | nul
   const first = keyframes[0]?.axis;
   if (!first) return null;
   return keyframes.every((keyframe) => keyframe.axis === first) ? first : null;
+}
+
+function toggledSelection(current: Set<string>, keyframeId: string): Set<string> {
+  const next = new Set(current);
+  if (next.has(keyframeId)) next.delete(keyframeId);
+  else next.add(keyframeId);
+  return next;
+}
+
+function rangeSelection(track: TimelineTrackDocument, current: Set<string>, keyframeId: string): Set<string> {
+  const ordered = [...track.keyframes].sort((left, right) => left.time - right.time);
+  const target = ordered.find((keyframe) => keyframe.id === keyframeId);
+  if (!target) return new Set([keyframeId]);
+
+  const anchor = ordered.find((keyframe) => current.has(keyframe.id)) ?? target;
+  const start = Math.min(anchor.time, target.time);
+  const end = Math.max(anchor.time, target.time);
+  return new Set(ordered
+    .filter((keyframe) => keyframe.time >= start - 0.001 && keyframe.time <= end + 0.001)
+    .map((keyframe) => keyframe.id));
 }
 
 function cssNumber(element: HTMLElement, property: string, fallback: number): number {

@@ -127,7 +127,7 @@ test("renders the studio and core controls", async ({ page }) => {
 });
 
 test("records grouped position rotation and scale keyframes", async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -254,6 +254,20 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeGreaterThan(2.1);
+  await page.locator("#undo-btn").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
+  const firstGraphKey = page.locator('.timeline-graph-key.graph-x[data-key-time="0"]').first();
+  const middleGraphKeyAgain = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  await expect(firstGraphKey).toBeVisible();
+  await expect(middleGraphKeyAgain).toBeVisible();
+  await firstGraphKey.click();
+  await page.keyboard.down("Shift");
+  await middleGraphKeyAgain.click();
+  await page.keyboard.up("Shift");
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  await page.keyboard.press("Delete");
+  await expect(page.locator("#timeline-graph-range")).toContainText("1 key | add another key");
+  await expect(page.locator("#selection-summary")).toContainText("Cube");
   await page.locator("#undo-btn").click();
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   const deletableKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();

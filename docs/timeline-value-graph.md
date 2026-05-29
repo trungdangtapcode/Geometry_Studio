@@ -19,6 +19,9 @@ actually do before pressing Play.
 - Hold, Linear, and Easy Ease segments are drawn from the same evaluator used by
   runtime playback.
 - Key points are drawn on top of the curves.
+- Clicking a graph key selects it. Ctrl/Cmd-click toggles a key in or out of
+  the current selection, and Shift-click selects the time range between the
+  current anchor key and the clicked key.
 - Dragging a key point horizontally retimes the keyframe, and dragging
   vertically edits that keyframe channel value. For precise transform edits,
   select the X, Y, or Z row first so overlapping channel points collapse to the
@@ -48,8 +51,9 @@ The data path is:
 3. The graph samples the work range with `evaluateTimelineTrack`.
 4. Each enabled channel is normalized into SVG coordinates.
 5. Key points are rendered at authored keyframe times and values.
-6. Dragging a graph key emits keyframe time and value mutations for one axis.
-7. The SVG paths are redrawn whenever the timeline document, playhead, selected
+6. Clicking graph keys updates the shared timeline keyframe selection set.
+7. Dragging a graph key emits keyframe time and value mutations for one axis.
+8. The SVG paths are redrawn whenever the timeline document, playhead, selected
    track, selected axis, graph visibility, or dragged value changes.
 
 This keeps the preview deterministic: if the graph shows a Hold segment, the
@@ -76,6 +80,8 @@ The Playwright smoke workflow verifies that:
 - The graph panel opens without breaking the resizable timeline dock.
 - A keyed Position track draws a non-empty X-channel SVG path.
 - The graph reports the active keyed track count.
+- Shift-clicking graph keys selects a keyframe range that can be deleted without
+  deleting the scene object.
 - A graph key point can be dragged horizontally and vertically to retime a
   Position key and change its value on the active snap step.
 - Holding Shift while dragging vertically edits value without changing key time.

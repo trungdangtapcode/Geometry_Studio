@@ -3,6 +3,7 @@ import type { SceneTimelineDocument, TimelineTrackDocument, TimelineTrackKind } 
 import { clamp, formatNumber } from "../utils/dom";
 
 export type TimelineAxis = "x" | "y" | "z";
+export type TimelineKeySelectionMode = "replace" | "toggle" | "range";
 
 export const TIMELINE_AXES: TimelineAxis[] = ["x", "y", "z"];
 export const AXIS_INDEX: Record<TimelineAxis, number> = { x: 0, y: 1, z: 2 };
@@ -21,7 +22,7 @@ export interface TimelineValueGraphElements {
 
 export interface TimelineValueGraphCallbacks {
   onToggle(): void;
-  onKeyframeSelected(keyframeId: string): void;
+  onKeyframeSelected(keyframeId: string, mode: TimelineKeySelectionMode): void;
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
   onKeyframeValueChanged(keyframeId: string, axis: TimelineAxis, value: number): void;
@@ -209,7 +210,7 @@ export class TimelineValueGraph {
           point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
           point.setAttribute("role", editable ? "button" : "img");
           point.setAttribute("tabindex", editable ? "0" : "-1");
-          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Drag horizontally to retime and vertically to edit value. Hold Shift to constrain to the dominant direction.`);
+          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, and dragging retimes or edits values.`);
           this.elements.keyLayer.appendChild(point);
         });
       });
@@ -241,7 +242,7 @@ export class TimelineValueGraph {
       timeEnd,
       started: false
     };
-    this.callbacks.onKeyframeSelected(keyframeId);
+    this.callbacks.onKeyframeSelected(keyframeId, graphSelectionMode(event));
   }
 
   private moveGraphKey(event: PointerEvent): void {
@@ -378,6 +379,12 @@ function valueFromGraphY(y: number, range: ValueGraphRange): number {
   const drawable = GRAPH_HEIGHT - padding * 2;
   const normalized = clamp((GRAPH_HEIGHT - padding - y) / drawable, 0, 1);
   return range.min + (range.max - range.min) * normalized;
+}
+
+function graphSelectionMode(event: PointerEvent): TimelineKeySelectionMode {
+  if (event.shiftKey) return "range";
+  if (event.ctrlKey || event.metaKey) return "toggle";
+  return "replace";
 }
 
 function expandedRange(values: number[]): ValueGraphRange {
