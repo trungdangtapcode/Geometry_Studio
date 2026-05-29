@@ -199,6 +199,8 @@ animation runtime where it fits:
   enabling pose-column copy, delete, paste, and retime workflows.
 - The timeline timecode shows how many visible-row keyframes exist at the
   playhead before a pose-column command is applied.
+- Visible-time action buttons are disabled when that count is zero, preventing
+  accidental no-op pose-column edits.
 - The `Copy Time` command copies visible-row keyframes at the playhead into the
   same clipboard used by normal selected-key copy/paste.
 - The `Cut Time` command copies then removes visible-row keyframes at the

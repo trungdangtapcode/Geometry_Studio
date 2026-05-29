@@ -151,6 +151,10 @@ export class KeyframeTimelinePanel {
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
   private readonly setVisibleButton = query<HTMLButtonElement>("#timeline-set-visible");
+  private readonly copyTimeButton = query<HTMLButtonElement>("#timeline-copy-time");
+  private readonly cutTimeButton = query<HTMLButtonElement>("#timeline-cut-time");
+  private readonly duplicateTimeButton = query<HTMLButtonElement>("#timeline-duplicate-time");
+  private readonly deleteTimeButton = query<HTMLButtonElement>("#timeline-delete-time");
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly soloTrackButton = query<HTMLButtonElement>("#timeline-solo-track");
@@ -482,10 +486,10 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-copy-keyframes").addEventListener("click", () => {
       this.callbacks.onCopyKeyframes([...this.selectedKeyframeIds]);
     });
-    query<HTMLButtonElement>("#timeline-copy-time").addEventListener("click", () => {
+    this.copyTimeButton.addEventListener("click", () => {
       this.callbacks.onCopyVisibleTimeKeyframes();
     });
-    query<HTMLButtonElement>("#timeline-cut-time").addEventListener("click", () => {
+    this.cutTimeButton.addEventListener("click", () => {
       this.callbacks.onCutVisibleTimeKeyframes();
     });
     query<HTMLButtonElement>("#timeline-paste-keyframes").addEventListener("click", () => {
@@ -561,10 +565,10 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
       this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);
     });
-    query<HTMLButtonElement>("#timeline-duplicate-time").addEventListener("click", () => {
+    this.duplicateTimeButton.addEventListener("click", () => {
       this.callbacks.onDuplicateVisibleTimeKeyframes();
     });
-    query<HTMLButtonElement>("#timeline-delete-time").addEventListener("click", () => {
+    this.deleteTimeButton.addEventListener("click", () => {
       this.callbacks.onDeleteVisibleTimeKeyframes();
     });
     query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
@@ -1307,6 +1311,14 @@ export class KeyframeTimelinePanel {
     const visibleText = `${visibleKeys} visible ${visibleKeys === 1 ? "key" : "keys"}`;
     this.timecodeLabel.textContent = `${formatTimecode(timelineDocument.currentTime, timelineDocument.fps)} | ${visibleText}`;
     this.timecodeLabel.title = `${visibleText} at the current playhead time under the active row filter and search.`;
+    this.syncVisibleTimeActionButtons(visibleKeys);
+  }
+
+  private syncVisibleTimeActionButtons(visibleKeys: number): void {
+    const disabled = visibleKeys === 0;
+    [this.copyTimeButton, this.cutTimeButton, this.duplicateTimeButton, this.deleteTimeButton].forEach((button) => {
+      button.disabled = disabled;
+    });
   }
 
   private visiblePlayheadKeyframeCount(timelineDocument: SceneTimelineDocument): number {

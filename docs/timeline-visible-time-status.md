@@ -14,14 +14,16 @@ predict before using `Copy Time`, `Cut Time`, `Dup Time`, or `Del Time`.
 - The same snap-aware tolerance used by `Select Time` determines whether a
   keyframe is considered to be at the playhead.
 - The count is informational only; it does not change the current selection.
+- `Copy Time`, `Cut Time`, `Dup Time`, and `Del Time` are disabled when the
+  visible-key count is zero.
 
 ## Workflow
 
 1. Filter or search the timeline to the property group being edited.
 2. Move the playhead to a pose column.
 3. Read the visible-key count in the timecode.
-4. Use a visible-time command only when the count matches the intended pose
-   column size.
+4. Use a visible-time command when the count matches the intended pose column
+   size and the command button is enabled.
 
 This reduces accidental pose-column edits because the editor shows how many
 filtered rows will be affected before the command runs.

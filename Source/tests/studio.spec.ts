@@ -678,6 +678,10 @@ test("cuts visible-row keyframes at the playhead time for paste", async ({ page 
   await page.locator("#timeline-duplicate-time").click();
   await page.locator("#timeline-cut-time").click();
   await expect(page.locator("#timeline-timecode")).toContainText("0 visible keys");
+  await expect(page.locator("#timeline-copy-time")).toBeDisabled();
+  await expect(page.locator("#timeline-cut-time")).toBeDisabled();
+  await expect(page.locator("#timeline-duplicate-time")).toBeDisabled();
+  await expect(page.locator("#timeline-delete-time")).toBeDisabled();
   await expect(page.locator("#timeline-selection")).toContainText("No keyframe selected");
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
@@ -685,6 +689,10 @@ test("cuts visible-row keyframes at the playhead time for paste", async ({ page 
   });
   await page.locator("#timeline-paste-keyframes").click();
   await expect(page.locator("#timeline-timecode")).toContainText("3 visible keys");
+  await expect(page.locator("#timeline-copy-time")).toBeEnabled();
+  await expect(page.locator("#timeline-cut-time")).toBeEnabled();
+  await expect(page.locator("#timeline-duplicate-time")).toBeEnabled();
+  await expect(page.locator("#timeline-delete-time")).toBeEnabled();
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
 
   await page.evaluate(() => {
