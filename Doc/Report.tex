@@ -22,7 +22,7 @@
 
 \title{\textbf{Geometry Studio}\\Computer Graphics 3D Project Report}
 \author{Student ID: \textit{replace with your student ID}}
-\date{May 27, 2026}
+\date{May 29, 2026}
 
 \begin{document}
 
@@ -33,10 +33,10 @@ Geometry Studio is an interactive WebGL2 application for demonstrating core
 computer graphics concepts in three-dimensional space. The project implements
 primitive geometry generation, model loading, solid/point/line rendering modes,
 perspective projection controls, affine transformations, lighting, shadows,
-texture mapping, animation, scene persistence, and an evaluator-focused tour.
-The application is built with Three.js, TypeScript, Vite, and a keyframe
-timeline editor, and is packaged as a static release that can be served locally
-for grading.
+texture mapping, animation, scene persistence, post-processing, and an
+evaluator-focused tour. The application is built with Three.js, TypeScript,
+Vite, and a keyframe timeline editor, and is packaged as a static release that
+can be served locally for grading.
 \end{abstract}
 
 \tableofcontents
@@ -161,8 +161,14 @@ The lighting system includes:
 \end{itemize}
 
 The user can control light color, intensity, position, helpers, shadow state,
-and a light sweep animation. The renderer uses \texttt{PCFSoftShadowMap} and a
-shadow-receiving ground plane to make shadows visible during grading.
+and a light sweep animation. Five direct-lighting presets are provided:
+Studio, Product, Dramatic, Soft, and Night. These presets combine ambient,
+directional, point, and spot lights into complete rigs so the evaluator can
+compare neutral, product, dramatic, soft-fill, and low-key lighting without
+manually editing every light.
+
+The renderer uses configurable shadow-map quality, \texttt{PCFSoftShadowMap},
+and a shadow-receiving ground plane to make shadows visible during grading.
 
 \subsection{Texture Mapping}
 
@@ -175,8 +181,8 @@ The project includes built-in procedural texture presets:
 
 Users can also upload bitmap images from their computer. Uploaded textures are
 loaded through \texttt{TextureLoader}, assigned to the selected material, and
-configured with sRGB color space. Repeat values on the X and Y axes can be
-adjusted from the inspector.
+configured with sRGB color space. Repeat, offset, and rotation controls can be
+adjusted from the inspector and can also be keyed in the timeline.
 
 \subsection{Model Loading}
 
@@ -300,6 +306,29 @@ If an object has active transform timeline tracks, timeline playback overrides
 the older preset transform animation for that same object. This avoids ambiguous
 motion and makes the evaluator-visible behavior deterministic.
 
+\subsection{Rendering Lab}
+
+The Rendering Lab exposes renderer controls directly in the inspector. It makes
+the project clearer during grading because the evaluator can see that the main
+viewport is a real-time WebGL raster renderer, not an offline ray tracer.
+
+Implemented rendering controls include:
+\begin{itemize}
+  \item Tone mapping: ACES, Linear, Reinhard, or none
+  \item Exposure
+  \item Shadow quality: Low, Medium, High, and Ultra
+  \item Generated PMREM environment lighting presets
+  \item PBR material presets for Ceramic, Metal, Plastic, Glass, Clay, and
+  texture comparison
+  \item Post-processing toggles for FXAA, SSAO, Bloom, and Vignette
+\end{itemize}
+
+FXAA is used as a lightweight screen-space anti-aliasing pass at the end of the
+composer chain. SSAO adds contact shading for depth perception, Bloom provides
+glow for cinematic demos, and Vignette gives an optional composition effect.
+These effects are optional and disabled conservatively by default so the release
+remains responsive on typical evaluator hardware.
+
 \subsection{Evaluation Tour}
 
 The Evaluation Tour is designed specifically for grading. It creates a scene
@@ -385,6 +414,14 @@ horizontal tool rail.}
 showing the spatial interpolation from one keyed position to the next.}
 \end{figure}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{screenshots/08-rendering-lab-lighting.png}
+\caption{Rendering Lab with Product lighting, FXAA, SSAO, tone mapping,
+environment lighting, and the direct-light preset controls visible in the
+inspector.}
+\end{figure}
+
 \section{Source Architecture}
 
 The upgraded source code is split into focused modules:
@@ -403,10 +440,14 @@ animation/timelineEditing.ts & Pure keyframe editing operations such as source r
 animation/interpolation.ts & Shared per-keyframe evaluator for Hold, Linear, and Easy Ease timing. \\
 animation/timelinePlayer.ts & Applies object Position, Rotation, and Scale tracks directly to scene objects. \\
 scene/primitives.ts & Primitive geometry, extra shapes, labels, and built-in sample model. \\
+scene/materialPresets.ts & PBR and legacy material preset definitions. \\
 scene/materials.ts & Materials, texture presets, and solid/point/line visual construction. \\
 scene/lights.ts & Stage, light rig, shadows, helpers, and light sweep. \\
+scene/lightingPresets.ts & Named direct-light rigs for Studio, Product, Dramatic, Soft, and Night lighting. \\
 scene/importers.ts & GLB, GLTF, OBJ, and STL import pipeline. \\
-renderer/pipeline.ts & WebGLRenderer, EffectComposer, OutlinePass, and resize handling. \\
+renderer/environment.ts & Generated PMREM environment lighting controller. \\
+renderer/pipeline.ts & WebGLRenderer, EffectComposer, FXAA, SSAO, Bloom, Vignette, OutlinePass, and resize handling. \\
+renderer/postProcessing.ts & Post-processing defaults, normalization, application, and status labels. \\
 animation/timeline.ts & Legacy procedural animation helper retained for compatibility. \\
 ui/template.ts & DOM template for the editor UI. \\
 ui/density.ts & UI density loading, persistence, and root layout mode application. \\
@@ -420,38 +461,33 @@ utils/resourceTracker.ts & Explicit disposal of geometries, materials, textures,
 \section{Rendering and Performance Considerations}
 
 The renderer is configured for WebGL2 with ACES tone mapping, sRGB output color
-space, soft shadows, and post-processing outline selection. Resize handling uses
-the canvas client size and caps the drawing buffer pixel count to avoid excessive
-GPU load on high-DPI displays.
+space, configurable soft shadows, generated PMREM environment lighting, and an
+EffectComposer chain for SSAO, Bloom, Vignette, selected-object outlines, FXAA,
+and final output conversion. Resize handling uses the canvas client size and
+caps the drawing buffer pixel count to avoid excessive GPU load on high-DPI
+displays. SSAO and Bloom use smaller internal buffer budgets to preserve
+interactive performance.
 
 The project explicitly disposes geometries, materials, textures, and object URLs
 when objects are rebuilt or removed. This follows standard Three.js resource
 management practices and reduces the risk of memory leaks during long editing
 sessions.
 
-\section{Planned Improvements}
+\section{Future Improvements}
 
-The current release focuses on a stable real-time WebGL editor. Future work
-should improve rendering quality while preserving interactivity and grading
-clarity.
+The current release focuses on a stable real-time WebGL editor. The following
+items are reasonable future extensions after the submitted release.
 
 \begin{enumerate}
-  \item \textbf{Rendering Lab}: add tone mapping, exposure, shadow quality, PBR
-  material presets, environment lighting controls, and a clearer rasterization
-  versus ray tracing explanation.
-  \item \textbf{Environment Lighting}: use local environment assets and
-  \texttt{PMREMGenerator} to support physically-based reflections and
-  roughness-dependent lighting.
-  \item \textbf{OBJ + MTL Import}: extend OBJ import so users can load companion
-  material files and texture images for models such as teacups, furniture, or
-  scanned objects.
-  \item \textbf{Post-Processing}: add controlled toggles for bloom, ambient
-  occlusion, color grading, and anti-aliasing passes.
-  \item \textbf{Timeline Polish}: add auto-key, duplicate keyframes, camera
-  tracks, and light/material tracks.
   \item \textbf{Path-Traced Preview}: evaluate a separate progressive still
   preview using a GPU path-tracing library. This should remain optional because
   the main editor is designed for real-time rasterized interaction.
+  \item \textbf{Advanced Curve Editing}: add Bezier handle editing in the value
+  graph while preserving the current simple keyframe workflow.
+  \item \textbf{Nested Model Tracks}: allow imported model children to expose
+  their own transform and material tracks.
+  \item \textbf{Video Export Options}: add richer WebM settings and optional GIF
+  export if browser support is reliable.
 \end{enumerate}
 
 \section{Testing}
@@ -466,6 +502,9 @@ The project includes automated browser tests with Playwright:
   \item Undo and redo
   \item Scene JSON loading
   \item Keyframe timeline creation and JSON save verification
+  \item Auto-Key initial value seeding
+  \item Rendering Lab FXAA, SSAO, Bloom, and Vignette controls
+  \item Direct lighting preset persistence
   \item Evaluation Tour activation
 \end{itemize}
 
@@ -502,8 +541,9 @@ Geometry Studio satisfies the project requirements for 3D geometry,
 rendering modes, perspective projection, affine transformations, lighting,
 shadows, texture mapping, model loading, and animation. The upgraded version
 also adds scene persistence, undo/redo, import progress, drag-and-drop, telemetry,
-an Evaluation Tour, screenshot export, and a modular source architecture. These
-features make the project easier to evaluate, easier to maintain, and more
+Rendering Lab controls, direct-lighting presets, post-processing effects, an
+Evaluation Tour, screenshot and WebM export, and a modular source architecture.
+These features make the project easier to evaluate, easier to maintain, and more
 impressive as a complete computer graphics demonstration.
 
 \end{document}
