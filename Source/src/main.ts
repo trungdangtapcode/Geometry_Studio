@@ -5,6 +5,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { updateEntryAnimation } from "./animation/timeline";
 import {
+  cascadeResolvedKeyframesByTargetFromTime,
   centerResolvedKeyframesOnTime,
   createTimelineClipboard,
   distributeResolvedKeyframesAcrossRange,
@@ -218,6 +219,7 @@ function boot(root: HTMLDivElement): void {
     onDistributeKeyframes: distributeTimelineKeyframes,
     onFitKeyframesToWorkArea: fitTimelineKeyframesToWorkArea,
     onStaggerKeyframesFromPlayhead: staggerTimelineKeyframesFromPlayhead,
+    onCascadeKeyframesFromPlayhead: cascadeTimelineKeyframesFromPlayhead,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -1394,7 +1396,8 @@ function boot(root: HTMLDivElement): void {
     }
     if (event.shiftKey && key === "g") {
       event.preventDefault();
-      staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList());
+      if (event.altKey) cascadeTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList());
+      else staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (key === "b") {
@@ -2711,6 +2714,26 @@ function boot(root: HTMLDivElement): void {
       result,
       (editResult) => editResult.skipped ? `No keyframe staggered, ${editResult.skipped} skipped.` : "Selected keyframes are already staggered from the playhead.",
       (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} staggered from ${formatNumber(playheadTime)}s${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
+  }
+
+  function cascadeTimelineKeyframesFromPlayhead(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before cascading timing.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "cascading keyframes")) return;
+
+    const step = Math.max(sceneTimeline.snapEnabled ? sceneTimeline.snapStep : 1 / sceneTimeline.fps, 0.001);
+    const playheadTime = sceneTimeline.currentTime;
+    recordHistory();
+    const result = cascadeResolvedKeyframesByTargetFromTime(sceneTimeline, sources, playheadTime, step);
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      (editResult) => editResult.skipped ? `No keyframe cascaded, ${editResult.skipped} skipped.` : "Selected keyframes already cascade from the playhead.",
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} cascaded from ${formatNumber(playheadTime)}s${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
     );
   }
 

@@ -540,7 +540,75 @@ export function staggerResolvedKeyframesFromTime(
   return retimeSourceGroups(timeline, sources, groups, (_group, index) => start + index * safeStep);
 }
 
+export function cascadeResolvedKeyframesByTargetFromTime(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  startTime: number,
+  step: number
+): EditTimelineResult {
+  if (sources.length < 2) {
+    return { edited: 0, skipped: 0, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const groups = groupSourcesByTarget(sources);
+  if (groups.length < 2) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const movingIds = new Set(sources.map((source) => source.keyframe.id));
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  const editedTimes: number[] = [];
+  let edited = 0;
+  let skipped = 0;
+  const safeStep = Math.max(step, 0.001);
+  const start = snapTimelineTime(timeline, startTime);
+
+  sources.forEach((source) => {
+    if (!occupiedTimes.has(source.track)) {
+      occupiedTimes.set(source.track, new Set(
+        source.track.keyframes
+          .filter((keyframe) => !movingIds.has(keyframe.id))
+          .map((keyframe) => timelineTimeKey(keyframe.time))
+      ));
+    }
+  });
+
+  groups.forEach((group, index) => {
+    const anchorTime = start + index * safeStep;
+    group.sources.forEach((source) => {
+      const relativeTime = source.keyframe.time - group.startTime;
+      const nextTime = snapTimelineTime(timeline, anchorTime + relativeTime);
+      const trackOccupancy = occupiedTimes.get(source.track)!;
+      const timeKey = timelineTimeKey(nextTime);
+      const blocked = nextTime < 0 || nextTime > timeline.duration || trackOccupancy.has(timeKey);
+      if (blocked) {
+        skipped += 1;
+        return;
+      }
+
+      trackOccupancy.add(timeKey);
+      if (Math.abs(source.keyframe.time - nextTime) < 0.001) return;
+      source.keyframe.time = nextTime;
+      changedTracks.add(source.track);
+      if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+      edited += 1;
+      editedTimes.push(nextTime);
+    });
+  });
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return {
+    edited,
+    skipped,
+    currentTime: editedTimes.length ? Math.min(...editedTimes) : timeline.currentTime,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
 type TimelineSourceTimeGroup = { time: number; sources: TimelineKeyframeSource[] };
+type TimelineSourceTargetGroup = { startTime: number; order: number; sources: TimelineKeyframeSource[] };
 
 function retimeSourceGroups(
   timeline: SceneTimelineDocument,
@@ -610,6 +678,26 @@ function groupSourcesByOriginalTime(sources: TimelineKeyframeSource[]): Timeline
       sources: groupSources
     }))
     .sort((left, right) => left.time - right.time);
+}
+
+function groupSourcesByTarget(sources: TimelineKeyframeSource[]): TimelineSourceTargetGroup[] {
+  const groups = new Map<string, TimelineSourceTargetGroup>();
+  sources.forEach((source, index) => {
+    const key = `${source.scope}:${source.objectId}`;
+    const group = groups.get(key);
+    if (group) {
+      group.sources.push(source);
+      group.startTime = Math.min(group.startTime, source.keyframe.time);
+    } else {
+      groups.set(key, {
+        startTime: source.keyframe.time,
+        order: index,
+        sources: [source]
+      });
+    }
+  });
+  return [...groups.values()]
+    .sort((left, right) => left.startTime - right.startTime || left.order - right.order);
 }
 
 function timelineTimeKey(time: number): number {

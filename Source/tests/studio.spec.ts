@@ -98,6 +98,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-distribute-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-fit-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-stagger-keyframes")).toBeVisible();
+  await expect(page.locator("#timeline-cascade-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
   await expect(page.locator("#timeline-solo-track")).toBeVisible();
   await expect(page.locator("#timeline-lock-track")).toBeVisible();
@@ -2264,6 +2265,74 @@ test("staggers selected timeline keyframes from the playhead", async ({ page }) 
   );
   expect(shortcutTimes).toEqual([2, 2.03, 2.07]);
 
+  expect(errors).toEqual([]);
+});
+
+test("cascades selected target keyframes from the playhead", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sphere", exact: true }).click();
+  await page.locator("#object-name").evaluate((input) => {
+    (input as HTMLInputElement).value = "Cascade Target A";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.getByRole("button", { name: "Cone", exact: true }).click();
+  await page.locator("#object-name").evaluate((input) => {
+    (input as HTMLInputElement).value = "Cascade Target B";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-row-filter").selectOption("all");
+  await page.locator("#timeline-row-search").fill("Cascade Target");
+  await expect.poll(async () =>
+    page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"][data-object-id]').count()
+  ).toBe(2);
+  await page.locator("#timeline-set-visible").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Alt+Shift+G");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  const cascadeTargetIds = sceneDocument.objects
+    .filter((object: { name: string }) => object.name.startsWith("Cascade Target"))
+    .map((object: { id: string }) => object.id);
+  expect(cascadeTargetIds).toHaveLength(2);
+  const cascadedTimes = cascadeTargetIds
+    .map((objectId: string) => {
+      const objectTimeline = sceneDocument.timeline.objects.find((
+        timeline: { objectId: string; tracks: Array<{ kind: string; keyframes: Array<{ time: number }> }> }
+      ) => timeline.objectId === objectId);
+      return objectTimeline?.tracks.find((track: { kind: string }) => track.kind === "position")?.keyframes[0]?.time;
+    })
+    .filter((time: number | undefined): time is number => typeof time === "number")
+    .sort((left: number, right: number) => left - right);
+  expect(cascadedTimes).toHaveLength(2);
+  cascadedTimes.forEach((time: number, index: number) => {
+    expect(time).toBeCloseTo(Math.round((2 + index / 30) * 1000) / 1000, 3);
+  });
   expect(errors).toEqual([]);
 });
 

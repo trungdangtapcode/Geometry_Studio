@@ -27,9 +27,9 @@ cascades, offsets, and stepped follow-through timing without dragging each key.
 3. Click `Stagger` or press `Shift+G`.
 4. Adjust the timeline snap step or FPS to change the stagger spacing.
 
-This complements Distribute and Fit: Distribute spreads keys across Work
-In/Out, Fit proportionally scales existing timing, and Stagger creates a tight
-ordered sequence starting from the edit beat.
+This complements Distribute, Fit, and Cascade: Distribute spreads keys across
+Work In/Out, Fit proportionally scales existing timing, Stagger creates a tight
+ordered sequence of timing columns, and Cascade sequences target blocks.
 
 ## Testing
 
