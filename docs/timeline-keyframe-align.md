@@ -13,9 +13,12 @@ starts at the playhead.
   the current playhead time.
 - `Shift+Enter` runs the same command when focus is outside form fields.
 - Multi-key selections preserve relative spacing.
-- The command uses the same numeric keyframe edit path as the keyframe editor,
-  so Undo/Redo, collision checks, snapping, timeline rebuilds, and transform
-  preset cleanup stay consistent.
+- The command is implemented through `moveResolvedKeyframesToTime` in
+  `animation/timelineEditing.ts`, which reuses the same block-retiming rules as
+  the numeric keyframe editor.
+- Undo/Redo, collision checks, snapping, timeline rebuilds, selected-key
+  preservation, and transform preset cleanup stay consistent with the rest of
+  the timeline editing stack.
 - If moving would collide with an unselected keyframe on the same track, that
   keyframe is skipped and the toast reports the skipped count.
 

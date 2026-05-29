@@ -8,6 +8,7 @@ import {
   createTimelineClipboard,
   duplicateResolvedKeyframes,
   editResolvedKeyframes,
+  moveResolvedKeyframesToTime,
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
   resolveTimelineKeyframeSources,
@@ -2027,11 +2028,31 @@ function boot(root: HTMLDivElement): void {
   }
 
   function moveTimelineKeyframesToPlayhead(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
-    if (keyframeIds.length === 0) {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length === 0 || sources.length === 0) {
       showToast("Select keyframes before moving them to the playhead.", "bad");
       return;
     }
-    editTimelineKeyframes(keyframeIds, { time: sceneTimeline.currentTime });
+
+    const playheadTime = sceneTimeline.currentTime;
+    recordHistory();
+    const result = moveResolvedKeyframesToTime(sceneTimeline, sources, playheadTime);
+    if (result.edited === 0) {
+      updateAllUI();
+      showToast("No keyframe timing changed.", "bad");
+      return;
+    }
+
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(result.currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
+    showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} moved to ${formatNumber(playheadTime)}s${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function editTimelineKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void {

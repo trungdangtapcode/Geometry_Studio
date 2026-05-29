@@ -286,6 +286,14 @@ export function editResolvedKeyframes(
   return { edited, skipped, currentTime, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
+export function moveResolvedKeyframesToTime(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  time: number
+): EditTimelineResult {
+  return editResolvedKeyframes(timeline, sources, { time });
+}
+
 function collectKeyframesById(
   tracks: TimelineTrackDocument[],
   ids: Set<string>,
