@@ -432,6 +432,16 @@ export function studioTemplate(): string {
                 <option value="ultra">Ultra</option>
               </select>
             </label>
+            <label>
+              <span>Environment</span>
+              <select id="environment-preset" aria-label="Environment lighting">
+                <option value="off">Off</option>
+                <option value="studio">Studio</option>
+                <option value="gallery">Gallery</option>
+                <option value="warm">Warm Studio</option>
+                <option value="cool">Cool Lab</option>
+              </select>
+            </label>
           </div>
         </section>
 

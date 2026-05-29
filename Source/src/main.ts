@@ -74,6 +74,7 @@ import type {
   MaterialMode,
   ObjectKind,
   PrimitiveType,
+  EnvironmentPresetId,
   RenderSettings,
   RenderToneMappingMode,
   RenderMode,
@@ -87,6 +88,7 @@ import type {
   TimelineTrackKind,
   ToastTone
 } from "./editor/types";
+import { createEnvironmentController, environmentPreset } from "./renderer/environment";
 import { createRenderPipeline } from "./renderer/pipeline";
 import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
 import { loadModelFromFile } from "./scene/importers";
@@ -132,6 +134,7 @@ function boot(root: HTMLDivElement): void {
   camera.position.set(7.5, 5.5, 9);
 
   const { renderer, composer, outlinePass, resize: resizePipeline } = createRenderPipeline(canvas, scene, camera);
+  const environmentController = createEnvironmentController(renderer, scene);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -174,6 +177,7 @@ function boot(root: HTMLDivElement): void {
   const stage = createStage();
   const lightRig = createLights(scene);
   applyRenderSettings(renderer, lightRig, renderSettings);
+  environmentController.apply(renderSettings);
   const motionPathRig = createMotionPathRig();
   const frustumHelper = new THREE.CameraHelper(camera);
   frustumHelper.visible = false;
@@ -687,6 +691,9 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#shadow-quality").addEventListener("change", (event) => {
       updateRenderSettings({ shadowQuality: (event.target as HTMLSelectElement).value as ShadowQuality });
     });
+    query<HTMLSelectElement>("#environment-preset").addEventListener("change", (event) => {
+      updateRenderSettings({ environment: (event.target as HTMLSelectElement).value as EnvironmentPresetId });
+    });
     query<HTMLInputElement>("#grid-toggle").addEventListener("change", (event) => {
       recordHistory();
       stage.grid.visible = (event.target as HTMLInputElement).checked;
@@ -719,6 +726,10 @@ function boot(root: HTMLDivElement): void {
     window.addEventListener("dragover", handleDragOver);
     window.addEventListener("dragleave", handleDragLeave);
     window.addEventListener("drop", handleDrop);
+    window.addEventListener("beforeunload", () => {
+      environmentController.dispose();
+      resourceTracker.disposeAll();
+    });
   }
 
   function updateSelectedEntry(mutator: (entry: SceneEntry) => void): void {
@@ -892,13 +903,15 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#tone-mapping").value = renderSettings.toneMapping;
     query<HTMLInputElement>("#render-exposure").value = String(renderSettings.exposure);
     query<HTMLSelectElement>("#shadow-quality").value = renderSettings.shadowQuality;
-    query<HTMLDivElement>("#renderer-mode").textContent = `WebGL raster | ${toneMappingLabel(renderSettings.toneMapping)} | Exposure ${formatNumber(renderSettings.exposure)} | Shadows ${shadowQualityLabel(renderSettings.shadowQuality)}`;
+    query<HTMLSelectElement>("#environment-preset").value = renderSettings.environment;
+    query<HTMLDivElement>("#renderer-mode").textContent = `WebGL raster | ${toneMappingLabel(renderSettings.toneMapping)} | Exposure ${formatNumber(renderSettings.exposure)} | Shadows ${shadowQualityLabel(renderSettings.shadowQuality)} | Environment ${environmentPreset(renderSettings.environment).label}`;
   }
 
   function updateRenderSettings(patch: Partial<RenderSettings>): void {
     recordHistory();
     renderSettings = normalizeRenderSettings({ ...renderSettings, ...patch });
     applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
     syncRenderUI();
     updateTelemetry();
   }
@@ -1566,6 +1579,7 @@ function boot(root: HTMLDivElement): void {
     applyLightDocument(document);
     renderSettings = normalizeRenderSettings(document.rendering);
     applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
     transport.set(document.playing, 1, 1);
     document.objects.forEach((object) => restoreObject(object));
     sceneTimeline = normalizeTimelineDocument(document.timeline, new Set(entries.keys()));
@@ -1581,6 +1595,7 @@ function boot(root: HTMLDivElement): void {
     updatePlayButton();
     syncLights(lightRig, entries.values());
     applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
     syncOutline();
     updateAllUI();
   }
@@ -2996,6 +3011,7 @@ function boot(root: HTMLDivElement): void {
       ["Tone", toneMappingLabel(renderSettings.toneMapping)],
       ["Exposure", formatNumber(renderSettings.exposure)],
       ["Shadow", shadowQualityLabel(renderSettings.shadowQuality)],
+      ["Environment", environmentPreset(renderSettings.environment).label],
       ["Objects", entries.size]
     ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   }

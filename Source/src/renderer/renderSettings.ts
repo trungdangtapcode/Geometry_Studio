@@ -1,10 +1,12 @@
 import * as THREE from "three";
 import type { LightRig, RenderSettings, RenderToneMappingMode, ShadowQuality } from "../editor/types";
+import { isEnvironmentPreset } from "./environment";
 
 export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
   toneMapping: "aces",
   exposure: 1.05,
-  shadowQuality: "high"
+  shadowQuality: "high",
+  environment: "studio"
 };
 
 const SHADOW_QUALITY: Record<ShadowQuality, { directional: number; local: number; type: THREE.ShadowMapType }> = {
@@ -23,7 +25,8 @@ export function normalizeRenderSettings(value: unknown): RenderSettings {
   return {
     toneMapping: isToneMappingMode(source.toneMapping) ? source.toneMapping : DEFAULT_RENDER_SETTINGS.toneMapping,
     exposure: finiteNumber(source.exposure, DEFAULT_RENDER_SETTINGS.exposure, 0.1, 3),
-    shadowQuality: isShadowQuality(source.shadowQuality) ? source.shadowQuality : DEFAULT_RENDER_SETTINGS.shadowQuality
+    shadowQuality: isShadowQuality(source.shadowQuality) ? source.shadowQuality : DEFAULT_RENDER_SETTINGS.shadowQuality,
+    environment: isEnvironmentPreset(source.environment) ? source.environment : DEFAULT_RENDER_SETTINGS.environment
   };
 }
 

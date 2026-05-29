@@ -24,6 +24,9 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#tone-mapping")).toHaveValue("aces");
   await expect(page.locator("#render-exposure")).toHaveValue("1.05");
   await expect(page.locator("#shadow-quality")).toHaveValue("high");
+  await expect(page.locator("#environment-preset")).toHaveValue("studio");
+  await page.locator("#environment-preset").selectOption("gallery");
+  await expect(page.locator("#renderer-mode")).toContainText("Environment Gallery");
   await expect(page.getByRole("button", { name: "Ceramic", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Metal", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Glass", exact: true })).toBeVisible();

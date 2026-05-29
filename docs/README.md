@@ -23,6 +23,8 @@ PDF.
   quality, telemetry, and scene JSON persistence.
 - [PBR Material Presets](pbr-material-presets.md) documents Ceramic, Metal,
   Plastic, Glass, Clay, and legacy material comparison presets.
+- [Environment Lighting Presets](environment-lighting.md) documents generated
+  PMREM studio lighting for PBR materials without runtime network assets.
 - [AE-Style Timeline Integration Research](ae-timeline-integration-research.md)
   records the no-reinvention decision for the next timeline phase: keep
   `animation-timeline-js` as the dope-sheet component and integrate proven

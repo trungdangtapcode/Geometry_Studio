@@ -50,11 +50,13 @@ export type TimelineTrackKind =
 export type TimelineInterpolation = "hold" | "linear" | "easeIn" | "easeOut" | "smooth";
 export type RenderToneMappingMode = "aces" | "linear" | "reinhard" | "none";
 export type ShadowQuality = "low" | "medium" | "high" | "ultra";
+export type EnvironmentPresetId = "off" | "studio" | "gallery" | "warm" | "cool";
 
 export interface RenderSettings {
   toneMapping: RenderToneMappingMode;
   exposure: number;
   shadowQuality: ShadowQuality;
+  environment: EnvironmentPresetId;
 }
 
 export interface SceneEntry {
@@ -109,7 +111,7 @@ export interface LoadingStatus {
 }
 
 export interface SceneDocument {
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   savedAt: string;
   selectedId: string | null;
   playing: boolean;

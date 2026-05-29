@@ -22,6 +22,7 @@ Implemented and tested:
 - Rendering Lab controls for tone mapping, exposure, shadow quality, telemetry,
   and scene JSON persistence.
 - PBR material presets for Ceramic, Metal, Plastic, Glass, and Clay.
+- Generated PMREM environment lighting presets for PBR image-based lighting.
 
 ## Research Basis
 
@@ -49,8 +50,7 @@ app interactive.
 Recommended order:
 
 1. Rendering Lab panel. Implemented: tone mapping, exposure, and shadow quality.
-2. PBR material and environment lighting upgrades. Material presets are
-   implemented; environment lighting remains a later slice.
+2. PBR material and environment lighting upgrades. Implemented.
 3. OBJ + MTL import workflow.
 4. Post-processing toggles.
 5. Timeline polish.
@@ -80,16 +80,18 @@ Acceptance:
 
 ## Phase 2: HDR/PBR Environment Lighting
 
-Use generated or bundled local environment assets, not external network URLs at
-runtime.
+Implemented with generated local environment assets, not external network URLs
+at runtime.
 
 Implementation direction:
 
-- Add local equirectangular or scene-generated environment maps.
-- Use `PMREMGenerator` so roughness and metalness look correct.
+- Add local equirectangular or scene-generated environment maps. Implemented
+  with Three.js `RoomEnvironment`.
+- Use `PMREMGenerator` so roughness and metalness look correct. Implemented.
 - Keep a toggle between plain studio lighting and environment lighting.
+  Implemented with Off, Studio, Gallery, Warm Studio, and Cool Lab presets.
 - Add material presets that visibly demonstrate roughness, metalness, and
-  transparency differences.
+  transparency differences. Implemented in the previous PBR preset slice.
 
 Why this matters:
 
