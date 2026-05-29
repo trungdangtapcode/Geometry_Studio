@@ -56,6 +56,7 @@ export interface KeyframeTimelineCallbacks {
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onDuplicateVisibleTimeKeyframes(): void;
+  onDeleteVisibleTimeKeyframes(): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
   onCenterKeyframesOnPlayhead(keyframeIds: string[]): void;
@@ -554,6 +555,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-duplicate-time").addEventListener("click", () => {
       this.callbacks.onDuplicateVisibleTimeKeyframes();
+    });
+    query<HTMLButtonElement>("#timeline-delete-time").addEventListener("click", () => {
+      this.callbacks.onDeleteVisibleTimeKeyframes();
     });
     query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());

@@ -205,6 +205,7 @@ function boot(root: HTMLDivElement): void {
     onPreviewSelectedRange: previewSelectedTimelineKeyRange,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onDuplicateVisibleTimeKeyframes: duplicateVisibleTimelineTimeKeyframes,
+    onDeleteVisibleTimeKeyframes: deleteVisibleTimelineTimeKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onCenterKeyframesOnPlayhead: centerTimelineKeyframesOnPlayhead,
@@ -2475,6 +2476,15 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+  }
+
+  function deleteVisibleTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectVisibleRowKeyframesAtCurrentTime();
+    if (selectedCount === 0) {
+      showToast(`No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to delete.`, "bad");
+      return;
+    }
+    deleteTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
   }
 
   function nudgeTimelineKeyframes(direction: -1 | 1, keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {

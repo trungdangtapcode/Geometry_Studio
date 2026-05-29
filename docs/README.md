@@ -98,6 +98,8 @@ PDF.
   documents selecting visible-row keyframes at the current playhead time.
 - [Timeline Visible Time Duplicate](timeline-visible-time-duplicate.md)
   documents duplicating visible-row pose columns from the playhead.
+- [Timeline Visible Time Delete](timeline-visible-time-delete.md) documents
+  deleting visible-row pose columns from the playhead.
 - [Timeline Visible Key Navigation](timeline-visible-key-navigation.md)
   documents previous/next keyframe navigation scoped to visible rows.
 - [Timeline Row Search](timeline-row-search.md) documents the AE-style row
@@ -191,6 +193,8 @@ animation runtime where it fits:
   enabling pose-column copy, delete, paste, and retime workflows.
 - The `Dup Time` command duplicates visible-row keyframes at the playhead by
   the active snap step, keeping the duplicated pose column selected.
+- The `Del Time` command removes visible-row keyframes at the playhead under
+  one undoable edit.
 - Previous/next visible-row keyframe commands jump the playhead through the
   current row filter/search result instead of only the active track.
 - Timeline row labels show live property values, so scrubbed Position, Rotation,
