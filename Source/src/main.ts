@@ -828,8 +828,19 @@ function boot(root: HTMLDivElement): void {
         const values = key === "rotation"
           ? [THREE.MathUtils.radToDeg((value as THREE.Euler).x), THREE.MathUtils.radToDeg((value as THREE.Euler).y), THREE.MathUtils.radToDeg((value as THREE.Euler).z)]
           : [(value as THREE.Vector3).x, (value as THREE.Vector3).y, (value as THREE.Vector3).z];
+        const keyState = transformKeyState(key);
+        const keyText = keyState.locked
+          ? "Track locked"
+          : keyState.hasPlayheadKey
+            ? "Update key at playhead"
+            : "Set key at playhead";
         return `
-          <div class="grid-label">${label}</div>
+          <div class="grid-label transform-row-label">
+            <span>${label}</span>
+            <button class="transform-key-button" type="button" data-prop="${key}" aria-label="${keyText}: ${label}" title="${keyText}" ${keyState.locked ? "disabled" : ""}>
+              <span data-icon="${keyState.locked ? "Lock" : keyState.hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span>
+            </button>
+          </div>
           ${["x", "y", "z"].map((axis, index) => `
             <label class="axis-input">
               <span>${axis.toUpperCase()}</span>
@@ -839,6 +850,15 @@ function boot(root: HTMLDivElement): void {
         `;
       })
       .join("");
+    hydrateIcons(grid);
+
+    grid.querySelectorAll<HTMLButtonElement>(".transform-key-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const kind = button.dataset.prop as "position" | "rotation" | "scale";
+        query<HTMLSelectElement>("#timeline-track-kind").value = kind;
+        setTimelineKeyframe(kind);
+      });
+    });
 
     grid.querySelectorAll<HTMLInputElement>(".transform-input").forEach((input) => {
       input.addEventListener("change", () => {
@@ -857,6 +877,14 @@ function boot(root: HTMLDivElement): void {
         updateAllUI();
       });
     });
+  }
+
+  function transformKeyState(kind: "position" | "rotation" | "scale"): { locked: boolean; hasPlayheadKey: boolean } {
+    const track = activeTimelineTrack(kind);
+    return {
+      locked: Boolean(track?.locked),
+      hasPlayheadKey: Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - sceneTimeline.currentTime) < 0.001))
+    };
   }
 
   function syncCameraUI(): void {

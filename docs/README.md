@@ -95,6 +95,8 @@ PDF.
 - [Timeline Transform Keying](timeline-transform-keying.md) documents the
   `Set TRS` command for recording Position, Rotation, and Scale as one object
   pose.
+- [Transform Inspector Keying](transform-inspector-keying.md) documents the
+  AE-style diamond buttons beside Position, Rotation, and Scale in the inspector.
 - [Timeline Axis Rows](timeline-axis-rows.md) documents X/Y/Z timeline rows for
   object Position, Rotation, and Scale.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)

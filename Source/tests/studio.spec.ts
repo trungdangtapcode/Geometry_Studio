@@ -287,6 +287,39 @@ test("shows row key diamonds only at playhead keys", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("sets transform keys from inspector diamonds", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const positionKey = page.locator('.transform-key-button[data-prop="position"]');
+  const rotationKey = page.locator('.transform-key-button[data-prop="rotation"]');
+  await expect(positionKey).toHaveAttribute("title", "Set key at playhead");
+  await positionKey.click();
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("position");
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
+  await expect(positionKey).toHaveAttribute("title", "Update key at playhead");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(positionKey).toHaveAttribute("title", "Set key at playhead");
+
+  await page.locator('.transform-input[data-prop="rotation"][data-axis="y"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "45";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await rotationKey.click();
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Rotation");
+  await expect(rotationKey).toHaveAttribute("title", "Update key at playhead");
+  expect(errors).toEqual([]);
+});
+
 test("imports OBJ with companion MTL files", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
