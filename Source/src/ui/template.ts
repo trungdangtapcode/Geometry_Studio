@@ -118,6 +118,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-fit-keyframes" type="button"><span data-icon="StretchHorizontal"></span><span>Fit Keys</span></button>
               <button class="mini-button" id="timeline-duplicate-keyframe" type="button"><span data-icon="Copy"></span><span>Duplicate</span></button>
               <button class="mini-button" id="timeline-toggle-track" type="button"><span data-icon="Eye"></span><span>Track On</span></button>
+              <button class="mini-button" id="timeline-lock-track" type="button"><span data-icon="Unlock"></span><span>Unlocked</span></button>
               <button class="mini-button danger" id="timeline-clear-track" type="button"><span data-icon="Eraser"></span><span>Clear Track</span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-out" type="button" aria-label="Zoom timeline out" title="Zoom timeline out"><span data-icon="ZoomOut"></span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-fit" type="button" aria-label="Fit timeline" title="Fit timeline"><span data-icon="Maximize2"></span></button>

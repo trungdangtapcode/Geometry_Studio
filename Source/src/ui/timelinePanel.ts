@@ -64,6 +64,7 @@ export interface KeyframeTimelineCallbacks {
   onStepMarker(direction: -1 | 1): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onToggleTrack(kind: TimelineTrackKind): void;
+  onToggleTrackLock(kind: TimelineTrackKind): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
@@ -130,6 +131,7 @@ export class KeyframeTimelinePanel {
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
+  private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly timeInput = query<HTMLInputElement>("#timeline-current-time");
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
   private readonly workStartInput = query<HTMLInputElement>("#timeline-work-start");
@@ -262,6 +264,7 @@ export class KeyframeTimelinePanel {
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
     this.syncAddKeyframeButton(timelineDocument, selectedId);
     this.syncToggleTrackButton(timelineDocument, selectedId);
+    this.syncLockTrackButton(timelineDocument, selectedId);
 
     const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
     const rowHeight = this.timelineRowHeight();
@@ -457,6 +460,9 @@ export class KeyframeTimelinePanel {
     });
     this.toggleTrackButton.addEventListener("click", () => {
       this.callbacks.onToggleTrack(this.selectedTrackKind());
+    });
+    this.lockTrackButton.addEventListener("click", () => {
+      this.callbacks.onToggleTrackLock(this.selectedTrackKind());
     });
     this.labels.addEventListener("click", (event) => {
       const keyButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-key");
@@ -735,6 +741,7 @@ export class KeyframeTimelinePanel {
             axis: row.axis,
             active: entry.id === selectedId && activeKind === row.kind,
             enabled: track?.enabled ?? true,
+            locked: track?.locked ?? false,
             hasKeyframes: Boolean(track?.keyframes.length)
           });
         });
@@ -748,6 +755,7 @@ export class KeyframeTimelinePanel {
         kind,
         active: isCameraTrack(activeKind) && activeKind === kind,
         enabled: track?.enabled ?? true,
+        locked: track?.locked ?? false,
         hasKeyframes: Boolean(track?.keyframes.length),
         extraClass: "camera-track-label"
       });
@@ -760,6 +768,7 @@ export class KeyframeTimelinePanel {
         kind,
         active: isLightTrack(activeKind) && activeKind === kind,
         enabled: track?.enabled ?? true,
+        locked: track?.locked ?? false,
         hasKeyframes: Boolean(track?.keyframes.length),
         extraClass: "light-track-label"
       });
@@ -774,31 +783,33 @@ export class KeyframeTimelinePanel {
     axis?: TimelineAxis;
     active: boolean;
     enabled: boolean;
+    locked: boolean;
     hasKeyframes: boolean;
     extraClass?: string;
   }): string {
     const label = trackLabel(options.kind, options.axis);
-    const keyText = options.hasKeyframes ? "Update keyframe" : "Add keyframe";
+    const keyText = options.locked ? "Track locked" : options.hasKeyframes ? "Update keyframe" : "Add keyframe";
     return `
-      <div class="${this.labelClass(options.active, options.enabled, options.hasKeyframes, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
+      <div class="${this.labelClass(options.active, options.enabled, options.locked, options.hasKeyframes, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
         <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
         <span class="track-label-text">
           <strong>${options.targetName}</strong>
           <small>${label}</small>
         </span>
-        <button class="timeline-row-key" type="button" aria-label="${keyText}: ${options.targetName} ${label}" title="${keyText}">
-          <span data-icon="${options.hasKeyframes ? "Diamond" : "DiamondPlus"}"></span>
+        <button class="timeline-row-key" type="button" aria-label="${keyText}: ${options.targetName} ${label}" title="${keyText}" ${options.locked ? "disabled" : ""}>
+          <span data-icon="${options.locked ? "Lock" : options.hasKeyframes ? "Diamond" : "DiamondPlus"}"></span>
         </button>
       </div>
     `;
   }
 
-  private labelClass(active: boolean, enabled: boolean, hasKeyframes: boolean, extra = ""): string {
+  private labelClass(active: boolean, enabled: boolean, locked: boolean, hasKeyframes: boolean, extra = ""): string {
     return [
       "timeline-track-label",
       extra,
       active ? "active" : "",
       hasKeyframes ? "has-keyframes" : "",
+      locked ? "locked-track" : "",
       hasKeyframes && !enabled ? "disabled-track" : ""
     ].filter(Boolean).join(" ");
   }
@@ -812,14 +823,15 @@ export class KeyframeTimelinePanel {
       const visibleRows = this.rowDescriptors(visibleKinds, true);
       visibleRows.forEach((row, index) => {
         const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
+        const locked = Boolean(track?.locked);
         rows.push({
           targetId: entry.id,
           trackKind: row.kind,
           axis: row.axis,
           min: 0,
           max: timelineDocument.duration,
-          keyframesDraggable: true,
-          groupsDraggable: true,
+          keyframesDraggable: !locked,
+          groupsDraggable: !locked,
           style: {
             height: rowHeight,
             marginBottom: index === visibleKinds.length - 1 ? 8 : 2,
@@ -843,7 +855,7 @@ export class KeyframeTimelinePanel {
             style: this.keyframeStyle(row.kind, keyframe.interpolation),
             selected: this.selectedKeyframeIds.has(keyframe.id),
             selectable: true,
-            draggable: true
+            draggable: !locked
           })) ?? []
         });
       });
@@ -851,13 +863,14 @@ export class KeyframeTimelinePanel {
     const visibleCameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId);
     visibleCameraKinds.forEach((kind, index) => {
       const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === kind);
+      const locked = Boolean(track?.locked);
       rows.push({
         targetId: CAMERA_TARGET_ID,
         trackKind: kind,
         min: 0,
         max: timelineDocument.duration,
-        keyframesDraggable: true,
-        groupsDraggable: true,
+        keyframesDraggable: !locked,
+        groupsDraggable: !locked,
         style: {
           height: rowHeight,
           marginBottom: index === visibleCameraKinds.length - 1 ? 0 : 2,
@@ -880,20 +893,21 @@ export class KeyframeTimelinePanel {
           style: this.keyframeStyle(kind, keyframe.interpolation),
           selected: this.selectedKeyframeIds.has(keyframe.id),
           selectable: true,
-          draggable: true
+          draggable: !locked
         })) ?? []
       });
     });
     const visibleLightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId);
     visibleLightKinds.forEach((kind, index) => {
       const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === kind);
+      const locked = Boolean(track?.locked);
       rows.push({
         targetId: LIGHT_TARGET_ID,
         trackKind: kind,
         min: 0,
         max: timelineDocument.duration,
-        keyframesDraggable: true,
-        groupsDraggable: true,
+        keyframesDraggable: !locked,
+        groupsDraggable: !locked,
         style: {
           height: rowHeight,
           marginBottom: index === visibleLightKinds.length - 1 ? 0 : 2,
@@ -916,7 +930,7 @@ export class KeyframeTimelinePanel {
           style: this.keyframeStyle(kind, keyframe.interpolation),
           selected: this.selectedKeyframeIds.has(keyframe.id),
           selectable: true,
-          draggable: true
+          draggable: !locked
         })) ?? []
       });
     });
@@ -943,6 +957,14 @@ export class KeyframeTimelinePanel {
     hydrateIcons(this.toggleTrackButton);
   }
 
+  private syncLockTrackButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    const state = this.selectedTrackState(timelineDocument, selectedId);
+    this.lockTrackButton.disabled = !state.hasKeyframes;
+    this.lockTrackButton.classList.toggle("danger", state.hasKeyframes && state.locked);
+    this.lockTrackButton.innerHTML = `<span data-icon="${state.locked ? "Lock" : "Unlock"}"></span><span>${state.locked ? "Locked" : "Unlocked"}</span>`;
+    hydrateIcons(this.lockTrackButton);
+  }
+
   private syncAddKeyframeButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
     const hasPlayheadKey = Boolean(this.playheadKeyframe(timelineDocument, selectedId));
     this.addKeyframeButton.innerHTML = `<span data-icon="${hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span><span>${hasPlayheadKey ? "Update Key" : "Set Key"}</span>`;
@@ -952,7 +974,7 @@ export class KeyframeTimelinePanel {
     hydrateIcons(this.addKeyframeButton);
   }
 
-  private selectedTrackState(timelineDocument: SceneTimelineDocument, selectedId: string): { enabled: boolean; hasKeyframes: boolean } {
+  private selectedTrackState(timelineDocument: SceneTimelineDocument, selectedId: string): { enabled: boolean; locked: boolean; hasKeyframes: boolean } {
     const selectedTrack = this.selectedTrackKind();
     const track = isCameraTrack(selectedTrack)
       ? timelineDocument.camera.tracks.find((candidate) => candidate.kind === selectedTrack)
@@ -963,6 +985,7 @@ export class KeyframeTimelinePanel {
           ?.tracks.find((candidate) => candidate.kind === selectedTrack);
     return {
       enabled: track?.enabled ?? true,
+      locked: track?.locked ?? false,
       hasKeyframes: Boolean(track && track.keyframes.length > 0)
     };
   }

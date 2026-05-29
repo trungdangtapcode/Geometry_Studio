@@ -188,6 +188,7 @@ export function ensureTimelineTrack(objectTimeline: { tracks: TimelineTrackDocum
       kind,
       label: TRACK_LABELS[kind],
       enabled: true,
+      locked: false,
       keyframes: []
     };
     objectTimeline.tracks.push(track);
@@ -321,6 +322,7 @@ function normalizeTrack(value: unknown): TimelineTrackDocument | null {
     kind: track.kind,
     label: typeof track.label === "string" ? track.label : TRACK_LABELS[track.kind],
     enabled: typeof track.enabled === "boolean" ? track.enabled : true,
+    locked: typeof track.locked === "boolean" ? track.locked : false,
     keyframes: Array.isArray(track.keyframes)
       ? track.keyframes.map(normalizeKeyframe).filter((keyframe): keyframe is TimelineKeyframeDocument => Boolean(keyframe))
       : []

@@ -848,6 +848,19 @@ svg {
   opacity: 0.58;
 }
 
+.timeline-track-label.locked-track {
+  background: rgba(26, 35, 42, 0.06);
+}
+
+.timeline-track-label.locked-track .timeline-row-key {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+.timeline-track-label.locked-track .track-swatch {
+  box-shadow: 0 0 0 2px rgba(26, 35, 42, 0.18);
+}
+
 .timeline-track-label.disabled-track .track-swatch {
   background: transparent !important;
   border: 1px solid currentColor;

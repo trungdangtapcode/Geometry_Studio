@@ -51,6 +51,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-distribute-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-fit-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
+  await expect(page.locator("#timeline-lock-track")).toBeVisible();
   await expect(page.locator("#timeline-add-marker")).toBeVisible();
   await expect(page.locator("#timeline-delete-marker")).toBeVisible();
   await expect(page.locator("#timeline-resize-handle")).toBeVisible();
@@ -426,6 +427,63 @@ test("marquee selects value graph keyframes", async ({ page }) => {
     nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))).sort((left, right) => left - right)
   );
   expect(selectedTimes).toEqual([0.5, 2]);
+  expect(errors).toEqual([]);
+});
+
+test("locks timeline tracks against keyframe edits", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-lock-track")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  for (const [time, value] of [[0, 0], [2, 2]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  await page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]').click();
+  await page.locator("#timeline-lock-track").click();
+  await expect(page.locator("#timeline-lock-track")).toContainText("Locked");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/locked-track/);
+  await expect(page.locator(".timeline-graph-key.graph-x.locked")).toHaveCount(2);
+
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  await page.locator("#timeline-delete-keyframe").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await positionX.evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
+
+  await page.locator("#timeline-lock-track").click();
+  await expect(page.locator("#timeline-lock-track")).toContainText("Unlocked");
+  await page.locator("#timeline-delete-keyframe").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("No selected track");
+
   expect(errors).toEqual([]);
 });
 

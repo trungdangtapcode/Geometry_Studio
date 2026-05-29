@@ -150,6 +150,10 @@ export function pasteTimelineClipboard(
       skipped += 1;
       return;
     }
+    if (track.locked) {
+      skipped += 1;
+      return;
+    }
 
     track.enabled = true;
     const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);

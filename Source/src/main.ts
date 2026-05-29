@@ -195,6 +195,7 @@ function boot(root: HTMLDivElement): void {
     onStepMarker: stepTimelineMarker,
     onClearTrack: clearTimelineTrack,
     onToggleTrack: toggleTimelineTrack,
+    onToggleTrackLock: toggleTimelineTrackLock,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
@@ -1780,12 +1781,29 @@ function boot(root: HTMLDivElement): void {
     setTimelineKeyframe(kind);
   }
 
+  function assertTimelineTrackUnlocked(track: TimelineTrackDocument | null | undefined, action: string): boolean {
+    if (!track?.locked) return true;
+    showToast(`${track.label} track is locked. Unlock it before ${action}.`, "bad");
+    return false;
+  }
+
+  function assertTimelineSourcesUnlocked(sources: TimelineKeyframeSource[], action: string): boolean {
+    const locked = sources.find((source) => source.track.locked);
+    if (!locked) return true;
+    showToast(`${locked.track.label} track is locked. Unlock it before ${action}.`, "bad");
+    return false;
+  }
+
   function setTransformTimelineKeyframes(): void {
     const entry = selectedEntry();
     if (!entry) {
       showToast("Select an object before setting transform keyframes.", "bad");
       return;
     }
+
+    const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+    const lockedTransformTrack = objectTimeline.tracks.find((track) => isObjectTransformTrackKind(track.kind) && track.locked);
+    if (!assertTimelineTrackUnlocked(lockedTransformTrack, "setting transform keyframes")) return;
 
     const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
     const values: Record<"position" | "rotation" | "scale", [number, number, number]> = {
@@ -1795,7 +1813,6 @@ function boot(root: HTMLDivElement): void {
     };
 
     recordHistory();
-    const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
     (["position", "rotation", "scale"] as const).forEach((kind) => {
       const track = ensureTimelineTrack(objectTimeline, kind);
       const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
@@ -1826,7 +1843,7 @@ function boot(root: HTMLDivElement): void {
     entry.baseScale.copy(entry.root.scale);
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
     if (clearExisting) {
-      objectTimeline.tracks = objectTimeline.tracks.filter((track) => !isObjectTransformTrackKind(track.kind));
+      objectTimeline.tracks = objectTimeline.tracks.filter((track) => !isObjectTransformTrackKind(track.kind) || track.locked);
     }
 
     const range = timelineBakeRange();
@@ -1890,6 +1907,7 @@ function boot(root: HTMLDivElement): void {
     keyframes: Array<{ time: number; value: [number, number, number]; interpolation?: TimelineInterpolation }>
   ): void {
     const track = ensureTimelineTrack(collection, kind);
+    if (track.locked) return;
     track.enabled = true;
     track.keyframes = keyframes.map((item) => {
       const keyframe = createTimelineKeyframe(item.time, item.value);
@@ -1920,8 +1938,10 @@ function boot(root: HTMLDivElement): void {
   ): void {
     const time = snapTimelineTime(sceneTimeline, options.time ?? sceneTimeline.currentTime);
     if (isCameraTrackKind(kind)) {
-      if (options.record !== false) recordHistory();
       const cameraTimeline = ensureCameraTimeline(sceneTimeline);
+      const currentTrack = cameraTimeline.tracks.find((candidate) => candidate.kind === kind);
+      if (!assertTimelineTrackUnlocked(currentTrack, "setting a keyframe")) return;
+      if (options.record !== false) recordHistory();
       const track = ensureTimelineTrack(cameraTimeline, kind);
       const value = timelineValueForCamera(kind);
       const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
@@ -1938,8 +1958,10 @@ function boot(root: HTMLDivElement): void {
     }
 
     if (isLightTrackKind(kind)) {
-      if (options.record !== false) recordHistory();
       const lightTimeline = ensureLightTimeline(sceneTimeline);
+      const currentTrack = lightTimeline.tracks.find((candidate) => candidate.kind === kind);
+      if (!assertTimelineTrackUnlocked(currentTrack, "setting a keyframe")) return;
+      if (options.record !== false) recordHistory();
       const track = ensureTimelineTrack(lightTimeline, kind);
       const value = timelineValueForLight(kind);
       const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
@@ -1960,8 +1982,10 @@ function boot(root: HTMLDivElement): void {
       if (options.notify !== false) showToast("Select an object before adding a keyframe.", "bad");
       return;
     }
-    if (options.record !== false) recordHistory();
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+    const currentTrack = objectTimeline.tracks.find((candidate) => candidate.kind === kind);
+    if (!assertTimelineTrackUnlocked(currentTrack, "setting a keyframe")) return;
+    if (options.record !== false) recordHistory();
     const track = ensureTimelineTrack(objectTimeline, kind);
     const value = timelineValueForEntry(entry, kind);
     const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
@@ -1986,6 +2010,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "deleting keyframes")) return;
     recordHistory();
     const ids = new Set(sources.map((source) => source.keyframe.id));
     sceneTimeline.camera.tracks.forEach((track) => {
@@ -2027,6 +2052,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "cutting keyframes")) return;
     timelineClipboard = createTimelineClipboard(sources);
     deleteTimelineKeyframes(sources.map((source) => source.keyframe.id), { notify: false });
     showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} cut`, "good");
@@ -2039,6 +2065,7 @@ function boot(root: HTMLDivElement): void {
     }
 
     const baseTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    if (!assertTimelineTrackUnlocked(activeTimelineTrack(timelinePanel.selectedTrackKind()), "pasting keyframes")) return;
     recordHistory();
     const result = pasteTimelineClipboard(sceneTimeline, timelineClipboard, selectedEntry()?.id ?? null, baseTime);
     clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
@@ -2066,6 +2093,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "duplicating keyframes")) return;
 
     recordHistory();
     const result = duplicateResolvedKeyframes(sceneTimeline, sources);
@@ -2092,6 +2120,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "nudging keyframes")) return;
 
     recordHistory();
     const result = nudgeResolvedKeyframes(sceneTimeline, sources, direction);
@@ -2142,6 +2171,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select keyframes before moving them to the playhead.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "moving keyframes")) return;
 
     const playheadTime = sceneTimeline.currentTime;
     recordHistory();
@@ -2160,6 +2190,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select keyframes before centering them on the playhead.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "centering keyframes")) return;
 
     const playheadTime = sceneTimeline.currentTime;
     recordHistory();
@@ -2178,6 +2209,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select at least three keyframes before roving timing.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "roving keyframes")) return;
 
     recordHistory();
     const result = roveResolvedKeyframesAcrossTime(sceneTimeline, sources);
@@ -2195,6 +2227,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select at least two keyframes before reversing timing.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "reversing keyframes")) return;
 
     recordHistory();
     const result = reverseResolvedKeyframes(sceneTimeline, sources);
@@ -2212,6 +2245,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select keyframes before snapping them to frames.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "snapping keyframes")) return;
 
     recordHistory();
     const result = snapResolvedKeyframesToFrames(sceneTimeline, sources);
@@ -2229,6 +2263,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select at least two keyframes before distributing timing.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "distributing keyframes")) return;
 
     recordHistory();
     const result = distributeResolvedKeyframesAcrossRange(sceneTimeline, sources, sceneTimeline.workStart, sceneTimeline.workEnd);
@@ -2246,6 +2281,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select at least two keyframes before fitting timing.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "fitting keyframes")) return;
 
     recordHistory();
     const result = fitResolvedKeyframesToRange(sceneTimeline, sources, sceneTimeline.workStart, sceneTimeline.workEnd);
@@ -2263,6 +2299,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "editing keyframes")) return;
 
     recordHistory();
     const result = editResolvedKeyframes(sceneTimeline, sources, patch);
@@ -2342,6 +2379,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
+    if (!assertTimelineSourcesUnlocked(sources, "changing interpolation")) return;
 
     recordHistory();
     sources.forEach(({ keyframe }) => {
@@ -2383,6 +2421,7 @@ function boot(root: HTMLDivElement): void {
         showToast(`${cameraTrackLabel(kind)} track has no keyframes.`, "bad");
         return;
       }
+      if (!assertTimelineTrackUnlocked(track, "clearing it")) return;
       recordHistory();
       sceneTimeline.camera.tracks = sceneTimeline.camera.tracks.filter((candidate) => candidate.kind !== kind);
       pruneEmptyTimelineTracks(sceneTimeline);
@@ -2399,6 +2438,7 @@ function boot(root: HTMLDivElement): void {
         showToast(`${lightTrackLabel(kind)} track has no keyframes.`, "bad");
         return;
       }
+      if (!assertTimelineTrackUnlocked(track, "clearing it")) return;
       recordHistory();
       sceneTimeline.lights.tracks = sceneTimeline.lights.tracks.filter((candidate) => candidate.kind !== kind);
       pruneEmptyTimelineTracks(sceneTimeline);
@@ -2420,6 +2460,7 @@ function boot(root: HTMLDivElement): void {
       showToast(`${objectTrackLabel(kind)} track has no keyframes.`, "bad");
       return;
     }
+    if (!assertTimelineTrackUnlocked(track, "clearing it")) return;
     recordHistory();
     objectTimeline.tracks = objectTimeline.tracks.filter((candidate) => candidate.kind !== kind);
     pruneEmptyTimelineTracks(sceneTimeline);
@@ -2446,6 +2487,19 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${track.label} track ${track.enabled ? "enabled" : "disabled"}`, "good");
+  }
+
+  function toggleTimelineTrackLock(kind: TimelineTrackKind): void {
+    const track = activeTimelineTrack(kind);
+    if (!track || track.keyframes.length === 0) {
+      showToast("Add keyframes to the active track before locking it.", "bad");
+      return;
+    }
+
+    recordHistory();
+    track.locked = !track.locked;
+    updateAllUI();
+    showToast(`${track.label} track ${track.locked ? "locked" : "unlocked"}`, "good");
   }
 
   function selectTimelineTrackLabel(targetId: string, _kind: TimelineTrackKind): void {
@@ -2508,9 +2562,10 @@ function boot(root: HTMLDivElement): void {
   }
 
   function moveTimelineKeyframe(keyframeId: string, time: number): void {
-    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     const match = findTimelineKeyframe(keyframeId);
     if (!match) return;
+    if (match.track.locked) return;
+    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     match.keyframe.time = snapTimelineTime(sceneTimeline, clamp(time, 0, sceneTimeline.duration));
     sortTimelineKeyframes(match.track);
     rebuildTimelineRuntime();
@@ -2523,9 +2578,10 @@ function boot(root: HTMLDivElement): void {
   }
 
   function moveTimelineKeyframeValue(keyframeId: string, axis: "x" | "y" | "z", value: number): void {
-    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     const match = findTimelineKeyframe(keyframeId);
     if (!match || !Number.isFinite(value)) return;
+    if (match.track.locked) return;
+    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     const axisIndex = axis === "x" ? 0 : axis === "y" ? 1 : 2;
     match.keyframe.value[axisIndex] = value;
     if (match.objectId && isObjectTransformTrackKind(match.track.kind)) clearPresetAnimationsForTimelineObjects([match.objectId]);

@@ -224,7 +224,7 @@ export class TimelineValueGraph {
     if (!track) return;
     const axisConfig = trackAxisConfig(context.selectedKind);
     const focusedAxisIndex = context.selectedAxis ? AXIS_INDEX[context.selectedAxis] : null;
-    const editable = isGraphEditableTrack(context.selectedKind);
+    const editable = isGraphEditableTrack(context.selectedKind) && !track.locked;
     [...track.keyframes]
       .sort((left, right) => left.time - right.time)
       .forEach((keyframe) => {
