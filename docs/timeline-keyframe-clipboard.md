@@ -11,6 +11,8 @@ stored as ordinary timeline keyframes.
 - Copy works from selected keyframes.
 - If no keyframe is selected, Copy uses the keyframe under the playhead on the
   active track.
+- `Ctrl+A` / `Cmd+A` selects every keyframe on the active track before bulk
+  copy, paste, nudge, interpolation, or delete operations.
 - Paste inserts copied keyframes at the current playhead time.
 - Multi-keyframe copies preserve relative timing from the earliest copied
   keyframe.
@@ -23,8 +25,8 @@ stored as ordinary timeline keyframes.
 ## Controls
 
 - Timeline toolbar: `Copy` and `Paste`.
-- Keyboard: `Ctrl+C` / `Cmd+C` and `Ctrl+V` / `Cmd+V` when focus is outside
-  form fields.
+- Keyboard: `Ctrl+A` / `Cmd+A`, `Ctrl+C` / `Cmd+C`, and `Ctrl+V` / `Cmd+V`
+  when focus is outside form fields.
 
 ## Implementation Notes
 

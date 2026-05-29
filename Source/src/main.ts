@@ -1048,6 +1048,15 @@ function boot(root: HTMLDivElement): void {
       redo();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && key === "a") {
+      event.preventDefault();
+      const selectedCount = timelinePanel.selectAllActiveTrackKeyframes();
+      showToast(selectedCount
+        ? `${selectedCount} keyframe${selectedCount === 1 ? "" : "s"} selected on active track`
+        : "No keyframes on the active track.",
+        selectedCount ? "good" : "bad");
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "c") {
       event.preventDefault();
       copyTimelineKeyframes();

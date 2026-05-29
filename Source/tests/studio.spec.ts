@@ -279,6 +279,8 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#outliner")).toContainText("Cube");
   await page.locator("#undo-btn").click();
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
   expect(errors).toEqual([]);
 });
 

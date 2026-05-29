@@ -352,6 +352,15 @@ export class KeyframeTimelinePanel {
     return [...this.selectedKeyframeIds];
   }
 
+  selectAllActiveTrackKeyframes(): number {
+    if (!this.lastTimelineDocument) return 0;
+    const track = this.playheadTrack(this.lastTimelineDocument, this.lastSelectedId);
+    this.selectedKeyframeIds = new Set(track?.keyframes.map((keyframe) => keyframe.id) ?? []);
+    this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
+    this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
+    return this.selectedKeyframeIds.size;
+  }
+
   setPlaybackTime(timelineDocument: SceneTimelineDocument, playing: boolean): void {
     this.updating = true;
     this.root.classList.toggle("playing", playing);

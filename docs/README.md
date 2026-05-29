@@ -90,6 +90,8 @@ animation runtime where it fits:
   interpolation.
 - Frame-step keyframe nudge controls retime selected or playhead keyframes
   without dragging.
+- Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,
+  delete, interpolation, and nudge workflows faster.
 - Delete and Backspace remove selected timeline keyframes before falling back to
   scene-object deletion, matching motion-graphics editor expectations.
 - A compact keyframe editor allows precise selected/playhead keyframe time and
