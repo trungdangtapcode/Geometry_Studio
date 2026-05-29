@@ -1,4 +1,5 @@
 import { evaluateTimelineTrack } from "../animation/interpolation";
+import { hasSoloTimelineTracks, isTimelineTrackRuntimeActive } from "../animation/timelineSchema";
 import type { SceneTimelineDocument, TimelineTrackDocument, TimelineTrackKind } from "../editor/types";
 import { clamp, formatNumber } from "../utils/dom";
 
@@ -151,6 +152,11 @@ export class TimelineValueGraph {
     }
     if (track.keyframes.length < 2) {
       this.clearGraph(`${formatKeyCount(track.keyframes.length)} | add another key`);
+      return;
+    }
+    const soloActive = hasSoloTimelineTracks(timelineDocument);
+    if (!isTimelineTrackRuntimeActive(track, soloActive)) {
+      this.clearGraph("Muted by solo");
       return;
     }
 

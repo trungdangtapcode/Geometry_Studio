@@ -40,7 +40,9 @@ import {
   hasLightTimelineTracks,
   hasObjectTransformTimelineTracks,
   hasObjectTimelineTracks,
+  hasSoloTimelineTracks,
   hasTimelineTracks,
+  isTimelineTrackRuntimeActive,
   normalizeTimelineDocument,
   pruneEmptyTimelineTracks,
   removeTimelineObject,
@@ -196,6 +198,7 @@ function boot(root: HTMLDivElement): void {
     onClearTrack: clearTimelineTrack,
     onToggleTrack: toggleTimelineTrack,
     onToggleTrackLock: toggleTimelineTrackLock,
+    onToggleTrackSolo: toggleTimelineTrackSolo,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
@@ -2502,6 +2505,24 @@ function boot(root: HTMLDivElement): void {
     showToast(`${track.label} track ${track.locked ? "locked" : "unlocked"}`, "good");
   }
 
+  function toggleTimelineTrackSolo(kind: TimelineTrackKind): void {
+    const track = activeTimelineTrack(kind);
+    if (!track || track.keyframes.length === 0) {
+      showToast("Add keyframes to the active track before soloing it.", "bad");
+      return;
+    }
+
+    recordHistory();
+    track.solo = !track.solo;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`${track.label} track ${track.solo ? "soloed" : "unsoloed"}`, "good");
+  }
+
   function selectTimelineTrackLabel(targetId: string, _kind: TimelineTrackKind): void {
     if (entries.has(targetId)) {
       setSelected(targetId);
@@ -2649,8 +2670,10 @@ function boot(root: HTMLDivElement): void {
 
   function applyCameraTimeline(): void {
     if (!hasCameraTimelineTracks(sceneTimeline)) return;
+    const soloActive = hasSoloTimelineTracks(sceneTimeline);
     let projectionChanged = false;
     sceneTimeline.camera.tracks.forEach((track) => {
+      if (!isTimelineTrackRuntimeActive(track, soloActive)) return;
       const value = evaluateTimelineTrack(track, sceneTimeline.currentTime);
       if (!value) return;
       if (track.kind === "cameraPosition") {
@@ -2671,7 +2694,9 @@ function boot(root: HTMLDivElement): void {
 
   function applyLightTimeline(): void {
     if (!hasLightTimelineTracks(sceneTimeline)) return;
+    const soloActive = hasSoloTimelineTracks(sceneTimeline);
     sceneTimeline.lights.tracks.forEach((track) => {
+      if (!isTimelineTrackRuntimeActive(track, soloActive)) return;
       const value = evaluateTimelineTrack(track, sceneTimeline.currentTime);
       if (!value) return;
       const light = lightForTrackKind(track.kind);
@@ -2689,6 +2714,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function applyObjectPropertyTimeline(): void {
+    const soloActive = hasSoloTimelineTracks(sceneTimeline);
     sceneTimeline.objects.forEach((objectTimeline) => {
       const entry = entries.get(objectTimeline.objectId);
       if (!entry) return;
@@ -2696,6 +2722,7 @@ function boot(root: HTMLDivElement): void {
       let textureChanged = false;
       objectTimeline.tracks.forEach((track) => {
         if (!isObjectPropertyTrackKind(track.kind)) return;
+        if (!isTimelineTrackRuntimeActive(track, soloActive)) return;
         const value = evaluateTimelineTrack(track, sceneTimeline.currentTime);
         if (!value) return;
         if (track.kind === "objectColor") {

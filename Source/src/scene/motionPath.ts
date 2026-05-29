@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { evaluateTimelineTrack } from "../animation/interpolation";
+import { hasSoloTimelineTracks, isTimelineTrackRuntimeActive } from "../animation/timelineSchema";
 import type { SceneEntry, SceneTimelineDocument, TimelineKeyframeDocument, TimelineTrackDocument } from "../editor/types";
 
 export interface MotionPathRig {
@@ -60,7 +61,8 @@ export function updateMotionPath(
     .find((objectTimeline) => objectTimeline.objectId === selectedEntry.id)
     ?.tracks.find((candidate) => candidate.kind === "position");
 
-  if (!track || !track.enabled || track.keyframes.length < 2) {
+  const soloActive = hasSoloTimelineTracks(timeline);
+  if (!track || track.keyframes.length < 2 || !isTimelineTrackRuntimeActive(track, soloActive)) {
     clearMotionPath(rig);
     return;
   }

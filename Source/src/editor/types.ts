@@ -169,6 +169,7 @@ export interface TimelineTrackDocument {
   label: string;
   enabled: boolean;
   locked: boolean;
+  solo: boolean;
   keyframes: TimelineKeyframeDocument[];
 }
 

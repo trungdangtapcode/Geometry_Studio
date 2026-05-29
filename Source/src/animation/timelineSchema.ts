@@ -189,6 +189,7 @@ export function ensureTimelineTrack(objectTimeline: { tracks: TimelineTrackDocum
       label: TRACK_LABELS[kind],
       enabled: true,
       locked: false,
+      solo: false,
       keyframes: []
     };
     objectTimeline.tracks.push(track);
@@ -260,32 +261,46 @@ export function copyTimelineObject(timeline: SceneTimelineDocument, sourceObject
 }
 
 export function hasTimelineTracks(timeline: SceneTimelineDocument): boolean {
-  return timeline.camera.tracks.some((track) => track.enabled && track.keyframes.length > 0) ||
-    timeline.lights.tracks.some((track) => track.enabled && track.keyframes.length > 0) ||
+  const soloActive = hasSoloTimelineTracks(timeline);
+  return timeline.camera.tracks.some((track) => isTimelineTrackRuntimeActive(track, soloActive)) ||
+    timeline.lights.tracks.some((track) => isTimelineTrackRuntimeActive(track, soloActive)) ||
     timeline.objects.some((object) =>
-    object.tracks.some((track) => track.enabled && track.keyframes.length > 0)
+    object.tracks.some((track) => isTimelineTrackRuntimeActive(track, soloActive))
   );
 }
 
 export function hasCameraTimelineTracks(timeline: SceneTimelineDocument): boolean {
-  return timeline.camera.tracks.some((track) => track.enabled && track.keyframes.length > 0);
+  const soloActive = hasSoloTimelineTracks(timeline);
+  return timeline.camera.tracks.some((track) => isTimelineTrackRuntimeActive(track, soloActive));
 }
 
 export function hasLightTimelineTracks(timeline: SceneTimelineDocument): boolean {
-  return timeline.lights.tracks.some((track) => track.enabled && track.keyframes.length > 0);
+  const soloActive = hasSoloTimelineTracks(timeline);
+  return timeline.lights.tracks.some((track) => isTimelineTrackRuntimeActive(track, soloActive));
 }
 
 export function hasObjectTimelineTracks(timeline: SceneTimelineDocument, objectId: string): boolean {
+  const soloActive = hasSoloTimelineTracks(timeline);
   return Boolean(timeline.objects.find((object) =>
-    object.objectId === objectId && object.tracks.some((track) => track.enabled && track.keyframes.length > 0)
+    object.objectId === objectId && object.tracks.some((track) => isTimelineTrackRuntimeActive(track, soloActive))
   ));
 }
 
 export function hasObjectTransformTimelineTracks(timeline: SceneTimelineDocument, objectId: string): boolean {
+  const soloActive = hasSoloTimelineTracks(timeline);
   return Boolean(timeline.objects.find((object) =>
     object.objectId === objectId &&
-    object.tracks.some((track) => TRANSFORM_TRACK_KINDS.has(track.kind) && track.enabled && track.keyframes.length > 0)
+    object.tracks.some((track) => TRANSFORM_TRACK_KINDS.has(track.kind) && isTimelineTrackRuntimeActive(track, soloActive))
   ));
+}
+
+export function hasSoloTimelineTracks(timeline: SceneTimelineDocument): boolean {
+  return allTimelineTracks(timeline).some((track) => track.enabled && track.solo && track.keyframes.length > 0);
+}
+
+export function isTimelineTrackRuntimeActive(track: TimelineTrackDocument, soloActive: boolean): boolean {
+  if (!track.enabled || track.keyframes.length === 0) return false;
+  return !soloActive || track.solo;
 }
 
 export function snapTimelineTime(timeline: SceneTimelineDocument, time: number): number {
@@ -323,10 +338,19 @@ function normalizeTrack(value: unknown): TimelineTrackDocument | null {
     label: typeof track.label === "string" ? track.label : TRACK_LABELS[track.kind],
     enabled: typeof track.enabled === "boolean" ? track.enabled : true,
     locked: typeof track.locked === "boolean" ? track.locked : false,
+    solo: typeof track.solo === "boolean" ? track.solo : false,
     keyframes: Array.isArray(track.keyframes)
       ? track.keyframes.map(normalizeKeyframe).filter((keyframe): keyframe is TimelineKeyframeDocument => Boolean(keyframe))
       : []
   };
+}
+
+function allTimelineTracks(timeline: SceneTimelineDocument): TimelineTrackDocument[] {
+  return [
+    ...timeline.camera.tracks,
+    ...timeline.lights.tracks,
+    ...timeline.objects.flatMap((object) => object.tracks)
+  ];
 }
 
 function normalizeKeyframe(value: unknown): TimelineKeyframeDocument | null {

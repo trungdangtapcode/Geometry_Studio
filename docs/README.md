@@ -69,7 +69,7 @@ PDF.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
-  enable/disable and lock/unlock behavior.
+  enable/disable, solo, and lock/unlock behavior.
 - [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
   label selection and active/disabled row states.
 - [Timeline Row Keying](timeline-row-keying.md) documents the AE-style diamond

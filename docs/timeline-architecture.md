@@ -105,6 +105,8 @@ interface TimelineTrackDocument {
   kind: TimelineTrackKind;
   label: string;
   enabled: boolean;
+  solo: boolean;
+  locked: boolean;
   keyframes: TimelineKeyframeDocument[];
 }
 

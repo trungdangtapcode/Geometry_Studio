@@ -852,6 +852,14 @@ svg {
   background: rgba(26, 35, 42, 0.06);
 }
 
+.timeline-track-label.solo-track {
+  background: rgba(244, 173, 47, 0.13);
+}
+
+.timeline-track-label.solo-track.active {
+  box-shadow: inset 3px 0 0 var(--amber);
+}
+
 .timeline-track-label.locked-track .timeline-row-key {
   cursor: not-allowed;
   color: var(--muted);
@@ -859,6 +867,10 @@ svg {
 
 .timeline-track-label.locked-track .track-swatch {
   box-shadow: 0 0 0 2px rgba(26, 35, 42, 0.18);
+}
+
+.timeline-track-label.solo-track .track-swatch {
+  box-shadow: 0 0 0 2px rgba(244, 173, 47, 0.28);
 }
 
 .timeline-track-label.disabled-track .track-swatch {

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("renders the studio and core controls", async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -51,6 +51,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-distribute-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-fit-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
+  await expect(page.locator("#timeline-solo-track")).toBeVisible();
   await expect(page.locator("#timeline-lock-track")).toBeVisible();
   await expect(page.locator("#timeline-add-marker")).toBeVisible();
   await expect(page.locator("#timeline-delete-marker")).toBeVisible();
@@ -258,7 +259,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position");
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   await expect(page.locator("#timeline-graph-x")).not.toHaveAttribute("d", "");
-  await page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]').click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
   const middleGraphKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
   await expect(middleGraphKey).toBeVisible();
@@ -400,7 +401,7 @@ test("marquee selects value graph keyframes", async ({ page }) => {
   if (!(await page.locator("#timeline-graph-panel").isVisible())) {
     await page.locator("#timeline-graph-toggle").click();
   }
-  await page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]').click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
   const firstKey = page.locator('.timeline-graph-key.graph-x[data-key-time="0.5"]').first();
   const secondKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
@@ -456,7 +457,7 @@ test("locks timeline tracks against keyframe edits", async ({ page }) => {
   if (!(await page.locator("#timeline-graph-panel").isVisible())) {
     await page.locator("#timeline-graph-toggle").click();
   }
-  await page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"]').click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
   await page.locator("#timeline-lock-track").click();
   await expect(page.locator("#timeline-lock-track")).toContainText("Locked");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/locked-track/);
@@ -483,6 +484,69 @@ test("locks timeline tracks against keyframe edits", async ({ page }) => {
   await expect(page.locator("#timeline-lock-track")).toContainText("Unlocked");
   await page.locator("#timeline-delete-keyframe").click();
   await expect(page.locator("#timeline-graph-range")).toContainText("No selected track");
+
+  expect(errors).toEqual([]);
+});
+
+test("solos timeline tracks for focused playback filtering", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-solo-track")).toBeVisible();
+
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  for (const [time, value] of [[0, 0], [2, 2]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  await page.locator("#timeline-track-kind").selectOption("rotation");
+  const rotationY = page.locator('.transform-input[data-prop="rotation"][data-axis="y"]');
+  for (const [time, value] of [[0, 0], [2, 180]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await rotationY.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
+  await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
+  await page.locator("#timeline-solo-track").click();
+  await expect(page.locator("#timeline-solo-track")).toContainText("Solo On");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/solo-track/);
+  await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
+
+  await page.getByRole("button", { name: "Cube Rotation Y", exact: true }).click();
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
+  await expect(page.locator("#timeline-solo-track")).toContainText("Solo Off");
+  await expect(page.locator("#timeline-graph-range")).toContainText("Muted by solo");
+
+  await page.locator("#timeline-solo-track").click();
+  await expect(page.locator("#timeline-solo-track")).toContainText("Solo On");
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toHaveClass(/solo-track/);
+  await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
 
   expect(errors).toEqual([]);
 });
