@@ -298,6 +298,30 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   expect(groupedTimes[2] - groupedTimes[1]).toBeCloseTo(2, 1);
   await page.locator("#undo-btn").click();
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
+  await page.locator("#timeline-snap-step").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.25";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.keyboard.press("Control+A");
+  const stretchMiddleKey = page.locator('.timeline-graph-key.graph-x.selected[data-key-time="2"]').first();
+  await expect(stretchMiddleKey).toBeVisible();
+  const stretchMiddleBox = await stretchMiddleKey.boundingBox();
+  expect(stretchMiddleBox).toBeTruthy();
+  await page.mouse.move(stretchMiddleBox!.x + stretchMiddleBox!.width / 2, stretchMiddleBox!.y + stretchMiddleBox!.height / 2);
+  await page.keyboard.down("Alt");
+  await page.mouse.down();
+  await page.mouse.move(stretchMiddleBox!.x + stretchMiddleBox!.width / 2 + 76, stretchMiddleBox!.y + stretchMiddleBox!.height / 2);
+  await page.mouse.up();
+  await page.keyboard.up("Alt");
+  const stretchedTimes = await page.locator(".timeline-graph-key.graph-x.selected").evaluateAll((nodes) =>
+    nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))).sort((left, right) => left - right)
+  );
+  expect(stretchedTimes).toHaveLength(3);
+  expect(stretchedTimes[0]).toBeCloseTo(0, 1);
+  expect(stretchedTimes[1]).toBeGreaterThan(2.2);
+  expect(stretchedTimes[2] - stretchedTimes[1]).toBeCloseTo(stretchedTimes[1] - stretchedTimes[0], 1);
+  await page.locator("#undo-btn").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   expect(errors).toEqual([]);
 });
 

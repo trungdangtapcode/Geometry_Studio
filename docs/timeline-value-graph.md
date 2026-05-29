@@ -24,6 +24,9 @@ actually do before pressing Play.
   current anchor key and the clicked key.
 - Dragging a key that is already part of a multi-key selection retimes and edits
   the selected keys together, preserving their relative timing where possible.
+- Alt-dragging one selected graph key stretches selected-key timing
+  proportionally from the opposite edge, matching the time-compress/expand
+  workflow used in motion-graphics editors.
 - Dragging a key point horizontally retimes the keyframe, and dragging
   vertically edits that keyframe channel value. For precise transform edits,
   select the X, Y, or Z row first so overlapping channel points collapse to the
@@ -86,6 +89,8 @@ The Playwright smoke workflow verifies that:
   deleting the scene object.
 - Dragging one selected graph key after `Ctrl+A` moves the selected active-track
   keys together while preserving their spacing.
+- Alt-dragging one selected graph key after `Ctrl+A` stretches selected-key
+  timing proportionally while keeping the anchor edge fixed.
 - A graph key point can be dragged horizontally and vertically to retime a
   Position key and change its value on the active snap step.
 - Holding Shift while dragging vertically edits value without changing key time.

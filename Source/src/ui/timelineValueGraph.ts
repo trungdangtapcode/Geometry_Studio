@@ -55,6 +55,12 @@ type ValueGraphDragKey = {
   startValue: number;
 };
 
+type ValueGraphKeyUpdate = {
+  keyframeId: string;
+  time: number;
+  value: number;
+};
+
 type ValueGraphDragState = {
   pointerId: number;
   startX: number;
@@ -221,7 +227,7 @@ export class TimelineValueGraph {
           point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
           point.setAttribute("role", editable ? "button" : "img");
           point.setAttribute("tabindex", editable ? "0" : "-1");
-          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, and dragging retimes or edits values.`);
+          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, Alt drag stretches selected keys, and dragging retimes or edits values.`);
           this.elements.keyLayer.appendChild(point);
         });
       });
@@ -279,13 +285,28 @@ export class TimelineValueGraph {
       this.callbacks.onDragStarted();
     }
     const constrained = this.constrainDragValues(event, drag);
-    const timeDelta = constrained.time - drag.startTime;
-    const valueDelta = constrained.value - drag.startValue;
-    drag.keyframes.forEach((keyframe) => {
-      this.callbacks.onKeyframeMoved(keyframe.keyframeId, keyframe.startTime + timeDelta);
-      this.callbacks.onKeyframeValueChanged(keyframe.keyframeId, drag.axis, keyframe.startValue + valueDelta);
+    this.dragKeyUpdates(event, drag, constrained).forEach((update) => {
+      this.callbacks.onKeyframeMoved(update.keyframeId, update.time);
+      this.callbacks.onKeyframeValueChanged(update.keyframeId, drag.axis, update.value);
     });
     if (this.lastContext) this.render(this.lastContext);
+  }
+
+  private dragKeyUpdates(
+    event: PointerEvent,
+    drag: ValueGraphDragState,
+    constrained: { time: number; value: number }
+  ): ValueGraphKeyUpdate[] {
+    if (event.altKey && drag.keyframes.length > 1) {
+      return stretchKeyUpdates(drag, constrained.time);
+    }
+    const timeDelta = constrained.time - drag.startTime;
+    const valueDelta = constrained.value - drag.startValue;
+    return drag.keyframes.map((keyframe) => ({
+      keyframeId: keyframe.keyframeId,
+      time: keyframe.startTime + timeDelta,
+      value: keyframe.startValue + valueDelta
+    }));
   }
 
   private constrainDragValues(event: PointerEvent, drag: ValueGraphDragState): { time: number; value: number } {
@@ -293,7 +314,8 @@ export class TimelineValueGraph {
       time: this.timeFromPointer(event, drag.timeStart, drag.timeEnd),
       value: this.valueFromPointer(event, drag.range)
     };
-    raw.time = constrainedGroupTime(raw.time, drag);
+    raw.time = event.altKey ? constrainedStretchTargetTime(raw.time, drag) : constrainedGroupTime(raw.time, drag);
+    if (event.altKey && drag.keyframes.length > 1) return { time: raw.time, value: drag.startValue };
     if (!event.shiftKey && !this.shiftPressed) return raw;
     const deltaX = Math.abs(event.clientX - drag.startX);
     const deltaY = Math.abs(event.clientY - drag.startY);
@@ -429,6 +451,50 @@ function constrainedGroupTime(time: number, drag: ValueGraphDragState): number {
   const maxDelta = Math.max(0, drag.duration - drag.maxStartTime);
   const delta = clamp(time - drag.startTime, minDelta, maxDelta);
   return drag.startTime + delta;
+}
+
+function constrainedStretchTargetTime(time: number, drag: ValueGraphDragState): number {
+  if (drag.keyframes.length <= 1) return time;
+  const anchor = stretchAnchorTime(drag);
+  const denominator = drag.startTime - anchor;
+  if (Math.abs(denominator) < 0.001) return constrainedGroupTime(time, drag);
+  const desiredScale = (time - anchor) / denominator;
+  const scale = clamp(desiredScale, 0.05, maxStretchScale(drag, anchor));
+  return anchor + denominator * scale;
+}
+
+function stretchKeyUpdates(drag: ValueGraphDragState, targetTime: number): ValueGraphKeyUpdate[] {
+  const anchor = stretchAnchorTime(drag);
+  const denominator = drag.startTime - anchor;
+  if (Math.abs(denominator) < 0.001) {
+    const timeDelta = constrainedGroupTime(targetTime, drag) - drag.startTime;
+    return drag.keyframes.map((keyframe) => ({
+      keyframeId: keyframe.keyframeId,
+      time: keyframe.startTime + timeDelta,
+      value: keyframe.startValue
+    }));
+  }
+
+  const scale = clamp((targetTime - anchor) / denominator, 0.05, maxStretchScale(drag, anchor));
+  return drag.keyframes.map((keyframe) => ({
+    keyframeId: keyframe.keyframeId,
+    time: anchor + (keyframe.startTime - anchor) * scale,
+    value: keyframe.startValue
+  }));
+}
+
+function stretchAnchorTime(drag: ValueGraphDragState): number {
+  const distanceToMin = Math.abs(drag.startTime - drag.minStartTime);
+  const distanceToMax = Math.abs(drag.maxStartTime - drag.startTime);
+  return distanceToMin >= distanceToMax ? drag.minStartTime : drag.maxStartTime;
+}
+
+function maxStretchScale(drag: ValueGraphDragState, anchor: number): number {
+  const farthest = anchor === drag.minStartTime ? drag.maxStartTime : drag.minStartTime;
+  const denominator = farthest - anchor;
+  if (Math.abs(denominator) < 0.001) return 1;
+  const boundary = denominator > 0 ? drag.duration : 0;
+  return Math.max(0.05, Math.abs((boundary - anchor) / denominator));
 }
 
 function expandedRange(values: number[]): ValueGraphRange {
