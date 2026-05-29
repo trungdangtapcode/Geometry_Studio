@@ -42,6 +42,8 @@ PDF.
   frame-step controls, Work Out jump, and timecode display.
 - [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and
   keyboard timeline zoom behavior.
+- [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents
+  J/K/L forward, pause, and reverse playback behavior.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step
@@ -128,6 +130,8 @@ animation runtime where it fits:
   authoring, navigation, and cleanup.
 - Work area editing supports Start/Out buttons plus `B`, `N`, and `Shift+B`
   keyboard workflows for fast preview-range authoring.
+- J/K/L transport shortcuts provide forward, pause, and reverse playback inside
+  the active work area.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
   keeping playback inspectable from the timeline.
 - The keyframe dock has a persisted height resize handle, with row labels and

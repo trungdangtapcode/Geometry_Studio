@@ -136,6 +136,7 @@ function boot(root: HTMLDivElement): void {
   let selectedId = "";
   let idCounter = 1;
   let playing = false;
+  let playbackDirection: -1 | 1 = 1;
   let transformSpace: "world" | "local" = "world";
   let lastFpsTime = performance.now();
   let frameCount = 0;
@@ -1124,6 +1125,21 @@ function boot(root: HTMLDivElement): void {
       else addTimelineMarker("");
       return;
     }
+    if (key === "j") {
+      event.preventDefault();
+      playTimeline(-1);
+      return;
+    }
+    if (key === "k") {
+      event.preventDefault();
+      pauseTimeline();
+      return;
+    }
+    if (key === "l") {
+      event.preventDefault();
+      playTimeline(1);
+      return;
+    }
     if (key === "t") setTransformMode("translate");
     if (key === "r") setTransformMode("rotate");
     if (key === "s") setTransformMode("scale");
@@ -1179,13 +1195,30 @@ function boot(root: HTMLDivElement): void {
   }
 
   function togglePlay(): void {
-    playing = !playing;
-    if (playing && (sceneTimeline.currentTime < sceneTimeline.workStart || sceneTimeline.currentTime >= sceneTimeline.workEnd)) {
+    if (playing) pauseTimeline();
+    else playTimeline(1, "Timeline running");
+  }
+
+  function playTimeline(direction: -1 | 1, message = direction > 0 ? "Timeline running forward" : "Timeline running backward"): void {
+    setPlayback(true, direction, message);
+  }
+
+  function pauseTimeline(message = "Timeline paused"): void {
+    setPlayback(false, playbackDirection, message);
+  }
+
+  function setPlayback(nextPlaying: boolean, direction: -1 | 1, message: string): void {
+    playbackDirection = direction;
+    playing = nextPlaying;
+    if (playing && playbackDirection > 0 && (sceneTimeline.currentTime < sceneTimeline.workStart || sceneTimeline.currentTime >= sceneTimeline.workEnd)) {
       setTimelineTime(sceneTimeline.workStart);
+    }
+    if (playing && playbackDirection < 0 && (sceneTimeline.currentTime <= sceneTimeline.workStart || sceneTimeline.currentTime > sceneTimeline.workEnd)) {
+      setTimelineTime(sceneTimeline.workEnd);
     }
     updatePlayButton();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
-    showToast(playing ? "Timeline running" : "Timeline paused", "good");
+    showToast(message, "good");
   }
 
   function startCinematicDemo(): void {
@@ -1523,20 +1556,40 @@ function boot(root: HTMLDivElement): void {
     const workEnd = clamp(sceneTimeline.workEnd, workStart + 0.001, sceneTimeline.duration);
     const span = Math.max(workEnd - workStart, 0.001);
     let nextTime = sceneTimeline.currentTime + delta;
-    if (nextTime < workStart || sceneTimeline.currentTime > workEnd) {
-      nextTime = workStart;
-    } else if (nextTime > workEnd) {
-      if (recordingPreview) {
+    if (delta >= 0) {
+      if (nextTime < workStart || sceneTimeline.currentTime > workEnd) {
+        nextTime = workStart;
+      } else if (nextTime > workEnd) {
+        if (recordingPreview) {
+          nextTime = workEnd;
+          playing = false;
+          updatePlayButton();
+          window.setTimeout(() => stopPreviewRecording(false), 0);
+        } else if (sceneTimeline.loop) {
+          nextTime = workStart + ((nextTime - workEnd) % span);
+        } else {
+          nextTime = workEnd;
+          playing = false;
+          updatePlayButton();
+        }
+      }
+    } else {
+      if (nextTime > workEnd || sceneTimeline.currentTime < workStart) {
         nextTime = workEnd;
-        playing = false;
-        updatePlayButton();
-        window.setTimeout(() => stopPreviewRecording(false), 0);
-      } else if (sceneTimeline.loop) {
-        nextTime = workStart + ((nextTime - workEnd) % span);
-      } else {
-        nextTime = workEnd;
-        playing = false;
-        updatePlayButton();
+      } else if (nextTime < workStart) {
+        if (recordingPreview) {
+          nextTime = workStart;
+          playing = false;
+          updatePlayButton();
+          window.setTimeout(() => stopPreviewRecording(false), 0);
+        } else if (sceneTimeline.loop) {
+          nextTime = workEnd - ((workStart - nextTime) % span);
+          if (Math.abs(nextTime - workEnd) < 0.001) nextTime = workStart;
+        } else {
+          nextTime = workStart;
+          playing = false;
+          updatePlayButton();
+        }
       }
     }
     sceneTimeline.currentTime = roundTime(nextTime);
@@ -2448,6 +2501,7 @@ function boot(root: HTMLDivElement): void {
       showToast("WebM preview exported", "good");
     });
     recordingPreview = true;
+    playbackDirection = 1;
     updateRecordingButton();
     setTimelineTime(sceneTimeline.workStart);
     playing = true;
@@ -2501,9 +2555,10 @@ function boot(root: HTMLDivElement): void {
     const elapsed = clock.elapsedTime;
 
     if (playing) {
-      advanceTimeline(delta);
+      const playbackDelta = delta * playbackDirection;
+      advanceTimeline(playbackDelta);
       entries.forEach((entry) => {
-        if (!hasObjectTransformTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, delta, elapsed);
+        if (!hasObjectTransformTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, playbackDelta, elapsed);
       });
     }
     if (lightRig.sweep && !hasLightTimelineTracks(sceneTimeline)) updateLightSweep(lightRig, elapsed);

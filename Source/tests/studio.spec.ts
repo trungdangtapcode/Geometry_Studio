@@ -468,6 +468,43 @@ test("supports timeline marker keyboard shortcuts", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("supports JKL timeline transport shortcuts", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-current-time")).toBeVisible();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+  const forwardStart = Number(await page.locator("#timeline-current-time").inputValue());
+  await page.keyboard.press("l");
+  await expect(page.locator("#play-toggle")).toContainText("Pause");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(forwardStart);
+
+  await page.keyboard.press("k");
+  await expect(page.locator("#play-toggle")).toContainText("Play");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+  const reverseStart = Number(await page.locator("#timeline-current-time").inputValue());
+  await page.keyboard.press("j");
+  await expect(page.locator("#play-toggle")).toContainText("Pause");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeLessThan(reverseStart);
+  await page.keyboard.press("k");
+  await expect(page.locator("#play-toggle")).toContainText("Play");
+
+  expect(errors).toEqual([]);
+});
+
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
   test.setTimeout(480_000);
   const errors: string[] = [];
