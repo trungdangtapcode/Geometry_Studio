@@ -40,6 +40,7 @@ export interface KeyframeTimelineCallbacks {
   onReverseKeyframes(keyframeIds: string[]): void;
   onSnapKeyframesToFrames(keyframeIds: string[]): void;
   onDistributeKeyframes(keyframeIds: string[]): void;
+  onFitKeyframesToWorkArea(keyframeIds: string[]): void;
   onEditKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void;
   onAddMarker(label: string): void;
   onDeleteMarker(markerId: string | null): void;
@@ -472,6 +473,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-distribute-keyframes").addEventListener("click", () => {
       this.callbacks.onDistributeKeyframes([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-fit-keyframes").addEventListener("click", () => {
+      this.callbacks.onFitKeyframesToWorkArea([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-add-marker").addEventListener("click", () => {
       this.callbacks.onAddMarker(this.markerLabelInput.value.trim());

@@ -398,14 +398,62 @@ export function distributeResolvedKeyframesAcrossRange(
     return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
   }
 
-  const movingIds = new Set(sources.map((source) => source.keyframe.id));
-  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
-  const changedTracks = new Set<TimelineTrackDocument>();
-  const changedTransformObjectIds = new Set<string>();
   const groups = groupSourcesByOriginalTime(sources);
   if (groups.length < 2) {
     return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
   }
+
+  return retimeSourceGroups(timeline, sources, groups, (_group, index, allGroups) => {
+    const ratio = index / Math.max(allGroups.length - 1, 1);
+    return start + (end - start) * ratio;
+  });
+}
+
+export function fitResolvedKeyframesToRange(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  startTime: number,
+  endTime: number
+): EditTimelineResult {
+  if (sources.length < 2) {
+    return { edited: 0, skipped: 0, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const start = Math.max(0, Math.min(startTime, endTime, timeline.duration));
+  const end = Math.max(start, Math.min(Math.max(startTime, endTime), timeline.duration));
+  if (Math.abs(end - start) < 0.001) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const groups = groupSourcesByOriginalTime(sources);
+  if (groups.length < 2) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const sourceStart = groups[0].time;
+  const sourceEnd = groups[groups.length - 1].time;
+  if (Math.abs(sourceEnd - sourceStart) < 0.001) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  return retimeSourceGroups(timeline, sources, groups, (group) => {
+    const ratio = (group.time - sourceStart) / (sourceEnd - sourceStart);
+    return start + (end - start) * ratio;
+  });
+}
+
+type TimelineSourceTimeGroup = { time: number; sources: TimelineKeyframeSource[] };
+
+function retimeSourceGroups(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  groups: TimelineSourceTimeGroup[],
+  targetTimeForGroup: (group: TimelineSourceTimeGroup, index: number, groups: TimelineSourceTimeGroup[]) => number
+): EditTimelineResult {
+  const movingIds = new Set(sources.map((source) => source.keyframe.id));
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
   let edited = 0;
   let skipped = 0;
   const editedTimes: number[] = [];
@@ -421,8 +469,7 @@ export function distributeResolvedKeyframesAcrossRange(
   });
 
   groups.forEach((group, index) => {
-    const ratio = index / Math.max(groups.length - 1, 1);
-    const nextTime = snapTimelineTime(timeline, start + (end - start) * ratio);
+    const nextTime = snapTimelineTime(timeline, targetTimeForGroup(group, index, groups));
     group.sources.forEach((source) => {
       const trackOccupancy = occupiedTimes.get(source.track)!;
       const timeKey = timelineTimeKey(nextTime);
@@ -451,14 +498,19 @@ export function distributeResolvedKeyframesAcrossRange(
   };
 }
 
-function groupSourcesByOriginalTime(sources: TimelineKeyframeSource[]): Array<{ time: number; sources: TimelineKeyframeSource[] }> {
+function groupSourcesByOriginalTime(sources: TimelineKeyframeSource[]): TimelineSourceTimeGroup[] {
   const groups = new Map<number, TimelineKeyframeSource[]>();
   sources.forEach((source) => {
     const key = timelineTimeKey(source.keyframe.time);
-    groups.set(key, [...(groups.get(key) ?? []), source]);
+    const group = groups.get(key);
+    if (group) group.push(source);
+    else groups.set(key, [source]);
   });
   return [...groups.entries()]
-    .map(([time, groupSources]) => ({ time, sources: groupSources }))
+    .map(([_timeKey, groupSources]) => ({
+      time: Math.min(...groupSources.map((source) => source.keyframe.time)),
+      sources: groupSources
+    }))
     .sort((left, right) => left.time - right.time);
 }
 

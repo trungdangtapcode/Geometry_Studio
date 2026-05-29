@@ -56,6 +56,8 @@ PDF.
   selected keyframes to frame boundaries.
 - [Timeline Keyframe Distribution](timeline-keyframe-distribute.md) documents
   evenly spacing selected keyframe timing columns across Work In/Out.
+- [Timeline Keyframe Fit](timeline-keyframe-fit.md) documents proportional
+  time-stretching of selected keyframe timing columns into Work In/Out.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
@@ -111,6 +113,8 @@ animation runtime where it fits:
   active FPS grid without changing key values.
 - Distribute Selected Keyframes spaces selected timing columns across Work
   In/Out while keeping grouped pose keys aligned.
+- Fit Selected Keyframes to Work Area proportionally scales selected timing
+  columns into Work In/Out while preserving authored spacing.
 - Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,
   delete, interpolation, and nudge workflows faster.
 - Delete and Backspace remove selected timeline keyframes before falling back to

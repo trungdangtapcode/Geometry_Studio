@@ -49,7 +49,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
-- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with X/Y/Z transform rows, Focus/Keyed/All row filtering, named timeline markers, clickable track rows, per-row diamond key buttons, Set TRS grouped transform keying, per-keyframe Linear/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, playhead scrubbing, set/update/delete/copy/paste/nudge/distribute keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview, and JSON save/load.
+- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with X/Y/Z transform rows, Focus/Keyed/All row filtering, named timeline markers, clickable track rows, per-row diamond key buttons, Set TRS grouped transform keying, per-keyframe Linear/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, playhead scrubbing, set/update/delete/copy/paste/nudge/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview, and JSON save/load.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, position motion paths, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
@@ -74,6 +74,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Shift+R: time-reverse selected keyframes.
 - Shift+S: snap selected keyframes to frame boundaries.
 - Shift+D: distribute selected keyframes evenly across Work In/Out.
+- Shift+F: fit selected keyframe timing proportionally into Work In/Out.
 - F9: apply Easy Ease interpolation to selected or playhead keyframes.
 - Shift+F9: apply Linear interpolation.
 - Alt+F9: apply Hold interpolation.
@@ -107,7 +108,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Toggle shadows and edit light color, intensity, and position.
 - Upload a bitmap texture and adjust Repeat X/Y.
 - Import a .glb, .gltf, .obj, or .stl model.
-- Add Position / Rotation / Scale keyframes in the bottom timeline using Set Key / Update Key, Set TRS for grouped object poses, or a row diamond key button, copy/paste a keyframe, move selected keys to the playhead, reverse selected key timing, snap selected keys to frames, distribute selected keyframes across Work In/Out, scrub the playhead, and verify motion plays.
+- Add Position / Rotation / Scale keyframes in the bottom timeline using Set Key / Update Key, Set TRS for grouped object poses, or a row diamond key button, copy/paste a keyframe, move selected keys to the playhead, reverse selected key timing, snap selected keys to frames, distribute selected keyframes across Work In/Out, fit selected key timing to Work In/Out, scrub the playhead, and verify motion plays.
 - Confirm Position, Rotation, and Scale appear as X/Y/Z rows in the timeline for easier transform inspection.
 - Apply Linear, Easy Ease, and Hold interpolation from the timeline toolbar and confirm the curve preview updates.
 - Toggle Graph in the timeline and confirm a keyed Position / Rotation / Scale track draws value curves while scrubbing. Ctrl/Cmd-click graph keys to toggle selection, Shift-click to select a key range, drag one selected key to move selected keys together, Alt-drag one selected key to stretch selected-key timing, drag horizontally and vertically to retime or edit channel values, hold Shift while dragging to constrain direction, then Undo to restore it.

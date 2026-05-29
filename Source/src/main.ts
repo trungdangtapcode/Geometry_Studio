@@ -9,6 +9,7 @@ import {
   distributeResolvedKeyframesAcrossRange,
   duplicateResolvedKeyframes,
   editResolvedKeyframes,
+  fitResolvedKeyframesToRange,
   moveResolvedKeyframesToTime,
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
@@ -178,6 +179,7 @@ function boot(root: HTMLDivElement): void {
     onReverseKeyframes: reverseTimelineKeyframes,
     onSnapKeyframesToFrames: snapTimelineKeyframesToFrames,
     onDistributeKeyframes: distributeTimelineKeyframes,
+    onFitKeyframesToWorkArea: fitTimelineKeyframesToWorkArea,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -1116,6 +1118,11 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey && key === "d") {
       event.preventDefault();
       distributeTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
+    if (event.shiftKey && key === "f") {
+      event.preventDefault();
+      fitTimelineKeyframesToWorkArea(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (key === "b") {
@@ -2174,6 +2181,33 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
     showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} distributed across Work In/Out${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function fitTimelineKeyframesToWorkArea(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before fitting timing.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = fitResolvedKeyframesToRange(sceneTimeline, sources, sceneTimeline.workStart, sceneTimeline.workEnd);
+    if (result.edited === 0) {
+      updateAllUI();
+      showToast(result.skipped ? `No keyframe fitted, ${result.skipped} skipped.` : "Selected keyframes already fit Work In/Out.", "bad");
+      return;
+    }
+
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(result.currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
+    showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} fitted to Work In/Out${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function editTimelineKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void {
