@@ -58,7 +58,8 @@ existing timeline library and the current Three.js runtime:
 
 - Transform dope sheet backed by `animation-timeline-js`.
 - Direct per-segment playback for Position, Rotation, and Scale tracks so mixed
-  Hold, Linear, and Easy Ease timing works within a single track.
+  Hold, Linear, Ease In, Ease Out, and Easy Ease timing works within a single
+  track.
 - JSON persistence for timeline v2, including Auto-Key state.
 - Auto-Key, previous/next keyframe, duplicate keyframe, and clear-track commands.
 - Interpolation editing for Linear, Smooth, and Hold keyframes, with distinct

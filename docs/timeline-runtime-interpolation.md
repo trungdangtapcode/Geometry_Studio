@@ -13,6 +13,8 @@ light, material, texture, visibility, and motion-path sampling.
 
 - `Hold` keeps the left keyframe value until the next keyframe.
 - `Linear` interpolates directly from the left keyframe to the right keyframe.
+- `Ease In` starts slowly and accelerates toward the right keyframe.
+- `Ease Out` starts quickly and decelerates toward the right keyframe.
 - `Easy Ease` uses smoothstep interpolation for the segment after the left
   keyframe.
 - Scrubbing exactly onto a keyframe always returns that keyframe's authored
@@ -47,3 +49,5 @@ The grouped transform Playwright workflow verifies mixed interpolation by:
 4. Scrubbing to 1 second and verifying the object still holds the first value.
 5. Scrubbing to 3 seconds and verifying the object interpolates between the
    second and third keys.
+6. Creating a two-key Position track, applying Ease In and Ease Out to the left
+   key, and verifying different midpoint values from the shared evaluator.

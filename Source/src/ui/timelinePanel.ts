@@ -1292,17 +1292,21 @@ function parseTimelineAxis(value: string | undefined): TimelineAxis | null {
 }
 
 function isTimelineInterpolation(value: string): value is TimelineInterpolation {
-  return value === "linear" || value === "smooth" || value === "hold";
+  return value === "linear" || value === "easeIn" || value === "easeOut" || value === "smooth" || value === "hold";
 }
 
 function interpolationPath(interpolation: TimelineInterpolation): string {
   if (interpolation === "hold") return "M4 28 H40 V6 H68";
+  if (interpolation === "easeIn") return "M4 28 C30 28 46 18 68 6";
+  if (interpolation === "easeOut") return "M4 28 C26 16 42 6 68 6";
   if (interpolation === "smooth") return "M4 28 C20 28 22 6 36 17 C50 28 52 6 68 6";
   return "M4 28 L68 6";
 }
 
 function interpolationLabel(interpolation: TimelineInterpolation): string {
   if (interpolation === "hold") return "Hold";
+  if (interpolation === "easeIn") return "Ease In";
+  if (interpolation === "easeOut") return "Ease Out";
   if (interpolation === "smooth") return "Easy Ease";
   return "Linear";
 }

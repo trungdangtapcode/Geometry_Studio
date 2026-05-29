@@ -16,8 +16,8 @@ actually do before pressing Play.
 - When an X, Y, or Z row is selected, the graph focuses on that channel.
 - Scalar tracks such as Opacity or light Intensity show one curve.
 - The vertical playhead line follows scrubbing and playback.
-- Hold, Linear, and Easy Ease segments are drawn from the same evaluator used by
-  runtime playback.
+- Hold, Linear, Ease In, Ease Out, and Easy Ease segments are drawn from the
+  same evaluator used by runtime playback.
 - Key points are drawn on top of the curves.
 - Clicking a graph key selects it. Ctrl/Cmd-click toggles a key in or out of
   the current selection, and Shift-click selects the time range between the

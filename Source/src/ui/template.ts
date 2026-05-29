@@ -93,6 +93,8 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
               <button class="mini-button" id="timeline-set-transform" type="button"><span data-icon="Box"></span><span>Set TRS</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>
+              <button class="mini-button interpolation-button" id="timeline-ease-in" type="button" data-interpolation="easeIn"><span data-icon="CornerDownRight"></span><span>Ease In</span></button>
+              <button class="mini-button interpolation-button" id="timeline-ease-out" type="button" data-interpolation="easeOut"><span data-icon="CornerRightDown"></span><span>Ease Out</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-smooth" type="button" data-interpolation="smooth"><span data-icon="Spline"></span><span>Ease</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-hold" type="button" data-interpolation="hold"><span data-icon="StepForward"></span><span>Hold</span></button>
               <button class="mini-button" id="timeline-graph-toggle" type="button" aria-pressed="false"><span data-icon="Activity"></span><span>Graph</span></button>
@@ -130,6 +132,8 @@ export function studioTemplate(): string {
               <span>Interpolation</span>
               <select id="timeline-interpolation" aria-label="Keyframe interpolation">
                 <option value="linear">Linear</option>
+                <option value="easeIn">Ease In</option>
+                <option value="easeOut">Ease Out</option>
                 <option value="smooth">Smooth</option>
                 <option value="hold">Hold</option>
               </select>

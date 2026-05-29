@@ -76,7 +76,8 @@ PDF.
 - [Timeline Axis Rows](timeline-axis-rows.md) documents X/Y/Z timeline rows for
   object Position, Rotation, and Scale.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
-  documents direct Linear, Easy Ease, and Hold timing controls.
+  documents direct Linear, Ease In, Ease Out, Easy Ease, and Hold timing
+  controls.
 - [Timeline Runtime Interpolation](timeline-runtime-interpolation.md) documents
   per-keyframe transform/runtime interpolation semantics.
 - [Timeline Value Graph](timeline-value-graph.md) documents the active-track
@@ -139,8 +140,9 @@ animation runtime where it fits:
   Scale together at the playhead for pose-to-pose motion authoring.
 - Object transform tracks expand into X/Y/Z rows in the timeline panel while
   preserving vector-based JSON persistence and Three.js playback.
-- Linear, Easy Ease, and Hold interpolation have direct toolbar controls,
-  synchronized dropdown state, keyboard shortcuts, and a compact curve preview.
+- Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation have direct
+  toolbar controls, synchronized dropdown state, keyboard shortcuts, and a
+  compact curve preview.
 - The active track can be inspected in a value graph that samples the same
   per-keyframe evaluator as runtime playback and motion-path preview. Graph key
   points can be dragged horizontally and vertically to retime keys and edit

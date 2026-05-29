@@ -18,7 +18,8 @@ the timeline can animate multiple exposed properties of the selected layer.
 ## Design
 
 Object Position, Rotation, and Scale are evaluated directly from the timeline
-document so per-keyframe Hold, Linear, and Easy Ease timing works consistently.
+document so per-keyframe Hold, Linear, Ease In, Ease Out, and Easy Ease timing
+works consistently.
 Color, Opacity, and Visibility use the same evaluator and are applied to
 renderer/editor properties during scrubbing and playback.
 

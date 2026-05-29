@@ -1103,7 +1103,7 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "f9") {
       event.preventDefault();
-      setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), event.shiftKey ? "linear" : event.altKey ? "hold" : "smooth");
+      setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), interpolationFromF9Shortcut(event));
       return;
     }
     if (event.shiftKey && key === "enter") {
@@ -2332,7 +2332,22 @@ function boot(root: HTMLDivElement): void {
     applyLightTimeline();
     applyObjectPropertyTimeline();
     updateAllUI();
-    showToast(`${capitalize(interpolation)} interpolation applied`, "good");
+    showToast(`${timelineInterpolationLabel(interpolation)} interpolation applied`, "good");
+  }
+
+  function interpolationFromF9Shortcut(event: KeyboardEvent): TimelineInterpolation {
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey) return "easeOut";
+    if (event.ctrlKey || event.metaKey) return "easeIn";
+    if (event.shiftKey) return "linear";
+    if (event.altKey) return "hold";
+    return "smooth";
+  }
+
+  function timelineInterpolationLabel(interpolation: TimelineInterpolation): string {
+    if (interpolation === "easeIn") return "Ease In";
+    if (interpolation === "easeOut") return "Ease Out";
+    if (interpolation === "smooth") return "Easy Ease";
+    return capitalize(interpolation);
   }
 
   function resolveInterpolationTimelineKeyframeSources(keyframeIds: string[]) {

@@ -339,8 +339,12 @@ function normalizeKeyframe(value: unknown): TimelineKeyframeDocument | null {
       finiteNumber(keyframe.value[1], 0, -10000, 10000),
       finiteNumber(keyframe.value[2], 0, -10000, 10000)
     ],
-    interpolation: keyframe.interpolation === "hold" || keyframe.interpolation === "smooth" ? keyframe.interpolation : "linear"
+    interpolation: isTimelineInterpolation(keyframe.interpolation) ? keyframe.interpolation : "linear"
   };
+}
+
+function isTimelineInterpolation(value: unknown): value is TimelineKeyframeDocument["interpolation"] {
+  return value === "hold" || value === "linear" || value === "easeIn" || value === "easeOut" || value === "smooth";
 }
 
 function createTimelineId(prefix: string): string {

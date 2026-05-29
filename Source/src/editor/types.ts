@@ -47,7 +47,7 @@ export type TimelineTrackKind =
   | "spotColor"
   | "spotIntensity"
   | "ambientIntensity";
-export type TimelineInterpolation = "hold" | "linear" | "smooth";
+export type TimelineInterpolation = "hold" | "linear" | "easeIn" | "easeOut" | "smooth";
 
 export interface SceneEntry {
   id: string;

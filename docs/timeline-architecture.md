@@ -26,8 +26,8 @@ should stay close to this structure:
 - `animation/timelineTracks.ts`: shared track taxonomy, label functions,
   preset-to-track mapping, and object value capture helpers used by the editor,
   editing, and playback layers.
-- `animation/interpolation.ts`: evaluates Hold, Linear, and Easy Ease timing per
-  keyframe segment.
+- `animation/interpolation.ts`: evaluates Hold, Linear, Ease In, Ease Out, and
+  Easy Ease timing per keyframe segment.
 - `animation/timelinePlayer.ts`: owns transform playback state, scrubbing, loop
   behavior, and applying evaluated transforms.
 - `ui/timelinePanel.ts`: integrates `animation-timeline-js`, renders rows,
@@ -112,7 +112,7 @@ interface TimelineKeyframeDocument {
   id: string;
   time: number;
   value: [number, number, number];
-  interpolation: "hold" | "linear" | "smooth";
+  interpolation: "hold" | "linear" | "easeIn" | "easeOut" | "smooth";
 }
 
 interface TimelineMarkerDocument {

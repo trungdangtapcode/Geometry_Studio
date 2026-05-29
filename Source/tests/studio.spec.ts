@@ -25,6 +25,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
   await expect(page.locator("#timeline-set-transform")).toBeVisible();
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
+  await expect(page.locator("#timeline-ease-in")).toBeVisible();
+  await expect(page.locator("#timeline-ease-out")).toBeVisible();
   await expect(page.locator("#timeline-ease-smooth")).toBeVisible();
   await expect(page.locator("#timeline-ease-hold")).toBeVisible();
   await expect(page.locator("#timeline-ease-preview")).toBeVisible();
@@ -500,6 +502,59 @@ test("supports I/O work area keyboard shortcuts", async ({ page }) => {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("o");
   await expect(page.locator("#timeline-work-end")).toHaveValue("3.5");
+
+  expect(errors).toEqual([]);
+});
+
+test("evaluates ease in and ease out timeline interpolation", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-add-keyframe")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+
+  for (const [time, value] of [[0, 0], [2, 2]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  await page.locator('.timeline-graph-key.graph-x[data-key-time="0"]').click();
+  await page.locator("#timeline-ease-in").click();
+  await expect(page.locator("#timeline-ease-in")).toHaveClass(/active/);
+  await expect(page.locator("#timeline-ease-label")).toContainText("Ease In");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await positionX.inputValue())).toBeCloseTo(0.5, 1);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-ease-out").click();
+  await expect(page.locator("#timeline-ease-out")).toHaveClass(/active/);
+  await expect(page.locator("#timeline-ease-label")).toContainText("Ease Out");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await positionX.inputValue())).toBeCloseTo(1.5, 1);
 
   expect(errors).toEqual([]);
 });
