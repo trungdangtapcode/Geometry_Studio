@@ -52,6 +52,7 @@ export interface KeyframeTimelineCallbacks {
   onTrimLayerOut(): void;
   onSplitLayer(): void;
   onSetWorkAreaToLayer(): void;
+  onEditLayerRange(objectId: string, start: number, end: number): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onCopyVisibleTimeKeyframes(): void;
@@ -123,9 +124,25 @@ type TimelineUiRow = TimelineRow & {
 };
 
 type TimelineRowFilter = "focus" | "keyed" | "all";
+type TimelineLayerDragMode = "move" | "trimStart" | "trimEnd";
 type TimelineRowDescriptor = {
   kind: TimelineTrackKind;
   axis?: TimelineAxis;
+};
+
+type TimelineLayerDragState = {
+  pointerId: number;
+  button: HTMLButtonElement;
+  objectId: string;
+  mode: TimelineLayerDragMode;
+  startClientX: number;
+  originalStart: number;
+  originalEnd: number;
+  nextStart: number;
+  nextEnd: number;
+  duration: number;
+  width: number;
+  moved: boolean;
 };
 
 type TimelineDetailSource = {
@@ -206,11 +223,15 @@ export class KeyframeTimelinePanel {
   private rowSearchText = loadTimelineRowSearch();
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
+  private layerDragState: TimelineLayerDragState | null = null;
+  private suppressLayerClick = false;
   private timelineScroller: HTMLElement | null = null;
   private syncingScroll = false;
   private updating = false;
   private readonly handleResizeMove = (event: PointerEvent) => this.resizeDock(event);
   private readonly handleResizeEnd = (event: PointerEvent) => this.finishResize(event);
+  private readonly handleLayerDragMove = (event: PointerEvent) => this.dragLayerRange(event);
+  private readonly handleLayerDragEnd = (event: PointerEvent) => this.finishLayerRangeDrag(event);
   private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
@@ -573,7 +594,13 @@ export class KeyframeTimelinePanel {
       const time = Number(button.dataset.time);
       if (Number.isFinite(time)) this.callbacks.onTimeChanged(time);
     });
+    this.layerStrip.addEventListener("pointerdown", (event) => this.startLayerRangeDrag(event));
     this.layerStrip.addEventListener("click", (event) => {
+      if (this.suppressLayerClick) {
+        this.suppressLayerClick = false;
+        event.preventDefault();
+        return;
+      }
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-layer-bar");
       const objectId = button?.dataset.objectId;
       if (!objectId) return;
@@ -884,12 +911,117 @@ export class KeyframeTimelinePanel {
       button.style.borderLeftColor = entry.color.getStyle();
       button.title = `${entry.name}: ${formatNumber(start)}-${formatNumber(end)}s`;
       button.innerHTML = `
+        <span class="timeline-layer-handle timeline-layer-handle-start" data-layer-action="trim-start" aria-hidden="true"></span>
         <span class="timeline-layer-bar-name">${escapeHtml(entry.name)}</span>
         <span class="timeline-layer-bar-time">${formatNumber(start)}-${formatNumber(end)}s</span>
+        <span class="timeline-layer-handle timeline-layer-handle-end" data-layer-action="trim-end" aria-hidden="true"></span>
       `;
       content.appendChild(button);
     });
     this.layerStrip.appendChild(content);
+  }
+
+  private startLayerRangeDrag(event: PointerEvent): void {
+    if (event.button !== 0 || !this.lastTimelineDocument) return;
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-layer-bar");
+    if (!button) return;
+    const objectId = button.dataset.objectId;
+    const originalStart = Number(button.dataset.layerStart);
+    const originalEnd = Number(button.dataset.layerEnd);
+    if (!objectId || !Number.isFinite(originalStart) || !Number.isFinite(originalEnd)) return;
+
+    const stripRect = this.layerStrip.getBoundingClientRect();
+    if (stripRect.width <= 0) return;
+    const handle = (event.target as HTMLElement).closest<HTMLElement>("[data-layer-action]");
+    const mode: TimelineLayerDragMode = handle?.dataset.layerAction === "trim-start"
+      ? "trimStart"
+      : handle?.dataset.layerAction === "trim-end"
+        ? "trimEnd"
+        : "move";
+    this.layerDragState = {
+      pointerId: event.pointerId,
+      button,
+      objectId,
+      mode,
+      startClientX: event.clientX,
+      originalStart,
+      originalEnd,
+      nextStart: originalStart,
+      nextEnd: originalEnd,
+      duration: Math.max(this.lastTimelineDocument.duration, 0.001),
+      width: stripRect.width,
+      moved: false
+    };
+    button.classList.add("dragging");
+    button.setPointerCapture(event.pointerId);
+    button.addEventListener("pointermove", this.handleLayerDragMove);
+    button.addEventListener("pointerup", this.handleLayerDragEnd);
+    button.addEventListener("pointercancel", this.handleLayerDragEnd);
+    event.preventDefault();
+  }
+
+  private dragLayerRange(event: PointerEvent): void {
+    const state = this.layerDragState;
+    if (!state || event.pointerId !== state.pointerId || !this.lastTimelineDocument) return;
+    const deltaTime = ((event.clientX - state.startClientX) / state.width) * state.duration;
+    const span = Math.max(state.originalEnd - state.originalStart, this.minimumLayerSpan());
+    let nextStart = state.originalStart;
+    let nextEnd = state.originalEnd;
+
+    if (state.mode === "trimStart") {
+      nextStart = this.snapLayerTime(clamp(state.originalStart + deltaTime, 0, state.originalEnd - this.minimumLayerSpan()));
+      nextStart = Math.min(nextStart, state.originalEnd - this.minimumLayerSpan());
+    } else if (state.mode === "trimEnd") {
+      nextEnd = this.snapLayerTime(clamp(state.originalEnd + deltaTime, state.originalStart + this.minimumLayerSpan(), state.duration));
+      nextEnd = Math.max(nextEnd, state.originalStart + this.minimumLayerSpan());
+    } else {
+      nextStart = this.snapLayerTime(clamp(state.originalStart + deltaTime, 0, state.duration - span));
+      nextEnd = nextStart + span;
+    }
+
+    state.nextStart = roundTimelineTime(clamp(nextStart, 0, state.duration));
+    state.nextEnd = roundTimelineTime(clamp(nextEnd, state.nextStart + this.minimumLayerSpan(), state.duration));
+    state.moved ||= Math.abs(event.clientX - state.startClientX) > 2;
+    this.previewLayerRange(state.button, state.nextStart, state.nextEnd, state.duration);
+  }
+
+  private finishLayerRangeDrag(event: PointerEvent): void {
+    const state = this.layerDragState;
+    if (!state || event.pointerId !== state.pointerId) return;
+    state.button.classList.remove("dragging");
+    state.button.removeEventListener("pointermove", this.handleLayerDragMove);
+    state.button.removeEventListener("pointerup", this.handleLayerDragEnd);
+    state.button.removeEventListener("pointercancel", this.handleLayerDragEnd);
+    if (state.button.hasPointerCapture(event.pointerId)) state.button.releasePointerCapture(event.pointerId);
+    this.layerDragState = null;
+
+    const changed = Math.abs(state.nextStart - state.originalStart) > 0.001 || Math.abs(state.nextEnd - state.originalEnd) > 0.001;
+    if (state.moved && changed) {
+      this.suppressLayerClick = true;
+      this.callbacks.onEditLayerRange(state.objectId, state.nextStart, state.nextEnd);
+    }
+  }
+
+  private previewLayerRange(button: HTMLButtonElement, start: number, end: number, duration: number): void {
+    const left = (start / duration) * 100;
+    const width = Math.max(((end - start) / duration) * 100, 0.8);
+    button.dataset.layerStart = formatNumber(start);
+    button.dataset.layerEnd = formatNumber(end);
+    button.style.left = `${left}%`;
+    button.style.width = `${Math.min(width, 100 - left)}%`;
+    button.title = `${button.querySelector(".timeline-layer-bar-name")?.textContent ?? "Layer"}: ${formatNumber(start)}-${formatNumber(end)}s`;
+    const timeLabel = button.querySelector<HTMLElement>(".timeline-layer-bar-time");
+    if (timeLabel) timeLabel.textContent = `${formatNumber(start)}-${formatNumber(end)}s`;
+  }
+
+  private minimumLayerSpan(): number {
+    return Math.max(Math.min(this.lastTimelineDocument?.snapStep ?? 1 / 30, 0.25), 0.001);
+  }
+
+  private snapLayerTime(time: number): number {
+    const timelineDocument = this.lastTimelineDocument;
+    if (!timelineDocument?.snapEnabled || timelineDocument.snapStep <= 0) return roundTimelineTime(time);
+    return roundTimelineTime(Math.round(time / timelineDocument.snapStep) * timelineDocument.snapStep);
   }
 
   private syncMarkerEditor(timelineDocument: SceneTimelineDocument, marker = this.currentMarker(timelineDocument)): void {

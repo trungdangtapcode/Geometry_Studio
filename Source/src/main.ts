@@ -203,6 +203,7 @@ function boot(root: HTMLDivElement): void {
     onTrimLayerOut: trimSelectedLayerOutPoint,
     onSplitLayer: splitSelectedLayerAtPlayhead,
     onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
+    onEditLayerRange: editTimelineLayerRange,
     onDeleteKeyframes: deleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onCopyVisibleTimeKeyframes: copyVisibleTimelineTimeKeyframes,
@@ -2292,6 +2293,31 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     updateAllUI();
     showToast(`${selection.entry.name} work area ${formatNumber(selection.range.start)}-${formatNumber(selection.range.end)}s`, "good");
+  }
+
+  function editTimelineLayerRange(objectId: string, start: number, end: number): void {
+    const entry = entries.get(objectId);
+    if (!entry) {
+      showToast("Layer object no longer exists.", "bad");
+      return;
+    }
+    const existingTrack = activeTimelineTrack("objectVisibility", entry.id);
+    if (!assertTimelineTrackUnlocked(existingTrack, "editing layer timing")) return;
+
+    const duration = Math.max(sceneTimeline.duration, 0.001);
+    const safeStart = clamp(Math.min(start, end - 0.001), 0, duration);
+    const safeEnd = clamp(Math.max(end, safeStart + 0.001), safeStart + 0.001, duration);
+    recordHistory();
+    const result = setObjectVisibilityRange(sceneTimeline, entry.id, safeStart, safeEnd >= duration - 0.001 ? null : safeEnd);
+    selectedId = entry.id;
+    transformControls.attach(entry.root);
+    syncOutline();
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+    showToast(`${entry.name} layer range ${formatNumber(safeStart)}-${formatNumber(safeEnd)}s`, "good");
   }
 
   function stepSelectedLayerBoundary(edge: "in" | "out"): void {

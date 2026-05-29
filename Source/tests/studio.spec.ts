@@ -863,7 +863,7 @@ test("expands vector timeline tracks into channel rows", async ({ page }) => {
 });
 
 test("trims and splits selected object layers", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
     const downloads: string[] = [];
@@ -897,6 +897,26 @@ test("trims and splits selected object layers", async ({ page }) => {
     sceneDocument.timeline.objects
       .find((object) => object.objectId === objectId)
       ?.tracks.find((track) => track.kind === "objectVisibility");
+  const dragLayerBarPart = async (objectId: string, part: "body" | "start" | "end", deltaSeconds: number) => {
+    const strip = page.locator("#timeline-layer-strip");
+    const bar = page.locator(`.timeline-layer-bar[data-object-id="${objectId}"]`);
+    const stripBox = await strip.boundingBox();
+    const target = part === "start"
+      ? bar.locator('[data-layer-action="trim-start"]')
+      : part === "end"
+        ? bar.locator('[data-layer-action="trim-end"]')
+        : bar;
+    const targetBox = await target.boundingBox();
+    expect(stripBox).toBeTruthy();
+    expect(targetBox).toBeTruthy();
+    const startX = targetBox!.x + targetBox!.width / 2;
+    const startY = targetBox!.y + targetBox!.height / 2;
+    const deltaX = stripBox!.width * (deltaSeconds / 8);
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + deltaX, startY, { steps: 6 });
+    await page.mouse.up();
+  };
 
   await page.goto("/");
   await page.locator("#timeline-current-time").evaluate((input) => {
@@ -930,11 +950,33 @@ test("trims and splits selected object layers", async ({ page }) => {
     [0, 1, "hold"],
     [5, 0, "hold"]
   ]);
+  await page.locator("#timeline-snap-step").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await dragLayerBarPart("object-1", "end", 1);
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-end", "6");
+  sceneDocument = await exportedScene();
+  track = visibilityTrack(sceneDocument, "object-1");
+  expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
+    [0, 1, "hold"],
+    [6, 0, "hold"]
+  ]);
+  await dragLayerBarPart("object-1", "body", 1);
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-start", "1");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-end", "7");
+  sceneDocument = await exportedScene();
+  track = visibilityTrack(sceneDocument, "object-1");
+  expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
+    [0, 0, "hold"],
+    [1, 1, "hold"],
+    [7, 0, "hold"]
+  ]);
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("Alt+I");
-  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(0);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(1);
   await page.keyboard.press("Alt+O");
-  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(5);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(7);
 
   await page.reload();
   await page.locator("#timeline-current-time").evaluate((input) => {

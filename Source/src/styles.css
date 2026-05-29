@@ -1091,13 +1091,15 @@ svg {
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.88);
   color: var(--ink);
-  cursor: pointer;
+  cursor: grab;
   font: inherit;
   font-size: var(--ui-tiny-font);
   font-weight: 800;
   padding: 0 7px 0 5px;
   text-align: left;
   white-space: nowrap;
+  user-select: none;
+  touch-action: none;
 }
 
 .timeline-layer-bar:hover,
@@ -1109,6 +1111,51 @@ svg {
 .timeline-layer-bar.active {
   color: #ffffff;
   background: var(--charcoal);
+}
+
+.timeline-layer-bar.dragging {
+  cursor: grabbing;
+  border-color: rgba(32, 191, 169, 0.72);
+  box-shadow: 0 0 0 2px rgba(32, 191, 169, 0.16);
+}
+
+.timeline-layer-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 9px;
+  cursor: ew-resize;
+}
+
+.timeline-layer-handle::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  border-radius: 99px;
+  background: rgba(26, 35, 42, 0.24);
+}
+
+.timeline-layer-handle-start {
+  left: 0;
+}
+
+.timeline-layer-handle-start::after {
+  left: 3px;
+}
+
+.timeline-layer-handle-end {
+  right: 0;
+}
+
+.timeline-layer-handle-end::after {
+  right: 3px;
+}
+
+.timeline-layer-bar.active .timeline-layer-handle::after {
+  background: rgba(255, 255, 255, 0.44);
 }
 
 .timeline-layer-bar-name {

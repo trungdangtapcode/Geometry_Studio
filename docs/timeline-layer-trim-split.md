@@ -19,6 +19,8 @@ track. The current implementation maps layer timing commands onto
 - The layer overview strip renders each object as a clickable duration bar
   above the keyframe rows. The bar reads the same Visibility range, so Layer In,
   Layer Out, Split, save/load, and playback stay consistent.
+- Drag the middle of a layer bar to move the whole visible range in time.
+- Drag the left or right edge handles to trim the layer in or out directly.
 - Keyboard shortcuts:
   - `Alt+[` trims the selected layer in.
   - `Alt+]` trims the selected layer out.
@@ -53,6 +55,11 @@ for keyed track rows, drag selection, snapping, and playhead rendering. The DOM
 strip adds AE-style object timing affordances while keeping the existing
 timeline engine intact.
 
+Layer bar edits route back through the same `setObjectVisibilityRange()`
+helper as the toolbar commands. This keeps Undo/Redo, locked-track checks,
+JSON persistence, selected keyframes, and playback evaluation consistent
+whether the user edits through buttons, shortcuts, or direct manipulation.
+
 ## Constraints
 
 - The selected object must exist.
@@ -65,7 +72,8 @@ timeline engine intact.
 ## Testing
 
 The Playwright workflow verifies the overview strip, trims a layer in and out,
-checks that the bar updates to the matching range, sets the work area to the
+checks that the bar updates to the matching range, drags the right edge to trim
+out, drags the bar body to move the visible range, sets the work area to the
 layer range, jumps to layer in/out points, exports scene JSON, verifies hold
 visibility keys, reloads, splits the layer, verifies both original and
 duplicate visibility ranges, clicks the original layer bar, and confirms object
