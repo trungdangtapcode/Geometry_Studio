@@ -199,6 +199,7 @@ function boot(root: HTMLDivElement): void {
     onDeleteKeyframes: deleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onCopyVisibleTimeKeyframes: copyVisibleTimelineTimeKeyframes,
+    onCutVisibleTimeKeyframes: cutVisibleTimelineTimeKeyframes,
     onPasteKeyframes: pasteTimelineKeyframes,
     onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
     onSelectVisibleKeyframes: selectVisibleTimelineKeyframes,
@@ -2421,6 +2422,15 @@ function boot(root: HTMLDivElement): void {
     timelineClipboard = createTimelineClipboard(sources);
     deleteTimelineKeyframes(sources.map((source) => source.keyframe.id), { notify: false });
     showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} cut`, "good");
+  }
+
+  function cutVisibleTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectVisibleRowKeyframesAtCurrentTime();
+    if (selectedCount === 0) {
+      showToast(`No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to cut.`, "bad");
+      return;
+    }
+    cutTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
   }
 
   function pasteTimelineKeyframes(): void {
