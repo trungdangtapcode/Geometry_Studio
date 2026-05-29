@@ -96,6 +96,8 @@ PDF.
   selecting keyframes from the current row filter/search result.
 - [Timeline Visible Time Selection](timeline-visible-time-selection.md)
   documents selecting visible-row keyframes at the current playhead time.
+- [Timeline Visible Time Copy](timeline-visible-time-copy.md) documents copying
+  visible-row pose columns from the playhead.
 - [Timeline Visible Time Duplicate](timeline-visible-time-duplicate.md)
   documents duplicating visible-row pose columns from the playhead.
 - [Timeline Visible Time Delete](timeline-visible-time-delete.md) documents
@@ -191,6 +193,8 @@ animation runtime where it fits:
   fit, and preview workflows.
 - The `Select Time` command selects visible-row keyframes at the playhead,
   enabling pose-column copy, delete, paste, and retime workflows.
+- The `Copy Time` command copies visible-row keyframes at the playhead into the
+  same clipboard used by normal selected-key copy/paste.
 - The `Dup Time` command duplicates visible-row keyframes at the playhead by
   the active snap step, keeping the duplicated pose column selected.
 - The `Del Time` command removes visible-row keyframes at the playhead under

@@ -49,6 +49,7 @@ export interface KeyframeTimelineCallbacks {
   onSetVisibleKeyframes(rows: TimelineVisibleRowTarget[]): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
+  onCopyVisibleTimeKeyframes(): void;
   onPasteKeyframes(): void;
   onSelectWorkAreaKeyframes(): void;
   onSelectVisibleKeyframes(workAreaOnly: boolean): void;
@@ -479,6 +480,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-copy-keyframes").addEventListener("click", () => {
       this.callbacks.onCopyKeyframes([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-copy-time").addEventListener("click", () => {
+      this.callbacks.onCopyVisibleTimeKeyframes();
     });
     query<HTMLButtonElement>("#timeline-paste-keyframes").addEventListener("click", () => {
       this.callbacks.onPasteKeyframes();
