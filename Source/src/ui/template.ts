@@ -316,6 +316,11 @@ export function studioTemplate(): string {
             </label>
           </div>
           <div class="material-presets">
+            <button class="mini-button material-preset" type="button" data-material-preset="ceramic">Ceramic</button>
+            <button class="mini-button material-preset" type="button" data-material-preset="metal">Metal</button>
+            <button class="mini-button material-preset" type="button" data-material-preset="plastic">Plastic</button>
+            <button class="mini-button material-preset" type="button" data-material-preset="glass">Glass</button>
+            <button class="mini-button material-preset" type="button" data-material-preset="clay">Clay</button>
             <button class="mini-button material-preset" type="button" data-material-preset="basic">Basic</button>
             <button class="mini-button material-preset" type="button" data-material-preset="lambert">Lambert</button>
             <button class="mini-button material-preset" type="button" data-material-preset="phong">Phong</button>

@@ -21,6 +21,8 @@ PDF.
   polish, and optional path-traced preview.
 - [Rendering Lab](rendering-lab.md) documents tone mapping, exposure, shadow
   quality, telemetry, and scene JSON persistence.
+- [PBR Material Presets](pbr-material-presets.md) documents Ceramic, Metal,
+  Plastic, Glass, Clay, and legacy material comparison presets.
 - [AE-Style Timeline Integration Research](ae-timeline-integration-research.md)
   records the no-reinvention decision for the next timeline phase: keep
   `animation-timeline-js` as the dope-sheet component and integrate proven

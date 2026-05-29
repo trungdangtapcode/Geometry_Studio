@@ -1220,6 +1220,7 @@ svg {
 
 .segment.active,
 .texture-swatch.active,
+.material-preset.active,
 .interpolation-button.active,
 #timeline-graph-toggle.active {
   color: #ffffff;
@@ -1239,7 +1240,7 @@ svg {
 
 .camera-presets,
 .material-presets {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .wide-button,

@@ -46,7 +46,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Perspective projection: editable camera position, FOV, Near, and Far values with Front, Top, Iso, and Reset presets.
 - Affine transformations: Move, Rotate, and Scale with TransformControls, numeric X/Y/Z inputs, and World/Local space modes.
 - Lighting: Ambient, Directional, Point, and Spot lights with color, intensity, position, helper, and shadow controls.
-- Rendering Lab: Tone mapping, exposure, shadow quality, and renderer telemetry controls for real-time WebGL raster rendering.
+- Rendering Lab: Tone mapping, exposure, shadow quality, PBR material presets, and renderer telemetry controls for real-time WebGL raster rendering.
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, and STL import with centering, normalization, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.

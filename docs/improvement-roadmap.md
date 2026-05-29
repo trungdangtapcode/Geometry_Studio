@@ -21,6 +21,7 @@ Implemented and tested:
 - Playwright smoke tests and Release-browser screenshots.
 - Rendering Lab controls for tone mapping, exposure, shadow quality, telemetry,
   and scene JSON persistence.
+- PBR material presets for Ceramic, Metal, Plastic, Glass, and Clay.
 
 ## Research Basis
 
@@ -48,7 +49,8 @@ app interactive.
 Recommended order:
 
 1. Rendering Lab panel. Implemented: tone mapping, exposure, and shadow quality.
-2. PBR material and environment lighting upgrades.
+2. PBR material and environment lighting upgrades. Material presets are
+   implemented; environment lighting remains a later slice.
 3. OBJ + MTL import workflow.
 4. Post-processing toggles.
 5. Timeline polish.

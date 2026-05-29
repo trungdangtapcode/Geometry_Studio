@@ -91,6 +91,7 @@ import { createRenderPipeline } from "./renderer/pipeline";
 import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
 import { loadModelFromFile } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
+import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetById } from "./scene/materialPresets";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
@@ -922,6 +923,10 @@ function boot(root: HTMLDivElement): void {
     document.querySelectorAll<HTMLButtonElement>("[data-light]").forEach((button) => {
       button.classList.toggle("active", button.dataset.light === lightRig.active);
     });
+    document.querySelectorAll<HTMLButtonElement>(".material-preset").forEach((button) => {
+      const preset = button.dataset.materialPreset ? materialPresetById(button.dataset.materialPreset) : null;
+      button.classList.toggle("active", Boolean(entry && preset && entryMatchesMaterialPreset(entry, preset)));
+    });
     query<HTMLSelectElement>("#material-mode").value = entry?.materialMode ?? "standard";
     query<HTMLInputElement>("#object-color").value = entry ? `#${entry.color.getHexString()}` : "#4bd0a0";
     query<HTMLInputElement>("#object-opacity").value = String(entry?.opacity ?? 1);
@@ -980,14 +985,15 @@ function boot(root: HTMLDivElement): void {
 
   function applyMaterialPreset(preset: string): void {
     updateSelectedEntry((entry) => {
-      if (preset === "texture") {
-        entry.materialMode = "standard";
-        if (entry.textureName === "none") {
-          entry.textureName = "uv";
-          entry.texture = resourceTracker.track(makeTexturePreset("uv"));
+      const presetConfig = materialPresetById(preset);
+      if (!presetConfig) return;
+      applyMaterialPresetValues(entry, presetConfig);
+      if (presetConfig.textureName) {
+        if (entry.textureName !== presetConfig.textureName) {
+          resourceTracker.disposeResource(entry.texture);
+          entry.textureName = presetConfig.textureName;
+          entry.texture = presetConfig.textureName === "none" ? null : resourceTracker.track(makeTexturePreset(presetConfig.textureName));
         }
-      } else {
-        entry.materialMode = preset as MaterialMode;
       }
       rebuildEntryVisual(entry);
     });

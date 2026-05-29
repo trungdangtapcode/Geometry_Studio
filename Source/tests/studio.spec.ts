@@ -24,6 +24,17 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#tone-mapping")).toHaveValue("aces");
   await expect(page.locator("#render-exposure")).toHaveValue("1.05");
   await expect(page.locator("#shadow-quality")).toHaveValue("high");
+  await expect(page.getByRole("button", { name: "Ceramic", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Metal", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Glass", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Metal", exact: true }).click();
+  await expect(page.locator("#material-mode")).toHaveValue("standard");
+  await expect(page.locator("#object-metalness")).toHaveValue("1");
+  await expect(page.locator("#object-roughness")).toHaveValue("0.18");
+  await expect(page.getByRole("button", { name: "Metal", exact: true })).toHaveClass(/active/);
+  await page.getByRole("button", { name: "Glass", exact: true }).click();
+  await expect(page.locator("#object-opacity")).toHaveValue("0.42");
+  await expect(page.getByRole("button", { name: "Glass", exact: true })).toHaveClass(/active/);
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
   await expect(page.locator("#timeline-prev-frame")).toBeVisible();
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
