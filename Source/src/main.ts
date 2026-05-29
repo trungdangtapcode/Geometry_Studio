@@ -1083,6 +1083,11 @@ function boot(root: HTMLDivElement): void {
       pasteTimelineKeyframes();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && key === "d") {
+      event.preventDefault();
+      duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "s") {
       event.preventDefault();
       saveScene();

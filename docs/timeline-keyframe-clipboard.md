@@ -31,6 +31,8 @@ stored as ordinary timeline keyframes.
 - Timeline toolbar: `Copy`, `Paste`, and `Duplicate`.
 - Keyboard: `Ctrl+A` / `Cmd+A`, `Ctrl+C` / `Cmd+C`, `Ctrl+X` / `Cmd+X`, and
   `Ctrl+V` / `Cmd+V` when focus is outside form fields.
+- Keyboard: `Ctrl+D` / `Cmd+D` duplicates the selected keyframes, matching the
+  toolbar command.
 
 ## Implementation Notes
 
@@ -59,5 +61,7 @@ The Playwright timeline workflow verifies that:
 - A Position keyframe can be copied from the active playhead track.
 - Pasting at a later time creates a saved keyframe with the same value.
 - Paste and Duplicate leave the affected keyframe selected.
+- Ctrl/Cmd+D duplicates selected active-track keyframes and selects the new
+  duplicates.
 - Ctrl/Cmd+X cuts selected active-track keyframes and Undo restores them.
 - The pasted keyframe survives scene JSON export.

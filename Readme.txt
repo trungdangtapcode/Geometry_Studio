@@ -87,6 +87,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Shift+Alt+M: delete the timeline marker at the current playhead time.
 - Ctrl+A: select all keyframes on the active timeline track when focus is outside form fields.
 - Ctrl+C / Ctrl+X / Ctrl+V: copy, cut, or paste timeline keyframes when focus is outside form fields.
+- Ctrl+D: duplicate selected timeline keyframes when focus is outside form fields.
 - Delete or Backspace: delete selected timeline keyframes first; otherwise delete the selected object.
 - Ctrl+Z: Undo.
 - Ctrl+Y or Ctrl+Shift+Z: Redo.
