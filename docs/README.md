@@ -120,6 +120,8 @@ animation runtime where it fits:
 - Selected objects with two or more Position keys show a viewport motion path,
   turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
 - Timeline markers add named cue points for animation beats and demo segments.
+- Work area editing supports Start/Out buttons plus `B`, `N`, and `Shift+B`
+  keyboard workflows for fast preview-range authoring.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
   keeping playback inspectable from the timeline.
 - The keyframe dock has a persisted height resize handle, with row labels and

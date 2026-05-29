@@ -1082,6 +1082,17 @@ function boot(root: HTMLDivElement): void {
       setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), event.shiftKey ? "linear" : event.altKey ? "hold" : "smooth");
       return;
     }
+    if (key === "b") {
+      event.preventDefault();
+      if (event.shiftKey) setTimelineWorkAreaToSelectedKeys();
+      else setTimelineWorkAreaEdge("start");
+      return;
+    }
+    if (key === "n") {
+      event.preventDefault();
+      setTimelineWorkAreaEdge("end");
+      return;
+    }
     if (key === "t") setTransformMode("translate");
     if (key === "r") setTransformMode("rotate");
     if (key === "s") setTransformMode("scale");
@@ -1534,6 +1545,42 @@ function boot(root: HTMLDivElement): void {
     applyLightTimeline();
     applyObjectPropertyTimeline();
     updateAllUI();
+  }
+
+  function setTimelineWorkAreaEdge(edge: "start" | "end"): void {
+    recordHistory();
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    if (edge === "start") {
+      sceneTimeline.workStart = clamp(time, 0, sceneTimeline.duration - 0.001);
+      if (sceneTimeline.workEnd <= sceneTimeline.workStart) {
+        sceneTimeline.workEnd = Math.min(sceneTimeline.duration, sceneTimeline.workStart + Math.max(sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001));
+      }
+    } else {
+      if (time <= sceneTimeline.workStart) {
+        sceneTimeline.workStart = Math.max(0, time - Math.max(sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001));
+      }
+      sceneTimeline.workEnd = clamp(time, sceneTimeline.workStart + 0.001, sceneTimeline.duration);
+    }
+    updateAllUI();
+    showToast(`Work ${edge === "start" ? "In" : "Out"} set to ${formatNumber(edge === "start" ? sceneTimeline.workStart : sceneTimeline.workEnd)}s`, "good");
+  }
+
+  function setTimelineWorkAreaToSelectedKeys(): void {
+    const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
+    if (sources.length === 0) {
+      showToast("Select timeline keyframes before fitting the work area.", "bad");
+      return;
+    }
+
+    const times = sources.map((source) => source.keyframe.time);
+    const start = clamp(Math.min(...times), 0, sceneTimeline.duration - 0.001);
+    const minimumSpan = Math.max(sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001);
+    const end = clamp(Math.max(...times, start + minimumSpan), start + minimumSpan, sceneTimeline.duration);
+    recordHistory();
+    sceneTimeline.workStart = roundTime(start);
+    sceneTimeline.workEnd = roundTime(end);
+    updateAllUI();
+    showToast(`Work area fit to ${sources.length} selected keyframe${sources.length === 1 ? "" : "s"}`, "good");
   }
 
   function addTimelineKeyframe(kind: TimelineTrackKind): void {

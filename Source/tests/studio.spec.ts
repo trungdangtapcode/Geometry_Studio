@@ -88,6 +88,20 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   await page.keyboard.press("ArrowLeft");
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("b");
+  await expect(page.locator("#timeline-work-start")).toHaveValue("1.5");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("n");
+  await expect(page.locator("#timeline-work-end")).toHaveValue("3.5");
   await page.locator("#timeline-collapse").click({ force: true });
   await expect(page.locator("#keyframe-dock")).toHaveClass(/collapsed/);
   await expect(page.locator(".timeline-body")).toBeHidden();
@@ -322,6 +336,10 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   expect(stretchedTimes[2] - stretchedTimes[1]).toBeCloseTo(stretchedTimes[1] - stretchedTimes[0], 1);
   await page.locator("#undo-btn").click();
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
+  await page.keyboard.press("Control+A");
+  await page.keyboard.press("Shift+B");
+  await expect(page.locator("#timeline-work-start")).toHaveValue("0");
+  await expect(page.locator("#timeline-work-end")).toHaveValue("4");
   expect(errors).toEqual([]);
 });
 

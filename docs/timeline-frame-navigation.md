@@ -18,7 +18,8 @@ fields.
   `MM:SS:FF | F0000`.
 - Keyboard navigation is available when focus is outside text fields:
   Left/Right step one frame, Shift+Left/Right jump between keyframes, Home jumps
-  to Work In, and End jumps to Work Out.
+  to Work In, End jumps to Work Out, B sets Work In, N sets Work Out, and
+  Shift+B fits Work In/Out to selected keyframes.
 
 This mirrors the practical editing pattern used in video and motion graphics
 tools: rough navigation by work area, precise navigation by frame, and keyframe
