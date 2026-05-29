@@ -85,9 +85,10 @@ animation runtime where it fits:
 - Camera, light, and object appearance tracks use the same timeline document and
   UI adapter, then apply evaluated values directly to renderer-owned properties
   during scrubbing/playback.
-- Timeline keyframe clipboard support copies selected or playhead keyframes and
-  pastes them at the current playhead time while preserving relative timing and
-  interpolation.
+- Timeline keyframe clipboard support copies or cuts selected/playhead
+  keyframes, pastes them at the current playhead time while preserving relative
+  timing and interpolation, and keeps pasted or duplicated keys selected for the
+  next edit.
 - Frame-step keyframe nudge controls retime selected or playhead keyframes
   without dragging.
 - Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,

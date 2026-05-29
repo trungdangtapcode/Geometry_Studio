@@ -51,10 +51,12 @@ export interface TimelineEditResult {
 
 export interface PasteTimelineResult extends TimelineEditResult {
   pasted: number;
+  keyframeIds: string[];
 }
 
 export interface DuplicateTimelineResult extends TimelineEditResult {
   created: number;
+  keyframeIds: string[];
 }
 
 export interface NudgeTimelineResult extends TimelineEditResult {
@@ -127,6 +129,7 @@ export function pasteTimelineClipboard(
 ): PasteTimelineResult {
   let pasted = 0;
   let skipped = 0;
+  const keyframeIds: string[] = [];
   const changedTransformObjectIds = new Set<string>();
 
   clipboard.keyframes.forEach((clip) => {
@@ -147,17 +150,19 @@ export function pasteTimelineClipboard(
     if (existing) {
       existing.value = [...clip.value] as [number, number, number];
       existing.interpolation = clip.interpolation;
+      keyframeIds.push(existing.id);
     } else {
       const pastedKeyframe = createTimelineKeyframe(time, [...clip.value] as [number, number, number]);
       pastedKeyframe.interpolation = clip.interpolation;
       track.keyframes.push(pastedKeyframe);
+      keyframeIds.push(pastedKeyframe.id);
     }
     sortTimelineKeyframes(track);
     if (selectedObjectId && clip.scope === "object" && isObjectTransformTrackKind(clip.kind)) changedTransformObjectIds.add(selectedObjectId);
     pasted += 1;
   });
 
-  return { pasted, skipped, changedTransformObjectIds: [...changedTransformObjectIds] };
+  return { pasted, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
 export function duplicateResolvedKeyframes(
@@ -167,6 +172,7 @@ export function duplicateResolvedKeyframes(
   const offset = Math.max(timeline.snapEnabled ? timeline.snapStep : 1 / timeline.fps, 0.001);
   let created = 0;
   let skipped = 0;
+  const keyframeIds: string[] = [];
   const changedTransformObjectIds = new Set<string>();
 
   sources.forEach(({ scope, objectId, track, keyframe }) => {
@@ -178,12 +184,13 @@ export function duplicateResolvedKeyframes(
     const duplicate = createTimelineKeyframe(nextTime, [...keyframe.value] as [number, number, number]);
     duplicate.interpolation = keyframe.interpolation;
     track.keyframes.push(duplicate);
+    keyframeIds.push(duplicate.id);
     sortTimelineKeyframes(track);
     if (scope === "object" && isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
     created += 1;
   });
 
-  return { created, skipped, changedTransformObjectIds: [...changedTransformObjectIds] };
+  return { created, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
 export function nudgeResolvedKeyframes(

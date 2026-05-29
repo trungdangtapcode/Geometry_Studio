@@ -1062,6 +1062,11 @@ function boot(root: HTMLDivElement): void {
       copyTimelineKeyframes();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && key === "x") {
+      event.preventDefault();
+      cutTimelineKeyframes();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "v") {
       event.preventDefault();
       pasteTimelineKeyframes();
@@ -1735,7 +1740,7 @@ function boot(root: HTMLDivElement): void {
     if (options.notify !== false) showToast(`${objectTrackLabel(kind)} keyframe set at ${formatNumber(time)}s`, "good");
   }
 
-  function deleteTimelineKeyframes(keyframeIds: string[]): void {
+  function deleteTimelineKeyframes(keyframeIds: string[], options: { notify?: boolean } = {}): void {
     const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
@@ -1761,7 +1766,8 @@ function boot(root: HTMLDivElement): void {
     applyLightTimeline();
     applyObjectPropertyTimeline();
     updateAllUI();
-    showToast(`${ids.size} keyframe${ids.size === 1 ? "" : "s"} deleted`, "good");
+    timelinePanel.selectKeyframes([]);
+    if (options.notify !== false) showToast(`${ids.size} keyframe${ids.size === 1 ? "" : "s"} deleted`, "good");
   }
 
   function copyTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
@@ -1773,6 +1779,17 @@ function boot(root: HTMLDivElement): void {
 
     timelineClipboard = createTimelineClipboard(sources);
     showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} copied`, "good");
+  }
+
+  function cutTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (sources.length === 0) {
+      showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
+      return;
+    }
+    timelineClipboard = createTimelineClipboard(sources);
+    deleteTimelineKeyframes(sources.map((source) => source.keyframe.id), { notify: false });
+    showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} cut`, "good");
   }
 
   function pasteTimelineKeyframes(): void {
@@ -1799,6 +1816,7 @@ function boot(root: HTMLDivElement): void {
     applyLightTimeline();
     applyObjectPropertyTimeline();
     updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
     showToast(`${result.pasted} keyframe${result.pasted === 1 ? "" : "s"} pasted${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
@@ -1824,6 +1842,7 @@ function boot(root: HTMLDivElement): void {
     applyLightTimeline();
     applyObjectPropertyTimeline();
     updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
     showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} duplicated`, "good");
   }
 
@@ -1961,9 +1980,8 @@ function boot(root: HTMLDivElement): void {
   }
 
   function resolveInterpolationTimelineKeyframeSources(keyframeIds: string[]) {
-    const playheadSources = resolveActiveTimelineKeyframeSources([]);
-    if (playheadSources.length > 0) return playheadSources;
-    return keyframeIds.length ? resolveActiveTimelineKeyframeSources(keyframeIds) : [];
+    if (keyframeIds.length > 0) return resolveActiveTimelineKeyframeSources(keyframeIds);
+    return resolveActiveTimelineKeyframeSources([]);
   }
 
   function clearTimelineTrack(kind: TimelineTrackKind): void {

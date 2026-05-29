@@ -74,7 +74,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Alt+F9: apply Hold interpolation.
 - Home / End: jump to Work In or Work Out.
 - Ctrl+A: select all keyframes on the active timeline track when focus is outside form fields.
-- Ctrl+C / Ctrl+V: copy or paste timeline keyframes when focus is outside form fields.
+- Ctrl+C / Ctrl+X / Ctrl+V: copy, cut, or paste timeline keyframes when focus is outside form fields.
 - Delete or Backspace: delete selected timeline keyframes first; otherwise delete the selected object.
 - Ctrl+Z: Undo.
 - Ctrl+Y or Ctrl+Shift+Z: Redo.

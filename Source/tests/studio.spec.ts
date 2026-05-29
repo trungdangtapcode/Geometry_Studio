@@ -463,6 +463,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   await expect(page.locator("#timeline-zoom-in")).toBeVisible();
   await expect(page.locator("#timeline-zoom-out")).toBeVisible();
   await page.locator("#timeline-duplicate-keyframe").click();
+  await expect(page.locator("#timeline-selection")).toContainText("1 keyframe selected");
   await page.locator("#timeline-ease-smooth").click();
   await expect(page.locator("#timeline-ease-smooth")).toHaveClass(/active/);
   await expect(page.locator("#timeline-ease-label")).toContainText("Easy Ease");
@@ -472,6 +473,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.locator("#timeline-paste-keyframes").click();
+  await expect(page.locator("#timeline-selection")).toContainText("1 keyframe selected");
   await page.locator("#timeline-nudge-right").click();
   await page.locator("#timeline-toggle-track").click();
   await expect(page.locator("#timeline-toggle-track")).toContainText("Track Off");
@@ -741,9 +743,12 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(positionTrack.keyframes[0].time).toBeCloseTo(0.267, 3);
   expect(positionTrack.keyframes[0].value[0]).toBe(1.25);
   expect(positionTrack.keyframes[1].value[0]).toBe(2);
-  expect(positionTrack.keyframes[1].interpolation).toBe("smooth");
+  const duplicatedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.033) < 0.001)!;
+  expect(duplicatedPosition.value[0]).toBe(2);
+  expect(duplicatedPosition.interpolation).toBe("smooth");
   const pastedPosition = positionTrack.keyframes.find((keyframe) => Math.abs(keyframe.time - 1.533) < 0.001)!;
   expect(pastedPosition.value[0]).toBe(2);
+  expect(pastedPosition.interpolation).toBe("smooth");
   expect(rotationTrack.keyframes).toHaveLength(2);
   expect(rotationTrack.keyframes[1].value[1]).toBeCloseTo(360, 3);
   expect(colorTrack.keyframes).toHaveLength(2);
@@ -767,6 +772,13 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneDocument.objects[0].textureOffset).toEqual([0.15, 0.3]);
   expect(sceneDocument.objects[0].textureRotation).toBeCloseTo(Math.PI / 4, 3);
 
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await timelineCanvas.click({ force: true });
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
+  await page.keyboard.press("Control+X");
+  await expect(page.locator("#timeline-selection")).toContainText("No keyframe selected");
+  await page.locator("#undo-btn").click();
   await page.locator("#timeline-track-kind").selectOption("position");
   await page.locator("#timeline-clear-track").click({ force: true });
   await expect(page.locator("#selection-summary")).toContainText("Keyframed");

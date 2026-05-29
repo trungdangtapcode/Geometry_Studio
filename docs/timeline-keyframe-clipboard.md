@@ -13,7 +13,11 @@ stored as ordinary timeline keyframes.
   active track.
 - `Ctrl+A` / `Cmd+A` selects every keyframe on the active track before bulk
   copy, paste, nudge, interpolation, or delete operations.
+- Cut copies the selected or playhead keyframes into the clipboard, then removes
+  them in one undoable edit.
 - Paste inserts copied keyframes at the current playhead time.
+- Paste and Duplicate select the newly created or updated keyframes so the next
+  edit can immediately retime, ease, nudge, stretch, copy, or delete them.
 - Multi-keyframe copies preserve relative timing from the earliest copied
   keyframe.
 - Interpolation mode and keyframe values are preserved.
@@ -24,9 +28,9 @@ stored as ordinary timeline keyframes.
 
 ## Controls
 
-- Timeline toolbar: `Copy` and `Paste`.
-- Keyboard: `Ctrl+A` / `Cmd+A`, `Ctrl+C` / `Cmd+C`, and `Ctrl+V` / `Cmd+V`
-  when focus is outside form fields.
+- Timeline toolbar: `Copy`, `Paste`, and `Duplicate`.
+- Keyboard: `Ctrl+A` / `Cmd+A`, `Ctrl+C` / `Cmd+C`, `Ctrl+X` / `Cmd+X`, and
+  `Ctrl+V` / `Cmd+V` when focus is outside form fields.
 
 ## Implementation Notes
 
@@ -44,7 +48,8 @@ type TimelineClipboardKeyframe = {
 
 Keeping only relative time and track data avoids coupling clipboard entries to
 old keyframe IDs. Paste creates fresh timeline IDs using the existing
-`createTimelineKeyframe` helper.
+`createTimelineKeyframe` helper, then returns the affected keyframe IDs so the
+timeline panel can keep the pasted result selected.
 
 ## Testing
 
@@ -53,4 +58,6 @@ The Playwright timeline workflow verifies that:
 - Copy and Paste buttons are visible.
 - A Position keyframe can be copied from the active playhead track.
 - Pasting at a later time creates a saved keyframe with the same value.
+- Paste and Duplicate leave the affected keyframe selected.
+- Ctrl/Cmd+X cuts selected active-track keyframes and Undo restores them.
 - The pasted keyframe survives scene JSON export.
