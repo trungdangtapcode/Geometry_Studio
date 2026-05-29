@@ -52,6 +52,8 @@ type ValueGraphDragState = {
   pointerId: number;
   startX: number;
   startY: number;
+  startTime: number;
+  startValue: number;
   keyframeId: string;
   axis: TimelineAxis;
   range: ValueGraphRange;
@@ -69,6 +71,7 @@ export class TimelineValueGraph {
   private graphVisible = loadTimelineGraphVisible();
   private lastContext: TimelineValueGraphRenderContext | null = null;
   private dragState: ValueGraphDragState | null = null;
+  private shiftPressed = false;
   private readonly handlePointerMove = (event: PointerEvent) => this.moveGraphKey(event);
   private readonly handlePointerEnd = (event: PointerEvent) => this.finishGraphKeyDrag(event);
 
@@ -146,6 +149,12 @@ export class TimelineValueGraph {
     window.addEventListener("pointermove", this.handlePointerMove);
     window.addEventListener("pointerup", this.handlePointerEnd);
     window.addEventListener("pointercancel", this.handlePointerEnd);
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Shift") this.shiftPressed = true;
+    });
+    window.addEventListener("keyup", (event) => {
+      if (event.key === "Shift") this.shiftPressed = false;
+    });
   }
 
   private syncVisibility(): void {
@@ -174,6 +183,20 @@ export class TimelineValueGraph {
           const range = valueRanges.get(axis);
           const axisEnabled = range && index < axisConfig.enabledAxes && (focusedAxisIndex === null || focusedAxisIndex === index);
           if (!axisEnabled || !range) return;
+          const cx = formatNumber(graphX(keyframe.time, start, end));
+          const cy = formatNumber(graphY(keyframe.value[index], range));
+          const hitTarget = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          hitTarget.classList.add("timeline-graph-key-hit", `graph-${axis}`);
+          hitTarget.classList.toggle("locked", !editable);
+          hitTarget.dataset.keyframeId = keyframe.id;
+          hitTarget.dataset.axis = axis;
+          hitTarget.dataset.keyTime = formatNumber(keyframe.time);
+          hitTarget.setAttribute("cx", cx);
+          hitTarget.setAttribute("cy", cy);
+          hitTarget.setAttribute("r", "9");
+          hitTarget.setAttribute("aria-hidden", "true");
+          this.elements.keyLayer.appendChild(hitTarget);
+
           const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
           point.classList.add("timeline-graph-key", `graph-${axis}`);
           point.classList.toggle("selected", context.selectedKeyframeIds.has(keyframe.id));
@@ -181,25 +204,26 @@ export class TimelineValueGraph {
           point.dataset.keyframeId = keyframe.id;
           point.dataset.axis = axis;
           point.dataset.keyTime = formatNumber(keyframe.time);
-          point.setAttribute("cx", formatNumber(graphX(keyframe.time, start, end)));
-          point.setAttribute("cy", formatNumber(graphY(keyframe.value[index], range)));
+          point.setAttribute("cx", cx);
+          point.setAttribute("cy", cy);
           point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
           point.setAttribute("role", editable ? "button" : "img");
           point.setAttribute("tabindex", editable ? "0" : "-1");
-          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Drag horizontally to retime and vertically to edit value.`);
+          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Drag horizontally to retime and vertically to edit value. Hold Shift to constrain to the dominant direction.`);
           this.elements.keyLayer.appendChild(point);
         });
       });
   }
 
   private startGraphKeyDrag(event: PointerEvent): void {
-    const target = (event.target as Element | null)?.closest<SVGCircleElement>(".timeline-graph-key");
+    const target = (event.target as Element | null)?.closest<SVGCircleElement>(".timeline-graph-key, .timeline-graph-key-hit");
     if (!target || target.classList.contains("locked")) return;
     const keyframeId = target.dataset.keyframeId;
     const axis = parseTimelineAxis(target.dataset.axis);
     const context = this.lastContext;
     const keyframe = keyframeId && context?.track ? context.track.keyframes.find((candidate) => candidate.id === keyframeId) : null;
     if (!keyframeId || !axis || !context?.track || !keyframe) return;
+    const axisIndex = AXIS_INDEX[axis];
     const range = rangeForKeyframeAxis(context, axis);
     if (!range) return;
     const [timeStart, timeEnd] = graphWorkRange(context.timelineDocument);
@@ -208,6 +232,8 @@ export class TimelineValueGraph {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      startTime: keyframe.time,
+      startValue: keyframe.value[axisIndex],
       keyframeId,
       axis,
       range,
@@ -227,11 +253,25 @@ export class TimelineValueGraph {
       drag.started = true;
       this.callbacks.onDragStarted();
     }
-    const time = this.timeFromPointer(event, drag.timeStart, drag.timeEnd);
-    const value = this.valueFromPointer(event, drag.range);
+    const constrained = this.constrainDragValues(event, drag);
+    const time = constrained.time;
+    const value = constrained.value;
     this.callbacks.onKeyframeMoved(drag.keyframeId, time);
     this.callbacks.onKeyframeValueChanged(drag.keyframeId, drag.axis, value);
     if (this.lastContext) this.render(this.lastContext);
+  }
+
+  private constrainDragValues(event: PointerEvent, drag: ValueGraphDragState): { time: number; value: number } {
+    const raw = {
+      time: this.timeFromPointer(event, drag.timeStart, drag.timeEnd),
+      value: this.valueFromPointer(event, drag.range)
+    };
+    if (!event.shiftKey && !this.shiftPressed) return raw;
+    const deltaX = Math.abs(event.clientX - drag.startX);
+    const deltaY = Math.abs(event.clientY - drag.startY);
+    return deltaX >= deltaY
+      ? { time: raw.time, value: drag.startValue }
+      : { time: drag.startTime, value: raw.value };
   }
 
   private finishGraphKeyDrag(event: PointerEvent): void {

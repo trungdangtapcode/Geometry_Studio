@@ -107,7 +107,8 @@ animation runtime where it fits:
 - The active track can be inspected in a value graph that samples the same
   per-keyframe evaluator as runtime playback and motion-path preview. Graph key
   points can be dragged horizontally and vertically to retime keys and edit
-  channel values with one undo step per drag.
+  channel values with snap-aware time movement, Shift constraints, and one undo
+  step per drag.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
 - Selected objects with two or more Position keys show a viewport motion path,
@@ -137,7 +138,7 @@ object appearance, camera, and light tracks:
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
 - `ui/timelineValueGraph.ts` owns active-track graph rendering, key point
-  display, channel normalization, and graph value-drag interaction.
+  display, channel normalization, and graph time/value drag interaction.
 - `ui/density.ts` owns UI-density persistence and root layout mode application.
 - `main.ts` evaluates camera, light, color, opacity, and visibility tracks
   against the same keyframe schema so non-transform properties remain

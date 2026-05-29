@@ -2066,7 +2066,7 @@ function boot(root: HTMLDivElement): void {
     if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     const match = findTimelineKeyframe(keyframeId);
     if (!match) return;
-    match.keyframe.time = clamp(roundTime(time), 0, sceneTimeline.duration);
+    match.keyframe.time = snapTimelineTime(sceneTimeline, clamp(time, 0, sceneTimeline.duration));
     sortTimelineKeyframes(match.track);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);

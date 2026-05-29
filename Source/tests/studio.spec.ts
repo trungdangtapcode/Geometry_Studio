@@ -206,6 +206,10 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   if (!(await page.locator("#timeline-graph-panel").isVisible())) {
     await page.locator("#timeline-graph-toggle").click();
   }
+  await page.locator("#timeline-snap-step").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position");
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   await expect(page.locator("#timeline-graph-x")).not.toHaveAttribute("d", "");
@@ -221,6 +225,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await page.mouse.up();
   const movedKeyTime = Number(await page.locator(".timeline-graph-key.graph-x.selected").first().getAttribute("data-key-time"));
   expect(movedKeyTime).toBeGreaterThan(2.1);
+  expect(movedKeyTime).toBeCloseTo(Math.round(movedKeyTime * 2) / 2, 2);
   await page.locator("#timeline-current-time").evaluate((input, time) => {
     (input as HTMLInputElement).value = String(time);
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -232,6 +237,24 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(2, 1);
+  const restoredKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  await expect(restoredKey).toBeVisible();
+  const restoredBox = await restoredKey.boundingBox();
+  expect(restoredBox).toBeTruthy();
+  await page.mouse.move(restoredBox!.x + restoredBox!.width / 2, restoredBox!.y + restoredBox!.height / 2);
+  await page.keyboard.down("Shift");
+  await page.mouse.down();
+  await page.mouse.move(restoredBox!.x + restoredBox!.width / 2 + 12, restoredBox!.y - 28);
+  await page.mouse.up();
+  await page.keyboard.up("Shift");
+  const constrainedKeyTime = Number(await page.locator(".timeline-graph-key.graph-x.selected").first().getAttribute("data-key-time"));
+  expect(constrainedKeyTime).toBeCloseTo(2, 2);
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeGreaterThan(2.1);
+  await page.locator("#undo-btn").click();
   expect(errors).toEqual([]);
 });
 

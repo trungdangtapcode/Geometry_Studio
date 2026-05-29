@@ -243,7 +243,9 @@ function used by playback, so Hold, Linear, and Easy Ease segments shown in the
 graph match the object, camera, light, or material values seen while scrubbing.
 The graph draws key points on top of the curves and supports horizontal and
 vertical dragging to retime a keyframe and edit a keyed channel value; each
-graph drag is recorded as one undoable edit.
+graph drag is recorded as one undoable edit. Graph retiming follows the
+timeline Snap setting, and Shift-dragging constrains the edit to the dominant
+drag direction for more precise graph adjustments.
 The editor stores rotation keyframes in readable Euler degrees and evaluates
 rotation playback per axis, preserving authored full turns such as \(0^\circ\)
 to \(360^\circ\).

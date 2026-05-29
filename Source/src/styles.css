@@ -734,13 +734,20 @@ svg {
 .timeline-graph-playhead {
   stroke: var(--rose);
   stroke-width: 1.5;
+  pointer-events: none;
 }
 
-.timeline-graph-key {
+.timeline-graph-key,
+.timeline-graph-key-hit {
   fill: #ffffff;
   stroke-width: 2;
   cursor: move;
   pointer-events: auto;
+}
+
+.timeline-graph-key-hit {
+  fill: transparent;
+  stroke: transparent;
 }
 
 .timeline-graph-key.graph-x {
