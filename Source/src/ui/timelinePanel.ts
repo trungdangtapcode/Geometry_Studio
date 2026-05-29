@@ -52,6 +52,7 @@ export interface KeyframeTimelineCallbacks {
   onPasteKeyframes(): void;
   onSelectWorkAreaKeyframes(): void;
   onSelectVisibleKeyframes(workAreaOnly: boolean): void;
+  onSelectVisibleTimeKeyframes(): void;
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
@@ -376,6 +377,25 @@ export class KeyframeTimelinePanel {
     return this.selectedKeyframeIds.size;
   }
 
+  selectVisibleRowKeyframesAtCurrentTime(): number {
+    if (!this.lastTimelineDocument) return 0;
+    const timelineDocument = this.lastTimelineDocument;
+    const currentTime = timelineDocument.currentTime;
+    const selectedIds = new Set<string>();
+    this.visibleRowTargets().forEach((target) => {
+      const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
+      track?.keyframes.forEach((keyframe) => {
+        if (Math.abs(keyframe.time - currentTime) < 0.001) selectedIds.add(keyframe.id);
+      });
+    });
+    this.selectedKeyframeIds = selectedIds;
+    this.selectedAxis = null;
+    this.syncSelectionWidgets(timelineDocument, this.lastSelectedId);
+    this.renderGraph(timelineDocument, this.lastSelectedId);
+    this.refreshCanvas();
+    return this.selectedKeyframeIds.size;
+  }
+
   cycleRowFilter(): string {
     const currentIndex = ROW_FILTER_SEQUENCE.indexOf(this.rowFilter);
     const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
@@ -453,6 +473,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-select-visible").addEventListener("click", () => {
       this.callbacks.onSelectVisibleKeyframes(false);
+    });
+    query<HTMLButtonElement>("#timeline-select-time").addEventListener("click", () => {
+      this.callbacks.onSelectVisibleTimeKeyframes();
     });
     query<HTMLButtonElement>("#timeline-preview-selection").addEventListener("click", () => {
       this.callbacks.onPreviewSelectedRange();

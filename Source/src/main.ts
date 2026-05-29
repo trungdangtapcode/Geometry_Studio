@@ -201,6 +201,7 @@ function boot(root: HTMLDivElement): void {
     onPasteKeyframes: pasteTimelineKeyframes,
     onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
     onSelectVisibleKeyframes: selectVisibleTimelineKeyframes,
+    onSelectVisibleTimeKeyframes: selectVisibleTimelineTimeKeyframes,
     onPreviewSelectedRange: previewSelectedTimelineKeyRange,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
@@ -1313,6 +1314,11 @@ function boot(root: HTMLDivElement): void {
       else selectAllActiveTimelineKeyframes();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && event.altKey && key === "k") {
+      event.preventDefault();
+      selectVisibleTimelineTimeKeyframes();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "c") {
       event.preventDefault();
       copyTimelineKeyframes();
@@ -2031,6 +2037,14 @@ function boot(root: HTMLDivElement): void {
       : workAreaOnly
         ? "No visible-row keyframes inside the work area."
         : "No keyframes on visible timeline rows.",
+      selectedCount ? "good" : "bad");
+  }
+
+  function selectVisibleTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectVisibleRowKeyframesAtCurrentTime();
+    showToast(selectedCount
+      ? `${selectedCount} visible-row keyframe${selectedCount === 1 ? "" : "s"} selected at ${formatNumber(sceneTimeline.currentTime)}s`
+      : `No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s.`,
       selectedCount ? "good" : "bad");
   }
 
