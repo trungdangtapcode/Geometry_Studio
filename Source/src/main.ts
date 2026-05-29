@@ -13,6 +13,7 @@ import {
   pasteTimelineClipboard,
   resolveTimelineKeyframeSources,
   reverseResolvedKeyframes,
+  snapResolvedKeyframesToFrames,
   type TimelineClipboard,
   type TimelineKeyframeEditPatch
 } from "./animation/timelineEditing";
@@ -173,6 +174,7 @@ function boot(root: HTMLDivElement): void {
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onReverseKeyframes: reverseTimelineKeyframes,
+    onSnapKeyframesToFrames: snapTimelineKeyframesToFrames,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -1099,6 +1101,11 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey && key === "r") {
       event.preventDefault();
       reverseTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
+    if (event.shiftKey && key === "s") {
+      event.preventDefault();
+      snapTimelineKeyframesToFrames(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if (key === "b") {
@@ -2087,6 +2094,33 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
     showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} time-reversed${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function snapTimelineKeyframesToFrames(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length === 0 || sources.length === 0) {
+      showToast("Select keyframes before snapping them to frames.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = snapResolvedKeyframesToFrames(sceneTimeline, sources);
+    if (result.edited === 0) {
+      updateAllUI();
+      showToast(result.skipped ? `No keyframe snapped, ${result.skipped} skipped.` : "Selected keyframes are already on frames.", "bad");
+      return;
+    }
+
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(result.currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(sources.map((source) => source.keyframe.id));
+    showToast(`${result.edited} keyframe${result.edited === 1 ? "" : "s"} snapped to frames${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function editTimelineKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void {

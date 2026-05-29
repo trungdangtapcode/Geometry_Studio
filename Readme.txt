@@ -72,6 +72,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Alt+Left / Alt+Right: nudge selected or playhead keyframes by one frame.
 - Shift+Enter: move selected keyframes so the first selected key lands at the playhead.
 - Shift+R: time-reverse selected keyframes.
+- Shift+S: snap selected keyframes to frame boundaries.
 - F9: apply Easy Ease interpolation to selected or playhead keyframes.
 - Shift+F9: apply Linear interpolation.
 - Alt+F9: apply Hold interpolation.
@@ -103,7 +104,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Toggle shadows and edit light color, intensity, and position.
 - Upload a bitmap texture and adjust Repeat X/Y.
 - Import a .glb, .gltf, .obj, or .stl model.
-- Add Position / Rotation / Scale keyframes in the bottom timeline using Set Key / Update Key, Set TRS for grouped object poses, or a row diamond key button, copy/paste a keyframe, move selected keys to the playhead, reverse selected key timing, scrub the playhead, and verify motion plays.
+- Add Position / Rotation / Scale keyframes in the bottom timeline using Set Key / Update Key, Set TRS for grouped object poses, or a row diamond key button, copy/paste a keyframe, move selected keys to the playhead, reverse selected key timing, snap selected keys to frames, scrub the playhead, and verify motion plays.
 - Confirm Position, Rotation, and Scale appear as X/Y/Z rows in the timeline for easier transform inspection.
 - Apply Linear, Easy Ease, and Hold interpolation from the timeline toolbar and confirm the curve preview updates.
 - Toggle Graph in the timeline and confirm a keyed Position / Rotation / Scale track draws value curves while scrubbing. Ctrl/Cmd-click graph keys to toggle selection, Shift-click to select a key range, drag one selected key to move selected keys together, Alt-drag one selected key to stretch selected-key timing, drag horizontally and vertically to retime or edit channel values, hold Shift while dragging to constrain direction, then Undo to restore it.

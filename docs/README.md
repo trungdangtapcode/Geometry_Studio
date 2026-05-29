@@ -52,6 +52,8 @@ PDF.
   selected keyframe blocks to the playhead while preserving relative timing.
 - [Timeline Keyframe Reverse](timeline-keyframe-reverse.md) documents
   time-reversing selected keyframe blocks.
+- [Timeline Keyframe Snap](timeline-keyframe-snap.md) documents snapping
+  selected keyframes to frame boundaries.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
@@ -103,6 +105,8 @@ animation runtime where it fits:
   preserving their internal timing.
 - Time Reverse Keyframes mirrors selected timing blocks while keeping values
   and interpolation attached to each keyframe.
+- Snap Selected Keyframes to Frames cleans dragged or imported key timing to the
+  active FPS grid without changing key values.
 - Ctrl/Cmd+A selects every keyframe on the active track, making bulk copy,
   delete, interpolation, and nudge workflows faster.
 - Delete and Backspace remove selected timeline keyframes before falling back to

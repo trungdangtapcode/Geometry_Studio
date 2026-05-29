@@ -331,6 +331,61 @@ export function reverseResolvedKeyframes(
   return { edited, skipped, currentTime: timeline.currentTime, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
+export function snapResolvedKeyframesToFrames(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): EditTimelineResult {
+  const frameStep = 1 / Math.max(timeline.fps, 1);
+  const movingIds = new Set(sources.map((source) => source.keyframe.id));
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  let edited = 0;
+  let skipped = 0;
+
+  sources.forEach((source) => {
+    if (!occupiedTimes.has(source.track)) {
+      occupiedTimes.set(source.track, new Set(
+        source.track.keyframes
+          .filter((keyframe) => !movingIds.has(keyframe.id))
+          .map((keyframe) => timelineTimeKey(keyframe.time))
+      ));
+    }
+  });
+
+  [...sources]
+    .sort((left, right) => left.keyframe.time - right.keyframe.time)
+    .forEach((source) => {
+      const nextTime = roundTime(Math.round(source.keyframe.time / frameStep) * frameStep);
+      const trackOccupancy = occupiedTimes.get(source.track)!;
+      const timeKey = timelineTimeKey(nextTime);
+      const blocked = nextTime < 0 || nextTime > timeline.duration || trackOccupancy.has(timeKey);
+      if (blocked) {
+        skipped += 1;
+        return;
+      }
+
+      trackOccupancy.add(timeKey);
+      if (Math.abs(source.keyframe.time - nextTime) < 0.001) return;
+      source.keyframe.time = nextTime;
+      changedTracks.add(source.track);
+      if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+      edited += 1;
+    });
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return {
+    edited,
+    skipped,
+    currentTime: edited ? Math.min(...sources.map((source) => source.keyframe.time)) : timeline.currentTime,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
+function timelineTimeKey(time: number): number {
+  return Math.round(time * 1000);
+}
+
 function collectKeyframesById(
   tracks: TimelineTrackDocument[],
   ids: Set<string>,
