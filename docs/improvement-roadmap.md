@@ -26,6 +26,7 @@ Implemented and tested:
 - OBJ + MTL multi-file import with source-material preservation.
 - Post-processing toggles for Bloom and Vignette.
 - Timeline row search for dense AE-style track navigation.
+- Timeline row switches for direct enable, solo, lock, and key actions.
 
 ## Research Basis
 
@@ -157,6 +158,7 @@ After rendering improvements, refine the timeline:
 - Camera tracks for cinematic demos. Implemented.
 - Light intensity and color tracks. Implemented.
 - Row search for dense object/camera/light track sets. Implemented.
+- Per-row enable, solo, lock, and key switches. Implemented.
 - Screenshot in report showing timeline save/load round trip.
 
 ## Phase 6: Optional Path-Traced Preview

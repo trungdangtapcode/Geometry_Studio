@@ -2591,8 +2591,8 @@ function boot(root: HTMLDivElement): void {
     showToast(`${objectTrackLabel(kind)} track cleared`, "good");
   }
 
-  function toggleTimelineTrack(kind: TimelineTrackKind): void {
-    const track = activeTimelineTrack(kind);
+  function toggleTimelineTrack(kind: TimelineTrackKind, targetId?: string): void {
+    const track = activeTimelineTrack(kind, targetId);
     if (!track || track.keyframes.length === 0) {
       showToast("Add keyframes to the active track before toggling it.", "bad");
       return;
@@ -2609,8 +2609,8 @@ function boot(root: HTMLDivElement): void {
     showToast(`${track.label} track ${track.enabled ? "enabled" : "disabled"}`, "good");
   }
 
-  function toggleTimelineTrackLock(kind: TimelineTrackKind): void {
-    const track = activeTimelineTrack(kind);
+  function toggleTimelineTrackLock(kind: TimelineTrackKind, targetId?: string): void {
+    const track = activeTimelineTrack(kind, targetId);
     if (!track || track.keyframes.length === 0) {
       showToast("Add keyframes to the active track before locking it.", "bad");
       return;
@@ -2622,8 +2622,8 @@ function boot(root: HTMLDivElement): void {
     showToast(`${track.label} track ${track.locked ? "locked" : "unlocked"}`, "good");
   }
 
-  function toggleTimelineTrackSolo(kind: TimelineTrackKind): void {
-    const track = activeTimelineTrack(kind);
+  function toggleTimelineTrackSolo(kind: TimelineTrackKind, targetId?: string): void {
+    const track = activeTimelineTrack(kind, targetId);
     if (!track || track.keyframes.length === 0) {
       showToast("Add keyframes to the active track before soloing it.", "bad");
       return;
@@ -2648,15 +2648,15 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
   }
 
-  function activeTimelineTrack(kind: TimelineTrackKind): TimelineTrackDocument | null {
+  function activeTimelineTrack(kind: TimelineTrackKind, targetId?: string): TimelineTrackDocument | null {
     if (isCameraTrackKind(kind)) {
       return sceneTimeline.camera.tracks.find((candidate) => candidate.kind === kind) ?? null;
     }
     if (isLightTrackKind(kind)) {
       return sceneTimeline.lights.tracks.find((candidate) => candidate.kind === kind) ?? null;
     }
-    const entry = selectedEntry();
-    const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
+    const objectId = targetId && entries.has(targetId) ? targetId : selectedEntry()?.id;
+    const objectTimeline = objectId ? sceneTimeline.objects.find((candidate) => candidate.objectId === objectId) : null;
     return objectTimeline?.tracks.find((candidate) => candidate.kind === kind) ?? null;
   }
 

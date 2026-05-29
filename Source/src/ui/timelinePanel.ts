@@ -64,9 +64,9 @@ export interface KeyframeTimelineCallbacks {
   onRenameMarker(markerId: string, label: string): void;
   onStepMarker(direction: -1 | 1): void;
   onClearTrack(kind: TimelineTrackKind): void;
-  onToggleTrack(kind: TimelineTrackKind): void;
-  onToggleTrackLock(kind: TimelineTrackKind): void;
-  onToggleTrackSolo(kind: TimelineTrackKind): void;
+  onToggleTrack(kind: TimelineTrackKind, targetId?: string): void;
+  onToggleTrackLock(kind: TimelineTrackKind, targetId?: string): void;
+  onToggleTrackSolo(kind: TimelineTrackKind, targetId?: string): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
@@ -472,17 +472,12 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());
     });
-    this.toggleTrackButton.addEventListener("click", () => {
-      this.callbacks.onToggleTrack(this.selectedTrackKind());
-    });
-    this.lockTrackButton.addEventListener("click", () => {
-      this.callbacks.onToggleTrackLock(this.selectedTrackKind());
-    });
-    this.soloTrackButton.addEventListener("click", () => {
-      this.callbacks.onToggleTrackSolo(this.selectedTrackKind());
-    });
+    this.toggleTrackButton.addEventListener("click", () => this.callbacks.onToggleTrack(this.selectedTrackKind()));
+    this.lockTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackLock(this.selectedTrackKind()));
+    this.soloTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackSolo(this.selectedTrackKind()));
     this.labels.addEventListener("click", (event) => {
       const keyButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-key");
+      const switchButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-switch");
       const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
       if (!row) return;
       const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
@@ -492,6 +487,13 @@ export class KeyframeTimelinePanel {
       this.trackSelect.value = kind;
       this.selectedAxis = axis;
       this.callbacks.onTrackLabelSelected(targetId, kind);
+      if (switchButton) {
+        const action = switchButton.dataset.rowAction;
+        if (action === "toggle") this.callbacks.onToggleTrack(kind, targetId);
+        if (action === "solo") this.callbacks.onToggleTrackSolo(kind, targetId);
+        if (action === "lock") this.callbacks.onToggleTrackLock(kind, targetId);
+        return;
+      }
       if (keyButton) this.callbacks.onAddKeyframe(kind);
     });
     this.labels.addEventListener("keydown", (event) => {
@@ -865,6 +867,17 @@ export class KeyframeTimelinePanel {
         <span class="track-label-text">
           <strong>${options.targetName}</strong>
           <small>${label}</small>
+        </span>
+        <span class="timeline-row-switches">
+          <button class="timeline-row-switch" type="button" data-row-action="toggle" aria-label="${options.enabled ? "Disable" : "Enable"} track: ${options.targetName} ${label}" title="${options.enabled ? "Disable track" : "Enable track"}" ${options.hasKeyframes ? "" : "disabled"}>
+            <span data-icon="${options.enabled ? "Eye" : "EyeOff"}"></span>
+          </button>
+          <button class="timeline-row-switch" type="button" data-row-action="solo" aria-label="${options.solo ? "Unsolo" : "Solo"} track: ${options.targetName} ${label}" title="${options.solo ? "Unsolo track" : "Solo track"}" ${options.hasKeyframes ? "" : "disabled"}>
+            <span data-icon="${options.solo ? "CircleDot" : "Circle"}"></span>
+          </button>
+          <button class="timeline-row-switch" type="button" data-row-action="lock" aria-label="${options.locked ? "Unlock" : "Lock"} track: ${options.targetName} ${label}" title="${options.locked ? "Unlock track" : "Lock track"}" ${options.hasKeyframes ? "" : "disabled"}>
+            <span data-icon="${options.locked ? "Lock" : "Unlock"}"></span>
+          </button>
         </span>
         <button class="timeline-row-key" type="button" aria-label="${keyText}: ${options.targetName} ${label}" title="${keyText}" ${options.locked ? "disabled" : ""}>
           <span data-icon="${options.locked ? "Lock" : options.hasKeyframes ? "Diamond" : "DiamondPlus"}"></span>

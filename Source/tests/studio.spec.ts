@@ -575,6 +575,39 @@ test("locks timeline tracks against keyframe edits", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("toggles timeline tracks from row switches", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator('[data-animation="spin"]').click({ force: true });
+  await page.locator("#timeline-row-filter").selectOption("keyed");
+
+  const rotationRow = page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="rotation"][data-track-axis="x"]');
+  await expect(rotationRow).toBeVisible();
+  await expect(rotationRow).toHaveClass(/has-keyframes/);
+
+  await rotationRow.locator('.timeline-row-switch[data-row-action="toggle"]').click();
+  await expect(rotationRow).toHaveClass(/disabled-track/);
+  await rotationRow.locator('.timeline-row-switch[data-row-action="toggle"]').click();
+  await expect(rotationRow).not.toHaveClass(/disabled-track/);
+
+  await rotationRow.locator('.timeline-row-switch[data-row-action="solo"]').click();
+  await expect(rotationRow).toHaveClass(/solo-track/);
+  await rotationRow.locator('.timeline-row-switch[data-row-action="solo"]').click();
+  await expect(rotationRow).not.toHaveClass(/solo-track/);
+
+  await rotationRow.locator('.timeline-row-switch[data-row-action="lock"]').click();
+  await expect(rotationRow).toHaveClass(/locked-track/);
+  await expect(rotationRow.locator(".timeline-row-key")).toBeDisabled();
+  await rotationRow.locator('.timeline-row-switch[data-row-action="lock"]').click();
+  await expect(rotationRow).not.toHaveClass(/locked-track/);
+  expect(errors).toEqual([]);
+});
+
 test("solos timeline tracks for focused playback filtering", async ({ page }) => {
   test.setTimeout(180_000);
   const errors: string[] = [];
