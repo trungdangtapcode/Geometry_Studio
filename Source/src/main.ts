@@ -177,6 +177,7 @@ function boot(root: HTMLDivElement): void {
     onCopyKeyframes: copyTimelineKeyframes,
     onPasteKeyframes: pasteTimelineKeyframes,
     onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
+    onPreviewSelectedRange: previewSelectedTimelineKeyRange,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
@@ -1214,7 +1215,9 @@ function boot(root: HTMLDivElement): void {
     if (key === "s") setTransformMode("scale");
     if (key === " ") {
       event.preventDefault();
-      togglePlay();
+      if (event.shiftKey) previewSelectedTimelineKeyRange();
+      else togglePlay();
+      return;
     }
     if (key === "arrowleft" || key === "arrowright") {
       event.preventDefault();
@@ -1724,22 +1727,41 @@ function boot(root: HTMLDivElement): void {
     showToast(`Work ${edge === "start" ? "In" : "Out"} set to ${formatNumber(edge === "start" ? sceneTimeline.workStart : sceneTimeline.workEnd)}s`, "good");
   }
 
-  function setTimelineWorkAreaToSelectedKeys(): void {
+  function selectedTimelineKeyRange(emptyMessage: string): { start: number; end: number; count: number } | null {
     const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
     if (sources.length === 0) {
-      showToast("Select timeline keyframes before fitting the work area.", "bad");
-      return;
+      showToast(emptyMessage, "bad");
+      return null;
     }
 
     const times = sources.map((source) => source.keyframe.time);
     const start = clamp(Math.min(...times), 0, sceneTimeline.duration - 0.001);
     const minimumSpan = Math.max(sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001);
     const end = clamp(Math.max(...times, start + minimumSpan), start + minimumSpan, sceneTimeline.duration);
+    return { start: roundTime(start), end: roundTime(end), count: sources.length };
+  }
+
+  function setTimelineWorkAreaToSelectedKeys(): void {
+    const range = selectedTimelineKeyRange("Select timeline keyframes before fitting the work area.");
+    if (!range) return;
+
     recordHistory();
-    sceneTimeline.workStart = roundTime(start);
-    sceneTimeline.workEnd = roundTime(end);
+    sceneTimeline.workStart = range.start;
+    sceneTimeline.workEnd = range.end;
     updateAllUI();
-    showToast(`Work area fit to ${sources.length} selected keyframe${sources.length === 1 ? "" : "s"}`, "good");
+    showToast(`Work area fit to ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`, "good");
+  }
+
+  function previewSelectedTimelineKeyRange(): void {
+    const range = selectedTimelineKeyRange("Select timeline keyframes before previewing a range.");
+    if (!range) return;
+
+    recordHistory();
+    sceneTimeline.workStart = range.start;
+    sceneTimeline.workEnd = range.end;
+    setTimelineTime(range.start);
+    transport.pause();
+    playTimeline(1, `Previewing ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`);
   }
 
   function selectAllActiveTimelineKeyframes(): void {

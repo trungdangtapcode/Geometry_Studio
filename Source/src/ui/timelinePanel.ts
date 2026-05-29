@@ -34,6 +34,7 @@ export interface KeyframeTimelineCallbacks {
   onCopyKeyframes(keyframeIds: string[]): void;
   onPasteKeyframes(): void;
   onSelectWorkAreaKeyframes(): void;
+  onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
@@ -458,6 +459,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-select-workarea").addEventListener("click", () => {
       this.callbacks.onSelectWorkAreaKeyframes();
+    });
+    query<HTMLButtonElement>("#timeline-preview-selection").addEventListener("click", () => {
+      this.callbacks.onPreviewSelectedRange();
     });
     query<HTMLButtonElement>("#timeline-nudge-left").addEventListener("click", () => {
       this.callbacks.onNudgeKeyframes(-1, [...this.selectedKeyframeIds]);

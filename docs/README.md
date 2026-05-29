@@ -42,6 +42,8 @@ PDF.
   frame-step controls, Work Out jump, and timecode display.
 - [Timeline Selected Key Boundaries](timeline-selected-key-boundaries.md)
   documents first/last selected keyframe navigation.
+- [Timeline Selected Range Preview](timeline-selected-range-preview.md)
+  documents one-command preview playback for selected keyframe spans.
 - [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and
   keyboard timeline zoom behavior.
 - [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents

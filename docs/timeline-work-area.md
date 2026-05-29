@@ -16,6 +16,9 @@ After Effects and Premiere style work area around the existing timeline:
 - `O` also sets Work Out to the current playhead time.
 - `Shift+B` fits Work In/Out to the currently selected timeline keyframes.
 - `Select Work` selects active-track keyframes inside Work In/Out.
+- `Preview Sel` fits Work In/Out to selected keyframes, jumps to the first
+  selected key, and starts playback.
+- `Shift+Space` runs the same selected-range preview.
 - `Ctrl+Shift+A` / `Cmd+Shift+A` runs the same work-area selection command.
 - Loop playback repeats over the work area instead of the full duration.
 
@@ -45,6 +48,8 @@ back to the full timeline.
 - Pressing `Shift+B` reads the selected keyframe times and sets the work area to
   the selected span. A one-key selection creates a minimum visible span using
   the snap step or one frame.
+- Pressing `Preview Sel` or `Shift+Space` uses the same selected span, moves the
+  playhead to its start, and starts forward playback at `1x`.
 - Pressing `Ctrl+Shift+A` / `Cmd+Shift+A` selects keyframes on the active track
   whose times are inside the current Work In/Out range. This keeps range-based
   edit operations scoped to the same track model as `Ctrl+A`.
@@ -57,8 +62,8 @@ back to the full timeline.
 
 The Playwright timeline workflows verify that Work In/Out values are editable,
 keyboard-settable with `B`/`N` and `I`/`O`, fit to selected keys with
-`Shift+B`, selectable with `Select Work` and `Ctrl+Shift+A`, and round trip
-through exported scene JSON.
+`Shift+B`, selectable with `Select Work` and `Ctrl+Shift+A`, previewed with
+`Preview Sel` and `Shift+Space`, and round trip through exported scene JSON.
 
 Recommended manual check:
 
@@ -71,5 +76,6 @@ Recommended manual check:
    the selected key span.
 7. Press `Ctrl+Shift+A` and confirm only active-track keys inside Work In/Out
    are selected.
-8. Press Play with Loop enabled and confirm playback wraps at `4.5`.
-9. Save JSON and verify `timeline.version` is `9`.
+8. Press `Preview Sel` and confirm playback starts from the selected span.
+9. Press Play with Loop enabled and confirm playback wraps at `4.5`.
+10. Save JSON and verify `timeline.version` is `9`.
