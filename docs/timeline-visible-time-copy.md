@@ -11,6 +11,9 @@ direct pose-column copy command for the filtered dope sheet.
 - Only visible-row keyframes at the current playhead time are copied.
 - The copied keys use the same clipboard payload as normal selected-key Copy.
 - Pasting at another playhead time preserves relative timing and interpolation.
+- Object keys copied by `Copy Time` paste back to their original objects, so a
+  filtered multi-object pose column stays distributed across the scene instead
+  of collapsing onto the currently selected object.
 - Toolbar command: `Copy Time`.
 
 ## Workflow

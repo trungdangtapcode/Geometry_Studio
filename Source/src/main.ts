@@ -2392,14 +2392,14 @@ function boot(root: HTMLDivElement): void {
     if (options.notify !== false) showToast(`${ids.size} keyframe${ids.size === 1 ? "" : "s"} deleted`, "good");
   }
 
-  function copyTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+  function copyTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList(), options: { preserveObjectTargets?: boolean } = {}): void {
     const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
 
-    timelineClipboard = createTimelineClipboard(sources);
+    timelineClipboard = createTimelineClipboard(sources, options);
     showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} copied`, "good");
   }
 
@@ -2409,17 +2409,17 @@ function boot(root: HTMLDivElement): void {
       showToast(`No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to copy.`, "bad");
       return;
     }
-    copyTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+    copyTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
   }
 
-  function cutTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+  function cutTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList(), options: { preserveObjectTargets?: boolean } = {}): void {
     const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
     if (!assertTimelineSourcesUnlocked(sources, "cutting keyframes")) return;
-    timelineClipboard = createTimelineClipboard(sources);
+    timelineClipboard = createTimelineClipboard(sources, options);
     deleteTimelineKeyframes(sources.map((source) => source.keyframe.id), { notify: false });
     showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} cut`, "good");
   }
@@ -2430,7 +2430,7 @@ function boot(root: HTMLDivElement): void {
       showToast(`No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to cut.`, "bad");
       return;
     }
-    cutTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+    cutTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
   }
 
   function pasteTimelineKeyframes(): void {
@@ -2442,7 +2442,9 @@ function boot(root: HTMLDivElement): void {
     const baseTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
     if (!assertTimelineTrackUnlocked(activeTimelineTrack(timelinePanel.selectedTrackKind()), "pasting keyframes")) return;
     recordHistory();
-    const result = pasteTimelineClipboard(sceneTimeline, timelineClipboard, selectedEntry()?.id ?? null, baseTime);
+    const result = pasteTimelineClipboard(sceneTimeline, timelineClipboard, selectedEntry()?.id ?? null, baseTime, {
+      validObjectIds: new Set(entries.keys())
+    });
     clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
 
     if (result.pasted === 0) {

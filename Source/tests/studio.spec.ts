@@ -652,6 +652,58 @@ test("copies visible-row keyframes at the playhead time for paste", async ({ pag
   expect(errors).toEqual([]);
 });
 
+test("pastes visible-time object keys back to their original objects", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-row-filter").selectOption("all");
+  await page.locator("#timeline-row-search").fill("position");
+  await expect(page.getByRole("button", { name: "Cube Position X", exact: true })).toBeVisible();
+  await expect.poll(async () =>
+    page.locator('.timeline-track-label[data-track-kind="position"][data-track-axis="x"][data-object-id]').count()
+  ).toBeGreaterThan(1);
+  await page.locator("#timeline-set-visible").click();
+  await page.locator("#timeline-copy-time").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-paste-keyframes").click();
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  const objectPositionTimelines = sceneDocument.timeline.objects
+    .map((objectTimeline: { objectId: string; tracks: Array<{ kind: string; keyframes: Array<{ time: number }> }> }) => ({
+      objectId: objectTimeline.objectId,
+      positionTrack: objectTimeline.tracks.find((track) => track.kind === "position")
+    }))
+    .filter((objectTimeline: { positionTrack?: { keyframes: Array<{ time: number }> } }) => objectTimeline.positionTrack);
+  expect(objectPositionTimelines.length).toBeGreaterThan(1);
+  objectPositionTimelines.forEach(({ positionTrack }: { positionTrack: { keyframes: Array<{ time: number }> } }) => {
+    expect(positionTrack.keyframes.map((keyframe) => keyframe.time)).toEqual([0, 1]);
+  });
+  expect(errors).toEqual([]);
+});
+
 test("cuts visible-row keyframes at the playhead time for paste", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

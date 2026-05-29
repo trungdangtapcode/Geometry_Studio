@@ -24,6 +24,8 @@ stored as ordinary timeline keyframes.
 - Existing keyframes at the same pasted time are replaced instead of duplicated.
 - Object keyframes paste onto the currently selected object, making it possible
   to reuse motion or material animation on another object.
+- Visible-time Copy/Cut uses a target-preserving clipboard mode so filtered
+  pose columns from multiple objects paste back onto their original objects.
 - Camera and light keyframes paste back into their global camera/light tracks.
 
 ## Controls
@@ -41,6 +43,7 @@ The clipboard is intentionally in-memory and editor-local. It stores:
 ```ts
 type TimelineClipboardKeyframe = {
   scope: "object" | "camera" | "lights";
+  objectId?: string;
   kind: TimelineTrackKind;
   relativeTime: number;
   value: [number, number, number];
@@ -49,9 +52,13 @@ type TimelineClipboardKeyframe = {
 ```
 
 Keeping only relative time and track data avoids coupling clipboard entries to
-old keyframe IDs. Paste creates fresh timeline IDs using the existing
-`createTimelineKeyframe` helper, then returns the affected keyframe IDs so the
-timeline panel can keep the pasted result selected.
+old keyframe IDs. Object IDs are kept only as optional paste targets for
+visible-time pose-column operations. Normal selected-key paste still remaps
+object keys to the currently selected object, while visible-time paste preserves
+original object targets when those objects still exist in the scene. Paste
+creates fresh timeline IDs using the existing `createTimelineKeyframe` helper,
+then returns the affected keyframe IDs so the timeline panel can keep the
+pasted result selected.
 
 ## Testing
 
@@ -64,4 +71,5 @@ The Playwright timeline workflow verifies that:
 - Ctrl/Cmd+D duplicates selected active-track keyframes and selects the new
   duplicates.
 - Ctrl/Cmd+X cuts selected active-track keyframes and Undo restores them.
+- Visible-time Copy/Paste preserves multi-object pose-column targets.
 - The pasted keyframe survives scene JSON export.

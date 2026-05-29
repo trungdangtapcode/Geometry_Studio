@@ -161,6 +161,8 @@ animation runtime where it fits:
   keyframes, pastes them at the current playhead time while preserving relative
   timing and interpolation, duplicates selected keys with `Ctrl/Cmd+D`, and
   keeps pasted or duplicated keys selected for the next edit.
+- Visible-time clipboard operations preserve original object targets, so
+  filtered multi-object pose columns paste back onto their source objects.
 - Frame-step keyframe nudge controls retime selected or playhead keyframes
   without dragging.
 - Move Keys to Playhead aligns selected keyframe blocks to an exact beat while

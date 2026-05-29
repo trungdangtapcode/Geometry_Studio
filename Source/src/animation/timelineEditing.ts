@@ -28,6 +28,7 @@ export interface TimelineKeyframeSource {
 
 export interface TimelineClipboardKeyframe {
   scope: TimelineKeyframeScope;
+  objectId?: string;
   kind: TimelineTrackKind;
   relativeTime: number;
   value: [number, number, number];
@@ -35,7 +36,16 @@ export interface TimelineClipboardKeyframe {
 }
 
 export interface TimelineClipboard {
+  preserveObjectTargets: boolean;
   keyframes: TimelineClipboardKeyframe[];
+}
+
+export interface TimelineClipboardOptions {
+  preserveObjectTargets?: boolean;
+}
+
+export interface PasteTimelineOptions {
+  validObjectIds?: ReadonlySet<string>;
 }
 
 export interface TimelineSourceFallback {
@@ -114,11 +124,13 @@ export function resolveTimelineKeyframeSources(
   return sources;
 }
 
-export function createTimelineClipboard(sources: TimelineKeyframeSource[]): TimelineClipboard {
+export function createTimelineClipboard(sources: TimelineKeyframeSource[], options: TimelineClipboardOptions = {}): TimelineClipboard {
   const origin = Math.min(...sources.map((source) => source.keyframe.time));
   return {
-    keyframes: sources.map(({ scope, track, keyframe }) => ({
+    preserveObjectTargets: Boolean(options.preserveObjectTargets),
+    keyframes: sources.map(({ scope, objectId, track, keyframe }) => ({
       scope,
+      objectId: scope === "object" ? objectId : undefined,
       kind: track.kind,
       relativeTime: roundTime(keyframe.time - origin),
       value: [...keyframe.value] as [number, number, number],
@@ -131,7 +143,8 @@ export function pasteTimelineClipboard(
   timeline: SceneTimelineDocument,
   clipboard: TimelineClipboard,
   selectedObjectId: string | null,
-  baseTime: number
+  baseTime: number,
+  options: PasteTimelineOptions = {}
 ): PasteTimelineResult {
   let pasted = 0;
   let skipped = 0;
@@ -145,11 +158,12 @@ export function pasteTimelineClipboard(
       return;
     }
     const time = snapTimelineTime(timeline, rawTime);
-    const track = pasteTargetTrack(timeline, clip, selectedObjectId);
-    if (!track) {
+    const target = pasteTargetTrack(timeline, clip, selectedObjectId, clipboard.preserveObjectTargets, options.validObjectIds);
+    if (!target) {
       skipped += 1;
       return;
     }
+    const { track } = target;
     if (track.locked) {
       skipped += 1;
       return;
@@ -168,7 +182,7 @@ export function pasteTimelineClipboard(
       keyframeIds.push(pastedKeyframe.id);
     }
     sortTimelineKeyframes(track);
-    if (selectedObjectId && clip.scope === "object" && isObjectTransformTrackKind(clip.kind)) changedTransformObjectIds.add(selectedObjectId);
+    if (target.objectId && clip.scope === "object" && isObjectTransformTrackKind(clip.kind)) changedTransformObjectIds.add(target.objectId);
     pasted += 1;
   });
 
@@ -612,12 +626,17 @@ function pushPlayheadSource(
 function pasteTargetTrack(
   timeline: SceneTimelineDocument,
   clip: TimelineClipboardKeyframe,
-  selectedObjectId: string | null
-): TimelineTrackDocument | null {
-  if (clip.scope === "camera") return ensureTimelineTrack(ensureCameraTimeline(timeline), clip.kind);
-  if (clip.scope === "lights") return ensureTimelineTrack(ensureLightTimeline(timeline), clip.kind);
-  if (!selectedObjectId) return null;
-  return ensureTimelineTrack(ensureObjectTimeline(timeline, selectedObjectId), clip.kind);
+  selectedObjectId: string | null,
+  preserveObjectTargets: boolean,
+  validObjectIds?: ReadonlySet<string>
+): { track: TimelineTrackDocument; objectId?: string } | null {
+  if (clip.scope === "camera") return { track: ensureTimelineTrack(ensureCameraTimeline(timeline), clip.kind) };
+  if (clip.scope === "lights") return { track: ensureTimelineTrack(ensureLightTimeline(timeline), clip.kind) };
+
+  const targetObjectId = preserveObjectTargets ? clip.objectId ?? null : selectedObjectId;
+  if (!targetObjectId) return null;
+  if (validObjectIds && !validObjectIds.has(targetObjectId)) return null;
+  return { track: ensureTimelineTrack(ensureObjectTimeline(timeline, targetObjectId), clip.kind), objectId: targetObjectId };
 }
 
 function nextAvailableKeyframeTime(timeline: SceneTimelineDocument, track: TimelineTrackDocument, startTime: number, offset: number): number | null {
