@@ -17,8 +17,8 @@ existing keys.
 
 ## Behavior
 
-- Applies to object Position, Rotation, Scale, and camera Position, Target, and
-  Lens auto-key edits.
+- Applies to object Position, Rotation, Scale; camera Position, Target, Lens;
+  and light Position, Color, Intensity, and Ambient Intensity auto-key edits.
 - If the playhead is after `Work In` and the edited track has no
   keyframes, the editor writes the pre-edit value at `Work In`.
 - The edited value is then written at the current playhead time.
@@ -37,15 +37,17 @@ timeline document, TransformControls, and the selected object.
 For numeric inspector edits, the previous value is captured before the input
 mutation. For viewport TransformControls drags, the selected object's Position,
 Rotation, and Scale are captured when dragging starts. The helpers
-`seedInitialTransformAutoKey()` and `seedInitialCameraAutoKey()` write a Work In
-key only when the destination track is empty and unlocked.
+`seedInitialTransformAutoKey()`, `seedInitialCameraAutoKey()`, and
+`seedInitialLightAutoKey()` write a Work In key only when the destination track
+is empty and unlocked.
 
 This keeps the saved JSON format unchanged: seeded keys are ordinary timeline
 keyframes.
 
 ## Validation
 
-Focused Playwright workflows verify object Position and camera Position:
+Focused Playwright workflows verify object Position, camera Position, and light
+Intensity:
 
 - enable Auto-Key,
 - move the playhead to one second,

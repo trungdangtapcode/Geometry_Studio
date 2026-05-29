@@ -664,24 +664,32 @@ function boot(root: HTMLDivElement): void {
 
     query<HTMLInputElement>("#light-intensity").addEventListener("change", (event) => {
       recordHistory();
+      const trackKind = lightIntensityTrackForKind(lightRig.active);
+      const previousValue = timelineValueForLight(trackKind);
       currentLight(lightRig).intensity = Number((event.target as HTMLInputElement).value);
       if (sceneTimeline.autoKey) {
-        setTimelineKeyframe(lightIntensityTrackForKind(lightRig.active), { notify: false, record: false, refresh: false });
+        seedInitialLightAutoKey(trackKind, previousValue);
+        setTimelineKeyframe(trackKind, { notify: false, record: false, refresh: false });
       }
       updateAllUI();
     });
     query<HTMLInputElement>("#light-color").addEventListener("change", (event) => {
       recordHistory();
+      const trackKind = lightColorTrackForKind(lightRig.active);
+      const previousValue = timelineValueForLight(trackKind);
       currentLight(lightRig).color.set((event.target as HTMLInputElement).value);
       if (sceneTimeline.autoKey) {
-        setTimelineKeyframe(lightColorTrackForKind(lightRig.active), { notify: false, record: false, refresh: false });
+        seedInitialLightAutoKey(trackKind, previousValue);
+        setTimelineKeyframe(trackKind, { notify: false, record: false, refresh: false });
       }
       updateAllUI();
     });
     query<HTMLInputElement>("#ambient-intensity").addEventListener("change", (event) => {
       recordHistory();
+      const previousValue = timelineValueForLight("ambientIntensity");
       lightRig.ambient.intensity = Number((event.target as HTMLInputElement).value);
       if (sceneTimeline.autoKey) {
+        seedInitialLightAutoKey("ambientIntensity", previousValue);
         setTimelineKeyframe("ambientIntensity", { notify: false, record: false, refresh: false });
       }
       updateAllUI();
@@ -893,6 +901,19 @@ function boot(root: HTMLDivElement): void {
     sortTimelineKeyframes(track);
   }
 
+  function seedInitialLightAutoKey(kind: TimelineTrackKind, value: [number, number, number]): void {
+    const seedTime = initialAutoKeySeedTime();
+    if (seedTime === null) return;
+
+    const lightTimeline = ensureLightTimeline(sceneTimeline);
+    const existingTrack = lightTimeline.tracks.find((candidate) => candidate.kind === kind);
+    if (existingTrack?.locked || existingTrack?.keyframes.length) return;
+
+    const track = ensureTimelineTrack(lightTimeline, kind);
+    track.keyframes.push(createTimelineKeyframe(seedTime, [...value] as [number, number, number]));
+    sortTimelineKeyframes(track);
+  }
+
   function initialAutoKeySeedTime(): number | null {
     const currentTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
     const seedTime = snapTimelineTime(sceneTimeline, clamp(sceneTimeline.workStart, 0, sceneTimeline.duration));
@@ -970,10 +991,13 @@ function boot(root: HTMLDivElement): void {
       input.addEventListener("change", () => {
         recordHistory();
         const axis = input.dataset.axis as "x" | "y" | "z";
+        const trackKind = lightPositionTrackForKind(lightRig.active);
+        const previousValue = timelineValueForLight(trackKind);
         currentLight(lightRig).position[axis] = Number(input.value);
         syncLightHelpers(lightRig);
         if (sceneTimeline.autoKey) {
-          setTimelineKeyframe(lightPositionTrackForKind(lightRig.active), { notify: false, record: false, refresh: false });
+          seedInitialLightAutoKey(trackKind, previousValue);
+          setTimelineKeyframe(trackKind, { notify: false, record: false, refresh: false });
         }
         updateAllUI();
       });
