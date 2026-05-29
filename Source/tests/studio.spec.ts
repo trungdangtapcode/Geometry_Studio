@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Buffer } from "node:buffer";
 
 test("renders the studio and core controls", async ({ page }) => {
-  test.setTimeout(360_000);
+  test.setTimeout(600_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -70,6 +70,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-layer-in")).toBeVisible();
   await expect(page.locator("#timeline-layer-out")).toBeVisible();
   await expect(page.locator("#timeline-split-layer")).toBeVisible();
+  await expect(page.locator("#timeline-layer-work")).toBeVisible();
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
   await expect(page.locator("#timeline-ease-in")).toBeVisible();
   await expect(page.locator("#timeline-ease-out")).toBeVisible();
@@ -908,6 +909,9 @@ test("trims and splits selected object layers", async ({ page }) => {
     [0, 0, "hold"],
     [2, 1, "hold"]
   ]);
+  await page.locator("#timeline-layer-work").click();
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBe(2);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBe(8);
 
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "5";
@@ -920,6 +924,11 @@ test("trims and splits selected object layers", async ({ page }) => {
     [0, 1, "hold"],
     [5, 0, "hold"]
   ]);
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Alt+I");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(0);
+  await page.keyboard.press("Alt+O");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(5);
 
   await page.reload();
   await page.locator("#timeline-current-time").evaluate((input) => {

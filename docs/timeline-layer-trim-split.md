@@ -1,4 +1,4 @@
-# Timeline Layer Trim And Split
+# Timeline Layer Ranges
 
 ## Purpose
 
@@ -14,10 +14,15 @@ track. The current implementation maps layer timing commands onto
 - `Split` duplicates the selected object at the playhead and assigns visibility
   ranges so the original is visible before the split and the new copy is
   visible after the split.
+- `Layer Work` sets the Work In/Out range to the selected object's visible
+  layer range.
 - Keyboard shortcuts:
   - `Alt+[` trims the selected layer in.
   - `Alt+]` trims the selected layer out.
   - `Ctrl/Cmd+Shift+D` splits the selected layer.
+  - `Alt+I` jumps to the selected layer in point.
+  - `Alt+O` jumps to the selected layer out point.
+  - `Alt+Shift+B` sets the work area to the selected layer range.
 
 ## Data Model
 
@@ -34,6 +39,11 @@ for visible and `[0, 0, 0]` for hidden. Reusing the existing track keeps JSON
 persistence, Undo/Redo, row search, graph display, and playback evaluation
 consistent with the rest of the timeline system.
 
+Layer range commands read the active visible interval from the selected
+object's Visibility track. If the playhead is inside a visible interval, that
+interval is used; otherwise the first visible interval is used. Objects without
+a Visibility track use the full timeline duration as their layer range.
+
 ## Constraints
 
 - The selected object must exist.
@@ -45,6 +55,7 @@ consistent with the rest of the timeline system.
 
 ## Testing
 
-The Playwright workflow trims a layer in and out, exports scene JSON, verifies
-hold visibility keys, reloads, splits the layer, verifies both original and
+The Playwright workflow trims a layer in and out, sets the work area to the
+layer range, jumps to layer in/out points, exports scene JSON, verifies hold
+visibility keys, reloads, splits the layer, verifies both original and
 duplicate visibility ranges, and confirms the duplicate layer is selected.

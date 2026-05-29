@@ -50,6 +50,7 @@ export interface KeyframeTimelineCallbacks {
   onTrimLayerIn(): void;
   onTrimLayerOut(): void;
   onSplitLayer(): void;
+  onSetWorkAreaToLayer(): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onCopyVisibleTimeKeyframes(): void;
@@ -488,6 +489,7 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-layer-in").addEventListener("click", () => this.callbacks.onTrimLayerIn());
     query<HTMLButtonElement>("#timeline-layer-out").addEventListener("click", () => this.callbacks.onTrimLayerOut());
     query<HTMLButtonElement>("#timeline-split-layer").addEventListener("click", () => this.callbacks.onSplitLayer());
+    query<HTMLButtonElement>("#timeline-layer-work").addEventListener("click", () => this.callbacks.onSetWorkAreaToLayer());
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
     });

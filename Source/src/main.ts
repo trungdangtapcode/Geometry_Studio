@@ -19,7 +19,6 @@ import {
   reverseResolvedKeyframes,
   roveResolvedKeyframesAcrossTime,
   selectedResolvedKeyframeRange,
-  setObjectVisibilityRange,
   snapResolvedKeyframesToFrames,
   staggerResolvedKeyframesFromTime,
   type EditTimelineResult,
@@ -28,6 +27,7 @@ import {
   type TimelineKeyframeSource
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
+import { objectLayerRange, setObjectVisibilityRange, type TimelineLayerRange } from "./animation/timelineLayers";
 import { TimelinePlayer } from "./animation/timelinePlayer";
 import { TimelineTransport, type PlaybackDirection } from "./animation/timelineTransport";
 import {
@@ -202,6 +202,7 @@ function boot(root: HTMLDivElement): void {
     onTrimLayerIn: trimSelectedLayerInPoint,
     onTrimLayerOut: trimSelectedLayerOutPoint,
     onSplitLayer: splitSelectedLayerAtPlayhead,
+    onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
     onDeleteKeyframes: deleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onCopyVisibleTimeKeyframes: copyVisibleTimelineTimeKeyframes,
@@ -1378,6 +1379,21 @@ function boot(root: HTMLDivElement): void {
       trimSelectedLayerOutPoint();
       return;
     }
+    if (event.altKey && key === "i") {
+      event.preventDefault();
+      stepSelectedLayerBoundary("in");
+      return;
+    }
+    if (event.altKey && key === "o") {
+      event.preventDefault();
+      stepSelectedLayerBoundary("out");
+      return;
+    }
+    if (event.altKey && event.shiftKey && key === "b") {
+      event.preventDefault();
+      setTimelineWorkAreaToSelectedLayer();
+      return;
+    }
     if (event.shiftKey && key === "enter") {
       event.preventDefault();
       moveTimelineKeyframesToPlayhead(timelinePanel.selectedKeyframeIdsList());
@@ -2264,6 +2280,40 @@ function boot(root: HTMLDivElement): void {
     setSelected(copy.id);
     timelinePanel.selectKeyframes([...before.keyframeIds, ...after.keyframeIds]);
     showToast(`${entry.name} split at ${formatNumber(time)}s`, "good");
+  }
+
+  function setTimelineWorkAreaToSelectedLayer(): void {
+    const selection = selectedLayerRange();
+    if (!selection) return;
+    recordHistory();
+    sceneTimeline.workStart = selection.range.start;
+    sceneTimeline.workEnd = selection.range.end;
+    sceneTimeline.currentTime = selection.range.start;
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+    showToast(`${selection.entry.name} work area ${formatNumber(selection.range.start)}-${formatNumber(selection.range.end)}s`, "good");
+  }
+
+  function stepSelectedLayerBoundary(edge: "in" | "out"): void {
+    const selection = selectedLayerRange();
+    if (!selection) return;
+    const time = edge === "in" ? selection.range.start : selection.range.end;
+    setTimelineTime(time);
+    showToast(`${selection.entry.name} layer ${edge}: ${formatNumber(time)}s`, "good");
+  }
+
+  function selectedLayerRange(): { entry: SceneEntry; range: TimelineLayerRange } | null {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before using layer range commands.", "bad");
+      return null;
+    }
+    const range = objectLayerRange(sceneTimeline, entry.id);
+    if (!range) {
+      showToast(`${entry.name} has no visible layer range.`, "bad");
+      return null;
+    }
+    return { entry, range };
   }
 
   function finishLayerVisibilityEdit(keyframeIds: string[]): void {
