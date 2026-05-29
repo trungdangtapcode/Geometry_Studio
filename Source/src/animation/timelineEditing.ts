@@ -64,6 +64,12 @@ export interface NudgeTimelineResult extends TimelineEditResult {
   currentTime: number;
 }
 
+export interface TimelineKeyframeRange {
+  start: number;
+  end: number;
+  count: number;
+}
+
 export interface TimelineKeyframeEditPatch {
   time?: number;
   value?: Partial<Record<"x" | "y" | "z", number>>;
@@ -309,6 +315,19 @@ export function centerResolvedKeyframesOnTime(
   const maxAnchor = Math.max(0, timeline.duration - span);
   const targetAnchor = Math.max(0, Math.min(time - span / 2, maxAnchor));
   return moveResolvedKeyframesToTime(timeline, sources, targetAnchor);
+}
+
+export function selectedResolvedKeyframeRange(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): TimelineKeyframeRange | null {
+  if (sources.length === 0) return null;
+
+  const times = sources.map((source) => source.keyframe.time);
+  const start = Math.max(0, Math.min(...times, timeline.duration - 0.001));
+  const minimumSpan = Math.max(timeline.snapStep, 1 / timeline.fps, 0.001);
+  const end = Math.max(start + minimumSpan, Math.min(Math.max(...times, start + minimumSpan), timeline.duration));
+  return { start: roundTime(start), end: roundTime(end), count: sources.length };
 }
 
 export function roveResolvedKeyframesAcrossTime(

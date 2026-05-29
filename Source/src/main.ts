@@ -17,6 +17,7 @@ import {
   resolveTimelineKeyframeSources,
   reverseResolvedKeyframes,
   roveResolvedKeyframesAcrossTime,
+  selectedResolvedKeyframeRange,
   snapResolvedKeyframesToFrames,
   type EditTimelineResult,
   type TimelineClipboard,
@@ -1733,12 +1734,7 @@ function boot(root: HTMLDivElement): void {
       showToast(emptyMessage, "bad");
       return null;
     }
-
-    const times = sources.map((source) => source.keyframe.time);
-    const start = clamp(Math.min(...times), 0, sceneTimeline.duration - 0.001);
-    const minimumSpan = Math.max(sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001);
-    const end = clamp(Math.max(...times, start + minimumSpan), start + minimumSpan, sceneTimeline.duration);
-    return { start: roundTime(start), end: roundTime(end), count: sources.length };
+    return selectedResolvedKeyframeRange(sceneTimeline, sources);
   }
 
   function setTimelineWorkAreaToSelectedKeys(): void {
