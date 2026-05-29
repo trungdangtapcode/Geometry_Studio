@@ -482,6 +482,58 @@ test("seeds initial light value for first light auto-key edit", async ({ page })
   expect(errors).toEqual([]);
 });
 
+test("seeds initial object property for first appearance auto-key edit", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const opacity = page.locator("#object-opacity");
+  await page.locator("#timeline-auto-key").check();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await opacity.evaluate((input) => {
+    (input as HTMLInputElement).value = "0.4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await opacity.inputValue())).toBeCloseTo(0.7, 1);
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneDocument = JSON.parse((await sceneText.jsonValue()) as string);
+  const opacityTrack = sceneDocument.timeline.objects
+    .find((object: { objectId: string }) => object.objectId === "object-1")
+    .tracks.find((track: { kind: string }) => track.kind === "objectOpacity");
+  expect(opacityTrack.keyframes).toHaveLength(2);
+  expect(opacityTrack.keyframes[0].time).toBe(0);
+  expect(opacityTrack.keyframes[0].value[0]).toBe(1);
+  expect(opacityTrack.keyframes[1].time).toBe(1);
+  expect(opacityTrack.keyframes[1].value[0]).toBe(0.4);
+  expect(errors).toEqual([]);
+});
+
 test("imports OBJ with companion MTL files", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

@@ -518,9 +518,11 @@ function boot(root: HTMLDivElement): void {
 
     query<HTMLInputElement>("#object-color").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
+        const previousValue = timelineValueForEntry(entry, "objectColor");
         entry.color.set((event.target as HTMLInputElement).value);
         applyEntryAppearance(entry);
         if (sceneTimeline.autoKey) {
+          seedInitialObjectAutoKey(entry, "objectColor", previousValue);
           setTimelineKeyframe("objectColor", { notify: false, record: false, refresh: false });
         }
       });
@@ -528,9 +530,11 @@ function boot(root: HTMLDivElement): void {
 
     query<HTMLInputElement>("#object-opacity").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
+        const previousValue = timelineValueForEntry(entry, "objectOpacity");
         entry.opacity = clamp(Number((event.target as HTMLInputElement).value), 0, 1);
         applyEntryAppearance(entry);
         if (sceneTimeline.autoKey) {
+          seedInitialObjectAutoKey(entry, "objectOpacity", previousValue);
           setTimelineKeyframe("objectOpacity", { notify: false, record: false, refresh: false });
         }
       });
@@ -538,9 +542,11 @@ function boot(root: HTMLDivElement): void {
 
     query<HTMLInputElement>("#object-roughness").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
+        const previousValue = timelineValueForEntry(entry, "objectRoughness");
         entry.roughness = clamp(Number((event.target as HTMLInputElement).value), 0, 1);
         applyEntryAppearance(entry);
         if (sceneTimeline.autoKey) {
+          seedInitialObjectAutoKey(entry, "objectRoughness", previousValue);
           setTimelineKeyframe("objectRoughness", { notify: false, record: false, refresh: false });
         }
       });
@@ -548,9 +554,11 @@ function boot(root: HTMLDivElement): void {
 
     query<HTMLInputElement>("#object-metalness").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
+        const previousValue = timelineValueForEntry(entry, "objectMetalness");
         entry.metalness = clamp(Number((event.target as HTMLInputElement).value), 0, 1);
         applyEntryAppearance(entry);
         if (sceneTimeline.autoKey) {
+          seedInitialObjectAutoKey(entry, "objectMetalness", previousValue);
           setTimelineKeyframe("objectMetalness", { notify: false, record: false, refresh: false });
         }
       });
@@ -558,8 +566,10 @@ function boot(root: HTMLDivElement): void {
 
     query<HTMLInputElement>("#object-visible").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
+        const previousValue = timelineValueForEntry(entry, "objectVisibility");
         entry.root.visible = (event.target as HTMLInputElement).checked;
         if (sceneTimeline.autoKey) {
+          seedInitialObjectAutoKey(entry, "objectVisibility", previousValue);
           setTimelineKeyframe("objectVisibility", { notify: false, record: false, refresh: false });
         }
       });
@@ -615,9 +625,11 @@ function boot(root: HTMLDivElement): void {
       input.addEventListener("change", () => {
         updateSelectedEntry((entry) => {
           const axis = input.dataset.axis as "x" | "y";
+          const previousValue = timelineValueForEntry(entry, "objectTextureRepeat");
           entry.textureRepeat[axis] = Number(input.value);
           applyEntryTextureTransform(entry);
           if (sceneTimeline.autoKey) {
+            seedInitialObjectAutoKey(entry, "objectTextureRepeat", previousValue);
             setTimelineKeyframe("objectTextureRepeat", { notify: false, record: false, refresh: false });
           }
         });
@@ -628,9 +640,11 @@ function boot(root: HTMLDivElement): void {
       input.addEventListener("change", () => {
         updateSelectedEntry((entry) => {
           const axis = input.dataset.axis as "x" | "y";
+          const previousValue = timelineValueForEntry(entry, "objectTextureOffset");
           entry.textureOffset[axis] = Number(input.value);
           applyEntryTextureTransform(entry);
           if (sceneTimeline.autoKey) {
+            seedInitialObjectAutoKey(entry, "objectTextureOffset", previousValue);
             setTimelineKeyframe("objectTextureOffset", { notify: false, record: false, refresh: false });
           }
         });
@@ -639,9 +653,11 @@ function boot(root: HTMLDivElement): void {
 
     query<HTMLInputElement>("#texture-rotation").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
+        const previousValue = timelineValueForEntry(entry, "objectTextureRotation");
         entry.textureRotation = THREE.MathUtils.degToRad(Number((event.target as HTMLInputElement).value));
         applyEntryTextureTransform(entry);
         if (sceneTimeline.autoKey) {
+          seedInitialObjectAutoKey(entry, "objectTextureRotation", previousValue);
           setTimelineKeyframe("objectTextureRotation", { notify: false, record: false, refresh: false });
         }
       });
@@ -876,6 +892,10 @@ function boot(root: HTMLDivElement): void {
   }
 
   function seedInitialTransformAutoKey(entry: SceneEntry, kind: TransformProperty, value = timelineValueForEntry(entry, kind)): void {
+    seedInitialObjectAutoKey(entry, kind, value);
+  }
+
+  function seedInitialObjectAutoKey(entry: SceneEntry, kind: TimelineTrackKind, value: [number, number, number]): void {
     const seedTime = initialAutoKeySeedTime();
     if (seedTime === null) return;
 
@@ -1825,6 +1845,7 @@ function boot(root: HTMLDivElement): void {
     if (hasTimelineTracks(sceneTimeline)) {
       syncTransformUI();
       syncSegmentedButtons();
+      syncTextureUI();
       syncSelectionSummary();
     }
     updatePlayButton();

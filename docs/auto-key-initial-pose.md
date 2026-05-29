@@ -17,8 +17,9 @@ existing keys.
 
 ## Behavior
 
-- Applies to object Position, Rotation, Scale; camera Position, Target, Lens;
-  and light Position, Color, Intensity, and Ambient Intensity auto-key edits.
+- Applies to object Position, Rotation, Scale, appearance, visibility, and
+  texture transform properties; camera Position, Target, Lens; and light
+  Position, Color, Intensity, and Ambient Intensity auto-key edits.
 - If the playhead is after `Work In` and the edited track has no
   keyframes, the editor writes the pre-edit value at `Work In`.
 - The edited value is then written at the current playhead time.
@@ -46,8 +47,8 @@ keyframes.
 
 ## Validation
 
-Focused Playwright workflows verify object Position, camera Position, and light
-Intensity:
+Focused Playwright workflows verify object Position, object Opacity, camera
+Position, and light Intensity:
 
 - enable Auto-Key,
 - move the playhead to one second,
