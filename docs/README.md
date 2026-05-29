@@ -40,6 +40,8 @@ PDF.
   dock height handle, row alignment, and scroll synchronization.
 - [Timeline Frame Navigation](timeline-frame-navigation.md) documents
   frame-step controls, Work Out jump, and timecode display.
+- [Timeline Selected Key Boundaries](timeline-selected-key-boundaries.md)
+  documents first/last selected keyframe navigation.
 - [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and
   keyboard timeline zoom behavior.
 - [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents

@@ -196,6 +196,7 @@ function boot(root: HTMLDivElement): void {
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
+    onStepSelectedKeyBoundary: stepSelectedTimelineKeyBoundary,
     onStepFrame: stepTimelineFrame,
     onSetInterpolation: setTimelineInterpolation,
     onDragStarted: beginTimelineDrag,
@@ -1224,12 +1225,14 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "home") {
       event.preventDefault();
-      setTimelineTime(sceneTimeline.workStart);
+      if (event.shiftKey) stepSelectedTimelineKeyBoundary(-1);
+      else setTimelineTime(sceneTimeline.workStart);
       return;
     }
     if (key === "end") {
       event.preventDefault();
-      setTimelineTime(sceneTimeline.workEnd);
+      if (event.shiftKey) stepSelectedTimelineKeyBoundary(1);
+      else setTimelineTime(sceneTimeline.workEnd);
       return;
     }
     if (key === "delete" || key === "backspace") {
@@ -2463,6 +2466,18 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     setTimelineTime(target);
+  }
+
+  function stepSelectedTimelineKeyBoundary(direction: -1 | 1): void {
+    const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
+    if (sources.length === 0) {
+      showToast("Select timeline keyframes before jumping to a selection boundary.", "bad");
+      return;
+    }
+    const times = sources.map((source) => source.keyframe.time);
+    const target = direction > 0 ? Math.max(...times) : Math.min(...times);
+    setTimelineTime(target);
+    showToast(direction > 0 ? "Jumped to last selected keyframe." : "Jumped to first selected keyframe.", "good");
   }
 
   function stepTimelineFrame(direction: -1 | 1): void {

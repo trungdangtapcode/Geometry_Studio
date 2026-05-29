@@ -53,6 +53,7 @@ export interface KeyframeTimelineCallbacks {
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
+  onStepSelectedKeyBoundary(direction: -1 | 1): void;
   onStepFrame(direction: -1 | 1): void;
   onSetInterpolation(keyframeIds: string[], interpolation: TimelineInterpolation): void;
   onDragStarted(): void;
@@ -549,6 +550,8 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-next-frame").addEventListener("click", () => this.callbacks.onStepFrame(1));
     query<HTMLButtonElement>("#timeline-prev-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(-1));
     query<HTMLButtonElement>("#timeline-next-keyframe").addEventListener("click", () => this.callbacks.onStepKeyframe(1));
+    query<HTMLButtonElement>("#timeline-selected-start").addEventListener("click", () => this.callbacks.onStepSelectedKeyBoundary(-1));
+    query<HTMLButtonElement>("#timeline-selected-end").addEventListener("click", () => this.callbacks.onStepSelectedKeyBoundary(1));
     query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.zoomTimeline(-1));
     query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.zoomTimeline(1));
     query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimelineToDuration());

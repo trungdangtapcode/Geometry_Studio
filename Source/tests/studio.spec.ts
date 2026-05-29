@@ -23,6 +23,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
   await expect(page.locator("#timeline-prev-frame")).toBeVisible();
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
+  await expect(page.locator("#timeline-selected-start")).toBeVisible();
+  await expect(page.locator("#timeline-selected-end")).toBeVisible();
   await expect(page.locator("#timeline-set-transform")).toBeVisible();
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
   await expect(page.locator("#timeline-ease-in")).toBeVisible();
@@ -1013,6 +1015,58 @@ test("selects active-track keyframes inside the work area", async ({ page }) => 
     nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))).sort((left, right) => left - right)
   );
   expect(selectedShortcutTimes).toEqual([1, 3]);
+
+  expect(errors).toEqual([]);
+});
+
+test("jumps to selected timeline keyframe boundaries", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-selected-start")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  for (const [time, value] of [[0, 0], [1, 1], [3, 3], [5, 5]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  await page.locator("#timeline-work-start").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-work-end").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-select-workarea").click();
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+
+  await page.locator("#timeline-selected-start").click();
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(1, 2);
+  await page.locator("#timeline-selected-end").click();
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(3, 2);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Shift+End");
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(3, 2);
+  await page.keyboard.press("Shift+Home");
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(1, 2);
 
   expect(errors).toEqual([]);
 });

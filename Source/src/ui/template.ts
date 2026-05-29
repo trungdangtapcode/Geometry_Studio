@@ -47,9 +47,11 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-start" type="button"><span data-icon="StepBack"></span><span>Start</span></button>
               <button class="mini-button" id="timeline-end" type="button"><span data-icon="StepForward"></span><span>Out</span></button>
               <button class="mini-button icon-mini" id="timeline-prev-frame" type="button" aria-label="Previous frame" title="Previous frame"><span data-icon="SkipBack"></span></button>
+              <button class="mini-button icon-mini" id="timeline-selected-start" type="button" aria-label="First selected keyframe" title="First selected keyframe (Shift+Home)"><span data-icon="ChevronsLeft"></span></button>
               <button class="mini-button icon-mini" id="timeline-prev-keyframe" type="button" aria-label="Previous keyframe" title="Previous keyframe"><span data-icon="ChevronLeft"></span></button>
               <button class="mini-button strong-mini" id="timeline-play-toggle" type="button"><span data-icon="Play"></span><span>Play</span></button>
               <button class="mini-button icon-mini" id="timeline-next-keyframe" type="button" aria-label="Next keyframe" title="Next keyframe"><span data-icon="ChevronRight"></span></button>
+              <button class="mini-button icon-mini" id="timeline-selected-end" type="button" aria-label="Last selected keyframe" title="Last selected keyframe (Shift+End)"><span data-icon="ChevronsRight"></span></button>
               <button class="mini-button icon-mini" id="timeline-next-frame" type="button" aria-label="Next frame" title="Next frame"><span data-icon="SkipForward"></span></button>
               <button class="mini-button icon-mini" id="timeline-prev-marker" type="button" aria-label="Previous marker" title="Previous marker"><span data-icon="Flag"></span></button>
               <button class="mini-button icon-mini" id="timeline-next-marker" type="button" aria-label="Next marker" title="Next marker"><span data-icon="Flag"></span></button>

@@ -13,13 +13,16 @@ fields.
 - `Out` jumps to Work Out.
 - Previous Frame subtracts `1 / fps` seconds from the current playhead time.
 - Next Frame adds `1 / fps` seconds to the current playhead time.
+- First Selected Keyframe jumps to the earliest selected timeline keyframe.
+- Last Selected Keyframe jumps to the latest selected timeline keyframe.
 - Time is clamped to the full timeline duration.
 - The timecode label shows both SMPTE-style time and absolute frame number:
   `MM:SS:FF | F0000`.
 - Keyboard navigation is available when focus is outside text fields:
-  Left/Right step one frame, Shift+Left/Right jump between keyframes, Home jumps
-  to Work In, End jumps to Work Out, B sets Work In, N sets Work Out, and
-  Shift+B fits Work In/Out to selected keyframes.
+  Left/Right step one frame, Shift+Left/Right jump between keyframes, Shift+Home
+  and Shift+End jump to selected keyframe boundaries, Home jumps to Work In, End
+  jumps to Work Out, B sets Work In, N sets Work Out, and Shift+B fits Work
+  In/Out to selected keyframes.
 
 This mirrors the practical editing pattern used in video and motion graphics
 tools: rough navigation by work area, precise navigation by frame, and keyframe
@@ -51,6 +54,7 @@ The Playwright smoke test verifies:
 
 - The timecode starts at frame zero.
 - Previous/next frame buttons are visible.
+- First/last selected keyframe buttons are visible.
 - Next Frame advances the timeline.
 - Previous Frame returns the playhead to frame zero.
 
@@ -60,5 +64,7 @@ Manual check:
 2. Press Next Frame several times.
 3. Confirm the absolute frame counter increments by one.
 4. Press Start and Out to jump between Work In and Work Out.
-5. Use Left, Right, Home, and End from the keyboard and confirm they match the
+5. Select several keyframes, press Shift+Home and Shift+End, and confirm the
+   playhead jumps to the selected span boundaries.
+6. Use Left, Right, Home, and End from the keyboard and confirm they match the
    visible timeline controls.

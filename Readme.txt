@@ -69,6 +69,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - J / K / L: play backward, pause, or play forward inside the work area. Press J or L repeatedly for 2x and 4x shuttle speed.
 - Left / Right: step the timeline one frame.
 - Shift+Left / Shift+Right: jump to the previous or next keyframe on the selected track.
+- Shift+Home / Shift+End: jump to the first or last selected timeline keyframe.
 - Alt+Left / Alt+Right: nudge selected or playhead keyframes by one frame.
 - Shift+Enter: move selected keyframes so the first selected key lands at the playhead.
 - Shift+C: center selected keyframe timing around the playhead.
