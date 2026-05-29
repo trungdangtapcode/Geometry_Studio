@@ -281,6 +281,23 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   await page.keyboard.press("Control+A");
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+  const selectedMiddleKey = page.locator('.timeline-graph-key.graph-x.selected[data-key-time="2"]').first();
+  await expect(selectedMiddleKey).toBeVisible();
+  const selectedMiddleBox = await selectedMiddleKey.boundingBox();
+  expect(selectedMiddleBox).toBeTruthy();
+  await page.mouse.move(selectedMiddleBox!.x + selectedMiddleBox!.width / 2, selectedMiddleBox!.y + selectedMiddleBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(selectedMiddleBox!.x + selectedMiddleBox!.width / 2 + 56, selectedMiddleBox!.y + selectedMiddleBox!.height / 2);
+  await page.mouse.up();
+  const groupedTimes = await page.locator(".timeline-graph-key.graph-x.selected").evaluateAll((nodes) =>
+    nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))).sort((left, right) => left - right)
+  );
+  expect(groupedTimes).toHaveLength(3);
+  expect(groupedTimes[0]).toBeGreaterThan(0.1);
+  expect(groupedTimes[1] - groupedTimes[0]).toBeCloseTo(2, 1);
+  expect(groupedTimes[2] - groupedTimes[1]).toBeCloseTo(2, 1);
+  await page.locator("#undo-btn").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   expect(errors).toEqual([]);
 });
 

@@ -112,7 +112,8 @@ animation runtime where it fits:
   per-keyframe evaluator as runtime playback and motion-path preview. Graph key
   points can be dragged horizontally and vertically to retime keys and edit
   channel values with snap-aware time movement, Ctrl/Cmd toggle selection,
-  Shift range selection, Shift drag constraints, and one undo step per drag.
+  Shift range selection, selected-key group dragging, Shift drag constraints,
+  and one undo step per drag.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
 - Selected objects with two or more Position keys show a viewport motion path,

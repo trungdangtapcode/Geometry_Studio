@@ -3,7 +3,7 @@ import type { SceneTimelineDocument, TimelineTrackDocument, TimelineTrackKind } 
 import { clamp, formatNumber } from "../utils/dom";
 
 export type TimelineAxis = "x" | "y" | "z";
-export type TimelineKeySelectionMode = "replace" | "toggle" | "range";
+export type TimelineKeySelectionMode = "replace" | "toggle" | "range" | "preserve";
 
 export const TIMELINE_AXES: TimelineAxis[] = ["x", "y", "z"];
 export const AXIS_INDEX: Record<TimelineAxis, number> = { x: 0, y: 1, z: 2 };
@@ -49,6 +49,12 @@ type ValueGraphRange = {
   max: number;
 };
 
+type ValueGraphDragKey = {
+  keyframeId: string;
+  startTime: number;
+  startValue: number;
+};
+
 type ValueGraphDragState = {
   pointerId: number;
   startX: number;
@@ -56,10 +62,15 @@ type ValueGraphDragState = {
   startTime: number;
   startValue: number;
   keyframeId: string;
+  selectionMode: TimelineKeySelectionMode;
+  keyframes: ValueGraphDragKey[];
   axis: TimelineAxis;
   range: ValueGraphRange;
   timeStart: number;
   timeEnd: number;
+  duration: number;
+  minStartTime: number;
+  maxStartTime: number;
   started: boolean;
 };
 
@@ -228,6 +239,14 @@ export class TimelineValueGraph {
     const range = rangeForKeyframeAxis(context, axis);
     if (!range) return;
     const [timeStart, timeEnd] = graphWorkRange(context.timelineDocument);
+    const selectionMode = graphSelectionMode(event, context, keyframeId);
+    const selectedKeyframes = context.track.keyframes.filter((candidate) => context.selectedKeyframeIds.has(candidate.id));
+    const draggedKeyframes = selectionMode === "preserve" && selectedKeyframes.length > 1 ? selectedKeyframes : [keyframe];
+    const dragKeys = draggedKeyframes.map((candidate) => ({
+      keyframeId: candidate.id,
+      startTime: candidate.time,
+      startValue: candidate.value[axisIndex]
+    }));
     event.preventDefault();
     this.dragState = {
       pointerId: event.pointerId,
@@ -236,13 +255,18 @@ export class TimelineValueGraph {
       startTime: keyframe.time,
       startValue: keyframe.value[axisIndex],
       keyframeId,
+      selectionMode,
+      keyframes: dragKeys,
       axis,
       range,
       timeStart,
       timeEnd,
+      duration: context.timelineDocument.duration,
+      minStartTime: Math.min(...dragKeys.map((candidate) => candidate.startTime)),
+      maxStartTime: Math.max(...dragKeys.map((candidate) => candidate.startTime)),
       started: false
     };
-    this.callbacks.onKeyframeSelected(keyframeId, graphSelectionMode(event));
+    this.callbacks.onKeyframeSelected(keyframeId, selectionMode);
   }
 
   private moveGraphKey(event: PointerEvent): void {
@@ -255,10 +279,12 @@ export class TimelineValueGraph {
       this.callbacks.onDragStarted();
     }
     const constrained = this.constrainDragValues(event, drag);
-    const time = constrained.time;
-    const value = constrained.value;
-    this.callbacks.onKeyframeMoved(drag.keyframeId, time);
-    this.callbacks.onKeyframeValueChanged(drag.keyframeId, drag.axis, value);
+    const timeDelta = constrained.time - drag.startTime;
+    const valueDelta = constrained.value - drag.startValue;
+    drag.keyframes.forEach((keyframe) => {
+      this.callbacks.onKeyframeMoved(keyframe.keyframeId, keyframe.startTime + timeDelta);
+      this.callbacks.onKeyframeValueChanged(keyframe.keyframeId, drag.axis, keyframe.startValue + valueDelta);
+    });
     if (this.lastContext) this.render(this.lastContext);
   }
 
@@ -267,6 +293,7 @@ export class TimelineValueGraph {
       time: this.timeFromPointer(event, drag.timeStart, drag.timeEnd),
       value: this.valueFromPointer(event, drag.range)
     };
+    raw.time = constrainedGroupTime(raw.time, drag);
     if (!event.shiftKey && !this.shiftPressed) return raw;
     const deltaX = Math.abs(event.clientX - drag.startX);
     const deltaY = Math.abs(event.clientY - drag.startY);
@@ -279,7 +306,11 @@ export class TimelineValueGraph {
     const drag = this.dragState;
     if (!drag || event.pointerId !== drag.pointerId) return;
     this.dragState = null;
-    if (drag.started) this.callbacks.onDragFinished();
+    if (drag.started) {
+      this.callbacks.onDragFinished();
+    } else if (drag.selectionMode === "preserve") {
+      this.callbacks.onKeyframeSelected(drag.keyframeId, "replace");
+    }
   }
 
   private valueFromPointer(event: PointerEvent, range: ValueGraphRange): number {
@@ -381,10 +412,23 @@ function valueFromGraphY(y: number, range: ValueGraphRange): number {
   return range.min + (range.max - range.min) * normalized;
 }
 
-function graphSelectionMode(event: PointerEvent): TimelineKeySelectionMode {
+function graphSelectionMode(
+  event: PointerEvent,
+  context: TimelineValueGraphRenderContext,
+  keyframeId: string
+): TimelineKeySelectionMode {
   if (event.shiftKey) return "range";
   if (event.ctrlKey || event.metaKey) return "toggle";
+  if (context.selectedKeyframeIds.size > 1 && context.selectedKeyframeIds.has(keyframeId)) return "preserve";
   return "replace";
+}
+
+function constrainedGroupTime(time: number, drag: ValueGraphDragState): number {
+  if (drag.keyframes.length <= 1) return time;
+  const minDelta = -drag.minStartTime;
+  const maxDelta = Math.max(0, drag.duration - drag.maxStartTime);
+  const delta = clamp(time - drag.startTime, minDelta, maxDelta);
+  return drag.startTime + delta;
 }
 
 function expandedRange(values: number[]): ValueGraphRange {

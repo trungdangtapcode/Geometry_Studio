@@ -1100,7 +1100,9 @@ export class KeyframeTimelinePanel {
 
   private selectGraphKeyframe(keyframeId: string, mode: TimelineKeySelectionMode): void {
     const track = this.lastTimelineDocument ? this.playheadTrack(this.lastTimelineDocument, this.lastSelectedId) : undefined;
-    if (mode === "toggle") {
+    if (mode === "preserve") {
+      this.selectedKeyframeIds = new Set(this.selectedKeyframeIds);
+    } else if (mode === "toggle") {
       this.selectedKeyframeIds = toggledSelection(this.selectedKeyframeIds, keyframeId);
     } else if (mode === "range" && track) {
       this.selectedKeyframeIds = rangeSelection(track, this.selectedKeyframeIds, keyframeId);
