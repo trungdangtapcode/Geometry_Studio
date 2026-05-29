@@ -16,6 +16,7 @@ import {
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
 import { TimelinePlayer } from "./animation/timelinePlayer";
+import { TimelineTransport, type PlaybackDirection } from "./animation/timelineTransport";
 import {
   copyTimelineObject,
   createDefaultTimeline,
@@ -131,13 +132,11 @@ function boot(root: HTMLDivElement): void {
   const resourceTracker = new ResourceTracker();
   const history = new CommandHistory();
   const timelinePlayer = new TimelinePlayer();
+  const transport = new TimelineTransport();
   const entries = new Map<string, SceneEntry>();
   let sceneTimeline = createDefaultTimeline();
   let selectedId = "";
   let idCounter = 1;
-  let playing = false;
-  let playbackDirection: -1 | 1 = 1;
-  let playbackRate = 1;
   let transformSpace: "world" | "local" = "world";
   let lastFpsTime = performance.now();
   let frameCount = 0;
@@ -189,7 +188,10 @@ function boot(root: HTMLDivElement): void {
     onSettingsChanged: updateTimelineSettings,
     onTogglePlayback: togglePlay
   });
-  window.addEventListener("studio-density-change", () => timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing));
+  window.addEventListener("studio-density-change", () => {
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
+    updatePlayButton();
+  });
 
   seedDefaultScene();
   setSelected(firstEntryId());
@@ -696,7 +698,7 @@ function boot(root: HTMLDivElement): void {
     syncSegmentedButtons();
     syncTextureUI();
     syncHistoryButtons();
-    timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
     syncMotionPath();
     updateTelemetry();
@@ -1197,48 +1199,32 @@ function boot(root: HTMLDivElement): void {
   }
 
   function togglePlay(): void {
-    if (playing) pauseTimeline();
+    if (transport.playing) pauseTimeline();
     else playTimeline(1, "Timeline running");
   }
 
-  function playTimeline(direction: -1 | 1, message = direction > 0 ? "Timeline running forward" : "Timeline running backward"): void {
-    const nextRate = nextPlaybackRate(direction);
-    setPlayback(true, direction, nextRate, `${message} ${formatPlaybackRate(nextRate)}`);
+  function playTimeline(direction: PlaybackDirection, message = direction > 0 ? "Timeline running forward" : "Timeline running backward"): void {
+    const state = transport.play(direction);
+    syncPlaybackBoundary();
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
+    updatePlayButton();
+    showToast(`${message} ${state.rate}x`, "good");
   }
 
   function pauseTimeline(message = "Timeline paused"): void {
-    setPlayback(false, playbackDirection, 1, message);
-  }
-
-  function setPlayback(nextPlaying: boolean, direction: -1 | 1, rate: number, message: string): void {
-    playbackDirection = direction;
-    playbackRate = nextPlaying ? clampPlaybackRate(rate) : 1;
-    playing = nextPlaying;
-    if (playing && playbackDirection > 0 && (sceneTimeline.currentTime < sceneTimeline.workStart || sceneTimeline.currentTime >= sceneTimeline.workEnd)) {
-      setTimelineTime(sceneTimeline.workStart);
-    }
-    if (playing && playbackDirection < 0 && (sceneTimeline.currentTime <= sceneTimeline.workStart || sceneTimeline.currentTime > sceneTimeline.workEnd)) {
-      setTimelineTime(sceneTimeline.workEnd);
-    }
-    timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
+    transport.pause();
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
     showToast(message, "good");
   }
 
-  function nextPlaybackRate(direction: -1 | 1): number {
-    if (!playing || playbackDirection !== direction) return 1;
-    if (playbackRate < 2) return 2;
-    return 4;
-  }
-
-  function clampPlaybackRate(rate: number): number {
-    if (rate >= 4) return 4;
-    if (rate >= 2) return 2;
-    return 1;
-  }
-
-  function formatPlaybackRate(rate: number): string {
-    return `${clampPlaybackRate(rate)}x`;
+  function syncPlaybackBoundary(): void {
+    if (transport.playing && transport.direction > 0 && (sceneTimeline.currentTime < sceneTimeline.workStart || sceneTimeline.currentTime >= sceneTimeline.workEnd)) {
+      setTimelineTime(sceneTimeline.workStart);
+    }
+    if (transport.playing && transport.direction < 0 && (sceneTimeline.currentTime <= sceneTimeline.workStart || sceneTimeline.currentTime > sceneTimeline.workEnd)) {
+      setTimelineTime(sceneTimeline.workEnd);
+    }
   }
 
   function startCinematicDemo(): void {
@@ -1264,7 +1250,7 @@ function boot(root: HTMLDivElement): void {
     setSelected(teapot.id);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
-    if (!playing) togglePlay();
+    if (!transport.playing) togglePlay();
     updateAllUI();
     showToast("Cinematic demo staged", "good");
   }
@@ -1295,7 +1281,7 @@ function boot(root: HTMLDivElement): void {
     setSelected(cube.id);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
-    if (!playing) togglePlay();
+    if (!transport.playing) togglePlay();
     updateAllUI();
     const steps = [
       "Evaluation Tour: required primitives are visible.",
@@ -1417,7 +1403,7 @@ function boot(root: HTMLDivElement): void {
     return createSceneDocument({
       entries: entries.values(),
       selectedId: selectedId || null,
-      playing,
+      playing: transport.playing,
       camera,
       target: controls.target,
       stage,
@@ -1463,7 +1449,7 @@ function boot(root: HTMLDivElement): void {
     frustumHelper.visible = document.display?.frustum ?? false;
     motionPathVisible = document.display?.motionPath ?? true;
     applyLightDocument(document);
-    playing = document.playing;
+    transport.set(document.playing, 1, 1);
     document.objects.forEach((object) => restoreObject(object));
     sceneTimeline = normalizeTimelineDocument(document.timeline, new Set(entries.keys()));
     bakeLegacyAnimationPresetsWithoutTracks();
@@ -1560,7 +1546,7 @@ function boot(root: HTMLDivElement): void {
     applyCameraTimeline();
     applyLightTimeline();
     applyObjectPropertyTimeline();
-    timelinePanel.setPlaybackTime(sceneTimeline, playing);
+    timelinePanel.setPlaybackTime(sceneTimeline, transport.playing);
     if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
     if (hasLightTimelineTracks(sceneTimeline)) syncLightUI();
     if (hasTimelineTracks(sceneTimeline)) {
@@ -1583,14 +1569,14 @@ function boot(root: HTMLDivElement): void {
       } else if (nextTime > workEnd) {
         if (recordingPreview) {
           nextTime = workEnd;
-          playing = false;
+          transport.pause();
           updatePlayButton();
           window.setTimeout(() => stopPreviewRecording(false), 0);
         } else if (sceneTimeline.loop) {
           nextTime = workStart + ((nextTime - workEnd) % span);
         } else {
           nextTime = workEnd;
-          playing = false;
+          transport.pause();
           updatePlayButton();
         }
       }
@@ -1600,7 +1586,7 @@ function boot(root: HTMLDivElement): void {
       } else if (nextTime < workStart) {
         if (recordingPreview) {
           nextTime = workStart;
-          playing = false;
+          transport.pause();
           updatePlayButton();
           window.setTimeout(() => stopPreviewRecording(false), 0);
         } else if (sceneTimeline.loop) {
@@ -1608,7 +1594,7 @@ function boot(root: HTMLDivElement): void {
           if (Math.abs(nextTime - workEnd) < 0.001) nextTime = workStart;
         } else {
           nextTime = workStart;
-          playing = false;
+          transport.pause();
           updatePlayButton();
         }
       }
@@ -1618,7 +1604,7 @@ function boot(root: HTMLDivElement): void {
     applyCameraTimeline();
     applyLightTimeline();
     applyObjectPropertyTimeline();
-    timelinePanel.setPlaybackTime(sceneTimeline, playing);
+    timelinePanel.setPlaybackTime(sceneTimeline, transport.playing);
     if (hasCameraTimelineTracks(sceneTimeline)) syncCameraUI();
     if (hasLightTimelineTracks(sceneTimeline)) syncLightUI();
     if (hasTimelineTracks(sceneTimeline)) {
@@ -2523,13 +2509,11 @@ function boot(root: HTMLDivElement): void {
       showToast("WebM preview exported", "good");
     });
     recordingPreview = true;
-    playbackDirection = 1;
-    playbackRate = 1;
     updateRecordingButton();
     setTimelineTime(sceneTimeline.workStart);
-    playing = true;
+    transport.set(true, 1, 1);
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
-    timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
     previewRecorder.start(250);
     showToast("Recording work area to WebM", "good");
   }
@@ -2538,9 +2522,9 @@ function boot(root: HTMLDivElement): void {
     if (!recordingPreview && !previewRecorder) return;
     recordingPreview = false;
     if (manual) {
-      playing = false;
+      transport.pause();
+      timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
       updatePlayButton();
-      timelinePanel.update(sceneTimeline, entries.values(), selectedId, playing);
     }
     updateRecordingButton();
     if (previewRecorder && previewRecorder.state !== "inactive") previewRecorder.stop();
@@ -2577,8 +2561,8 @@ function boot(root: HTMLDivElement): void {
     const delta = clock.getDelta();
     const elapsed = clock.elapsedTime;
 
-    if (playing) {
-      const playbackDelta = delta * playbackDirection * playbackRate;
+    if (transport.playing) {
+      const playbackDelta = transport.playbackDelta(delta);
       advanceTimeline(playbackDelta);
       entries.forEach((entry) => {
         if (!hasObjectTransformTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, playbackDelta, elapsed);
@@ -2654,14 +2638,14 @@ function boot(root: HTMLDivElement): void {
   }
 
   function updatePlayButton(): void {
-    const transportLabel = playing ? `${playbackDirection > 0 ? "Forward" : "Reverse"} ${formatPlaybackRate(playbackRate)}` : "Ready";
-    query<HTMLDivElement>("#status-line").textContent = transportLabel;
-    const label = playing ? `Pause ${formatPlaybackRate(playbackRate)}` : "Play";
+    query<HTMLDivElement>("#status-line").textContent = transport.statusLabel();
+    const label = transport.buttonLabel();
+    const iconName = transport.iconName();
     const button = query<HTMLButtonElement>("#play-toggle");
-    button.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${label}</span>`;
+    button.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
     hydrateIcons(button);
     const timelineButton = query<HTMLButtonElement>("#timeline-play-toggle");
-    timelineButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${label}</span>`;
+    timelineButton.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
     hydrateIcons(timelineButton);
   }
 

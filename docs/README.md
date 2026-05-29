@@ -156,6 +156,8 @@ object appearance, camera, and light tracks:
   evaluator.
 - `animation/timelinePlayer.ts` evaluates Position, Rotation, and Scale tracks
   directly from the timeline document.
+- `animation/timelineTransport.ts` owns J/K/L playback direction, shuttle rate,
+  button labels, and signed playback delta calculation.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
 - `ui/timelineValueGraph.ts` owns active-track graph rendering, key point
