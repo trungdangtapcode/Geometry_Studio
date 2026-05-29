@@ -1244,6 +1244,57 @@ test("supports timeline marker keyboard shortcuts", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("edits and persists timeline marker colors", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-marker-label").fill("Camera Move");
+  await page.locator("#timeline-marker-color").evaluate((input) => {
+    (input as HTMLInputElement).value = "#4f8df7";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-marker").click();
+  await expect(page.locator(".timeline-marker")).toHaveCount(1);
+  await expect(page.locator("#timeline-marker-color")).toHaveValue("#4f8df7");
+  await expect.poll(() => page.locator(".timeline-marker").first().evaluate((marker) => getComputedStyle(marker).borderLeftColor)).toBe("rgb(79, 141, 247)");
+
+  await page.locator("#timeline-marker-color").evaluate((input) => {
+    (input as HTMLInputElement).value = "#20bfa9";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect.poll(() => page.locator(".timeline-marker").first().evaluate((marker) => getComputedStyle(marker).borderLeftColor)).toBe("rgb(32, 191, 169)");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  expect(sceneDocument.timeline.markers).toHaveLength(1);
+  expect(sceneDocument.timeline.markers[0].label).toBe("Camera Move");
+  expect(sceneDocument.timeline.markers[0].color).toBe("#20bfa9");
+  expect(errors).toEqual([]);
+});
+
 test("supports I/O work area keyboard shortcuts", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (message) => {

@@ -616,7 +616,7 @@ svg {
 
 .timeline-keyframe-editor {
   display: grid;
-  grid-template-columns: minmax(126px, 1fr) repeat(5, minmax(70px, 0.72fr)) minmax(94px, 0.78fr);
+  grid-template-columns: minmax(126px, 1fr) repeat(6, minmax(64px, 0.68fr)) minmax(94px, 0.78fr);
   align-items: end;
   gap: calc(var(--grid-gap) - 2px);
   padding: 0 var(--timeline-header-padding-x);
@@ -654,6 +654,10 @@ svg {
 .timeline-keyframe-editor input:disabled {
   color: rgba(20, 24, 27, 0.44);
   background: rgba(255, 255, 255, 0.48);
+}
+
+.timeline-keyframe-editor input[type="color"] {
+  padding: 3px;
 }
 
 .timeline-ease-preview {

@@ -61,9 +61,10 @@ export interface KeyframeTimelineCallbacks {
   onDistributeKeyframes(keyframeIds: string[]): void;
   onFitKeyframesToWorkArea(keyframeIds: string[]): void;
   onEditKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void;
-  onAddMarker(label: string): void;
+  onAddMarker(label: string, color?: string): void;
   onDeleteMarker(markerId: string | null): void;
   onRenameMarker(markerId: string, label: string): void;
+  onSetMarkerColor(markerId: string, color: string): void;
   onStepMarker(direction: -1 | 1): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onToggleTrack(kind: TimelineTrackKind, targetId?: string): void;
@@ -166,6 +167,7 @@ export class KeyframeTimelinePanel {
     z: query<HTMLElement>("#timeline-key-z-label")
   };
   private readonly markerLabelInput = query<HTMLInputElement>("#timeline-marker-label");
+  private readonly markerColorInput = query<HTMLInputElement>("#timeline-marker-color");
   private selectedKeyframeIds = new Set<string>();
   private lastTimelineDocument: SceneTimelineDocument | null = null;
   private lastEntries: SceneEntry[] = [];
@@ -448,7 +450,7 @@ export class KeyframeTimelinePanel {
       this.callbacks.onFitKeyframesToWorkArea([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-add-marker").addEventListener("click", () => {
-      this.callbacks.onAddMarker(this.markerLabelInput.value.trim());
+      this.callbacks.onAddMarker(this.markerLabelInput.value.trim(), this.markerColorInput.value);
     });
     query<HTMLButtonElement>("#timeline-delete-marker").addEventListener("click", () => {
       this.callbacks.onDeleteMarker(this.activeMarkerId);
@@ -457,6 +459,9 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-next-marker").addEventListener("click", () => this.callbacks.onStepMarker(1));
     this.markerLabelInput.addEventListener("change", () => {
       if (this.activeMarkerId) this.callbacks.onRenameMarker(this.activeMarkerId, this.markerLabelInput.value);
+    });
+    this.markerColorInput.addEventListener("change", () => {
+      if (this.activeMarkerId) this.callbacks.onSetMarkerColor(this.activeMarkerId, this.markerColorInput.value);
     });
     this.markerStrip.addEventListener("click", (event) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-marker");
@@ -733,6 +738,8 @@ export class KeyframeTimelinePanel {
     this.markerLabelInput.disabled = false;
     this.markerLabelInput.value = marker?.label ?? "";
     this.markerLabelInput.placeholder = marker ? "Rename marker" : `Marker ${timelineDocument.markers.length + 1}`;
+    this.markerColorInput.disabled = false;
+    this.markerColorInput.value = marker?.color ?? markerPaletteColor(timelineDocument.markers.length);
   }
 
   private currentMarker(timelineDocument: SceneTimelineDocument): TimelineMarkerDocument | null {
@@ -1569,6 +1576,11 @@ function componentToHex(value: number): string {
 
 function radToDeg(value: number): number {
   return value * 180 / Math.PI;
+}
+
+function markerPaletteColor(index: number): string {
+  const colors = ["#f4ad2f", "#df6b80", "#4f8df7", "#20bfa9", "#7c70f4"];
+  return colors[index % colors.length];
 }
 
 function cssNumber(element: HTMLElement, property: string, fallback: number): number {

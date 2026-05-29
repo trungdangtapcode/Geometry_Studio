@@ -11,9 +11,15 @@ the evaluator can reload a scene and keep its timeline annotations.
 - `Marker` adds a marker at the snapped playhead time.
 - The marker label field names a new marker or renames the marker at the
   playhead.
+- The marker color field sets a color for a new marker or recolors the active
+  marker at the playhead.
 - Previous/next marker buttons jump between marker cue points.
 - Marker chips in the marker strip jump the playhead when clicked.
 - Deleting removes the marker at the playhead.
+
+Marker color is saved in scene JSON and rendered as the marker chip's left
+accent border. This allows beat types such as camera, lighting, material, and
+demo cues to be visually separated in the timeline.
 
 ## Keyboard Workflow
 

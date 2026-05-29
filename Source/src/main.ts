@@ -213,6 +213,7 @@ function boot(root: HTMLDivElement): void {
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
     onRenameMarker: renameTimelineMarker,
+    onSetMarkerColor: setTimelineMarkerColor,
     onStepMarker: stepTimelineMarker,
     onClearTrack: clearTimelineTrack,
     onToggleTrack: toggleTimelineTrack,
@@ -2556,17 +2557,19 @@ function boot(root: HTMLDivElement): void {
     );
   }
 
-  function addTimelineMarker(label: string): void {
+  function addTimelineMarker(label: string, color?: string): void {
     const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
     const existing = timelineMarkerAt(time);
     const markerLabel = label.trim() || existing?.label || `Marker ${sceneTimeline.markers.length + 1}`;
+    const nextColor = normalizeMarkerColor(color) ?? existing?.color ?? markerColor(sceneTimeline.markers.length);
     recordHistory();
     if (existing) {
       existing.label = markerLabel.slice(0, 48);
+      existing.color = nextColor;
       sceneTimeline.currentTime = existing.time;
       showToast(`Marker updated: ${existing.label}`, "good");
     } else {
-      const marker = createTimelineMarker(time, markerLabel.slice(0, 48), markerColor(sceneTimeline.markers.length));
+      const marker = createTimelineMarker(time, markerLabel.slice(0, 48), nextColor);
       sceneTimeline.markers.push(marker);
       sortTimelineMarkers(sceneTimeline);
       sceneTimeline.currentTime = marker.time;
@@ -2598,6 +2601,16 @@ function boot(root: HTMLDivElement): void {
     marker.label = nextLabel;
     updateAllUI();
     showToast(`Marker renamed: ${marker.label}`, "good");
+  }
+
+  function setTimelineMarkerColor(markerId: string, color: string): void {
+    const marker = sceneTimeline.markers.find((candidate) => candidate.id === markerId);
+    const nextColor = normalizeMarkerColor(color);
+    if (!marker || !nextColor || nextColor === marker.color) return;
+    recordHistory();
+    marker.color = nextColor;
+    updateAllUI();
+    showToast(`Marker color updated: ${marker.label}`, "good");
   }
 
   function stepTimelineMarker(direction: -1 | 1): void {
@@ -3304,6 +3317,11 @@ function accentColor(index: number): string {
 function markerColor(index: number): string {
   const colors = ["#f4ad2f", "#df6b80", "#4f8df7", "#20bfa9", "#7c70f4"];
   return colors[index % colors.length];
+}
+
+function normalizeMarkerColor(value: string | undefined): string | null {
+  if (!value) return null;
+  return /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : null;
 }
 
 function numericObjectId(id: string): number {

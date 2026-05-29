@@ -158,6 +158,7 @@ export function studioTemplate(): string {
             <label><span id="timeline-key-y-label">Y</span><input id="timeline-key-y" type="number" step="0.001" disabled /></label>
             <label><span id="timeline-key-z-label">Z</span><input id="timeline-key-z" type="number" step="0.001" disabled /></label>
             <label><span>Marker</span><input id="timeline-marker-label" type="text" maxlength="48" disabled /></label>
+            <label><span>Color</span><input id="timeline-marker-color" type="color" value="#f4ad2f" disabled /></label>
             <div class="timeline-ease-preview" id="timeline-ease-preview" aria-label="Interpolation preview">
               <svg viewBox="0 0 72 34" aria-hidden="true" focusable="false">
                 <path class="ease-preview-grid" d="M4 28 H68 M4 28 V6" />
