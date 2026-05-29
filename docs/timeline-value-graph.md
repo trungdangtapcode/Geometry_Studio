@@ -19,9 +19,10 @@ actually do before pressing Play.
 - Hold, Linear, and Easy Ease segments are drawn from the same evaluator used by
   runtime playback.
 - Key points are drawn on top of the curves.
-- Dragging a key point vertically edits that keyframe channel value. For
-  precise transform edits, select the X, Y, or Z row first so overlapping
-  channel points collapse to the focused channel.
+- Dragging a key point horizontally retimes the keyframe, and dragging
+  vertically edits that keyframe channel value. For precise transform edits,
+  select the X, Y, or Z row first so overlapping channel points collapse to the
+  focused channel.
 - A graph drag is stored as one undoable edit through the same drag snapshot
   mechanism used by dope-sheet keyframe dragging.
 - Visibility tracks are drawn as value curves but remain locked because they are
@@ -44,7 +45,7 @@ The data path is:
 3. The graph samples the work range with `evaluateTimelineTrack`.
 4. Each enabled channel is normalized into SVG coordinates.
 5. Key points are rendered at authored keyframe times and values.
-6. Dragging a graph key emits a keyframe value mutation for one axis.
+6. Dragging a graph key emits keyframe time and value mutations for one axis.
 7. The SVG paths are redrawn whenever the timeline document, playhead, selected
    track, selected axis, graph visibility, or dragged value changes.
 
@@ -55,15 +56,14 @@ object also holds during playback.
 
 This graph version is intentionally focused:
 
-- It edits keyed channel values but does not yet allow Bezier handle editing.
-- It keeps time retiming in the dope sheet; graph dragging edits values
-  vertically.
+- It edits keyed channel values and keyframe time but does not yet allow Bezier
+  handle editing.
 - It uses per-channel normalization so small changes remain visible.
 - It expands the visible value range slightly so graph keys can be dragged above
   or below the current key values without immediately hitting the panel edge.
 
-The next upgrade should add optional time dragging and tangent handles after the
-dope-sheet workflow and value editing remain stable.
+The next upgrade should add tangent handles after the dope-sheet workflow and
+graph key dragging remain stable.
 
 ## Tests
 
@@ -73,5 +73,6 @@ The Playwright smoke workflow verifies that:
 - The graph panel opens without breaking the resizable timeline dock.
 - A keyed Position track draws a non-empty X-channel SVG path.
 - The graph reports the active keyed track count.
-- A graph key point can be dragged vertically to change a Position key value.
-- Undo restores the value before the graph drag.
+- A graph key point can be dragged horizontally and vertically to retime a
+  Position key and change its value.
+- Undo restores the time and value before the graph drag.

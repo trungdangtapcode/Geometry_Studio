@@ -23,6 +23,7 @@ export interface TimelineValueGraphCallbacks {
   onToggle(): void;
   onKeyframeSelected(keyframeId: string): void;
   onDragStarted(): void;
+  onKeyframeMoved(keyframeId: string, time: number): void;
   onKeyframeValueChanged(keyframeId: string, axis: TimelineAxis, value: number): void;
   onDragFinished(): void;
 }
@@ -54,6 +55,8 @@ type ValueGraphDragState = {
   keyframeId: string;
   axis: TimelineAxis;
   range: ValueGraphRange;
+  timeStart: number;
+  timeEnd: number;
   started: boolean;
 };
 
@@ -183,7 +186,7 @@ export class TimelineValueGraph {
           point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
           point.setAttribute("role", editable ? "button" : "img");
           point.setAttribute("tabindex", editable ? "0" : "-1");
-          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds`);
+          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Drag horizontally to retime and vertically to edit value.`);
           this.elements.keyLayer.appendChild(point);
         });
       });
@@ -199,6 +202,7 @@ export class TimelineValueGraph {
     if (!keyframeId || !axis || !context?.track || !keyframe) return;
     const range = rangeForKeyframeAxis(context, axis);
     if (!range) return;
+    const [timeStart, timeEnd] = graphWorkRange(context.timelineDocument);
     event.preventDefault();
     this.dragState = {
       pointerId: event.pointerId,
@@ -207,6 +211,8 @@ export class TimelineValueGraph {
       keyframeId,
       axis,
       range,
+      timeStart,
+      timeEnd,
       started: false
     };
     this.callbacks.onKeyframeSelected(keyframeId);
@@ -221,7 +227,9 @@ export class TimelineValueGraph {
       drag.started = true;
       this.callbacks.onDragStarted();
     }
+    const time = this.timeFromPointer(event, drag.timeStart, drag.timeEnd);
     const value = this.valueFromPointer(event, drag.range);
+    this.callbacks.onKeyframeMoved(drag.keyframeId, time);
     this.callbacks.onKeyframeValueChanged(drag.keyframeId, drag.axis, value);
     if (this.lastContext) this.render(this.lastContext);
   }
@@ -237,6 +245,12 @@ export class TimelineValueGraph {
     const rect = this.elements.svg.getBoundingClientRect();
     const graphYPosition = clamp(((event.clientY - rect.top) / Math.max(rect.height, 1)) * GRAPH_HEIGHT, 0, GRAPH_HEIGHT);
     return valueFromGraphY(graphYPosition, range);
+  }
+
+  private timeFromPointer(event: PointerEvent, start: number, end: number): number {
+    const rect = this.elements.svg.getBoundingClientRect();
+    const graphXPosition = clamp(((event.clientX - rect.left) / Math.max(rect.width, 1)) * GRAPH_WIDTH, 0, GRAPH_WIDTH);
+    return timeFromGraphX(graphXPosition, start, end);
   }
 
   private positionPlayhead(currentTime: number, start: number, end: number): void {
@@ -306,6 +320,10 @@ function graphPath(samples: { time: number; value: number }[], start: number, en
 
 function graphX(time: number, start: number, end: number): number {
   return ((time - start) / Math.max(end - start, 0.001)) * GRAPH_WIDTH;
+}
+
+function timeFromGraphX(x: number, start: number, end: number): number {
+  return start + (clamp(x, 0, GRAPH_WIDTH) / GRAPH_WIDTH) * Math.max(end - start, 0.001);
 }
 
 function graphY(value: number, range: ValueGraphRange): number {

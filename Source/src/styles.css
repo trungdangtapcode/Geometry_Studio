@@ -739,7 +739,7 @@ svg {
 .timeline-graph-key {
   fill: #ffffff;
   stroke-width: 2;
-  cursor: ns-resize;
+  cursor: move;
   pointer-events: auto;
 }
 

@@ -94,7 +94,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Add Position / Rotation / Scale keyframes in the bottom timeline using Set Key / Update Key, Set TRS for grouped object poses, or a row diamond key button, copy/paste a keyframe, scrub the playhead, and verify motion plays.
 - Confirm Position, Rotation, and Scale appear as X/Y/Z rows in the timeline for easier transform inspection.
 - Apply Linear, Easy Ease, and Hold interpolation from the timeline toolbar and confirm the curve preview updates.
-- Toggle Graph in the timeline and confirm a keyed Position / Rotation / Scale track draws value curves while scrubbing. Drag a graph key point vertically to edit a channel value, then Undo to restore it.
+- Toggle Graph in the timeline and confirm a keyed Position / Rotation / Scale track draws value curves while scrubbing. Drag a graph key point horizontally and vertically to retime a key and edit a channel value, then Undo to restore it.
 - Add two Position keys for the selected object and confirm the viewport draws a motion path between them.
 - Nudge a keyframe left or right by one frame from the toolbar.
 - Click timeline row labels to switch active object, camera, and light tracks.

@@ -217,12 +217,14 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   expect(keyBox).toBeTruthy();
   await page.mouse.move(keyBox!.x + keyBox!.width / 2, keyBox!.y + keyBox!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(keyBox!.x + keyBox!.width / 2, keyBox!.y - 22);
+  await page.mouse.move(keyBox!.x + keyBox!.width / 2 + 52, keyBox!.y - 22);
   await page.mouse.up();
-  await page.locator("#timeline-current-time").evaluate((input) => {
-    (input as HTMLInputElement).value = "2";
+  const movedKeyTime = Number(await page.locator(".timeline-graph-key.graph-x.selected").first().getAttribute("data-key-time"));
+  expect(movedKeyTime).toBeGreaterThan(2.1);
+  await page.locator("#timeline-current-time").evaluate((input, time) => {
+    (input as HTMLInputElement).value = String(time);
     input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  }, movedKeyTime);
   expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeGreaterThan(2.1);
   await page.locator("#undo-btn").click();
   await page.locator("#timeline-current-time").evaluate((input) => {

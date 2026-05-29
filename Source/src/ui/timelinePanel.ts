@@ -254,6 +254,7 @@ export class KeyframeTimelinePanel {
       },
       onKeyframeSelected: (keyframeId) => this.selectGraphKeyframe(keyframeId),
       onDragStarted: () => this.callbacks.onDragStarted(),
+      onKeyframeMoved: (keyframeId, time) => this.callbacks.onKeyframeMoved(keyframeId, time),
       onKeyframeValueChanged: (keyframeId, axis, value) => this.callbacks.onKeyframeValueChanged(keyframeId, axis, value),
       onDragFinished: () => this.callbacks.onDragFinished()
     });
