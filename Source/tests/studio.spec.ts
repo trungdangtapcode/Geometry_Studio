@@ -674,14 +674,17 @@ test("cuts visible-row keyframes at the playhead time for paste", async ({ page 
   await page.locator("#timeline-row-search").fill("cube texture");
   await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
   await page.locator("#timeline-set-visible").click();
+  await expect(page.locator("#timeline-timecode")).toContainText("3 visible keys");
   await page.locator("#timeline-duplicate-time").click();
   await page.locator("#timeline-cut-time").click();
+  await expect(page.locator("#timeline-timecode")).toContainText("0 visible keys");
   await expect(page.locator("#timeline-selection")).toContainText("No keyframe selected");
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.locator("#timeline-paste-keyframes").click();
+  await expect(page.locator("#timeline-timecode")).toContainText("3 visible keys");
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
 
   await page.evaluate(() => {

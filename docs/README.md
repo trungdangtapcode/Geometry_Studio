@@ -96,6 +96,8 @@ PDF.
   selecting keyframes from the current row filter/search result.
 - [Timeline Visible Time Selection](timeline-visible-time-selection.md)
   documents selecting visible-row keyframes at the current playhead time.
+- [Timeline Visible Time Status](timeline-visible-time-status.md) documents the
+  live visible-key count in the timeline timecode.
 - [Timeline Visible Time Copy](timeline-visible-time-copy.md) documents copying
   visible-row pose columns from the playhead.
 - [Timeline Visible Time Cut](timeline-visible-time-cut.md) documents cutting
@@ -195,6 +197,8 @@ animation runtime where it fits:
   fit, and preview workflows.
 - The `Select Time` command selects visible-row keyframes at the playhead,
   enabling pose-column copy, delete, paste, and retime workflows.
+- The timeline timecode shows how many visible-row keyframes exist at the
+  playhead before a pose-column command is applied.
 - The `Copy Time` command copies visible-row keyframes at the playhead into the
   same clipboard used by normal selected-key copy/paste.
 - The `Cut Time` command copies then removes visible-row keyframes at the

@@ -277,7 +277,6 @@ export class KeyframeTimelinePanel {
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
-    this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.durationInput.value = formatNumber(timelineDocument.duration);
     this.workStartInput.value = formatNumber(timelineDocument.workStart);
     this.workEndInput.value = formatNumber(timelineDocument.workEnd);
@@ -299,6 +298,7 @@ export class KeyframeTimelinePanel {
     const headerHeight = this.timelineHeaderHeight();
     this.labels.innerHTML = this.renderLabels(timelineDocument, visibleEntries, selectedId);
     hydrateIcons(this.labels);
+    this.syncTimecode(timelineDocument);
     this.timeline.setOptions({
       max: timelineDocument.duration,
       snapEnabled: timelineDocument.snapEnabled,
@@ -443,10 +443,10 @@ export class KeyframeTimelinePanel {
     this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
-    this.timecodeLabel.textContent = formatTimecode(timelineDocument.currentTime, timelineDocument.fps);
     this.timeline.setTime(timelineDocument.currentTime);
     this.syncRowKeyButtons(timelineDocument);
     this.syncRowValueReadouts(timelineDocument);
+    this.syncTimecode(timelineDocument);
     this.renderMarkers(timelineDocument);
     this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, this.lastSelectedId));
@@ -1300,6 +1300,25 @@ export class KeyframeTimelinePanel {
       : "No keyframe selected";
     this.syncKeyframeEditor(timelineDocument, selectedId, sources);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
+  }
+
+  private syncTimecode(timelineDocument: SceneTimelineDocument): void {
+    const visibleKeys = this.visiblePlayheadKeyframeCount(timelineDocument);
+    const visibleText = `${visibleKeys} visible ${visibleKeys === 1 ? "key" : "keys"}`;
+    this.timecodeLabel.textContent = `${formatTimecode(timelineDocument.currentTime, timelineDocument.fps)} | ${visibleText}`;
+    this.timecodeLabel.title = `${visibleText} at the current playhead time under the active row filter and search.`;
+  }
+
+  private visiblePlayheadKeyframeCount(timelineDocument: SceneTimelineDocument): number {
+    const tolerance = Math.max(0.001, timelineDocument.snapEnabled ? timelineDocument.snapStep * 0.5 : 0.001);
+    let count = 0;
+    this.visibleRowTargets().forEach((target) => {
+      const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
+      track?.keyframes.forEach((keyframe) => {
+        if (Math.abs(keyframe.time - timelineDocument.currentTime) <= tolerance) count += 1;
+      });
+    });
+    return count;
   }
 
   private pruneSelectedKeyframes(timelineDocument: SceneTimelineDocument): void {
