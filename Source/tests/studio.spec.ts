@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { Buffer } from "node:buffer";
 
 test("renders the studio and core controls", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(360_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -28,6 +28,19 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#environment-preset")).toHaveValue("studio");
   await page.locator("#environment-preset").selectOption("gallery");
   await expect(page.locator("#renderer-mode")).toContainText("Environment Gallery");
+  await expect(page.locator("#post-bloom-toggle")).not.toBeChecked();
+  await page.locator("#post-bloom-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("Bloom On");
+  await page.locator("#post-bloom-strength").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.65";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#post-bloom-strength")).toHaveValue("0.65");
+  await page.locator("#post-vignette-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("Vignette On");
+  await page.locator("#post-bloom-toggle").uncheck();
+  await page.locator("#post-vignette-toggle").uncheck();
+  await expect(page.locator("#renderer-mode")).toContainText("Post Off");
   await expect(page.getByRole("button", { name: "Ceramic", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Metal", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Glass", exact: true })).toBeVisible();
@@ -1731,12 +1744,20 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneJson).toBeTruthy();
   const sceneDocument = JSON.parse(sceneJson as string);
 
-  expect(sceneDocument.version).toBe(5);
+  expect(sceneDocument.version).toBe(6);
   expect(sceneDocument.rendering).toEqual({
     toneMapping: "reinhard",
     exposure: 1.35,
     shadowQuality: "medium",
-    environment: "studio"
+    environment: "studio",
+    postProcessing: {
+      bloom: false,
+      bloomStrength: 0.42,
+      bloomRadius: 0.22,
+      bloomThreshold: 0.72,
+      vignette: false,
+      vignetteDarkness: 0.75
+    }
   });
   expect(sceneDocument.display.motionPath).toBe(true);
   expect(sceneDocument.timeline.version).toBe(9);

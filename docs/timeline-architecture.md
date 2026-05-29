@@ -44,15 +44,16 @@ history snapshots, runtime rebuilds, scene-object side effects, and UI refresh.
 
 ## Scene Document Versioning
 
-The scene document writes `version: 5` after adding imported source-material
-state. The nested timeline document is versioned independently because
+The scene document writes `version: 6` after adding post-processing settings.
+The nested timeline document is versioned independently because
 timeline capabilities are growing faster than the outer scene format.
 
 Version 1 scene files do not contain keyframe timeline data. Version 1 and
 version 2 scene files do not contain Rendering Lab data; version 3 scene files
 do not contain environment lighting data; version 4 scene files do not contain
-source-material preservation data. Loading them creates default empty timeline
-data and default renderer settings. The current timeline schema is version 9:
+source-material preservation data; version 5 scene files do not contain
+post-processing settings. Loading them creates default empty timeline data and
+default renderer settings. The current timeline schema is version 9:
 
 ```ts
 interface SceneTimelineDocument {

@@ -26,7 +26,7 @@ The feature lives in `Source/src/renderer/environment.ts`:
 - `environmentController.apply()` updates `scene.environment`,
   `scene.environmentIntensity`, background color, fog, and environment
   rotation.
-- Scene JSON version 4 introduced environment lighting. Current version 5 scene
+- Scene JSON version 4 introduced environment lighting. Current version 6 scene
   files still migrate older files to the default `studio` environment.
 
 The controller is intentionally separate from `main.ts` so future HDR assets,

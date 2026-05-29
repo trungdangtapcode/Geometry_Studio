@@ -442,6 +442,24 @@ export function studioTemplate(): string {
                 <option value="cool">Cool Lab</option>
               </select>
             </label>
+            <label class="toggle-line"><input id="post-bloom-toggle" type="checkbox" /><span>Bloom</span></label>
+            <label>
+              <span>Bloom Strength</span>
+              <input id="post-bloom-strength" type="range" min="0" max="2" step="0.05" value="0.42" />
+            </label>
+            <label>
+              <span>Bloom Threshold</span>
+              <input id="post-bloom-threshold" type="range" min="0" max="1" step="0.01" value="0.72" />
+            </label>
+            <label>
+              <span>Bloom Radius</span>
+              <input id="post-bloom-radius" type="range" min="0" max="1" step="0.01" value="0.22" />
+            </label>
+            <label class="toggle-line"><input id="post-vignette-toggle" type="checkbox" /><span>Vignette</span></label>
+            <label>
+              <span>Vignette Dark</span>
+              <input id="post-vignette-darkness" type="range" min="0" max="1.5" step="0.05" value="0.75" />
+            </label>
           </div>
         </section>
 

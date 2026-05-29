@@ -73,6 +73,7 @@ import type {
   LightKind,
   MaterialMode,
   ObjectKind,
+  PostProcessingSettings,
   PrimitiveType,
   EnvironmentPresetId,
   RenderSettings,
@@ -90,6 +91,7 @@ import type {
 } from "./editor/types";
 import { createEnvironmentController, environmentPreset } from "./renderer/environment";
 import { createRenderPipeline } from "./renderer/pipeline";
+import { applyPostProcessingSettings, normalizePostProcessingSettings, postProcessingLabel } from "./renderer/postProcessing";
 import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
 import { loadModelFromFiles } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
@@ -133,7 +135,8 @@ function boot(root: HTMLDivElement): void {
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 500);
   camera.position.set(7.5, 5.5, 9);
 
-  const { renderer, composer, outlinePass, resize: resizePipeline } = createRenderPipeline(canvas, scene, camera);
+  const renderPipeline = createRenderPipeline(canvas, scene, camera);
+  const { renderer, composer, outlinePass, resize: resizePipeline } = renderPipeline;
   const environmentController = createEnvironmentController(renderer, scene);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -178,6 +181,7 @@ function boot(root: HTMLDivElement): void {
   const lightRig = createLights(scene);
   applyRenderSettings(renderer, lightRig, renderSettings);
   environmentController.apply(renderSettings);
+  applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
   const motionPathRig = createMotionPathRig();
   const frustumHelper = new THREE.CameraHelper(camera);
   frustumHelper.visible = false;
@@ -697,6 +701,24 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#environment-preset").addEventListener("change", (event) => {
       updateRenderSettings({ environment: (event.target as HTMLSelectElement).value as EnvironmentPresetId });
     });
+    query<HTMLInputElement>("#post-bloom-toggle").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ bloom: (event.target as HTMLInputElement).checked });
+    });
+    query<HTMLInputElement>("#post-bloom-strength").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ bloomStrength: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-bloom-threshold").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ bloomThreshold: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-bloom-radius").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ bloomRadius: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-vignette-toggle").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ vignette: (event.target as HTMLInputElement).checked });
+    });
+    query<HTMLInputElement>("#post-vignette-darkness").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ vignetteDarkness: Number((event.target as HTMLInputElement).value) });
+    });
     query<HTMLInputElement>("#grid-toggle").addEventListener("change", (event) => {
       recordHistory();
       stage.grid.visible = (event.target as HTMLInputElement).checked;
@@ -907,7 +929,13 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#render-exposure").value = String(renderSettings.exposure);
     query<HTMLSelectElement>("#shadow-quality").value = renderSettings.shadowQuality;
     query<HTMLSelectElement>("#environment-preset").value = renderSettings.environment;
-    query<HTMLDivElement>("#renderer-mode").textContent = `WebGL raster | ${toneMappingLabel(renderSettings.toneMapping)} | Exposure ${formatNumber(renderSettings.exposure)} | Shadows ${shadowQualityLabel(renderSettings.shadowQuality)} | Environment ${environmentPreset(renderSettings.environment).label}`;
+    query<HTMLInputElement>("#post-bloom-toggle").checked = renderSettings.postProcessing.bloom;
+    query<HTMLInputElement>("#post-bloom-strength").value = String(renderSettings.postProcessing.bloomStrength);
+    query<HTMLInputElement>("#post-bloom-threshold").value = String(renderSettings.postProcessing.bloomThreshold);
+    query<HTMLInputElement>("#post-bloom-radius").value = String(renderSettings.postProcessing.bloomRadius);
+    query<HTMLInputElement>("#post-vignette-toggle").checked = renderSettings.postProcessing.vignette;
+    query<HTMLInputElement>("#post-vignette-darkness").value = String(renderSettings.postProcessing.vignetteDarkness);
+    query<HTMLDivElement>("#renderer-mode").textContent = `WebGL raster | ${toneMappingLabel(renderSettings.toneMapping)} | Exposure ${formatNumber(renderSettings.exposure)} | Shadows ${shadowQualityLabel(renderSettings.shadowQuality)} | Environment ${environmentPreset(renderSettings.environment).label} | ${postProcessingLabel(renderSettings.postProcessing)}`;
   }
 
   function updateRenderSettings(patch: Partial<RenderSettings>): void {
@@ -915,8 +943,15 @@ function boot(root: HTMLDivElement): void {
     renderSettings = normalizeRenderSettings({ ...renderSettings, ...patch });
     applyRenderSettings(renderer, lightRig, renderSettings);
     environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
     syncRenderUI();
     updateTelemetry();
+  }
+
+  function updatePostProcessingSettings(patch: Partial<PostProcessingSettings>): void {
+    updateRenderSettings({
+      postProcessing: normalizePostProcessingSettings({ ...renderSettings.postProcessing, ...patch })
+    });
   }
 
   function syncSelectionSummary(): void {
@@ -1593,6 +1628,7 @@ function boot(root: HTMLDivElement): void {
     renderSettings = normalizeRenderSettings(document.rendering);
     applyRenderSettings(renderer, lightRig, renderSettings);
     environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
     transport.set(document.playing, 1, 1);
     document.objects.forEach((object) => restoreObject(object));
     sceneTimeline = normalizeTimelineDocument(document.timeline, new Set(entries.keys()));
@@ -1609,6 +1645,7 @@ function boot(root: HTMLDivElement): void {
     syncLights(lightRig, entries.values());
     applyRenderSettings(renderer, lightRig, renderSettings);
     environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
     syncOutline();
     updateAllUI();
   }
@@ -3028,6 +3065,7 @@ function boot(root: HTMLDivElement): void {
       ["Exposure", formatNumber(renderSettings.exposure)],
       ["Shadow", shadowQualityLabel(renderSettings.shadowQuality)],
       ["Environment", environmentPreset(renderSettings.environment).label],
+      ["Post", postProcessingLabel(renderSettings.postProcessing)],
       ["Objects", entries.size]
     ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   }

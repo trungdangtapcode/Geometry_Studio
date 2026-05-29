@@ -27,6 +27,8 @@ PDF.
   PMREM studio lighting for PBR materials without runtime network assets.
 - [OBJ + MTL Import](obj-mtl-import.md) documents multi-file OBJ material
   loading and imported source-material preservation.
+- [Post-Processing Toggles](post-processing.md) documents Bloom, Vignette, and
+  the EffectComposer pass chain.
 - [AE-Style Timeline Integration Research](ae-timeline-integration-research.md)
   records the no-reinvention decision for the next timeline phase: keep
   `animation-timeline-js` as the dope-sheet component and integrate proven

@@ -24,6 +24,7 @@ Implemented and tested:
 - PBR material presets for Ceramic, Metal, Plastic, Glass, and Clay.
 - Generated PMREM environment lighting presets for PBR image-based lighting.
 - OBJ + MTL multi-file import with source-material preservation.
+- Post-processing toggles for Bloom and Vignette.
 
 ## Research Basis
 
@@ -53,7 +54,7 @@ Recommended order:
 1. Rendering Lab panel. Implemented: tone mapping, exposure, and shadow quality.
 2. PBR material and environment lighting upgrades. Implemented.
 3. OBJ + MTL import workflow. Implemented.
-4. Post-processing toggles.
+4. Post-processing toggles. Implemented for Bloom and Vignette.
 5. Timeline polish.
 6. Optional path-traced still preview.
 
@@ -122,21 +123,21 @@ Acceptance:
 
 ## Phase 4: Post-Processing Toggles
 
-The renderer already uses `EffectComposer` and selected-object outline. Extend
-that pipeline carefully.
+Implemented. The renderer uses `EffectComposer` with selected-object outline,
+Bloom, Vignette, and `OutputPass`.
 
 Candidate effects:
 
-- Bloom with `UnrealBloomPass`.
-- SSAO-style ambient occlusion if performance remains acceptable.
-- Vignette or simple color grading shader.
+- Bloom with `UnrealBloomPass`. Implemented.
+- SSAO-style ambient occlusion if performance remains acceptable. Deferred.
+- Vignette or simple color grading shader. Vignette implemented.
 - Optional FXAA/SMAA anti-aliasing pass if visual quality improves.
 
 Controls:
 
-- Toggle each effect independently.
-- Keep default settings conservative.
-- Show pass state in the telemetry panel.
+- Toggle each effect independently. Implemented.
+- Keep default settings conservative. Implemented with effects off by default.
+- Show pass state in the telemetry panel. Implemented.
 
 Acceptance:
 

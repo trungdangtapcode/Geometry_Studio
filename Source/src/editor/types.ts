@@ -52,11 +52,21 @@ export type RenderToneMappingMode = "aces" | "linear" | "reinhard" | "none";
 export type ShadowQuality = "low" | "medium" | "high" | "ultra";
 export type EnvironmentPresetId = "off" | "studio" | "gallery" | "warm" | "cool";
 
+export interface PostProcessingSettings {
+  bloom: boolean;
+  bloomStrength: number;
+  bloomRadius: number;
+  bloomThreshold: number;
+  vignette: boolean;
+  vignetteDarkness: number;
+}
+
 export interface RenderSettings {
   toneMapping: RenderToneMappingMode;
   exposure: number;
   shadowQuality: ShadowQuality;
   environment: EnvironmentPresetId;
+  postProcessing: PostProcessingSettings;
 }
 
 export interface SceneEntry {
@@ -112,7 +122,7 @@ export interface LoadingStatus {
 }
 
 export interface SceneDocument {
-  version: 1 | 2 | 3 | 4 | 5;
+  version: 1 | 2 | 3 | 4 | 5 | 6;
   savedAt: string;
   selectedId: string | null;
   playing: boolean;
