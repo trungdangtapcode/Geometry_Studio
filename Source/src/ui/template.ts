@@ -446,6 +446,7 @@ export function studioTemplate(): string {
                 <option value="cool">Cool Lab</option>
               </select>
             </label>
+            <label class="toggle-line"><input id="post-fxaa-toggle" type="checkbox" /><span>FXAA</span></label>
             <label class="toggle-line"><input id="post-bloom-toggle" type="checkbox" /><span>Bloom</span></label>
             <label>
               <span>Bloom Strength</span>

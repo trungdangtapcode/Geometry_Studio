@@ -736,6 +736,9 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#environment-preset").addEventListener("change", (event) => {
       updateRenderSettings({ environment: (event.target as HTMLSelectElement).value as EnvironmentPresetId });
     });
+    query<HTMLInputElement>("#post-fxaa-toggle").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ fxaa: (event.target as HTMLInputElement).checked });
+    });
     query<HTMLInputElement>("#post-bloom-toggle").addEventListener("change", (event) => {
       updatePostProcessingSettings({ bloom: (event.target as HTMLInputElement).checked });
     });
@@ -1029,6 +1032,7 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#render-exposure").value = String(renderSettings.exposure);
     query<HTMLSelectElement>("#shadow-quality").value = renderSettings.shadowQuality;
     query<HTMLSelectElement>("#environment-preset").value = renderSettings.environment;
+    query<HTMLInputElement>("#post-fxaa-toggle").checked = renderSettings.postProcessing.fxaa;
     query<HTMLInputElement>("#post-bloom-toggle").checked = renderSettings.postProcessing.bloom;
     query<HTMLInputElement>("#post-bloom-strength").value = String(renderSettings.postProcessing.bloomStrength);
     query<HTMLInputElement>("#post-bloom-threshold").value = String(renderSettings.postProcessing.bloomThreshold);

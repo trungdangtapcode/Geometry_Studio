@@ -53,6 +53,7 @@ export type ShadowQuality = "low" | "medium" | "high" | "ultra";
 export type EnvironmentPresetId = "off" | "studio" | "gallery" | "warm" | "cool";
 
 export interface PostProcessingSettings {
+  fxaa: boolean;
   bloom: boolean;
   bloomStrength: number;
   bloomRadius: number;

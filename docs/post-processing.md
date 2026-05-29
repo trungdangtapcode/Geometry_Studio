@@ -12,6 +12,8 @@ main renderer interactive and browser-safe.
   last pass rendering to screen.
 - Three.js post-processing examples use `OutputPass` at the end of the chain so
   tone mapping and output color conversion are applied correctly.
+- `FXAAPass` wraps the built-in `FXAAShader` and provides a lightweight
+  screen-space anti-aliasing step for composer output.
 - `SSAOPass` is a built-in Three.js addon for basic screen-space ambient
   occlusion. It is cheaper than heavier AO passes and fits an interactive
   editor viewport.
@@ -27,18 +29,20 @@ main renderer interactive and browser-safe.
 3. `UnrealBloomPass`
 4. `ShaderPass(VignetteShader)`
 5. `OutlinePass`
-6. `OutputPass`
+6. `FXAAPass`
+7. `OutputPass`
 
 `Source/src/renderer/postProcessing.ts` owns defaults, normalization, pass
 application, and display labels. The settings are nested under
 `RenderSettings.postProcessing` and persisted in scene document version 6.
 
 Defaults keep optional effects disabled so existing saved scenes load with the
-same basic visual style. Users can enable SSAO, Bloom, and Vignette from the
-Rendering Lab.
+same basic visual style. Users can enable FXAA, SSAO, Bloom, and Vignette from
+the Rendering Lab.
 
 ## Controls
 
+- FXAA toggle
 - SSAO toggle
 - SSAO Radius
 - SSAO Min Distance
@@ -55,6 +59,6 @@ effects are active.
 
 ## Validation
 
-The core Playwright smoke test enables SSAO, Bloom, and Vignette, verifies the
-renderer summary updates, and confirms the editor remains usable. Typecheck and
-production build are required before committing release assets.
+The core Playwright smoke test enables FXAA, SSAO, Bloom, and Vignette, verifies
+the renderer summary updates, and confirms the editor remains usable. Typecheck
+and production build are required before committing release assets.

@@ -26,6 +26,7 @@ Implemented and tested:
 - OBJ + MTL multi-file import with source-material preservation.
 - Post-processing toggles for Bloom and Vignette.
 - Optional SSAO post-processing for contact shading in the real-time viewport.
+- Optional FXAA post-processing for lightweight composer anti-aliasing.
 - Timeline row search for dense AE-style track navigation.
 - Timeline row switches for direct enable, solo, lock, and key actions.
 - WebM work-area recording progress in the viewport status controls.
@@ -136,7 +137,8 @@ Candidate effects:
 - SSAO-style ambient occlusion if performance remains acceptable. Implemented
   with Three.js `SSAOPass` and a capped internal render size.
 - Vignette or simple color grading shader. Vignette implemented.
-- Optional FXAA/SMAA anti-aliasing pass if visual quality improves.
+- Optional FXAA/SMAA anti-aliasing pass if visual quality improves. Implemented
+  with Three.js `FXAAPass` for the lightweight path.
 
 Controls:
 

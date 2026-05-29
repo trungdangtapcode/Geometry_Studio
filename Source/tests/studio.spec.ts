@@ -39,6 +39,10 @@ test("renders the studio and core controls", async ({ page }) => {
   await page.locator("#post-vignette-toggle").check();
   await expect(page.locator("#renderer-mode")).toContainText("Vignette On");
   await expect(page.locator("#post-ssao-toggle")).not.toBeChecked();
+  await expect(page.locator("#post-fxaa-toggle")).not.toBeChecked();
+  await page.locator("#post-fxaa-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("FXAA On");
+  await page.locator("#post-fxaa-toggle").uncheck();
   await expect(page.locator("#post-ssao-radius")).toHaveValue("8");
   await page.locator("#post-bloom-toggle").uncheck();
   await page.locator("#post-vignette-toggle").uncheck();
@@ -237,9 +241,11 @@ test("toggles SSAO post processing controls", async ({ page }) => {
   });
 
   await page.goto("/");
+  await page.locator("#post-fxaa-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("FXAA On");
   await expect(page.locator("#post-ssao-toggle")).not.toBeChecked();
   await page.locator("#post-ssao-toggle").check();
-  await expect(page.locator("#renderer-mode")).toContainText("SSAO On");
+  await expect(page.locator("#renderer-mode")).toContainText("FXAA On + SSAO On");
   await page.locator("#post-ssao-radius").evaluate((input) => {
     (input as HTMLInputElement).value = "12";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -256,10 +262,13 @@ test("toggles SSAO post processing controls", async ({ page }) => {
   const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
   const sceneJson = await sceneText.jsonValue();
   const sceneDocument = JSON.parse(sceneJson as string);
+  expect(sceneDocument.rendering.postProcessing.fxaa).toBe(true);
   expect(sceneDocument.rendering.postProcessing.ssao).toBe(true);
   expect(sceneDocument.rendering.postProcessing.ssaoRadius).toBe(12);
   expect(sceneDocument.rendering.postProcessing.ssaoMaxDistance).toBe(0.18);
   await page.locator("#post-ssao-toggle").uncheck();
+  await expect(page.locator("#renderer-mode")).toContainText("FXAA On");
+  await page.locator("#post-fxaa-toggle").uncheck();
   await expect(page.locator("#renderer-mode")).toContainText("Post Off");
   expect(errors).toEqual([]);
 });
@@ -2164,6 +2173,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     shadowQuality: "medium",
     environment: "studio",
     postProcessing: {
+      fxaa: false,
       bloom: false,
       bloomStrength: 0.42,
       bloomRadius: 0.22,

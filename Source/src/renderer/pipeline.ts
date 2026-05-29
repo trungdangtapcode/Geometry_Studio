@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
@@ -13,6 +14,7 @@ import { DEFAULT_POST_PROCESSING_SETTINGS } from "./postProcessing";
 export interface RenderPipeline {
   renderer: THREE.WebGLRenderer;
   composer: EffectComposer;
+  fxaaPass: FXAAPass;
   ssaoPass: SSAOPass;
   bloomPass: UnrealBloomPass;
   vignettePass: ShaderPass;
@@ -65,19 +67,23 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   outlinePass.visibleEdgeColor.set("#ffb02e");
   outlinePass.hiddenEdgeColor.set("#0d1117");
   composer.addPass(outlinePass);
+  const fxaaPass = new FXAAPass();
+  fxaaPass.enabled = DEFAULT_POST_PROCESSING_SETTINGS.fxaa;
+  composer.addPass(fxaaPass);
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
-  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, ssaoPass, bloomPass, camera);
+  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, fxaaPass, ssaoPass, bloomPass, camera);
   resize();
 
-  return { renderer, composer, ssaoPass, bloomPass, vignettePass, outlinePass, outputPass, resize };
+  return { renderer, composer, fxaaPass, ssaoPass, bloomPass, vignettePass, outlinePass, outputPass, resize };
 }
 
 export function resizeRendererToDisplaySize(
   renderer: THREE.WebGLRenderer,
   composer: EffectComposer,
   outlinePass: OutlinePass,
+  fxaaPass: FXAAPass,
   ssaoPass: SSAOPass,
   bloomPass: UnrealBloomPass,
   camera: THREE.PerspectiveCamera,
@@ -99,6 +105,7 @@ export function resizeRendererToDisplaySize(
     renderer.setSize(width, height, false);
     composer.setSize(width, height);
     outlinePass.setSize(width, height);
+    fxaaPass.setSize(width, height);
     resizeSsaoPass(ssaoPass, width, height);
     resizeBloomPass(bloomPass, width, height);
   }

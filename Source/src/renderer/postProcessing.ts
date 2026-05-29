@@ -2,6 +2,7 @@ import type { PostProcessingSettings } from "../editor/types";
 import type { RenderPipeline } from "./pipeline";
 
 export const DEFAULT_POST_PROCESSING_SETTINGS: PostProcessingSettings = {
+  fxaa: false,
   bloom: false,
   bloomStrength: 0.42,
   bloomRadius: 0.22,
@@ -17,6 +18,7 @@ export const DEFAULT_POST_PROCESSING_SETTINGS: PostProcessingSettings = {
 export function normalizePostProcessingSettings(value: unknown): PostProcessingSettings {
   const source = value && typeof value === "object" ? value as Partial<PostProcessingSettings> : {};
   return {
+    fxaa: typeof source.fxaa === "boolean" ? source.fxaa : DEFAULT_POST_PROCESSING_SETTINGS.fxaa,
     bloom: typeof source.bloom === "boolean" ? source.bloom : DEFAULT_POST_PROCESSING_SETTINGS.bloom,
     bloomStrength: finiteNumber(source.bloomStrength, DEFAULT_POST_PROCESSING_SETTINGS.bloomStrength, 0, 2),
     bloomRadius: finiteNumber(source.bloomRadius, DEFAULT_POST_PROCESSING_SETTINGS.bloomRadius, 0, 1),
@@ -31,6 +33,8 @@ export function normalizePostProcessingSettings(value: unknown): PostProcessingS
 }
 
 export function applyPostProcessingSettings(pipeline: RenderPipeline, settings: PostProcessingSettings): void {
+  pipeline.fxaaPass.enabled = settings.fxaa;
+
   pipeline.ssaoPass.enabled = settings.ssao;
   pipeline.ssaoPass.kernelRadius = settings.ssaoRadius;
   pipeline.ssaoPass.minDistance = settings.ssaoMinDistance;
@@ -48,6 +52,7 @@ export function applyPostProcessingSettings(pipeline: RenderPipeline, settings: 
 
 export function postProcessingLabel(settings: PostProcessingSettings): string {
   const active = [
+    settings.fxaa ? "FXAA On" : "",
     settings.ssao ? "SSAO On" : "",
     settings.bloom ? "Bloom On" : "",
     settings.vignette ? "Vignette On" : ""

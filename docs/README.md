@@ -28,7 +28,9 @@ PDF.
 - [OBJ + MTL Import](obj-mtl-import.md) documents multi-file OBJ material
   loading and imported source-material preservation.
 - [Post-Processing Toggles](post-processing.md) documents SSAO, Bloom,
-  Vignette, and the EffectComposer pass chain.
+  Vignette, FXAA, and the EffectComposer pass chain.
+- [FXAA Anti-Aliasing](fxaa-antialiasing.md) documents the lightweight
+  anti-aliasing pass decision and scene JSON persistence.
 - [SSAO Rendering](ssao-rendering.md) documents optional screen-space ambient
   occlusion for contact shading in the real-time viewport.
 - [AE-Style Timeline Integration Research](ae-timeline-integration-research.md)
