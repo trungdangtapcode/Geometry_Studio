@@ -25,6 +25,17 @@ import {
   type TimelineGraphSelectionMode,
   type TimelineKeySelectionMode
 } from "./timelineValueGraph";
+import {
+  CAMERA_TRACKS,
+  isCameraTrack,
+  isLightTrack,
+  isObjectTrack,
+  LIGHT_TRACKS,
+  OBJECT_AXIS_TRACKS,
+  OBJECT_TRACKS,
+  TRACK_COLORS,
+  trackLabel
+} from "./timelineTrackMetadata";
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
 
@@ -97,32 +108,6 @@ type TimelineDetailSource = {
   keyframe: TimelineKeyframeDocument;
 };
 
-const OBJECT_TRACKS: TimelineTrackKind[] = [
-  "position",
-  "rotation",
-  "scale",
-  "objectColor",
-  "objectOpacity",
-  "objectRoughness",
-  "objectMetalness",
-  "objectTextureRepeat",
-  "objectTextureOffset",
-  "objectTextureRotation",
-  "objectVisibility"
-];
-const CAMERA_TRACKS: TimelineTrackKind[] = ["cameraPosition", "cameraTarget", "cameraLens"];
-const LIGHT_TRACKS: TimelineTrackKind[] = [
-  "directionalPosition",
-  "directionalColor",
-  "directionalIntensity",
-  "pointPosition",
-  "pointColor",
-  "pointIntensity",
-  "spotPosition",
-  "spotColor",
-  "spotIntensity",
-  "ambientIntensity"
-];
 const CAMERA_TARGET_ID = "__camera__";
 const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
@@ -131,61 +116,6 @@ const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
 const MIN_DOCK_HEIGHT = 190;
 const DEFAULT_ROW_HEIGHT = 30;
 const DEFAULT_HEADER_HEIGHT = 28;
-const OBJECT_AXIS_TRACKS = new Set<TimelineTrackKind>(["position", "rotation", "scale"]);
-
-const TRACK_COLORS: Record<TimelineTrackKind, string> = {
-  position: "#20bfa9",
-  rotation: "#f4ad2f",
-  scale: "#7c70f4",
-  objectColor: "#df6b80",
-  objectOpacity: "#64748b",
-  objectRoughness: "#8b5cf6",
-  objectMetalness: "#0f766e",
-  objectTextureRepeat: "#d97706",
-  objectTextureOffset: "#0891b2",
-  objectTextureRotation: "#be123c",
-  objectVisibility: "#16a34a",
-  cameraPosition: "#4f8df7",
-  cameraTarget: "#a86de8",
-  cameraLens: "#df6b80",
-  directionalPosition: "#f7bd4b",
-  directionalColor: "#f39c12",
-  directionalIntensity: "#d98f00",
-  pointPosition: "#60c0ff",
-  pointColor: "#2f9de8",
-  pointIntensity: "#1479b8",
-  spotPosition: "#fb7185",
-  spotColor: "#df6b80",
-  spotIntensity: "#b8394e",
-  ambientIntensity: "#8393a2"
-};
-
-const TRACK_LABELS: Record<TimelineTrackKind, string> = {
-  position: "Position",
-  rotation: "Rotation",
-  scale: "Scale",
-  objectColor: "Color",
-  objectOpacity: "Opacity",
-  objectRoughness: "Roughness",
-  objectMetalness: "Metalness",
-  objectTextureRepeat: "Texture Repeat",
-  objectTextureOffset: "Texture Offset",
-  objectTextureRotation: "Texture Rotation",
-  objectVisibility: "Visibility",
-  cameraPosition: "Camera Position",
-  cameraTarget: "Camera Target",
-  cameraLens: "Camera Lens",
-  directionalPosition: "Sun Position",
-  directionalColor: "Sun Color",
-  directionalIntensity: "Sun Intensity",
-  pointPosition: "Point Position",
-  pointColor: "Point Color",
-  pointIntensity: "Point Intensity",
-  spotPosition: "Spot Position",
-  spotColor: "Spot Color",
-  spotIntensity: "Spot Intensity",
-  ambientIntensity: "Ambient Intensity"
-};
 
 export class KeyframeTimelinePanel {
   private readonly timeline: Timeline;
@@ -1259,18 +1189,6 @@ export class KeyframeTimelinePanel {
   }
 }
 
-function isCameraTrack(kind: TimelineTrackKind): kind is "cameraPosition" | "cameraTarget" | "cameraLens" {
-  return kind === "cameraPosition" || kind === "cameraTarget" || kind === "cameraLens";
-}
-
-function isLightTrack(kind: TimelineTrackKind): boolean {
-  return LIGHT_TRACKS.includes(kind);
-}
-
-function isObjectTrack(kind: TimelineTrackKind): boolean {
-  return OBJECT_TRACKS.includes(kind);
-}
-
 function loadTimelineRowFilter(): TimelineRowFilter {
   try {
     return parseTimelineRowFilter(window.localStorage.getItem(ROW_FILTER_STORAGE_KEY));
@@ -1381,10 +1299,6 @@ function rangeSelection(track: TimelineTrackDocument, current: Set<string>, keyf
 function cssNumber(element: HTMLElement, property: string, fallback: number): number {
   const value = Number.parseFloat(getComputedStyle(element).getPropertyValue(property));
   return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-function trackLabel(kind: TimelineTrackKind, axis?: TimelineAxis): string {
-  return axis ? `${TRACK_LABELS[kind]} ${axis.toUpperCase()}` : TRACK_LABELS[kind];
 }
 
 function commonValue(values: number[]): string {

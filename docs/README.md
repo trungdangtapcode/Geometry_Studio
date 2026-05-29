@@ -74,6 +74,8 @@ PDF.
   label selection and active/disabled row states.
 - [Timeline Row Keying](timeline-row-keying.md) documents the AE-style diamond
   key buttons on each property row.
+- [Timeline Track Metadata](timeline-track-metadata.md) documents the shared
+  track groups, labels, colors, and type guards used by the timeline UI.
 - [Timeline Transform Keying](timeline-transform-keying.md) documents the
   `Set TRS` command for recording Position, Rotation, and Scale as one object
   pose.
