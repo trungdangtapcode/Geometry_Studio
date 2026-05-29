@@ -90,6 +90,8 @@ PDF.
   label selection and active/disabled row states.
 - [Timeline Row Keying](timeline-row-keying.md) documents the AE-style diamond
   key buttons on each property row.
+- [Timeline Visible Row Keying](timeline-visible-row-keying.md) documents the
+  `Set Visible` command for keying every currently visible dope-sheet row.
 - [Timeline Row Search](timeline-row-search.md) documents the AE-style row
   search field for quickly isolating object, camera, and light tracks.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
@@ -171,6 +173,9 @@ animation runtime where it fits:
   surface for object, camera, and light tracks.
 - Row-level diamond buttons add or update keys directly from the property row,
   matching common motion-graphics editor workflows.
+- The `Set Visible` command records every currently visible dope-sheet row in
+  one undoable operation, making row search and filters usable as property-set
+  keying tools.
 - Timeline row labels show live property values, so scrubbed Position, Rotation,
   Scale, material, texture, camera, and light values can be inspected directly
   from the dope sheet.

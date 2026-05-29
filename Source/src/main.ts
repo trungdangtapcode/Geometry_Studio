@@ -100,7 +100,7 @@ import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetBy
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
-import { KeyframeTimelinePanel } from "./ui/timelinePanel";
+import { KeyframeTimelinePanel, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
 import { bindUiDensityControl } from "./ui/density";
 import { studioTemplate } from "./ui/template";
 import { renderTransformInspector, type TransformAxis, type TransformProperty } from "./ui/transformInspector";
@@ -195,6 +195,7 @@ function boot(root: HTMLDivElement): void {
     onTimeChanged: setTimelineTime,
     onAddKeyframe: addTimelineKeyframe,
     onSetTransformKeyframes: setTransformTimelineKeyframes,
+    onSetVisibleKeyframes: setVisibleTimelineKeyframes,
     onDeleteKeyframes: deleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onPasteKeyframes: pasteTimelineKeyframes,
@@ -2037,6 +2038,15 @@ function boot(root: HTMLDivElement): void {
     return false;
   }
 
+  function upsertTimelineKeyframe(track: TimelineTrackDocument, time: number, value: [number, number, number]): TimelineKeyframeDocument {
+    const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+    const keyframe = existing ?? createTimelineKeyframe(time, value);
+    keyframe.value = [...value] as [number, number, number];
+    if (!existing) track.keyframes.push(keyframe);
+    sortTimelineKeyframes(track);
+    return keyframe;
+  }
+
   function setTransformTimelineKeyframes(): void {
     const entry = selectedEntry();
     if (!entry) {
@@ -2058,13 +2068,7 @@ function boot(root: HTMLDivElement): void {
     recordHistory();
     (["position", "rotation", "scale"] as const).forEach((kind) => {
       const track = ensureTimelineTrack(objectTimeline, kind);
-      const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-      if (existing) {
-        existing.value = values[kind];
-      } else {
-        track.keyframes.push(createTimelineKeyframe(time, values[kind]));
-      }
-      sortTimelineKeyframes(track);
+      upsertTimelineKeyframe(track, time, values[kind]);
     });
     entry.animation = "none";
     sceneTimeline.currentTime = time;
@@ -2073,6 +2077,79 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`Position, rotation, and scale keys set at ${formatNumber(time)}s`, "good");
+  }
+
+  function setVisibleTimelineKeyframes(rows: TimelineVisibleRowTarget[]): void {
+    const targets = dedupeVisibleTimelineTargets(rows);
+    if (targets.length === 0) {
+      showToast("No visible timeline rows to key.", "bad");
+      return;
+    }
+
+    let lockedCount = 0;
+    const keyableTargets = targets.filter((target) => {
+      if (!isCameraTrackKind(target.kind) && !isLightTrackKind(target.kind) && !entries.has(target.targetId)) return false;
+      const existingTrack = activeTimelineTrack(target.kind, target.targetId);
+      if (!existingTrack?.locked) return true;
+      lockedCount += 1;
+      return false;
+    });
+
+    if (keyableTargets.length === 0) {
+      showToast(lockedCount > 0 ? "All visible timeline rows are locked." : "No keyable visible timeline rows.", "bad");
+      return;
+    }
+
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const keyframeIds: string[] = [];
+    let cameraChanged = false;
+    let lightChanged = false;
+    let objectChanged = false;
+
+    recordHistory();
+    keyableTargets.forEach((target) => {
+      if (isCameraTrackKind(target.kind)) {
+        const track = ensureTimelineTrack(ensureCameraTimeline(sceneTimeline), target.kind);
+        keyframeIds.push(upsertTimelineKeyframe(track, time, timelineValueForCamera(target.kind)).id);
+        cameraChanged = true;
+        return;
+      }
+
+      if (isLightTrackKind(target.kind)) {
+        const track = ensureTimelineTrack(ensureLightTimeline(sceneTimeline), target.kind);
+        keyframeIds.push(upsertTimelineKeyframe(track, time, timelineValueForLight(target.kind)).id);
+        lightChanged = true;
+        return;
+      }
+
+      const entry = entries.get(target.targetId);
+      if (!entry) return;
+      const track = ensureTimelineTrack(ensureObjectTimeline(sceneTimeline, entry.id), target.kind);
+      keyframeIds.push(upsertTimelineKeyframe(track, time, timelineValueForEntry(entry, target.kind)).id);
+      if (isObjectTransformTrackKind(target.kind)) entry.animation = "none";
+      objectChanged = true;
+    });
+
+    sceneTimeline.currentTime = time;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    if (cameraChanged) applyCameraTimeline();
+    if (lightChanged) applyLightTimeline();
+    if (objectChanged) applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(keyframeIds);
+
+    const skipped = lockedCount > 0 ? ` (${lockedCount} locked skipped)` : "";
+    showToast(`${keyframeIds.length} visible ${keyframeIds.length === 1 ? "key" : "keys"} set at ${formatNumber(time)}s${skipped}`, "good");
+  }
+
+  function dedupeVisibleTimelineTargets(rows: TimelineVisibleRowTarget[]): TimelineVisibleRowTarget[] {
+    const targets = new Map<string, TimelineVisibleRowTarget>();
+    rows.forEach((row) => {
+      const key = `${row.targetId}:${row.kind}`;
+      if (!targets.has(key)) targets.set(key, row);
+    });
+    return [...targets.values()];
   }
 
   function bakeObjectAnimationPreset(entry: SceneEntry, mode: AnimationMode, clearExisting = true): void {

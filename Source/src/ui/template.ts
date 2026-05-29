@@ -98,6 +98,7 @@ export function studioTemplate(): string {
               </label>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
               <button class="mini-button" id="timeline-set-transform" type="button"><span data-icon="Box"></span><span>Set TRS</span></button>
+              <button class="mini-button" id="timeline-set-visible" type="button" title="Set keys on every currently visible timeline row"><span data-icon="ListChecks"></span><span>Set Visible</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-in" type="button" data-interpolation="easeIn"><span data-icon="CornerDownRight"></span><span>Ease In</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-out" type="button" data-interpolation="easeOut"><span data-icon="CornerRightDown"></span><span>Ease Out</span></button>

@@ -46,6 +46,7 @@ export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
   onAddKeyframe(kind: TimelineTrackKind): void;
   onSetTransformKeyframes(): void;
+  onSetVisibleKeyframes(rows: TimelineVisibleRowTarget[]): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onPasteKeyframes(): void;
@@ -82,6 +83,11 @@ export interface KeyframeTimelineCallbacks {
   onDragFinished(): void;
   onSettingsChanged(patch: TimelineSettingsPatch): void;
   onTogglePlayback(): void;
+}
+
+export interface TimelineVisibleRowTarget {
+  targetId: string;
+  kind: TimelineTrackKind;
 }
 
 export interface TimelineKeyframeEditPatch {
@@ -137,6 +143,7 @@ export class KeyframeTimelinePanel {
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
+  private readonly setVisibleButton = query<HTMLButtonElement>("#timeline-set-visible");
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly soloTrackButton = query<HTMLButtonElement>("#timeline-solo-track");
@@ -406,6 +413,9 @@ export class KeyframeTimelinePanel {
     });
     this.setTransformButton.addEventListener("click", () => {
       this.callbacks.onSetTransformKeyframes();
+    });
+    this.setVisibleButton.addEventListener("click", () => {
+      this.callbacks.onSetVisibleKeyframes(this.visibleRowTargets());
     });
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
@@ -952,6 +962,18 @@ export class KeyframeTimelinePanel {
     if (!track?.keyframes.length) return "";
     const value = evaluateTimelineTrack(track, time);
     return value ? formatRowValue(kind, value, axis) : "";
+  }
+
+  private visibleRowTargets(): TimelineVisibleRowTarget[] {
+    const targets = new Map<string, TimelineVisibleRowTarget>();
+    this.labels.querySelectorAll<HTMLElement>(".timeline-track-label").forEach((row) => {
+      const targetId = row.dataset.objectId;
+      const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
+      if (!targetId || !kind) return;
+      const key = `${targetId}:${kind}`;
+      if (!targets.has(key)) targets.set(key, { targetId, kind });
+    });
+    return [...targets.values()];
   }
 
   private labelClass(active: boolean, enabled: boolean, locked: boolean, solo: boolean, muted: boolean, hasKeyframes: boolean, extra = ""): string {

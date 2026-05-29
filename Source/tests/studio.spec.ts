@@ -64,6 +64,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-selected-start")).toBeVisible();
   await expect(page.locator("#timeline-selected-end")).toBeVisible();
   await expect(page.locator("#timeline-set-transform")).toBeVisible();
+  await expect(page.locator("#timeline-set-visible")).toBeVisible();
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
   await expect(page.locator("#timeline-ease-in")).toBeVisible();
   await expect(page.locator("#timeline-ease-out")).toBeVisible();
@@ -338,6 +339,47 @@ test("shows row key diamonds only at playhead keys", async ({ page }) => {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(rowKey).toHaveAttribute("title", "Set key at playhead");
+  expect(errors).toEqual([]);
+});
+
+test("sets keyframes for visible timeline rows", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-row-search").fill("texture");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureOffset"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRotation"]')).toBeVisible();
+  await page.locator("#timeline-set-visible").click();
+  await expect(page.locator("#timeline-key-label")).toContainText("selected keyframes");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const keyedKinds = objectTimeline.tracks
+    .filter((track: { keyframes: Array<{ time: number }> }) => track.keyframes.some((keyframe) => keyframe.time === 0))
+    .map((track: { kind: string }) => track.kind);
+  expect(keyedKinds).toEqual(expect.arrayContaining(["objectTextureRepeat", "objectTextureOffset", "objectTextureRotation"]));
+  expect(keyedKinds).not.toContain("objectColor");
   expect(errors).toEqual([]);
 });
 
