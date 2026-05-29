@@ -255,6 +255,16 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   });
   expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeGreaterThan(2.1);
   await page.locator("#undo-btn").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
+  const deletableKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  await expect(deletableKey).toBeVisible();
+  await deletableKey.click();
+  await page.keyboard.press("Delete");
+  await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
+  await expect(page.locator("#selection-summary")).toContainText("Cube");
+  await expect(page.locator("#outliner")).toContainText("Cube");
+  await page.locator("#undo-btn").click();
+  await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   expect(errors).toEqual([]);
 });
 

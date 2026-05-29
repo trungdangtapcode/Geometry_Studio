@@ -1092,7 +1092,11 @@ function boot(root: HTMLDivElement): void {
       setTimelineTime(sceneTimeline.workEnd);
       return;
     }
-    if (key === "delete" || key === "backspace") deleteSelected();
+    if (key === "delete" || key === "backspace") {
+      const selectedTimelineKeys = timelinePanel.selectedKeyframeIdsList();
+      if (selectedTimelineKeys.length > 0) deleteTimelineKeyframes(selectedTimelineKeys);
+      else deleteSelected();
+    }
   }
 
   function setTransformMode(mode: "translate" | "rotate" | "scale"): void {
@@ -1723,12 +1727,13 @@ function boot(root: HTMLDivElement): void {
   }
 
   function deleteTimelineKeyframes(keyframeIds: string[]): void {
-    if (keyframeIds.length === 0) {
-      showToast("Select a keyframe in the timeline first.", "bad");
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (sources.length === 0) {
+      showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
       return;
     }
     recordHistory();
-    const ids = new Set(keyframeIds);
+    const ids = new Set(sources.map((source) => source.keyframe.id));
     sceneTimeline.camera.tracks.forEach((track) => {
       track.keyframes = track.keyframes.filter((keyframe) => !ids.has(keyframe.id));
     });
@@ -1747,7 +1752,7 @@ function boot(root: HTMLDivElement): void {
     applyLightTimeline();
     applyObjectPropertyTimeline();
     updateAllUI();
-    showToast("Keyframe deleted", "good");
+    showToast(`${ids.size} keyframe${ids.size === 1 ? "" : "s"} deleted`, "good");
   }
 
   function copyTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {

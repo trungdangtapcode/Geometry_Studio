@@ -90,6 +90,8 @@ animation runtime where it fits:
   interpolation.
 - Frame-step keyframe nudge controls retime selected or playhead keyframes
   without dragging.
+- Delete and Backspace remove selected timeline keyframes before falling back to
+  scene-object deletion, matching motion-graphics editor expectations.
 - A compact keyframe editor allows precise selected/playhead keyframe time and
   value edits.
 - Track enable/disable controls mute individual property tracks without deleting
