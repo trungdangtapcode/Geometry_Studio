@@ -25,6 +25,8 @@ PDF.
   Plastic, Glass, Clay, and legacy material comparison presets.
 - [Environment Lighting Presets](environment-lighting.md) documents generated
   PMREM studio lighting for PBR materials without runtime network assets.
+- [OBJ + MTL Import](obj-mtl-import.md) documents multi-file OBJ material
+  loading and imported source-material preservation.
 - [AE-Style Timeline Integration Research](ae-timeline-integration-research.md)
   records the no-reinvention decision for the next timeline phase: keep
   `animation-timeline-js` as the dope-sheet component and integrate proven

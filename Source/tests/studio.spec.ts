@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { Buffer } from "node:buffer";
 
 test("renders the studio and core controls", async ({ page }) => {
   test.setTimeout(240_000);
@@ -187,6 +188,49 @@ test("renders the studio and core controls", async ({ page }) => {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("button", { name: "Cube", exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("imports OBJ with companion MTL files", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#model-input").setInputFiles([
+    {
+      name: "tea-cup.obj",
+      mimeType: "text/plain",
+      buffer: Buffer.from(`
+mtllib tea-cup.mtl
+o Cup
+v 0 0 0
+v 1 0 0
+v 0 1 0
+vt 0 0
+vt 1 0
+vt 0 1
+vn 0 0 1
+usemtl CupRed
+f 1/1/1 2/2/1 3/3/1
+`)
+    },
+    {
+      name: "tea-cup.mtl",
+      mimeType: "text/plain",
+      buffer: Buffer.from(`
+newmtl CupRed
+Kd 0.85 0.12 0.08
+Ks 0.2 0.2 0.2
+Ns 42
+`)
+    }
+  ]);
+
+  await expect(page.locator(".outliner-item", { hasText: "tea cup" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("#selection-summary")).toContainText("tea cup");
   expect(errors).toEqual([]);
 });
 
@@ -1687,11 +1731,12 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneJson).toBeTruthy();
   const sceneDocument = JSON.parse(sceneJson as string);
 
-  expect(sceneDocument.version).toBe(3);
+  expect(sceneDocument.version).toBe(5);
   expect(sceneDocument.rendering).toEqual({
     toneMapping: "reinhard",
     exposure: 1.35,
-    shadowQuality: "medium"
+    shadowQuality: "medium",
+    environment: "studio"
   });
   expect(sceneDocument.display.motionPath).toBe(true);
   expect(sceneDocument.timeline.version).toBe(9);

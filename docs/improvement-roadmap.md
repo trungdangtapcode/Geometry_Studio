@@ -23,6 +23,7 @@ Implemented and tested:
   and scene JSON persistence.
 - PBR material presets for Ceramic, Metal, Plastic, Glass, and Clay.
 - Generated PMREM environment lighting presets for PBR image-based lighting.
+- OBJ + MTL multi-file import with source-material preservation.
 
 ## Research Basis
 
@@ -51,7 +52,7 @@ Recommended order:
 
 1. Rendering Lab panel. Implemented: tone mapping, exposure, and shadow quality.
 2. PBR material and environment lighting upgrades. Implemented.
-3. OBJ + MTL import workflow.
+3. OBJ + MTL import workflow. Implemented.
 4. Post-processing toggles.
 5. Timeline polish.
 6. Optional path-traced still preview.
@@ -100,15 +101,17 @@ Why this matters:
 
 ## Phase 3: OBJ + MTL Import
 
-Current OBJ import handles geometry well, but many downloaded OBJ models rely on
-companion `.mtl` files and texture images.
+Implemented. OBJ import now handles geometry plus companion `.mtl` files and
+texture images selected in the same import set.
 
 Implementation direction:
 
 - Support multi-file drag/drop: `.obj`, `.mtl`, and image textures together.
-- Parse `.mtl` through `MTLLoader`.
-- Connect loaded materials to `OBJLoader.setMaterials`.
-- Show a clear warning if the OBJ references missing material or texture files.
+  Implemented.
+- Parse `.mtl` through `MTLLoader`. Implemented.
+- Connect loaded materials to `OBJLoader.setMaterials`. Implemented.
+- Show a clear warning if the OBJ references missing material files.
+  Implemented.
 - Keep `.glb` as the recommended format for fully packaged models.
 
 Acceptance:

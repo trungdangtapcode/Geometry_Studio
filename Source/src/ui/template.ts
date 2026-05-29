@@ -203,9 +203,9 @@ export function studioTemplate(): string {
         <button class="tool-button primitive-btn" type="button" data-primitive="parametric" aria-label="Parametric Surface" title="Parametric Surface"><span data-icon="Waves"></span></button>
         <button class="tool-button primitive-btn" type="button" data-primitive="extrude" aria-label="Extruded Shape" title="Extruded Shape"><span data-icon="Gem"></span></button>
         <button class="tool-button" id="sample-model-btn" type="button" aria-label="Built-in sample model" title="Built-in sample model"><span data-icon="Bot"></span></button>
-        <label class="tool-button import-button" aria-label="Import model" title="Import GLB, GLTF, OBJ, STL">
+        <label class="tool-button import-button" aria-label="Import model" title="Import GLB, GLTF, OBJ, MTL, STL">
           <span data-icon="Upload"></span>
-          <input id="model-input" type="file" accept=".glb,.gltf,.obj,.stl" />
+          <input id="model-input" type="file" accept=".glb,.gltf,.obj,.mtl,.stl,.bin,.jpg,.jpeg,.png,.webp" multiple />
         </label>
       </nav>
 

@@ -91,7 +91,7 @@ import type {
 import { createEnvironmentController, environmentPreset } from "./renderer/environment";
 import { createRenderPipeline } from "./renderer/pipeline";
 import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
-import { loadModelFromFile } from "./scene/importers";
+import { loadModelFromFiles } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
 import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetById } from "./scene/materialPresets";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
@@ -317,6 +317,7 @@ function boot(root: HTMLDivElement): void {
     color: THREE.Color;
     renderMode?: RenderMode;
     materialMode?: MaterialMode;
+    useSourceMaterials?: boolean;
     animation?: AnimationMode;
     textureName?: string;
     opacity?: number;
@@ -340,6 +341,7 @@ function boot(root: HTMLDivElement): void {
       sourceObject: config.sourceObject,
       renderMode: config.renderMode ?? "solid",
       materialMode: config.materialMode ?? "standard",
+      useSourceMaterials: config.useSourceMaterials ?? false,
       color: config.color,
       opacity: config.opacity ?? 1,
       roughness: config.roughness ?? 0.42,
@@ -494,6 +496,7 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#material-mode").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
         entry.materialMode = (event.target as HTMLSelectElement).value as MaterialMode;
+        entry.useSourceMaterials = false;
         rebuildEntryVisual(entry);
       });
     });
@@ -988,6 +991,7 @@ function boot(root: HTMLDivElement): void {
   function applyTexture(entry: SceneEntry, textureName: string): void {
     recordHistory();
     resourceTracker.disposeResource(entry.texture);
+    entry.useSourceMaterials = false;
     entry.textureName = textureName;
     entry.texture = textureName === "none" ? null : resourceTracker.track(makeTexturePreset(textureName));
     entry.materialMode = entry.materialMode === "normal" ? "standard" : entry.materialMode;
@@ -1000,6 +1004,7 @@ function boot(root: HTMLDivElement): void {
     updateSelectedEntry((entry) => {
       const presetConfig = materialPresetById(preset);
       if (!presetConfig) return;
+      entry.useSourceMaterials = false;
       applyMaterialPresetValues(entry, presetConfig);
       if (presetConfig.textureName) {
         if (entry.textureName !== presetConfig.textureName) {
@@ -1032,6 +1037,7 @@ function boot(root: HTMLDivElement): void {
       (texture) => {
         resourceTracker.disposeResource(entry.texture);
         texture.colorSpace = THREE.SRGBColorSpace;
+        entry.useSourceMaterials = false;
         entry.texture = resourceTracker.track(texture);
         entry.textureName = "uploaded";
         entry.materialMode = entry.materialMode === "normal" ? "standard" : entry.materialMode;
@@ -1052,16 +1058,21 @@ function boot(root: HTMLDivElement): void {
 
   async function handleModelImport(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) await importModelFile(file);
+    const files = Array.from(input.files ?? []);
+    if (files.length > 0) await importModelFiles(files);
     input.value = "";
   }
 
-  async function importModelFile(file: File): Promise<void> {
+  async function importModelFiles(files: File[]): Promise<void> {
+    const file = files.find(isModelFile);
+    if (!file) {
+      showToast("Choose a GLB, GLTF, OBJ, or STL model file.", "bad");
+      return;
+    }
     try {
       recordHistory();
       setProgress(`Loading ${file.name}`, 0.05);
-      const imported = await loadModelFromFile(file, (progress) => {
+      const imported = await loadModelFromFiles(files, (progress) => {
         setProgress(`Loading ${progress.label}`, progress.ratio);
       });
       const entry = makeEntry({
@@ -1072,6 +1083,7 @@ function boot(root: HTMLDivElement): void {
         color: new THREE.Color("#d8dadf"),
         renderMode: "solid",
         materialMode: "standard",
+        useSourceMaterials: imported.useSourceMaterials,
         animation: "none",
         textureName: "none"
       });
@@ -1082,7 +1094,7 @@ function boot(root: HTMLDivElement): void {
       entries.set(entry.id, entry);
       setSelected(entry.id);
       setProgress("Model loaded", 1);
-      showToast(`Model imported: ${file.name}`, "good");
+      showToast(imported.warnings[0] ?? `Model imported: ${file.name}`, imported.warnings.length > 0 ? "bad" : "good");
     } catch (error) {
       setProgress("Import failed", 0);
       showToast(error instanceof Error ? error.message : "Model import failed.", "bad");
@@ -1455,6 +1467,7 @@ function boot(root: HTMLDivElement): void {
   function disposeEntry(entry: SceneEntry): void {
     resourceTracker.disposeObject(entry.root);
     resourceTracker.disposeResource(entry.sourceGeometry);
+    if (entry.sourceObject) resourceTracker.disposeObject(entry.sourceObject);
     resourceTracker.disposeResource(entry.texture);
   }
 
@@ -1625,6 +1638,7 @@ function boot(root: HTMLDivElement): void {
         color: new THREE.Color(object.color),
         renderMode: object.renderMode,
         materialMode: object.materialMode,
+        useSourceMaterials: object.useSourceMaterials ?? false,
         animation: object.animation,
         textureName: object.textureName,
         opacity: object.opacity ?? 1,
@@ -2953,10 +2967,12 @@ function boot(root: HTMLDivElement): void {
   function handleDrop(event: DragEvent): void {
     event.preventDefault();
     query<HTMLDivElement>("#drop-overlay").classList.remove("active");
-    const file = event.dataTransfer?.files?.[0];
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    const file = files[0];
     if (!file) return;
-    if (file.type.startsWith("image/")) void importTextureFile(file);
-    else void importModelFile(file);
+    if (files.some(isModelFile)) void importModelFiles(files);
+    else if (file.type.startsWith("image/")) void importTextureFile(file);
+    else showToast("Drop a model file or image texture.", "bad");
   }
 
   function setProgress(label: string, ratio: number): void {
@@ -3077,6 +3093,7 @@ function boot(root: HTMLDivElement): void {
       type: entry.type,
       renderMode: entry.renderMode,
       materialMode: entry.materialMode,
+      useSourceMaterials: entry.useSourceMaterials,
       color: `#${entry.color.getHexString()}`,
       opacity: entry.opacity,
       roughness: entry.roughness,
@@ -3107,4 +3124,8 @@ function markerColor(index: number): string {
 function numericObjectId(id: string): number {
   const match = id.match(/^object-(\d+)$/);
   return match ? Number(match[1]) : 0;
+}
+
+function isModelFile(file: File): boolean {
+  return /\.(glb|gltf|obj|stl)$/i.test(file.name);
 }

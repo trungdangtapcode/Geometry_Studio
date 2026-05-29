@@ -69,6 +69,7 @@ export interface SceneEntry {
   sourceObject?: THREE.Object3D;
   renderMode: RenderMode;
   materialMode: MaterialMode;
+  useSourceMaterials: boolean;
   color: THREE.Color;
   opacity: number;
   roughness: number;
@@ -111,7 +112,7 @@ export interface LoadingStatus {
 }
 
 export interface SceneDocument {
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3 | 4 | 5;
   savedAt: string;
   selectedId: string | null;
   playing: boolean;
@@ -211,6 +212,7 @@ export interface SerializedObject {
   type: PrimitiveType | "model";
   renderMode: RenderMode;
   materialMode: MaterialMode;
+  useSourceMaterials?: boolean;
   color: string;
   opacity?: number;
   roughness?: number;

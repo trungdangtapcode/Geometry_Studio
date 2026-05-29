@@ -20,7 +20,7 @@ export interface DocumentContext {
 
 export function createSceneDocument(context: DocumentContext): SceneDocument {
   return {
-    version: 4,
+    version: 5,
     savedAt: new Date().toISOString(),
     selectedId: context.selectedId,
     playing: context.playing,
@@ -57,11 +57,11 @@ export function createSceneDocument(context: DocumentContext): SceneDocument {
 export function validateSceneDocument(value: unknown): SceneDocument {
   if (!value || typeof value !== "object") throw new Error("Scene file is not an object.");
   const document = value as SceneDocument & { timeline?: unknown };
-  if (document.version !== 1 && document.version !== 2 && document.version !== 3 && document.version !== 4) throw new Error("Unsupported scene document version.");
+  if (document.version !== 1 && document.version !== 2 && document.version !== 3 && document.version !== 4 && document.version !== 5) throw new Error("Unsupported scene document version.");
   if (!Array.isArray(document.objects)) throw new Error("Scene file is missing objects.");
   return {
     ...document,
-    version: 4,
+    version: 5,
     rendering: normalizeRenderSettings(document.rendering),
     timeline: normalizeTimelineDocument(document.timeline, new Set(document.objects.map((object) => object.id)))
   };
@@ -75,6 +75,7 @@ function serializeEntry(entry: SceneEntry): SerializedObject {
     type: entry.type,
     renderMode: entry.renderMode,
     materialMode: entry.materialMode,
+    useSourceMaterials: entry.useSourceMaterials,
     color: `#${entry.color.getHexString()}`,
     opacity: entry.opacity,
     roughness: entry.roughness,

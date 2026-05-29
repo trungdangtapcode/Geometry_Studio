@@ -70,7 +70,9 @@ export function buildModelVisual(entry: SceneEntry, tracker?: ResourceTracker): 
     const mesh = object as THREE.Mesh;
     mesh.geometry = tracker?.track(mesh.geometry.clone()) ?? mesh.geometry.clone();
     if (entry.renderMode === "solid") {
-      mesh.material = createMaterial(entry, tracker);
+      mesh.material = entry.useSourceMaterials && mesh.material
+        ? cloneSourceMaterials(mesh.material, tracker)
+        : createMaterial(entry, tracker);
       return;
     }
 
@@ -93,6 +95,47 @@ export function buildModelVisual(entry: SceneEntry, tracker?: ResourceTracker): 
   });
 
   return clone;
+}
+
+function cloneSourceMaterials(material: THREE.Material | THREE.Material[], tracker?: ResourceTracker): THREE.Material | THREE.Material[] {
+  return Array.isArray(material)
+    ? material.map((item) => cloneSourceMaterial(item, tracker))
+    : cloneSourceMaterial(material, tracker);
+}
+
+function cloneSourceMaterial(material: THREE.Material, tracker?: ResourceTracker): THREE.Material {
+  const clone = material.clone();
+  cloneTextureSlots(clone, tracker);
+  return tracker?.track(clone) ?? clone;
+}
+
+function cloneTextureSlots(material: THREE.Material, tracker?: ResourceTracker): void {
+  const textureSlots = [
+    "alphaMap",
+    "aoMap",
+    "bumpMap",
+    "clearcoatMap",
+    "clearcoatNormalMap",
+    "clearcoatRoughnessMap",
+    "displacementMap",
+    "emissiveMap",
+    "envMap",
+    "lightMap",
+    "map",
+    "metalnessMap",
+    "normalMap",
+    "roughnessMap",
+    "sheenColorMap",
+    "sheenRoughnessMap",
+    "specularColorMap",
+    "specularIntensityMap",
+    "transmissionMap"
+  ];
+  const record = material as unknown as Record<string, unknown>;
+  textureSlots.forEach((slot) => {
+    const value = record[slot];
+    if (value instanceof THREE.Texture) record[slot] = tracker?.track(value.clone()) ?? value.clone();
+  });
 }
 
 export function makeTexturePreset(name: string): THREE.Texture {

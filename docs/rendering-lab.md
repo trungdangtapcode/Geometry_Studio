@@ -21,7 +21,7 @@ lighting from the inspector.
 
 ## Persistence
 
-Scene JSON is now document version 4. Older scene versions load through
+Scene JSON is now document version 5. Older scene versions load through
 defaults:
 
 ```json
