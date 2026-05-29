@@ -24,6 +24,8 @@ motion direction, distance, and timing.
   - `smooth` samples smoothstep interpolation.
 - Draws a teal curve for the sampled path.
 - Draws amber points at the authored key positions.
+- Draws compact viewport time labels at authored key positions, capped for
+  dense tracks to avoid clutter.
 - Exposes a `Motion Path` display toggle in the inspector.
 - Persists the display setting in scene JSON as `display.motionPath`.
 
@@ -32,10 +34,10 @@ motion direction, distance, and timing.
 `Source/src/scene/motionPath.ts` owns all Three.js objects required for the
 viewport helper:
 
-- `createMotionPathRig()` creates a persistent group containing a line and key
-  point cloud.
+- `createMotionPathRig()` creates a persistent group containing a line, key
+  point cloud, and label group.
 - `updateMotionPath()` samples the selected object's Position track and updates
-  the helper geometry.
+  the helper geometry plus time-label sprites.
 - `clearMotionPath()` hides and clears the helper when no valid track exists.
 
 `main.ts` only coordinates selection, timeline edits, scene restore, and display
@@ -48,7 +50,8 @@ toggle state. The sampling logic stays out of the application shell.
 3. `updateAllUI()` or timeline drag updates call `syncMotionPath()`.
 4. `syncMotionPath()` passes the current timeline, selected object, and display
    flag into the scene helper.
-5. The helper samples keyframes and replaces the line/point geometries.
+5. The helper samples keyframes, replaces the line/point geometries, and rebuilds
+   the time-label sprites.
 
 The helper does not mutate object transforms or keyframes. It is a read-only
 visualization layer.
@@ -57,7 +60,6 @@ visualization layer.
 
 - Per-axis path color for X/Y/Z editing modes.
 - Tangent handles if the timeline gains Bezier interpolation.
-- Path labels showing keyframe times.
 - Ghosted object thumbnails at major keyframes.
 - Path editing by dragging viewport key markers, with updates routed through the
   command system for Undo/Redo.

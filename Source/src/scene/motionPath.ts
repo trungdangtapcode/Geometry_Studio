@@ -7,11 +7,13 @@ export interface MotionPathRig {
   group: THREE.Group;
   line: THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>;
   keyPoints: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
+  labels: THREE.Group;
 }
 
 const SAMPLE_RATE = 12;
 const MIN_SEGMENT_SAMPLES = 2;
 const MAX_SEGMENT_SAMPLES = 28;
+const MAX_LABELS = 16;
 
 export function createMotionPathRig(): MotionPathRig {
   const group = new THREE.Group();
@@ -42,8 +44,12 @@ export function createMotionPathRig(): MotionPathRig {
   keyPoints.name = "Motion Path Keyframes";
   keyPoints.renderOrder = 51;
 
-  group.add(line, keyPoints);
-  return { group, line, keyPoints };
+  const labels = new THREE.Group();
+  labels.name = "Motion Path Time Labels";
+  labels.renderOrder = 52;
+
+  group.add(line, keyPoints, labels);
+  return { group, line, keyPoints, labels };
 }
 
 export function updateMotionPath(
@@ -78,16 +84,19 @@ export function updateMotionPath(
 
   replaceGeometryPositions(rig.line, linePositions);
   replaceGeometryPositions(rig.keyPoints, keyPositions);
+  updateKeyLabels(rig.labels, keyframes);
   rig.group.visible = true;
 }
 
 export function clearMotionPath(rig: MotionPathRig): void {
   replaceGeometryPositions(rig.line, []);
   replaceGeometryPositions(rig.keyPoints, []);
+  clearKeyLabels(rig.labels);
   rig.group.visible = false;
 }
 
 export function disposeMotionPathRig(rig: MotionPathRig): void {
+  clearKeyLabels(rig.labels);
   rig.line.geometry.dispose();
   rig.line.material.dispose();
   rig.keyPoints.geometry.dispose();
@@ -108,6 +117,71 @@ function sampleTrackPositions(track: TimelineTrackDocument, keyframes: TimelineK
     }
   }
   return positions;
+}
+
+function updateKeyLabels(group: THREE.Group, keyframes: TimelineKeyframeDocument[]): void {
+  clearKeyLabels(group);
+  visibleLabelKeyframes(keyframes).forEach((keyframe) => {
+    const sprite = createTimeLabelSprite(`${formatTime(keyframe.time)}s`);
+    sprite.position.fromArray(keyframe.value);
+    sprite.position.y += 0.28;
+    group.add(sprite);
+  });
+}
+
+function visibleLabelKeyframes(keyframes: TimelineKeyframeDocument[]): TimelineKeyframeDocument[] {
+  if (keyframes.length <= MAX_LABELS) return keyframes;
+  const result: TimelineKeyframeDocument[] = [];
+  const lastIndex = keyframes.length - 1;
+  for (let index = 0; index < MAX_LABELS; index += 1) {
+    result.push(keyframes[Math.round((index / (MAX_LABELS - 1)) * lastIndex)]);
+  }
+  return result;
+}
+
+function createTimeLabelSprite(label: string): THREE.Sprite {
+  const canvas = document.createElement("canvas");
+  canvas.width = 160;
+  canvas.height = 64;
+  const context = canvas.getContext("2d");
+  if (context) {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "rgba(24, 31, 37, 0.82)";
+    roundRect(context, 8, 12, 144, 38, 8);
+    context.fill();
+    context.strokeStyle = "rgba(18, 184, 166, 0.9)";
+    context.lineWidth = 2;
+    roundRect(context, 8, 12, 144, 38, 8);
+    context.stroke();
+    context.fillStyle = "#ffffff";
+    context.font = "700 22px Arial, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(label, 80, 32);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.name = `Motion Path Label ${label}`;
+  sprite.renderOrder = 52;
+  sprite.scale.set(0.78, 0.31, 1);
+  return sprite;
+}
+
+function clearKeyLabels(group: THREE.Group): void {
+  group.children.forEach((child) => {
+    if (child instanceof THREE.Sprite) {
+      child.material.map?.dispose();
+      child.material.dispose();
+    }
+  });
+  group.clear();
 }
 
 function replaceGeometryPositions(
@@ -131,4 +205,22 @@ function emptyGeometry(): THREE.BufferGeometry {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function formatTime(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function roundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number): void {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
 }

@@ -308,6 +308,13 @@ test("sets transform keys from inspector diamonds", async ({ page }) => {
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(positionKey).toHaveAttribute("title", "Set key at playhead");
+  await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await positionKey.click();
+  await expect(positionKey).toHaveAttribute("title", "Update key at playhead");
+  await expect(page.locator("#motion-path-toggle")).toBeChecked();
 
   await page.locator('.transform-input[data-prop="rotation"][data-axis="y"]').evaluate((input) => {
     (input as HTMLInputElement).value = "45";
