@@ -1116,6 +1116,13 @@ function boot(root: HTMLDivElement): void {
       showToast("Timeline fit to duration", "good");
       return;
     }
+    if (key === "m" && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      if (event.altKey) stepTimelineMarker(-1);
+      else if (event.shiftKey) stepTimelineMarker(1);
+      else addTimelineMarker("");
+      return;
+    }
     if (key === "t") setTransformMode("translate");
     if (key === "r") setTransformMode("rotate");
     if (key === "s") setTransformMode("scale");

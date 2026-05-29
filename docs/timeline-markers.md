@@ -15,6 +15,16 @@ the evaluator can reload a scene and keep its timeline annotations.
 - Marker chips in the marker strip jump the playhead when clicked.
 - Deleting removes the marker at the playhead.
 
+## Keyboard Workflow
+
+- `M` adds a marker at the snapped playhead time, or updates the marker already
+  at that time.
+- `Shift+M` jumps to the next marker.
+- `Alt+M` jumps to the previous marker.
+
+Keyboard marker commands are ignored while a text field or select menu has
+focus, so typing marker names does not trigger timeline navigation.
+
 ## Schema
 
 Timeline schema v9 adds:

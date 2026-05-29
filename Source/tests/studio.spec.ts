@@ -478,6 +478,18 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(page.locator(".timeline-marker")).toContainText("Opening Cue");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("m");
+  await expect(page.locator(".timeline-marker")).toHaveCount(2);
+  await expect(page.locator(".timeline-marker").nth(1)).toContainText("Marker 2");
+  await page.keyboard.press("Alt+M");
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(0.267, 2);
+  await page.keyboard.press("Shift+M");
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(2, 2);
   await page.locator("#timeline-auto-key").check();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
@@ -741,9 +753,11 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
   expect(sceneDocument.timeline.workStart).toBe(0.5);
   expect(sceneDocument.timeline.workEnd).toBe(4.5);
   expect(sceneDocument.timeline.autoKey).toBe(true);
-  expect(sceneDocument.timeline.markers).toHaveLength(1);
+  expect(sceneDocument.timeline.markers).toHaveLength(2);
   expect(sceneDocument.timeline.markers[0].label).toBe("Opening Cue");
   expect(sceneDocument.timeline.markers[0].time).toBeCloseTo(0.267, 3);
+  expect(sceneDocument.timeline.markers[1].label).toBe("Marker 2");
+  expect(sceneDocument.timeline.markers[1].time).toBeCloseTo(2, 3);
   expect(sceneDocument.timeline.camera.tracks).toHaveLength(1);
   expect(sceneDocument.timeline.camera.tracks[0].kind).toBe("cameraPosition");
   expect(sceneDocument.timeline.camera.tracks[0].keyframes).toHaveLength(2);

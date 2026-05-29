@@ -123,7 +123,9 @@ animation runtime where it fits:
   timeline scale changes without leaving the keyboard.
 - Selected objects with two or more Position keys show a viewport motion path,
   turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
-- Timeline markers add named cue points for animation beats and demo segments.
+- Timeline markers add named cue points for animation beats and demo segments,
+  with `M`, `Shift+M`, and `Alt+M` shortcuts for keyboard authoring and marker
+  navigation.
 - Work area editing supports Start/Out buttons plus `B`, `N`, and `Shift+B`
   keyboard workflows for fast preview-range authoring.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
