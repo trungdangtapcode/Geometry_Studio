@@ -79,6 +79,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-select-workarea")).toBeVisible();
+  await expect(page.locator("#timeline-select-visible")).toBeVisible();
   await expect(page.locator("#timeline-preview-selection")).toBeVisible();
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
   await expect(page.locator("#timeline-nudge-right")).toBeVisible();
@@ -380,6 +381,48 @@ test("sets keyframes for visible timeline rows", async ({ page }) => {
     .map((track: { kind: string }) => track.kind);
   expect(keyedKinds).toEqual(expect.arrayContaining(["objectTextureRepeat", "objectTextureOffset", "objectTextureRotation"]));
   expect(keyedKinds).not.toContain("objectColor");
+  expect(errors).toEqual([]);
+});
+
+test("selects keyframes on visible timeline rows", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-row-search").fill("texture");
+  const visibleTextureRows = page.locator(
+    '.timeline-track-label[data-track-kind="objectTextureRepeat"], ' +
+    '.timeline-track-label[data-track-kind="objectTextureOffset"], ' +
+    '.timeline-track-label[data-track-kind="objectTextureRotation"]'
+  );
+  const visibleRowCount = await visibleTextureRows.count();
+  expect(visibleRowCount).toBeGreaterThan(0);
+
+  await page.locator("#timeline-set-visible").click();
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-visible").click();
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
+
+  await page.locator("#timeline-select-visible").click();
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount * 2} keyframes selected`);
+  await page.locator("#timeline-work-start").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-work-end").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Control+Alt+Shift+A");
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleRowCount} keyframes selected`);
   expect(errors).toEqual([]);
 });
 

@@ -200,6 +200,7 @@ function boot(root: HTMLDivElement): void {
     onCopyKeyframes: copyTimelineKeyframes,
     onPasteKeyframes: pasteTimelineKeyframes,
     onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
+    onSelectVisibleKeyframes: selectVisibleTimelineKeyframes,
     onPreviewSelectedRange: previewSelectedTimelineKeyRange,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onNudgeKeyframes: nudgeTimelineKeyframes,
@@ -1307,7 +1308,8 @@ function boot(root: HTMLDivElement): void {
     }
     if ((event.ctrlKey || event.metaKey) && key === "a") {
       event.preventDefault();
-      if (event.shiftKey) selectTimelineWorkAreaKeyframes();
+      if (event.altKey) selectVisibleTimelineKeyframes(event.shiftKey);
+      else if (event.shiftKey) selectTimelineWorkAreaKeyframes();
       else selectAllActiveTimelineKeyframes();
       return;
     }
@@ -2018,6 +2020,17 @@ function boot(root: HTMLDivElement): void {
     showToast(selectedCount
       ? `${selectedCount} work-area keyframe${selectedCount === 1 ? "" : "s"} selected on active track`
       : "No active-track keyframes inside the work area.",
+      selectedCount ? "good" : "bad");
+  }
+
+  function selectVisibleTimelineKeyframes(workAreaOnly = false): void {
+    const selectedCount = timelinePanel.selectVisibleRowKeyframes(workAreaOnly);
+    const scope = workAreaOnly ? "visible work-area" : "visible-row";
+    showToast(selectedCount
+      ? `${selectedCount} ${scope} keyframe${selectedCount === 1 ? "" : "s"} selected`
+      : workAreaOnly
+        ? "No visible-row keyframes inside the work area."
+        : "No keyframes on visible timeline rows.",
       selectedCount ? "good" : "bad");
   }
 

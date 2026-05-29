@@ -92,6 +92,8 @@ PDF.
   key buttons on each property row.
 - [Timeline Visible Row Keying](timeline-visible-row-keying.md) documents the
   `Set Visible` command for keying every currently visible dope-sheet row.
+- [Timeline Visible Row Selection](timeline-visible-row-selection.md) documents
+  selecting keyframes from the current row filter/search result.
 - [Timeline Row Search](timeline-row-search.md) documents the AE-style row
   search field for quickly isolating object, camera, and light tracks.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
@@ -176,6 +178,9 @@ animation runtime where it fits:
 - The `Set Visible` command records every currently visible dope-sheet row in
   one undoable operation, making row search and filters usable as property-set
   keying tools.
+- The `Select Visible` command turns current row visibility into an editable
+  keyframe selection scope for copy, paste, retime, reverse, snap, distribute,
+  fit, and preview workflows.
 - Timeline row labels show live property values, so scrubbed Position, Rotation,
   Scale, material, texture, camera, and light values can be inspected directly
   from the dope sheet.

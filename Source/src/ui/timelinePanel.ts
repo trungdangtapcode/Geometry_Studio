@@ -51,6 +51,7 @@ export interface KeyframeTimelineCallbacks {
   onCopyKeyframes(keyframeIds: string[]): void;
   onPasteKeyframes(): void;
   onSelectWorkAreaKeyframes(): void;
+  onSelectVisibleKeyframes(workAreaOnly: boolean): void;
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
@@ -354,6 +355,27 @@ export class KeyframeTimelinePanel {
     return this.selectedKeyframeIds.size;
   }
 
+  selectVisibleRowKeyframes(workAreaOnly = false): number {
+    if (!this.lastTimelineDocument) return 0;
+    const timelineDocument = this.lastTimelineDocument;
+    const workStart = Math.min(timelineDocument.workStart, timelineDocument.workEnd);
+    const workEnd = Math.max(timelineDocument.workStart, timelineDocument.workEnd);
+    const selectedIds = new Set<string>();
+    this.visibleRowTargets().forEach((target) => {
+      const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
+      track?.keyframes.forEach((keyframe) => {
+        const insideWorkArea = keyframe.time >= workStart - 0.001 && keyframe.time <= workEnd + 0.001;
+        if (!workAreaOnly || insideWorkArea) selectedIds.add(keyframe.id);
+      });
+    });
+    this.selectedKeyframeIds = selectedIds;
+    this.selectedAxis = null;
+    this.syncSelectionWidgets(timelineDocument, this.lastSelectedId);
+    this.renderGraph(timelineDocument, this.lastSelectedId);
+    this.refreshCanvas();
+    return this.selectedKeyframeIds.size;
+  }
+
   cycleRowFilter(): string {
     const currentIndex = ROW_FILTER_SEQUENCE.indexOf(this.rowFilter);
     const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
@@ -428,6 +450,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-select-workarea").addEventListener("click", () => {
       this.callbacks.onSelectWorkAreaKeyframes();
+    });
+    query<HTMLButtonElement>("#timeline-select-visible").addEventListener("click", () => {
+      this.callbacks.onSelectVisibleKeyframes(false);
     });
     query<HTMLButtonElement>("#timeline-preview-selection").addEventListener("click", () => {
       this.callbacks.onPreviewSelectedRange();
