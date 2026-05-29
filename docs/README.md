@@ -52,6 +52,9 @@ PDF.
   label selection and active/disabled row states.
 - [Timeline Row Keying](timeline-row-keying.md) documents the AE-style diamond
   key buttons on each property row.
+- [Timeline Transform Keying](timeline-transform-keying.md) documents the
+  `Set TRS` command for recording Position, Rotation, and Scale as one object
+  pose.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
   and All row visibility modes for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
@@ -89,6 +92,8 @@ animation runtime where it fits:
   surface for object, camera, and light tracks.
 - Row-level diamond buttons add or update keys directly from the property row,
   matching common motion-graphics editor workflows.
+- The `Set TRS` command records the selected object's Position, Rotation, and
+  Scale together at the playhead for pose-to-pose motion authoring.
 - Row filtering keeps dense scenes manageable through Focus, Keyed, and All
   timeline views.
 - Selected objects with two or more Position keys show a viewport motion path,

@@ -146,6 +146,7 @@ function boot(root: HTMLDivElement): void {
   const timelinePanel = new KeyframeTimelinePanel({
     onTimeChanged: setTimelineTime,
     onAddKeyframe: addTimelineKeyframe,
+    onSetTransformKeyframes: setTransformTimelineKeyframes,
     onDeleteKeyframes: deleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onPasteKeyframes: pasteTimelineKeyframes,
@@ -1497,6 +1498,41 @@ function boot(root: HTMLDivElement): void {
 
   function addTimelineKeyframe(kind: TimelineTrackKind): void {
     setTimelineKeyframe(kind);
+  }
+
+  function setTransformTimelineKeyframes(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before setting transform keyframes.", "bad");
+      return;
+    }
+
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const values: Record<"position" | "rotation" | "scale", [number, number, number]> = {
+      position: timelineValueForEntry(entry, "position"),
+      rotation: timelineValueForEntry(entry, "rotation"),
+      scale: timelineValueForEntry(entry, "scale")
+    };
+
+    recordHistory();
+    const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+    (["position", "rotation", "scale"] as const).forEach((kind) => {
+      const track = ensureTimelineTrack(objectTimeline, kind);
+      const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+      if (existing) {
+        existing.value = values[kind];
+      } else {
+        track.keyframes.push(createTimelineKeyframe(time, values[kind]));
+      }
+      sortTimelineKeyframes(track);
+    });
+    entry.animation = "none";
+    sceneTimeline.currentTime = time;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`Position, rotation, and scale keys set at ${formatNumber(time)}s`, "good");
   }
 
   function bakeObjectAnimationPreset(entry: SceneEntry, mode: AnimationMode, clearExisting = true): void {

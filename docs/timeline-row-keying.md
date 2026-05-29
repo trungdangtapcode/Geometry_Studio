@@ -14,6 +14,8 @@ not need to switch to a global track dropdown before adding a key.
 - The global key button uses `Set Key` when no key exists at the current
   playhead time and `Update Key` when pressing it will overwrite the existing
   key at that time.
+- The separate `Set TRS` command records Position, Rotation, and Scale together
+  for the selected object when the user wants to key a complete pose.
 - Object rows select the matching scene object before writing the key.
 - Camera and light rows write to their global timeline tracks.
 - Rows that already contain keyframes use a filled diamond icon to communicate

@@ -21,6 +21,7 @@ type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "w
 export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
   onAddKeyframe(kind: TimelineTrackKind): void;
+  onSetTransformKeyframes(): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onPasteKeyframes(): void;
@@ -168,6 +169,7 @@ export class KeyframeTimelinePanel {
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
+  private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly timeInput = query<HTMLInputElement>("#timeline-current-time");
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
@@ -330,6 +332,9 @@ export class KeyframeTimelinePanel {
     });
     this.addKeyframeButton.addEventListener("click", () => {
       this.callbacks.onAddKeyframe(this.selectedTrackKind());
+    });
+    this.setTransformButton.addEventListener("click", () => {
+      this.callbacks.onSetTransformKeyframes();
     });
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);

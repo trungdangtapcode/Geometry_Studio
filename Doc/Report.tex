@@ -214,6 +214,9 @@ timecode, duration, FPS, Work In/Out range, snapping, loop control, and tracks
 for object transforms, object appearance, camera properties, and lights. Users
 can add, delete, duplicate, copy, paste, drag, scrub, save, and reload
 keyframes.
+The \texttt{Set TRS} timeline command records the selected object's Position,
+Rotation, and Scale together at the playhead, so a complete pose can be keyed at
+\(t_0\), changed, and keyed again at \(t_1\) for pose-to-pose interpolation.
 When the selected object has two or more Position keyframes, the viewport draws
 a motion path: a curve for the sampled trajectory and points for the authored
 key positions. This makes the animation relationship from an initial position

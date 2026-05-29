@@ -23,6 +23,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
   await expect(page.locator("#timeline-prev-frame")).toBeVisible();
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
+  await expect(page.locator("#timeline-set-transform")).toBeVisible();
   await expect(page.locator("#timeline-copy-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-nudge-left")).toBeVisible();
@@ -111,6 +112,53 @@ test("renders the studio and core controls", async ({ page }) => {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("button", { name: "Cube", exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("records grouped position rotation and scale keyframes", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-set-transform")).toBeVisible();
+
+  await page.locator("#timeline-set-transform").click();
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+  await page.locator("#timeline-track-kind").selectOption("rotation");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+  await page.locator("#timeline-track-kind").selectOption("scale");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="rotation"][data-axis="y"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "90";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="scale"][data-axis="z"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "1.75";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-transform").click();
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(1, 1);
+  expect(Number(await page.locator('.transform-input[data-prop="rotation"][data-axis="y"]').inputValue())).toBeCloseTo(45, 1);
+  expect(Number(await page.locator('.transform-input[data-prop="scale"][data-axis="z"]').inputValue())).toBeCloseTo(1.375, 2);
   expect(errors).toEqual([]);
 });
 
