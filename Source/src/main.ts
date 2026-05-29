@@ -868,9 +868,8 @@ function boot(root: HTMLDivElement): void {
   }
 
   function seedInitialTransformAutoKey(entry: SceneEntry, kind: TransformProperty, value = timelineValueForEntry(entry, kind)): void {
-    const currentTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
-    const seedTime = snapTimelineTime(sceneTimeline, clamp(sceneTimeline.workStart, 0, sceneTimeline.duration));
-    if (currentTime <= seedTime + 0.001) return;
+    const seedTime = initialAutoKeySeedTime();
+    if (seedTime === null) return;
 
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
     const existingTrack = objectTimeline.tracks.find((candidate) => candidate.kind === kind);
@@ -879,6 +878,25 @@ function boot(root: HTMLDivElement): void {
     const track = ensureTimelineTrack(objectTimeline, kind);
     track.keyframes.push(createTimelineKeyframe(seedTime, [...value] as [number, number, number]));
     sortTimelineKeyframes(track);
+  }
+
+  function seedInitialCameraAutoKey(kind: TimelineTrackKind, value: [number, number, number]): void {
+    const seedTime = initialAutoKeySeedTime();
+    if (seedTime === null) return;
+
+    const cameraTimeline = ensureCameraTimeline(sceneTimeline);
+    const existingTrack = cameraTimeline.tracks.find((candidate) => candidate.kind === kind);
+    if (existingTrack?.locked || existingTrack?.keyframes.length) return;
+
+    const track = ensureTimelineTrack(cameraTimeline, kind);
+    track.keyframes.push(createTimelineKeyframe(seedTime, [...value] as [number, number, number]));
+    sortTimelineKeyframes(track);
+  }
+
+  function initialAutoKeySeedTime(): number | null {
+    const currentTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const seedTime = snapTimelineTime(sceneTimeline, clamp(sceneTimeline.workStart, 0, sceneTimeline.duration));
+    return currentTime > seedTime + 0.001 ? seedTime : null;
   }
 
   function syncCameraUI(): void {
@@ -908,6 +926,8 @@ function boot(root: HTMLDivElement): void {
         recordHistory();
         const group = input.dataset.group as "position" | "target" | "camera";
         const prop = input.dataset.prop!;
+        const trackKind = cameraTrackForGroup(group);
+        const previousValue = timelineValueForCamera(trackKind);
         const value = Number(input.value);
         if (group === "position" && (prop === "x" || prop === "y" || prop === "z")) camera.position[prop] = value;
         else if (group === "target" && (prop === "x" || prop === "y" || prop === "z")) controls.target[prop] = value;
@@ -918,7 +938,8 @@ function boot(root: HTMLDivElement): void {
         frustumHelper.update();
         controls.update();
         if (sceneTimeline.autoKey) {
-          setTimelineKeyframe(cameraTrackForGroup(group), { notify: false, record: false, refresh: false });
+          seedInitialCameraAutoKey(trackKind, previousValue);
+          setTimelineKeyframe(trackKind, { notify: false, record: false, refresh: false });
         }
         syncCameraUI();
       });

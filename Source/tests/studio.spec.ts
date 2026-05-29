@@ -379,6 +379,57 @@ test("seeds initial pose for first transform auto-key edit", async ({ page }) =>
   expect(errors).toEqual([]);
 });
 
+test("seeds initial camera value for first camera auto-key edit", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const cameraX = page.locator('.camera-input[data-group="position"][data-prop="x"]');
+  const startX = Number(await cameraX.inputValue());
+  await page.locator("#timeline-auto-key").check();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await cameraX.evaluate((input, nextValue) => {
+    (input as HTMLInputElement).value = String(nextValue);
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }, startX + 2);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  expect(Number(await cameraX.inputValue())).toBeCloseTo(startX + 1, 1);
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneDocument = JSON.parse((await sceneText.jsonValue()) as string);
+  const positionTrack = sceneDocument.timeline.camera.tracks.find((track: { kind: string }) => track.kind === "cameraPosition");
+  expect(positionTrack.keyframes).toHaveLength(2);
+  expect(positionTrack.keyframes[0].time).toBe(0);
+  expect(positionTrack.keyframes[0].value[0]).toBe(startX);
+  expect(positionTrack.keyframes[1].time).toBe(1);
+  expect(positionTrack.keyframes[1].value[0]).toBe(startX + 2);
+  expect(errors).toEqual([]);
+});
+
 test("imports OBJ with companion MTL files", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
