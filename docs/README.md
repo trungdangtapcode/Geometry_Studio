@@ -119,6 +119,8 @@ PDF.
   documents duplicating visible-row pose columns from the playhead.
 - [Timeline Visible Time Delete](timeline-visible-time-delete.md) documents
   deleting visible-row pose columns from the playhead.
+- [Timeline Visible Gap Editing](timeline-visible-gap-editing.md) documents
+  inserting playhead gaps and extracting Work In/Out on visible rows.
 - [Timeline Visible Key Navigation](timeline-visible-key-navigation.md)
   documents previous/next keyframe navigation scoped to visible rows.
 - [Timeline Row Search](timeline-row-search.md) documents the AE-style row
@@ -240,6 +242,11 @@ animation runtime where it fits:
   the active snap step, keeping the duplicated pose column selected.
 - The `Del Time` command removes visible-row keyframes at the playhead under
   one undoable edit.
+- `Insert Gap` shifts visible-row keyframes at or after the playhead later by
+  the Work In/Out duration, creating room for new timing.
+- `Extract Work` deletes visible-row keyframes inside Work In/Out and shifts
+  later visible-row keys earlier, completing the row-filtered lift/extract
+  timing workflow.
 - Previous/next visible-row keyframe commands jump the playhead through the
   current row filter/search result instead of only the active track.
 - Timeline row labels show live property values, so scrubbed Position, Rotation,
@@ -301,8 +308,9 @@ object appearance, camera, and light tracks:
 - `animation/timelineSchema.ts` owns timeline defaults, migration, cloning, and
   track helpers.
 - `animation/timelineEditing.ts` owns pure keyframe edit operations such as
-  source resolution, copy/paste payloads, duplicate, ripple delete, frame nudge,
-  shared edit retiming helpers, and numeric keyframe editing.
+  source resolution, copy/paste payloads, duplicate, ripple delete, visible-row
+  gap editing, frame nudge, shared edit retiming helpers, and numeric keyframe
+  editing.
 - `animation/timelineTracks.ts` owns shared timeline track categories, labels,
   preset-to-track mapping, and object value capture helpers so the editor shell
   does not duplicate track taxonomy.

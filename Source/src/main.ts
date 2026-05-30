@@ -11,7 +11,9 @@ import {
   distributeResolvedKeyframesAcrossRange,
   duplicateResolvedKeyframes,
   editResolvedKeyframes,
+  extractTimelineRangeOnTracks,
   fitResolvedKeyframesToRange,
+  insertTimelineGapOnTracks,
   moveResolvedKeyframesToTime,
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
@@ -25,7 +27,8 @@ import {
   type EditTimelineResult,
   type TimelineClipboard,
   type TimelineKeyframeEditPatch,
-  type TimelineKeyframeSource
+  type TimelineKeyframeSource,
+  type TimelineTrackEditTarget
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
 import { objectLayerRange, setObjectVisibilityRange, shiftObjectLayerKeyframes, type TimelineLayerRange } from "./animation/timelineLayers";
@@ -218,6 +221,8 @@ function boot(root: HTMLDivElement): void {
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onDuplicateVisibleTimeKeyframes: duplicateVisibleTimelineTimeKeyframes,
     onDeleteVisibleTimeKeyframes: deleteVisibleTimelineTimeKeyframes,
+    onInsertVisibleTimeGap: insertVisibleTimelineTimeGap,
+    onExtractVisibleWorkArea: extractVisibleTimelineWorkArea,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onCenterKeyframesOnPlayhead: centerTimelineKeyframesOnPlayhead,
@@ -2374,6 +2379,35 @@ function boot(root: HTMLDivElement): void {
     return [...targets.values()];
   }
 
+  function resolveVisibleTimelineTrackTargets(rows: TimelineVisibleRowTarget[]): { targets: TimelineTrackEditTarget[]; lockedCount: number } {
+    const targets: TimelineTrackEditTarget[] = [];
+    let lockedCount = 0;
+
+    dedupeVisibleTimelineTargets(rows).forEach((row) => {
+      let target: TimelineTrackEditTarget | null = null;
+      if (isCameraTrackKind(row.kind)) {
+        const track = sceneTimeline.camera.tracks.find((candidate) => candidate.kind === row.kind);
+        if (track) target = { scope: "camera", objectId: "camera", track };
+      } else if (isLightTrackKind(row.kind)) {
+        const track = sceneTimeline.lights.tracks.find((candidate) => candidate.kind === row.kind);
+        if (track) target = { scope: "lights", objectId: "lights", track };
+      } else if (entries.has(row.targetId)) {
+        const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === row.targetId);
+        const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
+        if (track) target = { scope: "object", objectId: row.targetId, track };
+      }
+
+      if (!target || target.track.keyframes.length === 0) return;
+      if (target.track.locked) {
+        lockedCount += 1;
+        return;
+      }
+      targets.push(target);
+    });
+
+    return { targets, lockedCount };
+  }
+
   function bakeObjectAnimationPreset(entry: SceneEntry, mode: AnimationMode, clearExisting = true): void {
     if (mode === "none") {
       entry.animation = "none";
@@ -2726,6 +2760,50 @@ function boot(root: HTMLDivElement): void {
     deleteTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
   }
 
+  function insertVisibleTimelineTimeGap(rows: TimelineVisibleRowTarget[]): void {
+    const resolved = resolveVisibleTimelineTrackTargets(rows);
+    if (resolved.targets.length === 0) {
+      showToast(resolved.lockedCount > 0 ? "All visible timeline rows are locked." : "No visible timeline rows have keyframes to shift.", "bad");
+      return;
+    }
+
+    const gap = Math.max(sceneTimeline.workEnd - sceneTimeline.workStart, sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001);
+    recordHistory();
+    const result = insertTimelineGapOnTracks(sceneTimeline, resolved.targets, sceneTimeline.currentTime, gap);
+    finishTimelineGapEdit(result.changedTransformObjectIds, result.currentTime);
+
+    if (result.shifted === 0) {
+      showToast(result.skipped ? `No room to insert gap; ${result.skipped} keyframe${result.skipped === 1 ? "" : "s"} would exceed duration.` : "No later visible-row keyframes to shift.", "bad");
+      return;
+    }
+
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${formatNumber(gap)}s gap inserted on ${result.tracks} visible track${result.tracks === 1 ? "" : "s"}; ${result.shifted} keyframe${result.shifted === 1 ? "" : "s"} shifted${skipped}`, "good");
+  }
+
+  function extractVisibleTimelineWorkArea(rows: TimelineVisibleRowTarget[]): void {
+    const resolved = resolveVisibleTimelineTrackTargets(rows);
+    if (resolved.targets.length === 0) {
+      showToast(resolved.lockedCount > 0 ? "All visible timeline rows are locked." : "No visible timeline rows have keyframes to extract.", "bad");
+      return;
+    }
+
+    const start = Math.min(sceneTimeline.workStart, sceneTimeline.workEnd);
+    const end = Math.max(sceneTimeline.workStart, sceneTimeline.workEnd);
+    recordHistory();
+    const result = extractTimelineRangeOnTracks(sceneTimeline, resolved.targets, start, end);
+    pruneEmptyTimelineTracks(sceneTimeline);
+    finishTimelineGapEdit(result.changedTransformObjectIds, result.currentTime);
+
+    if (result.deleted === 0 && result.shifted === 0) {
+      showToast("No visible-row keyframes inside or after the work area.", "bad");
+      return;
+    }
+
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${result.deleted} keyframe${result.deleted === 1 ? "" : "s"} extracted, ${result.shifted} shifted${skipped}`, "good");
+  }
+
   function nudgeTimelineKeyframes(direction: -1 | 1, keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
     const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
@@ -2750,6 +2828,18 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${result.nudged} keyframe${result.nudged === 1 ? "" : "s"} nudged ${direction > 0 ? "right" : "left"}${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function finishTimelineGapEdit(changedTransformObjectIds: string[], currentTime: number): void {
+    clearPresetAnimationsForTimelineObjects(changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes([]);
   }
 
   function finishTimelineKeyframeEdit(

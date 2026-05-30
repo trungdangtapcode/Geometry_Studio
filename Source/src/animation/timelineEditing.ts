@@ -26,6 +26,12 @@ export interface TimelineKeyframeSource {
   keyframe: TimelineKeyframeDocument;
 }
 
+export interface TimelineTrackEditTarget {
+  scope: TimelineKeyframeScope;
+  objectId: string;
+  track: TimelineTrackDocument;
+}
+
 export interface TimelineClipboardKeyframe {
   scope: TimelineKeyframeScope;
   objectId?: string;
@@ -77,6 +83,13 @@ export interface NudgeTimelineResult extends TimelineEditResult {
 export interface RippleDeleteTimelineResult extends TimelineEditResult {
   deleted: number;
   shifted: number;
+  currentTime: number;
+}
+
+export interface TimelineGapEditResult extends TimelineEditResult {
+  deleted: number;
+  shifted: number;
+  tracks: number;
   currentTime: number;
 }
 
@@ -322,6 +335,120 @@ export function rippleDeleteResolvedKeyframes(
     deleted,
     shifted,
     skipped: skipped + Math.max(staleSelections, 0),
+    currentTime: roundTime(start),
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
+export function insertTimelineGapOnTracks(
+  timeline: SceneTimelineDocument,
+  targets: TimelineTrackEditTarget[],
+  startTime: number,
+  duration: number
+): TimelineGapEditResult {
+  const time = snapTimelineTime(timeline, Math.max(0, Math.min(startTime, timeline.duration)));
+  const gap = timelineGapDuration(timeline, duration);
+  const trackTargets = dedupeTimelineTrackTargets(targets);
+  const changedTransformObjectIds = new Set<string>();
+  let shifted = 0;
+  let skipped = 0;
+
+  trackTargets.forEach((target) => {
+    const movingKeyframes = target.track.keyframes
+      .filter((keyframe) => keyframe.time >= time - 0.001)
+      .sort((left, right) => right.time - left.time);
+    if (movingKeyframes.length === 0) return;
+
+    const movingIds = new Set(movingKeyframes.map((keyframe) => keyframe.id));
+    const occupiedTimes = new Set(
+      target.track.keyframes
+        .filter((keyframe) => !movingIds.has(keyframe.id))
+        .map((keyframe) => timelineTimeKey(keyframe.time))
+    );
+
+    movingKeyframes.forEach((keyframe) => {
+      const nextTime = roundTime(keyframe.time + gap);
+      const timeKey = timelineTimeKey(nextTime);
+      if (nextTime > timeline.duration || occupiedTimes.has(timeKey)) {
+        occupiedTimes.add(timelineTimeKey(keyframe.time));
+        skipped += 1;
+        return;
+      }
+
+      occupiedTimes.add(timeKey);
+      if (Math.abs(keyframe.time - nextTime) < 0.001) return;
+      keyframe.time = nextTime;
+      shifted += 1;
+    });
+
+    sortTimelineKeyframes(target.track);
+    if (target.scope === "object" && isObjectTransformTrackKind(target.track.kind)) changedTransformObjectIds.add(target.objectId);
+  });
+
+  return {
+    deleted: 0,
+    shifted,
+    skipped,
+    tracks: trackTargets.length,
+    currentTime: time,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
+export function extractTimelineRangeOnTracks(
+  timeline: SceneTimelineDocument,
+  targets: TimelineTrackEditTarget[],
+  startTime: number,
+  endTime: number
+): TimelineGapEditResult {
+  const start = Math.max(0, Math.min(startTime, endTime, timeline.duration));
+  const end = Math.max(start, Math.min(Math.max(startTime, endTime), timeline.duration));
+  const gap = timelineGapDuration(timeline, end - start);
+  const trackTargets = dedupeTimelineTrackTargets(targets);
+  const changedTransformObjectIds = new Set<string>();
+  let deleted = 0;
+  let shifted = 0;
+  let skipped = 0;
+
+  trackTargets.forEach((target) => {
+    const beforeCount = target.track.keyframes.length;
+    const remaining = target.track.keyframes.filter((keyframe) => keyframe.time < start - 0.001 || keyframe.time > end + 0.001);
+    deleted += beforeCount - remaining.length;
+
+    const occupiedTimes = new Set(
+      remaining
+        .filter((keyframe) => keyframe.time < start - 0.001)
+        .map((keyframe) => timelineTimeKey(keyframe.time))
+    );
+
+    remaining
+      .filter((keyframe) => keyframe.time > end + 0.001)
+      .sort((left, right) => left.time - right.time)
+      .forEach((keyframe) => {
+        const nextTime = roundTime(keyframe.time - gap);
+        const timeKey = timelineTimeKey(nextTime);
+        if (nextTime < 0 || occupiedTimes.has(timeKey)) {
+          occupiedTimes.add(timelineTimeKey(keyframe.time));
+          skipped += 1;
+          return;
+        }
+
+        occupiedTimes.add(timeKey);
+        if (Math.abs(keyframe.time - nextTime) < 0.001) return;
+        keyframe.time = nextTime;
+        shifted += 1;
+      });
+
+    target.track.keyframes = remaining;
+    sortTimelineKeyframes(target.track);
+    if (target.scope === "object" && isObjectTransformTrackKind(target.track.kind)) changedTransformObjectIds.add(target.objectId);
+  });
+
+  return {
+    deleted,
+    shifted,
+    skipped,
+    tracks: trackTargets.length,
     currentTime: roundTime(start),
     changedTransformObjectIds: [...changedTransformObjectIds]
   };
@@ -777,6 +904,19 @@ function groupSourcesByTarget(sources: TimelineKeyframeSource[]): TimelineSource
 
 function timelineTimeKey(time: number): number {
   return Math.round(time * 1000);
+}
+
+function timelineGapDuration(timeline: SceneTimelineDocument, duration: number): number {
+  const fallback = Math.max(timeline.snapStep, 1 / Math.max(timeline.fps, 1), 0.001);
+  return roundTime(Math.max(Number.isFinite(duration) ? duration : 0, fallback));
+}
+
+function dedupeTimelineTrackTargets(targets: TimelineTrackEditTarget[]): TimelineTrackEditTarget[] {
+  const trackTargets = new Map<TimelineTrackDocument, TimelineTrackEditTarget>();
+  targets.forEach((target) => {
+    if (!trackTargets.has(target.track)) trackTargets.set(target.track, target);
+  });
+  return [...trackTargets.values()];
 }
 
 function collectKeyframesById(

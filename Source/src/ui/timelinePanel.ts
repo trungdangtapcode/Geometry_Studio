@@ -69,6 +69,8 @@ export interface KeyframeTimelineCallbacks {
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onDuplicateVisibleTimeKeyframes(): void;
   onDeleteVisibleTimeKeyframes(): void;
+  onInsertVisibleTimeGap(rows: TimelineVisibleRowTarget[]): void;
+  onExtractVisibleWorkArea(rows: TimelineVisibleRowTarget[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
   onCenterKeyframesOnPlayhead(keyframeIds: string[]): void;
@@ -197,6 +199,8 @@ export class KeyframeTimelinePanel {
   private readonly cutTimeButton = query<HTMLButtonElement>("#timeline-cut-time");
   private readonly duplicateTimeButton = query<HTMLButtonElement>("#timeline-duplicate-time");
   private readonly deleteTimeButton = query<HTMLButtonElement>("#timeline-delete-time");
+  private readonly insertGapButton = query<HTMLButtonElement>("#timeline-insert-gap");
+  private readonly extractWorkButton = query<HTMLButtonElement>("#timeline-extract-work");
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly soloTrackButton = query<HTMLButtonElement>("#timeline-solo-track");
@@ -669,6 +673,12 @@ export class KeyframeTimelinePanel {
     });
     this.deleteTimeButton.addEventListener("click", () => {
       this.callbacks.onDeleteVisibleTimeKeyframes();
+    });
+    this.insertGapButton.addEventListener("click", () => {
+      this.callbacks.onInsertVisibleTimeGap(this.visibleRowTargets());
+    });
+    this.extractWorkButton.addEventListener("click", () => {
+      this.callbacks.onExtractVisibleWorkArea(this.visibleRowTargets());
     });
     query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());

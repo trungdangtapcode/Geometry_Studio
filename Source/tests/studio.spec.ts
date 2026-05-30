@@ -2827,6 +2827,92 @@ test("ripple deletes selected timeline keyframe spans", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("inserts and extracts visible timeline gaps", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-insert-gap")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+  for (const [time, value] of [[0, 0], [2, 2], [4, 4]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await page.locator("#timeline-work-start").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-work-end").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#timeline-insert-gap")?.click();
+  });
+
+  const insertedTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
+    [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
+      .sort((left, right) => left - right)
+  );
+  expect(insertedTimes).toEqual([0, 4, 6]);
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#timeline-extract-work")?.click();
+  });
+  const extractedTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
+    [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
+      .sort((left, right) => left - right)
+  );
+  expect(extractedTimes).toEqual([2, 4]);
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  const positionTrack = sceneDocument.timeline.objects
+    .find((object: { objectId: string }) => object.objectId === "object-1")
+    .tracks.find((track: { kind: string }) => track.kind === "position");
+  const savedKeys = positionTrack.keyframes
+    .map((keyframe: { time: number; value: [number, number, number] }) => ({ time: keyframe.time, x: keyframe.value[0] }))
+    .sort((left: { time: number }, right: { time: number }) => left.time - right.time);
+  expect(savedKeys).toEqual([{ time: 2, x: 2 }, { time: 4, x: 4 }]);
+
+  expect(errors).toEqual([]);
+});
+
 test("selects active-track keyframes inside the work area", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
