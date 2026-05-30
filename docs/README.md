@@ -176,8 +176,8 @@ PDF.
   commands, and draggable object duration bars that can trim visibility or move
   object keyframes with the layer.
 - [Timeline Layer Sequencing](timeline-layer-sequencing.md) documents the
-  toolbar, command-palette, and `Alt+Shift+L` workflow for arranging object
-  layer ranges from the playhead.
+  toolbar, command-palette, `Layer Keys`, and `Alt+Shift+K` / `Alt+Shift+L`
+  workflows for selected layer keyframes and sequenced layer ranges.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
   documents direct Linear, Ease In, Ease Out, Easy Ease, and Hold timing
   controls.

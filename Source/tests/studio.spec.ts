@@ -86,6 +86,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-layer-out")).toBeVisible();
   await expect(page.locator("#timeline-split-layer")).toBeVisible();
   await expect(page.locator("#timeline-layer-work")).toBeVisible();
+  await expect(page.locator("#timeline-select-layer-keys")).toBeVisible();
   await expect(page.locator("#timeline-sequence-layers")).toBeVisible();
   await expect(page.locator("#timeline-overview-track")).toBeVisible();
   await expect(page.locator("#timeline-layer-strip")).toBeVisible();
@@ -1545,6 +1546,16 @@ test("sequences object layer ranges from the playhead", async ({ page }) => {
   ]);
   expect(objectTrack(sceneDocument, "object-2", "rotation")?.keyframes.map((keyframe) => keyframe.time)).toEqual([8, 16]);
   expect(objectTrack(sceneDocument, "object-3", "scale")?.keyframes.map((keyframe) => keyframe.time)).toEqual([16, 20, 24]);
+
+  await page.locator('.timeline-layer-bar[data-object-id="object-2"]').click();
+  await expect(page.locator("#selection-summary")).toContainText("Wheel Torus");
+  await page.locator("#timeline-select-layer-keys").click();
+  await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("selected layer keyframes");
+  await expect(page.locator('[data-command-id="timeline.select-layer-keys"]')).toBeEnabled();
+  await page.keyboard.press("Escape");
 
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("sequence object layers");

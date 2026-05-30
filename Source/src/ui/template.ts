@@ -108,6 +108,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-layer-out" type="button" title="Trim selected layer out at the playhead (Alt+])"><span data-icon="LogOut"></span><span>Layer Out</span></button>
               <button class="mini-button" id="timeline-split-layer" type="button" title="Split selected layer at the playhead (Ctrl+Shift+D)"><span data-icon="Scissors"></span><span>Split</span></button>
               <button class="mini-button" id="timeline-layer-work" type="button" title="Set work area to selected layer range (Alt+Shift+B)"><span data-icon="StretchHorizontal"></span><span>Layer Work</span></button>
+              <button class="mini-button" id="timeline-select-layer-keys" type="button" title="Select keyframes inside the selected layer range (Alt+Shift+K)"><span data-icon="KeyRound"></span><span>Layer Keys</span></button>
               <button class="mini-button" id="timeline-sequence-layers" type="button" title="Sequence all object layer ranges from the playhead (Alt+Shift+L)"><span data-icon="ListOrdered"></span><span>Sequence</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-in" type="button" data-interpolation="easeIn"><span data-icon="CornerDownRight"></span><span>Ease In</span></button>

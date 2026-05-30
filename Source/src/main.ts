@@ -32,6 +32,7 @@ import {
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
 import {
+  objectLayerKeyframeIds,
   objectLayerRange,
   sequenceObjectLayerRanges,
   setObjectVisibilityRange,
@@ -215,6 +216,7 @@ function boot(root: HTMLDivElement): void {
     onTrimLayerOut: trimSelectedLayerOutPoint,
     onSplitLayer: splitSelectedLayerAtPlayhead,
     onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
+    onSelectLayerKeyframes: selectSelectedLayerKeyframes,
     onSequenceLayers: sequenceTimelineObjectLayers,
     onEditLayerRange: editTimelineLayerRange,
     onDeleteKeyframes: deleteTimelineKeyframes,
@@ -1008,6 +1010,11 @@ function boot(root: HTMLDivElement): void {
       command("timeline.fit-work", "Fit Keyframes To Work Area", "Retiming", () => fitTimelineKeyframesToWorkArea(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+F", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.stagger", "Stagger Keyframes From Playhead", "Retiming", () => staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.cascade", "Cascade Target Keyframes From Playhead", "Retiming", () => cascadeTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Alt+Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.select-layer-keys", "Select Selected Layer Keyframes", "Retiming", selectSelectedLayerKeyframes, {
+        shortcut: "Alt+Shift+K",
+        keywords: ["layer keys", "selected layer", "after effects"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.sequence-layers", "Sequence Object Layers", "Retiming", sequenceTimelineObjectLayers, {
         shortcut: "Alt+Shift+L",
         keywords: ["layer timing", "after effects", "sequence layers"],
@@ -1668,6 +1675,11 @@ function boot(root: HTMLDivElement): void {
     if (event.altKey && event.shiftKey && key === "b") {
       event.preventDefault();
       setTimelineWorkAreaToSelectedLayer();
+      return;
+    }
+    if (event.altKey && event.shiftKey && key === "k") {
+      event.preventDefault();
+      selectSelectedLayerKeyframes();
       return;
     }
     if (event.altKey && event.shiftKey && key === "l") {
@@ -2624,6 +2636,21 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     updateAllUI();
     showToast(`${selection.entry.name} work area ${formatNumber(selection.range.start)}-${formatNumber(selection.range.end)}s`, "good");
+  }
+
+  function selectSelectedLayerKeyframes(): void {
+    const selection = selectedLayerRange();
+    if (!selection) return;
+    const keyframeIds = objectLayerKeyframeIds(sceneTimeline, selection.entry.id);
+    timelinePanel.selectKeyframes(keyframeIds);
+    if (keyframeIds.length === 0) {
+      showToast(`${selection.entry.name} has no keyframes inside ${formatNumber(selection.range.start)}-${formatNumber(selection.range.end)}s.`, "bad");
+      return;
+    }
+    showToast(
+      `${keyframeIds.length} ${selection.entry.name} layer keyframe${keyframeIds.length === 1 ? "" : "s"} selected`,
+      "good"
+    );
   }
 
   function sequenceTimelineObjectLayers(): void {

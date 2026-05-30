@@ -16,6 +16,8 @@ track. The current implementation maps layer timing commands onto
   visible after the split.
 - `Layer Work` sets the Work In/Out range to the selected object's visible
   layer range.
+- `Layer Keys` selects every keyframe on the selected object whose time falls
+  inside the selected visible layer range.
 - The layer overview strip renders each object as a clickable duration bar
   above the keyframe rows. The bar reads the same Visibility range, so Layer In,
   Layer Out, Split, save/load, and playback stay consistent.
@@ -29,6 +31,7 @@ track. The current implementation maps layer timing commands onto
   - `Alt+I` jumps to the selected layer in point.
   - `Alt+O` jumps to the selected layer out point.
   - `Alt+Shift+B` sets the work area to the selected layer range.
+  - `Alt+Shift+K` selects the selected layer's in-range keyframes.
 
 ## Data Model
 
@@ -49,6 +52,12 @@ Layer range commands read the active visible interval from the selected
 object's Visibility track. If the playhead is inside a visible interval, that
 interval is used; otherwise the first visible interval is used. Objects without
 a Visibility track use the full timeline duration as their layer range.
+
+`Layer Keys` uses the same active visible interval, then selects matching
+keyframes from all tracks belonging to the selected object. Boundary keys are
+included so layer in/out Visibility keys remain editable with the animation
+block. This gives the retiming tools a direct AE-style layer selection target
+after sequencing, trimming, or dragging layer bars.
 
 The overview strip is intentionally a DOM layer above `animation-timeline-js`,
 not a custom fork of the library. `animation-timeline-js` remains responsible
@@ -80,6 +89,7 @@ The Playwright workflow verifies the overview strip, trims a layer in and out,
 checks that the bar updates to the matching range, drags the right edge to trim
 out, drags the bar body to move the visible range, verifies that Position keys
 shift with the layer body move, sets the work area to the layer range, jumps to
-layer in/out points, exports scene JSON, verifies hold visibility keys,
-reloads, splits the layer, verifies both original and duplicate visibility
-ranges, clicks the original layer bar, and confirms object selection changes.
+layer in/out points, selects in-range layer keyframes, exports scene JSON,
+verifies hold visibility keys, reloads, splits the layer, verifies both original
+and duplicate visibility ranges, clicks the original layer bar, and confirms
+object selection changes.
