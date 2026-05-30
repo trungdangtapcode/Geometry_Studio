@@ -1143,6 +1143,67 @@ svg {
   right: 4px;
 }
 
+.timeline-ruler-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 22px;
+  border: 0;
+  background: transparent;
+  color: #df4f66;
+  cursor: ew-resize;
+  padding: 0;
+  transform: translateX(-50%);
+  touch-action: none;
+}
+
+.timeline-ruler-playhead:hover,
+.timeline-ruler-playhead:focus-visible,
+.timeline-ruler-playhead.dragging {
+  outline: 0;
+}
+
+.timeline-ruler-playhead-head {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid currentColor;
+  transform: translateX(-50%);
+}
+
+.timeline-ruler-playhead-line,
+.timeline-layer-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: currentColor;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.64), 0 0 0 3px rgba(223, 79, 102, 0.12);
+}
+
+.timeline-ruler-playhead-line {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.timeline-ruler-playhead:hover .timeline-ruler-playhead-line,
+.timeline-ruler-playhead.dragging .timeline-ruler-playhead-line,
+.timeline-marker-strip.scrubbing .timeline-ruler-playhead-line {
+  width: 3px;
+}
+
+.timeline-layer-playhead {
+  z-index: 6;
+  color: #df4f66;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
 .timeline-layer-strip {
   border-bottom: 0;
   background:

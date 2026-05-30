@@ -58,6 +58,8 @@ PDF.
   dock height handle, row alignment, and scroll synchronization.
 - [Timeline Frame Navigation](timeline-frame-navigation.md) documents
   frame-step controls, Work Out jump, and timecode display.
+- [Timeline Playhead Ruler](timeline-playhead-ruler.md) documents the draggable
+  Current Time Indicator and layer overview playhead line.
 - [Timeline Selected Key Boundaries](timeline-selected-key-boundaries.md)
   documents first/last selected keyframe navigation.
 - [Timeline Selected Range Preview](timeline-selected-range-preview.md)
@@ -271,6 +273,8 @@ animation runtime where it fits:
   authoring and range selection.
 - J/K/L transport shortcuts provide forward, pause, reverse, and repeated-key
   `1x` / `2x` / `4x` shuttle playback inside the active work area.
+- The red Current Time Indicator in the timeline ruler can be dragged directly
+  to scrub the scene, with the matching playhead line shown across layer ranges.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
   keeping playback inspectable from the timeline.
 - The keyframe dock has a persisted height resize handle, with row labels and
@@ -301,6 +305,10 @@ object appearance, camera, and light tracks:
   timeline to editor callbacks.
 - `ui/timelineValueGraph.ts` owns active-track graph rendering, key point
   display, channel normalization, and graph time/value drag interaction.
+- `ui/timelinePlayhead.ts` owns the draggable ruler Current Time Indicator and
+  visual layer-overview playhead line.
+- `ui/timelineWorkArea.ts` owns direct Work In/Out range dragging in the timeline
+  header.
 - `ui/density.ts` owns UI-density persistence and root layout mode application.
 - `main.ts` evaluates camera, light, color, opacity, and visibility tracks
   against the same keyframe schema so non-transform properties remain

@@ -29,6 +29,7 @@ import {
   type TimelineGraphSelectionMode,
   type TimelineKeySelectionMode
 } from "./timelineValueGraph";
+import { appendLayerPlayhead, TimelinePlayheadController } from "./timelinePlayhead";
 import { TimelineWorkAreaController } from "./timelineWorkArea";
 import {
   CAMERA_TRACKS,
@@ -225,6 +226,7 @@ export class KeyframeTimelinePanel {
   };
   private readonly markerLabelInput = query<HTMLInputElement>("#timeline-marker-label");
   private readonly markerColorInput = query<HTMLInputElement>("#timeline-marker-color");
+  private readonly playheadController: TimelinePlayheadController;
   private readonly workAreaController: TimelineWorkAreaController;
   private selectedKeyframeIds = new Set<string>();
   private lastTimelineDocument: SceneTimelineDocument | null = null;
@@ -255,6 +257,11 @@ export class KeyframeTimelinePanel {
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
     this.applyStoredDockHeight();
+    this.playheadController = new TimelinePlayheadController({
+      markerStrip: this.markerStrip,
+      getTimelineDocument: () => this.lastTimelineDocument,
+      onTimeChanged: (time) => this.callbacks.onTimeChanged(time)
+    });
     this.workAreaController = new TimelineWorkAreaController({
       markerStrip: this.markerStrip,
       workStartInput: this.workStartInput,
@@ -614,6 +621,7 @@ export class KeyframeTimelinePanel {
     this.markerColorInput.addEventListener("change", () => {
       if (this.activeMarkerId) this.callbacks.onSetMarkerColor(this.activeMarkerId, this.markerColorInput.value);
     });
+    this.markerStrip.addEventListener("pointerdown", (event) => this.playheadController.startDrag(event));
     this.markerStrip.addEventListener("pointerdown", (event) => this.workAreaController.startDrag(event));
     this.markerStrip.addEventListener("pointerdown", (event) => this.startMarkerDrag(event));
     this.markerStrip.addEventListener("click", (event) => {
@@ -909,6 +917,7 @@ export class KeyframeTimelinePanel {
       button.textContent = marker.label;
       this.markerStrip.appendChild(button);
     });
+    this.playheadController.render(timelineDocument);
     this.syncMarkerEditor(timelineDocument, activeMarker);
   }
 
@@ -1014,6 +1023,7 @@ export class KeyframeTimelinePanel {
       `;
       content.appendChild(button);
     });
+    appendLayerPlayhead(content, timelineDocument);
     this.layerStrip.appendChild(content);
   }
 

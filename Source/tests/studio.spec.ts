@@ -2081,6 +2081,55 @@ test("supports draggable timeline work area range", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("supports draggable timeline playhead ruler", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  const elementBox = async (selector: string) => page.locator(selector).evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height
+    };
+  });
+  const dragPlayheadTo = async (time: number) => {
+    const stripBox = await elementBox("#timeline-marker-strip");
+    const handleBox = await elementBox(".timeline-ruler-playhead");
+    expect(stripBox.width).toBeGreaterThan(0);
+    expect(handleBox.height).toBeGreaterThan(0);
+    const startX = handleBox.x + handleBox.width / 2;
+    const startY = handleBox.y + handleBox.height / 2;
+    const targetX = stripBox.x + stripBox.width * (time / 8);
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(targetX, startY, { steps: 8 });
+    await page.mouse.up();
+  };
+
+  await page.goto("/");
+  await expect(page.locator(".timeline-ruler-playhead")).toBeVisible();
+  await expect(page.locator(".timeline-layer-playhead")).toBeVisible();
+  await page.locator("#timeline-snap-step").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+  await dragPlayheadTo(4);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(4, 3);
+  await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "4");
+
+  await dragPlayheadTo(1);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(1, 3);
+  await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "1");
+
+  expect(errors).toEqual([]);
+});
+
 test("evaluates ease in and ease out timeline interpolation", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
