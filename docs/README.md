@@ -39,6 +39,9 @@ PDF.
   records the no-reinvention decision for the next timeline phase: keep
   `animation-timeline-js` as the dope-sheet component and integrate proven
   Auto-Key / duplicate / navigation workflows around it.
+- [Command Palette](command-palette.md) documents the searchable editor command
+  surface for reaching timeline, playback, scene, and tool commands without
+  expanding the permanent toolbar.
 - [Light Timeline Tracks](light-timeline-tracks.md) documents the implemented
   light property tracks, playback rules, and current schema status.
 - [Object Property Timeline Tracks](object-property-timeline-tracks.md)
@@ -223,7 +226,10 @@ animation runtime where it fits:
   only when copied keyframes are available.
 - A compact keyframe editor allows precise selected/playhead keyframe time and
   value edits, and selection-only timeline actions are disabled when no
-  selected or playhead keyframe can be edited.
+  selected or playhead keyframe can be edited. Interpolation controls follow
+  the same availability rule.
+- `Commands`, `Ctrl/Cmd+K`, and `F3` open a searchable command palette for
+  timeline, playback, retiming, interpolation, tool, and scene commands.
 - Track enable/disable controls mute individual property tracks without deleting
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation
@@ -308,6 +314,9 @@ animation runtime where it fits:
   canvas scrolling kept in sync.
 - Blender-style UI density is the default, with Compact and Comfortable options
   persisted in local storage.
+- The `Commands` button plus `Ctrl/Cmd+K` and `F3` open a searchable command
+  palette for playback, keyframe, selection, interpolation, retiming, view,
+  tool, and scene operations.
 
 ## Implementation Status
 
@@ -333,6 +342,9 @@ object appearance, camera, and light tracks:
   button labels, and signed playback delta calculation.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
+- `ui/commandPalette.ts` owns the searchable command surface and disabled-state
+  rendering while `main.ts` supplies command descriptors that reuse existing
+  editor functions.
 - `ui/timelineValueGraph.ts` owns active-track graph rendering, key point
   display, channel normalization, and graph time/value drag interaction.
 - `ui/timelinePlayhead.ts` owns the draggable ruler Current Time Indicator and

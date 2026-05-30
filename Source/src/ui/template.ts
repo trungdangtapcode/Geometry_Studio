@@ -21,6 +21,9 @@ export function studioTemplate(): string {
           <button class="timeline-btn strong" id="cinematic-btn" type="button" aria-label="Cinematic demo">
             <span data-icon="Sparkles"></span><span>Cinematic Demo</span>
           </button>
+          <button class="timeline-btn" id="command-palette-btn" type="button" aria-label="Command palette">
+            <span data-icon="Search"></span><span>Commands</span>
+          </button>
           <button class="timeline-btn" id="evaluation-btn" type="button" aria-label="Evaluation tour">
             <span data-icon="ListChecks"></span><span>Evaluation Tour</span>
           </button>
@@ -547,6 +550,15 @@ export function studioTemplate(): string {
       </aside>
 
       <div class="toast-stack" id="toast-stack"></div>
+      <section class="command-palette-overlay" id="command-palette" aria-hidden="true">
+        <div class="command-palette-dialog" role="dialog" aria-modal="true" aria-label="Command palette">
+          <label class="command-palette-search">
+            <span data-icon="Search"></span>
+            <input id="command-palette-search" type="search" placeholder="Search commands" autocomplete="off" />
+          </label>
+          <div class="command-palette-list" id="command-palette-list" role="listbox"></div>
+        </div>
+      </section>
     </main>
   `;
 }

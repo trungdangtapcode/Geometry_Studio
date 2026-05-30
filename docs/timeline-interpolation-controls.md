@@ -20,6 +20,8 @@ first-class timeline toolbar buttons instead of only a dropdown setting.
   Easy Ease, and Linear so timing intent is visible without opening the editor.
 - The interpolation dropdown remains available and stays synchronized with the
   direct buttons.
+- Interpolation buttons and the dropdown are disabled when there is no selected
+  keyframe and no active-track keyframe under the playhead.
 
 ## Keyboard Shortcuts
 

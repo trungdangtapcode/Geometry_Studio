@@ -237,6 +237,7 @@ export class KeyframeTimelinePanel {
   private readonly loopInput = query<HTMLInputElement>("#timeline-loop");
   private readonly snapStepInput = query<HTMLInputElement>("#timeline-snap-step");
   private readonly interpolationSelect = query<HTMLSelectElement>("#timeline-interpolation");
+  private readonly interpolationButtons = [...document.querySelectorAll<HTMLButtonElement>(".interpolation-button")];
   private readonly easePath = query<SVGPathElement>("#timeline-ease-path");
   private readonly easeLabel = query<HTMLSpanElement>("#timeline-ease-label");
   private readonly selectionLabel = query<HTMLSpanElement>("#timeline-selection");
@@ -563,8 +564,7 @@ export class KeyframeTimelinePanel {
     this.syncTimecode(timelineDocument);
     this.renderMarkers(timelineDocument);
     this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
-    this.syncInterpolationControls(this.currentInterpolation(timelineDocument, this.lastSelectedId));
-    this.syncKeyframeEditor(timelineDocument, this.lastSelectedId);
+    this.syncSelectionWidgets(timelineDocument, this.lastSelectedId);
     this.renderGraph(timelineDocument, this.lastSelectedId);
     this.lockDockScroll();
     this.updating = false;
@@ -808,7 +808,7 @@ export class KeyframeTimelinePanel {
     this.interpolationSelect.addEventListener("change", () => {
       this.applyInterpolation(this.interpolationSelect.value as TimelineInterpolation);
     });
-    document.querySelectorAll<HTMLButtonElement>(".interpolation-button").forEach((button) => {
+    this.interpolationButtons.forEach((button) => {
       button.addEventListener("click", () => {
         this.applyInterpolation(button.dataset.interpolation as TimelineInterpolation);
       });
@@ -1679,6 +1679,7 @@ export class KeyframeTimelinePanel {
         ? "Playhead keyframe active"
       : "No keyframe selected";
     this.syncKeyframeTargetButtons(sources.length);
+    this.syncInterpolationAvailability(sources.length);
     this.syncKeyframeEditor(timelineDocument, selectedId, sources);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
   }
@@ -1686,6 +1687,21 @@ export class KeyframeTimelinePanel {
   private syncKeyframeTargetButtons(targetCount: number): void {
     const disabled = targetCount === 0;
     this.keyframeTargetButtons.forEach((button) => {
+      button.dataset.enabledTitle ??= button.title;
+      button.disabled = disabled;
+      button.title = disabled
+        ? "Select keyframes or park the playhead on an active-track keyframe"
+        : button.dataset.enabledTitle ?? "";
+    });
+  }
+
+  private syncInterpolationAvailability(targetCount: number): void {
+    const disabled = targetCount === 0;
+    this.interpolationSelect.disabled = disabled;
+    this.interpolationSelect.title = disabled
+      ? "Select keyframes or park the playhead on an active-track keyframe"
+      : "Keyframe interpolation";
+    this.interpolationButtons.forEach((button) => {
       button.dataset.enabledTitle ??= button.title;
       button.disabled = disabled;
       button.title = disabled
@@ -1937,7 +1953,7 @@ export class KeyframeTimelinePanel {
   private syncInterpolationControls(interpolation: TimelineInterpolation): void {
     const value = isTimelineInterpolation(interpolation) ? interpolation : "linear";
     this.interpolationSelect.value = value;
-    document.querySelectorAll<HTMLButtonElement>(".interpolation-button").forEach((button) => {
+    this.interpolationButtons.forEach((button) => {
       button.classList.toggle("active", button.dataset.interpolation === value);
     });
     this.easePath.setAttribute("d", interpolationPath(value));

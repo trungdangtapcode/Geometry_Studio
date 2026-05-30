@@ -261,7 +261,9 @@ test("disables keyframe target actions when no keyframe is active", async ({ pag
     page.locator("#timeline-copy-keyframes"),
     page.locator("#timeline-duplicate-keyframe"),
     page.locator("#timeline-preview-selection"),
-    page.locator("#timeline-nudge-right")
+    page.locator("#timeline-nudge-right"),
+    page.locator("#timeline-interpolation"),
+    page.locator("#timeline-ease-smooth")
   ];
 
   await expect(page.locator("#timeline-selection")).toContainText("No keyframe selected");
@@ -270,6 +272,74 @@ test("disables keyframe target actions when no keyframe is active", async ({ pag
   await page.locator("#timeline-add-keyframe").click();
   await expect(page.locator("#timeline-selection")).toContainText("1 keyframe selected");
   for (const action of targetActions) await expect(action).toBeEnabled();
+
+  expect(errors).toEqual([]);
+});
+
+test("opens the command palette and runs timeline commands", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#command-palette")).toHaveAttribute("aria-hidden", "true");
+  await page.keyboard.press("Control+K");
+  await expect(page.locator("#command-palette")).toHaveClass(/open/);
+  await expect(page.locator("#command-palette-search")).toBeFocused();
+
+  await page.locator("#command-palette-search").fill("paste insert");
+  await expect(page.locator('[data-command-id="timeline.paste-insert"]')).toBeDisabled();
+
+  await page.locator("#command-palette-search").fill("set key");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#command-palette")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator("#timeline-selection")).toContainText("1 keyframe selected");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("easy ease");
+  await expect(page.locator('[data-command-id="timeline.ease-smooth"]')).toBeEnabled();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#command-palette")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator("#timeline-ease-smooth")).toHaveClass(/active/);
+
+  expect(errors).toEqual([]);
+});
+
+test("runs timeline commands from the command palette", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#command-palette-btn")).toBeVisible();
+
+  await page.keyboard.press("Control+K");
+  await expect(page.locator("#command-palette")).toHaveClass(/open/);
+  await page.locator("#command-palette-search").fill("paste keyframes");
+  await expect(page.locator('[data-command-id="timeline.paste"]')).toBeDisabled();
+
+  await page.locator("#command-palette-search").fill("set transform");
+  await page.locator('[data-command-id="timeline.set-transform"]').click();
+  await expect(page.locator("#command-palette")).not.toHaveClass(/open/);
+  await expect(page.locator("#selection-summary")).toContainText("Keyframed");
+  await expect(page.locator("#timeline-selection")).toContainText("Playhead keyframe active");
+
+  await page.locator("#command-palette-btn").click();
+  await expect(page.locator("#command-palette-search")).toBeFocused();
+  await page.locator("#command-palette-search").fill("copy selected");
+  await page.locator('[data-command-id="timeline.copy"]').click();
+  await expect(page.locator("#timeline-paste-keyframes")).toBeEnabled();
+  await expect(page.locator("#timeline-paste-insert-keyframes")).toBeEnabled();
+
+  await page.keyboard.press("F3");
+  await page.locator("#command-palette-search").fill("paste insert");
+  await expect(page.locator('[data-command-id="timeline.paste-insert"]')).toBeEnabled();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#command-palette")).not.toHaveClass(/open/);
 
   expect(errors).toEqual([]);
 });

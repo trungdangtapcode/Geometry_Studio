@@ -109,6 +109,7 @@ import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTr
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
 import { KeyframeTimelinePanel, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
+import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
 import { bindUiDensityControl } from "./ui/density";
 import { studioTemplate } from "./ui/template";
 import { renderTransformInspector, type TransformAxis, type TransformProperty } from "./ui/transformInspector";
@@ -265,6 +266,8 @@ function boot(root: HTMLDivElement): void {
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
   });
+  const commandPalette = new CommandPalette();
+  commandPalette.setCommands(createCommandPaletteCommands());
 
   seedDefaultScene();
   setSelected(firstEntryId());
@@ -482,6 +485,7 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#reset-scene").addEventListener("click", resetScene);
     query<HTMLButtonElement>("#play-toggle").addEventListener("click", togglePlay);
     query<HTMLButtonElement>("#cinematic-btn").addEventListener("click", startCinematicDemo);
+    query<HTMLButtonElement>("#command-palette-btn").addEventListener("click", () => commandPalette.open());
     query<HTMLButtonElement>("#evaluation-btn").addEventListener("click", startEvaluationTour);
     query<HTMLButtonElement>("#screenshot-btn").addEventListener("click", exportScreenshot);
     query<HTMLButtonElement>("#record-video-btn").addEventListener("click", togglePreviewRecording);
@@ -886,6 +890,127 @@ function boot(root: HTMLDivElement): void {
   function timelineClipboardSpan(clipboard: TimelineClipboard): number {
     if (clipboard.keyframes.length === 0) return 0;
     return roundTime(Math.max(...clipboard.keyframes.map((keyframe) => keyframe.relativeTime)));
+  }
+
+  function createCommandPaletteCommands(): CommandPaletteCommand[] {
+    return [
+      command("timeline.play", "Play / Pause Timeline", "Playback", togglePlay, { shortcut: "Space", keywords: ["transport", "preview"] }),
+      command("timeline.reverse", "Play Backward", "Playback", () => playTimeline(-1), { shortcut: "J", keywords: ["transport"] }),
+      command("timeline.pause", "Pause Timeline", "Playback", () => pauseTimeline(), { shortcut: "K", keywords: ["transport"] }),
+      command("timeline.forward", "Play Forward", "Playback", () => playTimeline(1), { shortcut: "L", keywords: ["transport"] }),
+      command("timeline.preview-selection", "Preview Selected Keyframe Range", "Playback", previewSelectedTimelineKeyRange, {
+        shortcut: "Shift+Space",
+        keywords: ["work area", "selection"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+
+      command("timeline.set-key", "Set Key On Active Track", "Keyframes", () => addTimelineKeyframe(timelinePanel.selectedTrackKind()), { keywords: ["diamond", "update"] }),
+      command("timeline.set-transform", "Set Transform Keys", "Keyframes", setTransformTimelineKeyframes, { keywords: ["trs", "position", "rotation", "scale"] }),
+      command("timeline.set-visible", "Set Keys On Visible Rows", "Keyframes", () => setVisibleTimelineKeyframes(timelinePanel.visibleRowTargetsList()), { keywords: ["rows", "channels"] }),
+      command("timeline.copy", "Copy Selected Keyframes", "Keyframes", () => copyTimelineKeyframes(), {
+        shortcut: "Ctrl+C",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.cut", "Cut Selected Keyframes", "Keyframes", () => cutTimelineKeyframes(), {
+        shortcut: "Ctrl+X",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.paste", "Paste Keyframes", "Keyframes", () => pasteTimelineKeyframes(), {
+        shortcut: "Ctrl+V",
+        disabled: () => !hasTimelineClipboard()
+      }),
+      command("timeline.paste-insert", "Paste Insert Keyframes", "Keyframes", pasteInsertTimelineKeyframes, {
+        shortcut: "Ctrl+Shift+V",
+        keywords: ["insert edit", "shift"],
+        disabled: () => !hasTimelineClipboard()
+      }),
+      command("timeline.delete", "Delete Selected Keyframes", "Keyframes", () => deleteTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), {
+        shortcut: "Delete",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ripple-delete", "Ripple Delete Selected Keyframes", "Keyframes", () => rippleDeleteTimelineKeyframes(), {
+        shortcut: "Shift+Delete",
+        keywords: ["close gap"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.duplicate", "Duplicate Selected Keyframes", "Keyframes", () => duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), {
+        shortcut: "Ctrl+D",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+
+      command("timeline.select-active", "Select Active Track Keyframes", "Selection", selectAllActiveTimelineKeyframes, { shortcut: "Ctrl+A" }),
+      command("timeline.select-work", "Select Active Track Work Area Keyframes", "Selection", selectTimelineWorkAreaKeyframes, { shortcut: "Ctrl+Shift+A" }),
+      command("timeline.select-visible", "Select Visible Row Keyframes", "Selection", () => selectVisibleTimelineKeyframes(false), { shortcut: "Ctrl+Alt+A" }),
+      command("timeline.select-visible-work", "Select Visible Row Work Area Keyframes", "Selection", () => selectVisibleTimelineKeyframes(true), { shortcut: "Ctrl+Alt+Shift+A" }),
+      command("timeline.select-time", "Select Visible Row Keys At Playhead", "Selection", selectVisibleTimelineTimeKeyframes, { shortcut: "Ctrl+Alt+K" }),
+
+      command("timeline.ease-linear", "Apply Linear Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "linear"), {
+        shortcut: "Shift+F9",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ease-in", "Apply Ease In Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "easeIn"), {
+        shortcut: "Ctrl+F9",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ease-out", "Apply Ease Out Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "easeOut"), {
+        shortcut: "Ctrl+Shift+F9",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ease-smooth", "Apply Easy Ease Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "smooth"), {
+        shortcut: "F9",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ease-hold", "Apply Hold Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "hold"), {
+        shortcut: "Alt+F9",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+
+      command("timeline.nudge-left", "Nudge Keyframes Left", "Retiming", () => nudgeTimelineKeyframes(-1), { disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.nudge-right", "Nudge Keyframes Right", "Retiming", () => nudgeTimelineKeyframes(1), { disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.move-to-playhead", "Move Keyframes To Playhead", "Retiming", () => moveTimelineKeyframesToPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+Enter", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.center-on-playhead", "Center Keyframes On Playhead", "Retiming", () => centerTimelineKeyframesOnPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+C", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.rove", "Rove Keyframes Across Time", "Retiming", () => roveTimelineKeyframesAcrossTime(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+V", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.reverse-keys", "Reverse Keyframe Timing", "Retiming", () => reverseTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+R", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.snap-frames", "Snap Keyframes To Frames", "Retiming", () => snapTimelineKeyframesToFrames(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+S", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.distribute", "Distribute Keyframes Across Work Area", "Retiming", () => distributeTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+D", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.fit-work", "Fit Keyframes To Work Area", "Retiming", () => fitTimelineKeyframesToWorkArea(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+F", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.stagger", "Stagger Keyframes From Playhead", "Retiming", () => staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.cascade", "Cascade Target Keyframes From Playhead", "Retiming", () => cascadeTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Alt+Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
+
+      command("timeline.graph", "Toggle Value Graph", "View", () => query<HTMLButtonElement>("#timeline-graph-toggle").click(), { keywords: ["curve editor"] }),
+      command("timeline.zoom-in", "Zoom Timeline In", "View", () => timelinePanel.zoomTimeline(1), { shortcut: "=" }),
+      command("timeline.zoom-out", "Zoom Timeline Out", "View", () => timelinePanel.zoomTimeline(-1), { shortcut: "-" }),
+      command("timeline.fit", "Fit Timeline To Duration", "View", () => timelinePanel.fitTimelineToDuration(), { shortcut: "0" }),
+      command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
+
+      command("tool.move", "Move Tool", "Tools", () => setTransformMode("translate"), { shortcut: "T" }),
+      command("tool.rotate", "Rotate Tool", "Tools", () => setTransformMode("rotate"), { shortcut: "R" }),
+      command("tool.scale", "Scale Tool", "Tools", () => setTransformMode("scale"), { shortcut: "S" }),
+      command("scene.save", "Save Scene JSON", "Scene", saveScene, { shortcut: "Ctrl+S" }),
+      command("scene.load", "Load Scene JSON", "Scene", () => query<HTMLInputElement>("#scene-input").click()),
+      command("scene.screenshot", "Export Screenshot", "Scene", exportScreenshot),
+      command("scene.cinematic", "Run Cinematic Demo", "Scene", startCinematicDemo),
+      command("scene.evaluation", "Run Evaluation Tour", "Scene", startEvaluationTour),
+      command("scene.reset", "Reset Scene", "Scene", resetScene)
+    ];
+  }
+
+  function command(
+    id: string,
+    title: string,
+    category: string,
+    run: () => void,
+    options: Partial<Pick<CommandPaletteCommand, "keywords" | "shortcut" | "disabled">> = {}
+  ): CommandPaletteCommand {
+    return { id, title, category, run, ...options };
+  }
+
+  function hasTimelineClipboard(): boolean {
+    return Boolean(timelineClipboard && timelineClipboard.keyframes.length > 0);
+  }
+
+  function hasTimelineKeyframeTarget(): boolean {
+    return resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList()).length > 0;
   }
 
   function renderOutliner(): void {
@@ -1333,6 +1458,16 @@ function boot(root: HTMLDivElement): void {
   function handleKeyboard(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
     const code = event.code.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && key === "k") {
+      event.preventDefault();
+      commandPalette.open();
+      return;
+    }
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && key === "f3") {
+      event.preventDefault();
+      commandPalette.open();
+      return;
+    }
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
     if ((event.ctrlKey || event.metaKey) && key === "z") {
       event.preventDefault();
