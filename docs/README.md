@@ -72,6 +72,8 @@ PDF.
   J/K/L forward, pause, and reverse playback behavior.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
+- [Timeline Paste Insert](timeline-paste-insert.md) documents insert-style
+  clipboard paste that shifts later destination keys before pasting.
 - [Timeline Keyframe Ripple Delete](timeline-keyframe-ripple-delete.md)
   documents selected timing-span removal that closes gaps on affected tracks.
 - [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step
@@ -216,6 +218,8 @@ animation runtime where it fits:
 - `Ripple Del` and `Shift+Delete` remove selected timing spans and shift later
   keys earlier on affected tracks, adding the first practical ripple-editing
   workflow from the AE/Premiere research plan.
+- `Paste Insert` and `Ctrl/Cmd+Shift+V` paste copied keyframes after shifting
+  later destination keys by the copied timing span.
 - A compact keyframe editor allows precise selected/playhead keyframe time and
   value edits.
 - Track enable/disable controls mute individual property tracks without deleting
@@ -311,9 +315,9 @@ object appearance, camera, and light tracks:
 - `animation/timelineSchema.ts` owns timeline defaults, migration, cloning, and
   track helpers.
 - `animation/timelineEditing.ts` owns pure keyframe edit operations such as
-  source resolution, copy/paste payloads, duplicate, ripple delete, visible-row
-  gap editing, frame nudge, shared edit retiming helpers, and numeric keyframe
-  editing.
+  source resolution, copy/paste payloads, paste insert, duplicate, ripple
+  delete, visible-row gap editing, frame nudge, shared edit retiming helpers,
+  and numeric keyframe editing.
 - `animation/timelineTracks.ts` owns shared timeline track categories, labels,
   preset-to-track mapping, and object value capture helpers so the editor shell
   does not duplicate track taxonomy.

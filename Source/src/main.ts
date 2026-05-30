@@ -215,6 +215,7 @@ function boot(root: HTMLDivElement): void {
     onCopyVisibleTimeKeyframes: copyVisibleTimelineTimeKeyframes,
     onCutVisibleTimeKeyframes: cutVisibleTimelineTimeKeyframes,
     onPasteKeyframes: pasteTimelineKeyframes,
+    onPasteInsertKeyframes: pasteInsertTimelineKeyframes,
     onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
     onSelectVisibleKeyframes: selectVisibleTimelineKeyframes,
     onSelectVisibleTimeKeyframes: selectVisibleTimelineTimeKeyframes,
@@ -1355,6 +1356,11 @@ function boot(root: HTMLDivElement): void {
       cutTimelineKeyframes();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === "v") {
+      event.preventDefault();
+      pasteInsertTimelineKeyframes();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "v") {
       event.preventDefault();
       pasteTimelineKeyframes();
@@ -1487,13 +1493,13 @@ function boot(root: HTMLDivElement): void {
       showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good");
       return;
     }
-    if (key === "=" || key === "+") {
+    if (key === "=" || key === "+" || code === "equal" || code === "numpadadd") {
       event.preventDefault();
       timelinePanel.zoomTimeline(1);
       showToast("Timeline zoomed in", "good");
       return;
     }
-    if (key === "-" || key === "_") {
+    if (key === "-" || key === "_" || code === "minus" || code === "numpadsubtract") {
       event.preventDefault();
       timelinePanel.zoomTimeline(-1);
       showToast("Timeline zoomed out", "good");
@@ -2668,7 +2674,7 @@ function boot(root: HTMLDivElement): void {
     cutTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
   }
 
-  function pasteTimelineKeyframes(): void {
+  function pasteTimelineKeyframes(options: { insert?: boolean } = {}): void {
     if (!timelineClipboard || timelineClipboard.keyframes.length === 0) {
       showToast("Copy timeline keyframes before pasting.", "bad");
       return;
@@ -2677,7 +2683,8 @@ function boot(root: HTMLDivElement): void {
     const baseTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
     recordHistory();
     const result = pasteTimelineClipboard(sceneTimeline, timelineClipboard, selectedEntry()?.id ?? null, baseTime, {
-      validObjectIds: new Set(entries.keys())
+      validObjectIds: new Set(entries.keys()),
+      insertBeforePaste: options.insert
     });
     clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
 
@@ -2695,7 +2702,12 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     timelinePanel.selectKeyframes(result.keyframeIds);
-    showToast(`${result.pasted} keyframe${result.pasted === 1 ? "" : "s"} pasted${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+    const insertText = options.insert ? `, ${result.shifted} shifted` : "";
+    showToast(`${result.pasted} keyframe${result.pasted === 1 ? "" : "s"} pasted${insertText}${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+  }
+
+  function pasteInsertTimelineKeyframes(): void {
+    pasteTimelineKeyframes({ insert: true });
   }
 
   function duplicateTimelineKeyframes(keyframeIds: string[]): void {

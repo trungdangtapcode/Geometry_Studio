@@ -62,6 +62,7 @@ export interface KeyframeTimelineCallbacks {
   onCopyVisibleTimeKeyframes(): void;
   onCutVisibleTimeKeyframes(): void;
   onPasteKeyframes(): void;
+  onPasteInsertKeyframes(): void;
   onSelectWorkAreaKeyframes(): void;
   onSelectVisibleKeyframes(workAreaOnly: boolean): void;
   onSelectVisibleTimeKeyframes(): void;
@@ -577,6 +578,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-paste-keyframes").addEventListener("click", () => {
       this.callbacks.onPasteKeyframes();
+    });
+    query<HTMLButtonElement>("#timeline-paste-insert-keyframes").addEventListener("click", () => {
+      this.callbacks.onPasteInsertKeyframes();
     });
     query<HTMLButtonElement>("#timeline-select-workarea").addEventListener("click", () => {
       this.callbacks.onSelectWorkAreaKeyframes();

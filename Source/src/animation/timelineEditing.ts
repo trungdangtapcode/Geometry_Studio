@@ -52,6 +52,8 @@ export interface TimelineClipboardOptions {
 
 export interface PasteTimelineOptions {
   validObjectIds?: ReadonlySet<string>;
+  insertBeforePaste?: boolean;
+  insertDuration?: number;
 }
 
 export interface TimelineSourceFallback {
@@ -68,6 +70,7 @@ export interface TimelineEditResult {
 export interface PasteTimelineResult extends TimelineEditResult {
   pasted: number;
   keyframeIds: string[];
+  shifted: number;
 }
 
 export interface DuplicateTimelineResult extends TimelineEditResult {
@@ -167,8 +170,32 @@ export function pasteTimelineClipboard(
 ): PasteTimelineResult {
   let pasted = 0;
   let skipped = 0;
+  let shifted = 0;
   const keyframeIds: string[] = [];
   const changedTransformObjectIds = new Set<string>();
+
+  if (options.insertBeforePaste) {
+    const insertTargets = clipboard.keyframes.flatMap((clip): TimelineTrackEditTarget[] => {
+      const rawTime = baseTime + clip.relativeTime;
+      if (rawTime > timeline.duration + 0.001) return [];
+      const target = pasteTargetTrack(timeline, clip, selectedObjectId, clipboard.preserveObjectTargets, options.validObjectIds);
+      if (!target || target.track.locked) return [];
+      return [{
+        scope: clip.scope,
+        objectId: target.objectId ?? clip.scope,
+        track: target.track
+      }];
+    });
+    const insertResult = insertTimelineGapOnTracks(
+      timeline,
+      insertTargets,
+      baseTime,
+      options.insertDuration ?? timelineClipboardDuration(timeline, clipboard)
+    );
+    shifted = insertResult.shifted;
+    skipped += insertResult.skipped;
+    insertResult.changedTransformObjectIds.forEach((objectId) => changedTransformObjectIds.add(objectId));
+  }
 
   clipboard.keyframes.forEach((clip) => {
     const rawTime = baseTime + clip.relativeTime;
@@ -205,7 +232,7 @@ export function pasteTimelineClipboard(
     pasted += 1;
   });
 
-  return { pasted, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
+  return { pasted, skipped, shifted, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
 export function duplicateResolvedKeyframes(
@@ -941,6 +968,13 @@ function timelineTimeKey(time: number): number {
 function timelineGapDuration(timeline: SceneTimelineDocument, duration: number): number {
   const fallback = Math.max(timeline.snapStep, 1 / Math.max(timeline.fps, 1), 0.001);
   return roundTime(Math.max(Number.isFinite(duration) ? duration : 0, fallback));
+}
+
+function timelineClipboardDuration(timeline: SceneTimelineDocument, clipboard: TimelineClipboard): number {
+  const maxRelativeTime = clipboard.keyframes.length
+    ? Math.max(...clipboard.keyframes.map((keyframe) => keyframe.relativeTime))
+    : 0;
+  return timelineGapDuration(timeline, maxRelativeTime);
 }
 
 function dedupeTimelineTrackTargets(targets: TimelineTrackEditTarget[]): TimelineTrackEditTarget[] {
