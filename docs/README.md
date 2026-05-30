@@ -131,6 +131,8 @@ PDF.
   dope-sheet property values while editing and scrubbing.
 - [Timeline Track Metadata](timeline-track-metadata.md) documents the shared
   track groups, labels, colors, and type guards used by the timeline UI.
+- [Timeline Target Resolution](timeline-target-resolution.md) documents the
+  UI-row-to-track mapping used by visible-row keying and gap-edit commands.
 - [Timeline Transform Keying](timeline-transform-keying.md) documents the
   `Set TRS` command for recording Position, Rotation, and Scale as one object
   pose.
@@ -315,6 +317,8 @@ object appearance, camera, and light tracks:
 - `animation/timelineTracks.ts` owns shared timeline track categories, labels,
   preset-to-track mapping, and object value capture helpers so the editor shell
   does not duplicate track taxonomy.
+- `animation/timelineTargets.ts` owns UI-visible row deduplication and row-to-
+  track resolution for visible-row timeline commands.
 - `animation/interpolation.ts` owns the shared per-keyframe interpolation
   evaluator.
 - `animation/timelinePlayer.ts` evaluates Position, Rotation, and Scale tracks

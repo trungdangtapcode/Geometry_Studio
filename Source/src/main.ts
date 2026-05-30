@@ -28,12 +28,12 @@ import {
   type EditTimelineResult,
   type TimelineClipboard,
   type TimelineKeyframeEditPatch,
-  type TimelineKeyframeSource,
-  type TimelineTrackEditTarget
+  type TimelineKeyframeSource
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
 import { objectLayerRange, setObjectVisibilityRange, shiftObjectLayerKeyframes, type TimelineLayerRange } from "./animation/timelineLayers";
 import { TimelinePlayer } from "./animation/timelinePlayer";
+import { dedupeTimelineRowTargets, resolveTimelineRowTrackTargets } from "./animation/timelineTargets";
 import { TimelineTransport, type PlaybackDirection } from "./animation/timelineTransport";
 import {
   copyTimelineObject,
@@ -2192,7 +2192,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function setVisibleTimelineKeyframes(rows: TimelineVisibleRowTarget[]): void {
-    const targets = dedupeVisibleTimelineTargets(rows);
+    const targets = dedupeTimelineRowTargets(rows);
     if (targets.length === 0) {
       showToast("No visible timeline rows to key.", "bad");
       return;
@@ -2387,42 +2387,8 @@ function boot(root: HTMLDivElement): void {
     timelinePanel.selectKeyframes(keyframeIds);
   }
 
-  function dedupeVisibleTimelineTargets(rows: TimelineVisibleRowTarget[]): TimelineVisibleRowTarget[] {
-    const targets = new Map<string, TimelineVisibleRowTarget>();
-    rows.forEach((row) => {
-      const key = `${row.targetId}:${row.kind}`;
-      if (!targets.has(key)) targets.set(key, row);
-    });
-    return [...targets.values()];
-  }
-
-  function resolveVisibleTimelineTrackTargets(rows: TimelineVisibleRowTarget[]): { targets: TimelineTrackEditTarget[]; lockedCount: number } {
-    const targets: TimelineTrackEditTarget[] = [];
-    let lockedCount = 0;
-
-    dedupeVisibleTimelineTargets(rows).forEach((row) => {
-      let target: TimelineTrackEditTarget | null = null;
-      if (isCameraTrackKind(row.kind)) {
-        const track = sceneTimeline.camera.tracks.find((candidate) => candidate.kind === row.kind);
-        if (track) target = { scope: "camera", objectId: "camera", track };
-      } else if (isLightTrackKind(row.kind)) {
-        const track = sceneTimeline.lights.tracks.find((candidate) => candidate.kind === row.kind);
-        if (track) target = { scope: "lights", objectId: "lights", track };
-      } else if (entries.has(row.targetId)) {
-        const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === row.targetId);
-        const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
-        if (track) target = { scope: "object", objectId: row.targetId, track };
-      }
-
-      if (!target || target.track.keyframes.length === 0) return;
-      if (target.track.locked) {
-        lockedCount += 1;
-        return;
-      }
-      targets.push(target);
-    });
-
-    return { targets, lockedCount };
+  function resolveVisibleTimelineTrackTargets(rows: TimelineVisibleRowTarget[]) {
+    return resolveTimelineRowTrackTargets(sceneTimeline, rows, new Set(entries.keys()));
   }
 
   function bakeObjectAnimationPreset(entry: SceneEntry, mode: AnimationMode, clearExisting = true): void {
