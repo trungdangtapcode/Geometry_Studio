@@ -86,6 +86,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-layer-out")).toBeVisible();
   await expect(page.locator("#timeline-split-layer")).toBeVisible();
   await expect(page.locator("#timeline-layer-work")).toBeVisible();
+  await expect(page.locator("#timeline-overview-track")).toBeVisible();
   await expect(page.locator("#timeline-layer-strip")).toBeVisible();
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toContainText("Cube");
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
@@ -355,6 +356,49 @@ test("opens the command palette and runs timeline commands", async ({ page }) =>
   expect(errors).toEqual([]);
 });
 
+test("reveals common timeline property rows with AE-style shortcuts", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  const pressAltShortcut = async (key: string) => {
+    await page.evaluate((shortcutKey) => {
+      document.dispatchEvent(new KeyboardEvent("keydown", {
+        key: shortcutKey,
+        code: `Key${shortcutKey.toUpperCase()}`,
+        altKey: true,
+        bubbles: true
+      }));
+    }, key);
+  };
+
+  await page.goto("/");
+  await pressAltShortcut("p");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("position");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("position");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"]')).toBeVisible();
+
+  await pressAltShortcut("t");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("objectOpacity");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("opacity");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectOpacity"]')).toBeVisible();
+
+  await pressAltShortcut("r");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("rotation");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="rotation"][data-track-axis="y"]')).toBeVisible();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("reveal scale");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("scale");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("scale");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="scale"][data-track-axis="z"]')).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
+
 test("runs timeline commands from the command palette", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
@@ -425,6 +469,64 @@ test("keeps the playhead visible when follow playhead is enabled", async ({ page
 
   await page.reload();
   await expect(page.locator("#timeline-follow-playhead")).toHaveAttribute("aria-pressed", "true");
+  expect(errors).toEqual([]);
+});
+
+test("uses the timeline overview to scrub and pan dense edits", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-overview-track")).toBeVisible();
+  await page.locator("#timeline-duration").evaluate((input) => {
+    (input as HTMLInputElement).value = "30";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-transform").click({ force: true });
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "10";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-set-transform").click({ force: true });
+  await expect.poll(
+    async () => page.locator(".timeline-overview-key").count(),
+    { timeout: 10_000 }
+  ).toBeGreaterThan(0);
+
+  const timeAfterOverviewClick = await page.evaluate(() => {
+    const track = document.querySelector<HTMLButtonElement>("#timeline-overview-track")!;
+    const rect = track.getBoundingClientRect();
+    const x = rect.left + rect.width * 0.5;
+    const y = rect.top + rect.height * 0.5;
+    track.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 41, clientX: x, clientY: y }));
+    track.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0, pointerId: 41, clientX: x, clientY: y }));
+    return Number(document.querySelector<HTMLInputElement>("#timeline-current-time")!.value);
+  });
+  expect(timeAfterOverviewClick).toBeGreaterThan(14.9);
+  expect(timeAfterOverviewClick).toBeLessThan(15.1);
+
+  for (let index = 0; index < 6; index += 1) await page.locator("#timeline-zoom-in").click({ force: true });
+  await expect.poll(
+    async () => page.locator("#timeline-canvas .scroll-container").evaluate((element) => element.scrollWidth - element.clientWidth),
+    { timeout: 10_000 }
+  ).toBeGreaterThan(0);
+  const panResult = await page.evaluate(() => {
+    const track = document.querySelector<HTMLButtonElement>("#timeline-overview-track")!;
+    const viewport = document.querySelector<HTMLElement>("#timeline-overview-viewport")!;
+    const scroller = document.querySelector<HTMLElement>("#timeline-canvas .scroll-container")!;
+    const rect = viewport.getBoundingClientRect();
+    const x = rect.left + rect.width * 0.5;
+    const y = rect.top + rect.height * 0.5;
+    const initialScroll = scroller.scrollLeft;
+    track.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 42, clientX: x, clientY: y }));
+    track.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, button: 0, pointerId: 42, clientX: x + 160, clientY: y }));
+    track.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0, pointerId: 42, clientX: x + 160, clientY: y }));
+    return { initialScroll, finalScroll: scroller.scrollLeft };
+  });
+  expect(panResult.finalScroll).toBeGreaterThan(panResult.initialScroll);
   expect(errors).toEqual([]);
 });
 

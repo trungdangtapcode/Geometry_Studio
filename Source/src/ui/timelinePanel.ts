@@ -169,6 +169,15 @@ type TimelineMarkerDragState = {
   moved: boolean;
 };
 
+type TimelineOverviewDragState = {
+  pointerId: number;
+  mode: "pan" | "scrub";
+  startClientX: number;
+  startVisibleTime: number;
+  duration: number;
+  width: number;
+};
+
 type TimelineDetailSource = {
   targetName: string;
   track: TimelineTrackDocument;
@@ -194,6 +203,11 @@ export class KeyframeTimelinePanel {
   private readonly markerStrip = query<HTMLDivElement>("#timeline-marker-strip");
   private readonly layerStrip = query<HTMLDivElement>("#timeline-layer-strip");
   private readonly canvasHost = query<HTMLDivElement>("#timeline-canvas");
+  private readonly overviewTrack = query<HTMLButtonElement>("#timeline-overview-track");
+  private readonly overviewKeys = query<HTMLSpanElement>("#timeline-overview-keys");
+  private readonly overviewWork = query<HTMLSpanElement>("#timeline-overview-work");
+  private readonly overviewViewport = query<HTMLSpanElement>("#timeline-overview-viewport");
+  private readonly overviewPlayhead = query<HTMLSpanElement>("#timeline-overview-playhead");
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
   private readonly rowSearchInput = query<HTMLInputElement>("#timeline-row-search");
@@ -282,6 +296,7 @@ export class KeyframeTimelinePanel {
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
   private markerDragState: TimelineMarkerDragState | null = null;
+  private overviewDragState: TimelineOverviewDragState | null = null;
   private layerDragState: TimelineLayerDragState | null = null;
   private suppressMarkerClick = false;
   private suppressLayerClick = false;
@@ -292,6 +307,8 @@ export class KeyframeTimelinePanel {
   private readonly handleResizeEnd = (event: PointerEvent) => this.finishResize(event);
   private readonly handleMarkerDragMove = (event: PointerEvent) => this.dragMarker(event);
   private readonly handleMarkerDragEnd = (event: PointerEvent) => this.finishMarkerDrag(event);
+  private readonly handleOverviewDragMove = (event: PointerEvent) => this.dragOverview(event);
+  private readonly handleOverviewDragEnd = (event: PointerEvent) => this.finishOverviewDrag(event);
   private readonly handleLayerDragMove = (event: PointerEvent) => this.dragLayerRange(event);
   private readonly handleLayerDragEnd = (event: PointerEvent) => this.finishLayerRangeDrag(event);
   private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
@@ -428,6 +445,7 @@ export class KeyframeTimelinePanel {
     this.syncFollowPlayheadButton();
     this.ensurePlayheadVisible(timelineDocument.currentTime, playing);
     this.renderMarkers(timelineDocument);
+    this.renderOverview(timelineDocument);
     this.syncSelectionWidgets(timelineDocument, selectedId);
     this.renderGraph(timelineDocument, selectedId);
     this.lockDockScroll();
@@ -542,6 +560,20 @@ export class KeyframeTimelinePanel {
     this.rowSearchInput.select();
   }
 
+  revealRows(kind: TimelineTrackKind, search = "", filter: "focus" | "keyed" | "all" = "focus"): void {
+    this.trackSelect.value = kind;
+    this.selectedAxis = null;
+    this.rowFilter = filter;
+    this.rowSearchText = normalizeRowSearch(search);
+    this.rowFilterSelect.value = this.rowFilter;
+    this.rowSearchInput.value = this.rowSearchText;
+    storeTimelineRowFilter(this.rowFilter);
+    storeTimelineRowSearch(this.rowSearchText);
+    if (!this.lastTimelineDocument) return;
+    this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+    this.scrollActiveRowIntoView();
+  }
+
   zoomTimeline(direction: -1 | 1): void {
     if (direction > 0) this.timeline.zoomOut(0.25);
     else this.timeline.zoomIn(0.25);
@@ -620,6 +652,7 @@ export class KeyframeTimelinePanel {
     this.syncRowValueReadouts(timelineDocument);
     this.syncTimecode(timelineDocument);
     this.renderMarkers(timelineDocument);
+    this.syncOverviewIndicators(timelineDocument);
     this.syncAddKeyframeButton(timelineDocument, this.lastSelectedId);
     this.syncSelectionWidgets(timelineDocument, this.lastSelectedId);
     this.renderGraph(timelineDocument, this.lastSelectedId);
@@ -734,6 +767,7 @@ export class KeyframeTimelinePanel {
     this.markerStrip.addEventListener("pointerdown", (event) => this.playheadController.startDrag(event));
     this.markerStrip.addEventListener("pointerdown", (event) => this.workAreaController.startDrag(event));
     this.markerStrip.addEventListener("pointerdown", (event) => this.startMarkerDrag(event));
+    this.overviewTrack.addEventListener("pointerdown", (event) => this.startOverviewDrag(event));
     this.markerStrip.addEventListener("click", (event) => {
       if (this.suppressMarkerClick) {
         this.suppressMarkerClick = false;
@@ -953,6 +987,7 @@ export class KeyframeTimelinePanel {
     this.timeline.rescale();
     this.timeline.redraw();
     this.bindTimelineScroller();
+    this.syncOverviewViewport();
   }
 
   private applyRowFilter(filter: TimelineRowFilter): void {
@@ -987,6 +1022,7 @@ export class KeyframeTimelinePanel {
     this.syncingScroll = true;
     this.labels.scrollTop = this.timelineScroller.scrollTop;
     this.syncingScroll = false;
+    this.syncOverviewViewport();
   }
 
   private syncCanvasScrollFromLabels(): void {
@@ -994,6 +1030,7 @@ export class KeyframeTimelinePanel {
     this.syncingScroll = true;
     this.timelineScroller.scrollTop = this.labels.scrollTop;
     this.syncingScroll = false;
+    this.syncOverviewViewport();
   }
 
   private timelineRowHeight(): number {
@@ -1042,6 +1079,134 @@ export class KeyframeTimelinePanel {
     });
     this.playheadController.render(timelineDocument);
     this.syncMarkerEditor(timelineDocument, activeMarker);
+  }
+
+  private renderOverview(timelineDocument: SceneTimelineDocument): void {
+    const duration = Math.max(timelineDocument.duration, 0.001);
+    const keyframes = this.timelineOverviewKeyframes(timelineDocument);
+    const maxTicks = 420;
+    const step = Math.max(1, Math.ceil(keyframes.length / maxTicks));
+    this.overviewKeys.innerHTML = "";
+    keyframes.forEach((keyframe, index) => {
+      if (index % step !== 0) return;
+      const tick = document.createElement("span");
+      tick.className = "timeline-overview-key";
+      tick.dataset.keyframeId = keyframe.id;
+      tick.classList.toggle("selected", this.selectedKeyframeIds.has(keyframe.id));
+      tick.style.left = `${clamp((keyframe.time / duration) * 100, 0, 100)}%`;
+      tick.title = `Key at ${formatNumber(keyframe.time)}s`;
+      this.overviewKeys.appendChild(tick);
+    });
+    this.syncOverviewIndicators(timelineDocument);
+  }
+
+  private syncOverviewIndicators(timelineDocument: SceneTimelineDocument): void {
+    const duration = Math.max(timelineDocument.duration, 0.001);
+    const workStart = clamp(Math.min(timelineDocument.workStart, timelineDocument.workEnd), 0, duration);
+    const workEnd = clamp(Math.max(timelineDocument.workStart, timelineDocument.workEnd), 0, duration);
+    this.overviewWork.style.left = `${(workStart / duration) * 100}%`;
+    this.overviewWork.style.width = `${Math.max(((workEnd - workStart) / duration) * 100, 0.4)}%`;
+    this.overviewPlayhead.style.left = `${clamp((timelineDocument.currentTime / duration) * 100, 0, 100)}%`;
+    this.syncOverviewViewport();
+  }
+
+  private syncOverviewViewport(): void {
+    if (!this.lastTimelineDocument) return;
+    const duration = Math.max(this.lastTimelineDocument.duration, 0.001);
+    const scroller = this.timelineScroller ?? this.canvasHost.querySelector<HTMLElement>(".scroll-container");
+    if (!scroller) {
+      this.overviewViewport.style.left = "0%";
+      this.overviewViewport.style.width = "100%";
+      return;
+    }
+
+    const visibleStart = clamp(this.timeline.pxToVal(scroller.scrollLeft), 0, duration);
+    const visibleEnd = clamp(this.timeline.pxToVal(scroller.scrollLeft + scroller.clientWidth), 0, duration);
+    this.overviewViewport.style.left = `${(visibleStart / duration) * 100}%`;
+    this.overviewViewport.style.width = `${Math.max(((visibleEnd - visibleStart) / duration) * 100, 0.8)}%`;
+  }
+
+  private startOverviewDrag(event: PointerEvent): void {
+    if (event.button !== 0 || !this.lastTimelineDocument) return;
+    const rect = this.overviewTrack.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const duration = Math.max(this.lastTimelineDocument.duration, 0.001);
+    const scroller = this.timelineScroller ?? this.canvasHost.querySelector<HTMLElement>(".scroll-container");
+    const visibleStart = scroller ? clamp(this.timeline.pxToVal(scroller.scrollLeft), 0, duration) : 0;
+    const visibleEnd = scroller ? clamp(this.timeline.pxToVal(scroller.scrollLeft + scroller.clientWidth), 0, duration) : duration;
+    const pointerTime = this.overviewTimeFromClientX(event.clientX, rect, duration);
+    const insideViewport = pointerTime >= visibleStart && pointerTime <= visibleEnd;
+    const mode = insideViewport && scroller && scroller.scrollWidth > scroller.clientWidth ? "pan" : "scrub";
+
+    this.overviewDragState = {
+      pointerId: event.pointerId,
+      mode,
+      startClientX: event.clientX,
+      startVisibleTime: visibleStart,
+      duration,
+      width: rect.width
+    };
+    this.overviewTrack.classList.add("dragging");
+    try {
+      this.overviewTrack.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic pointer events in automated checks do not always create an active pointer capture target.
+    }
+    this.overviewTrack.addEventListener("pointermove", this.handleOverviewDragMove);
+    this.overviewTrack.addEventListener("pointerup", this.handleOverviewDragEnd);
+    this.overviewTrack.addEventListener("pointercancel", this.handleOverviewDragEnd);
+    if (mode === "scrub") this.callbacks.onTimeChanged(pointerTime);
+    event.preventDefault();
+  }
+
+  private dragOverview(event: PointerEvent): void {
+    const state = this.overviewDragState;
+    if (!state || event.pointerId !== state.pointerId) return;
+    if (state.mode === "pan") {
+      const deltaTime = ((event.clientX - state.startClientX) / state.width) * state.duration;
+      const nextVisibleTime = clamp(state.startVisibleTime + deltaTime, 0, state.duration);
+      this.timeline.scrollLeft = Math.max(0, this.timeline.valToPx(nextVisibleTime));
+      this.syncOverviewViewport();
+      return;
+    }
+
+    const rect = this.overviewTrack.getBoundingClientRect();
+    this.callbacks.onTimeChanged(this.overviewTimeFromClientX(event.clientX, rect, state.duration));
+  }
+
+  private finishOverviewDrag(event: PointerEvent): void {
+    const state = this.overviewDragState;
+    if (!state || event.pointerId !== state.pointerId) return;
+    this.overviewTrack.classList.remove("dragging");
+    this.overviewTrack.removeEventListener("pointermove", this.handleOverviewDragMove);
+    this.overviewTrack.removeEventListener("pointerup", this.handleOverviewDragEnd);
+    this.overviewTrack.removeEventListener("pointercancel", this.handleOverviewDragEnd);
+    try {
+      if (this.overviewTrack.hasPointerCapture(event.pointerId)) this.overviewTrack.releasePointerCapture(event.pointerId);
+    } catch {
+      // See the matching setPointerCapture guard in startOverviewDrag.
+    }
+    this.overviewDragState = null;
+  }
+
+  private overviewTimeFromClientX(clientX: number, rect: DOMRect, duration: number): number {
+    const normalized = clamp((clientX - rect.left) / Math.max(rect.width, 1), 0, 1);
+    const rawTime = normalized * duration;
+    return this.snapTimelineUiTime(rawTime);
+  }
+
+  private timelineOverviewKeyframes(timelineDocument: SceneTimelineDocument): TimelineKeyframeDocument[] {
+    return [
+      ...timelineDocument.camera.tracks.flatMap((track) => track.keyframes),
+      ...timelineDocument.lights.tracks.flatMap((track) => track.keyframes),
+      ...timelineDocument.objects.flatMap((object) => object.tracks.flatMap((track) => track.keyframes))
+    ].sort((left, right) => left.time - right.time);
+  }
+
+  private syncOverviewSelectedKeys(): void {
+    this.overviewKeys.querySelectorAll<HTMLElement>(".timeline-overview-key").forEach((tick) => {
+      tick.classList.toggle("selected", this.selectedKeyframeIds.has(tick.dataset.keyframeId ?? ""));
+    });
   }
 
   private startMarkerDrag(event: PointerEvent): void {
@@ -1753,6 +1918,7 @@ export class KeyframeTimelinePanel {
     this.syncInterpolationAvailability(sources.length);
     this.syncKeyframeEditor(timelineDocument, selectedId, sources);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
+    this.syncOverviewSelectedKeys();
   }
 
   private syncKeyframeTargetButtons(targetCount: number): void {
@@ -1972,6 +2138,12 @@ export class KeyframeTimelinePanel {
     this.followPlayheadButton.classList.toggle("active", this.followPlayhead);
     this.followPlayheadButton.setAttribute("aria-pressed", String(this.followPlayhead));
     this.followPlayheadButton.title = this.followPlayhead ? "Following playhead" : "Follow playhead";
+  }
+
+  private scrollActiveRowIntoView(): void {
+    window.requestAnimationFrame(() => {
+      this.labels.querySelector<HTMLElement>(".timeline-track-label.active")?.scrollIntoView({ block: "nearest" });
+    });
   }
 
   private ensurePlayheadVisible(time: number, force = false): void {

@@ -77,12 +77,17 @@ PDF.
 - [Timeline Selection And Pan Tools](timeline-selection-pan-tools.md) documents
   the explicit dope-sheet Selection and Hand/Pan tools backed by
   `animation-timeline-js` interaction modes.
+- [Timeline Overview Navigator](timeline-overview-navigator.md) documents the
+  compact dope-sheet mini-map for key density, work area, playhead, and visible
+  range navigation.
 - [Timeline Fit Selected Keyframes](timeline-fit-selection.md) documents the
   AE-style command for zooming the timeline view around selected or playhead
   keyframes.
 - [Timeline Follow Playhead](timeline-follow-playhead.md) documents the
   local editor preference that auto-scrolls the dope sheet to keep current time
   visible during playback and scrubbing.
+- [Timeline Property Reveal Shortcuts](timeline-property-reveal.md) documents
+  AE-style Position, Rotation, Scale, and Opacity row reveal commands.
 - [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents
   J/K/L forward, pause, and reverse playback behavior.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents

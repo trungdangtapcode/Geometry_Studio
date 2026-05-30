@@ -376,7 +376,7 @@ svg {
   min-height: 190px;
   max-height: min(72vh, calc(100vh - var(--dock-bottom) - 22px));
   display: grid;
-  grid-template-rows: auto auto auto auto 1fr;
+  grid-template-rows: auto auto auto auto auto 1fr;
   gap: var(--dock-gap);
   overflow: hidden;
   border: 1px solid var(--line);
@@ -463,6 +463,7 @@ svg {
 
 .keyframe-dock.collapsed .timeline-settings,
 .keyframe-dock.collapsed .timeline-keyframe-editor,
+.keyframe-dock.collapsed .timeline-overview,
 .keyframe-dock.collapsed .timeline-graph-panel,
 .keyframe-dock.collapsed .timeline-body {
   display: none;
@@ -1044,6 +1045,105 @@ svg {
   padding: 12px;
   color: var(--muted);
   font-size: var(--ui-font);
+}
+
+.timeline-overview {
+  display: grid;
+  grid-template-columns: var(--timeline-track-label-width) minmax(0, 1fr);
+  min-height: 30px;
+  padding: 0 var(--timeline-header-padding-x);
+}
+
+.timeline-overview-label {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: var(--control-radius) 0 0 var(--control-radius);
+  background: rgba(244, 247, 249, 0.88);
+  color: var(--muted);
+  padding: 0 var(--timeline-header-padding-x);
+  font-size: var(--ui-tiny-font);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.timeline-overview-track {
+  position: relative;
+  min-width: 0;
+  min-height: 30px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0 var(--control-radius) var(--control-radius) 0;
+  background:
+    linear-gradient(to right, rgba(26, 35, 42, 0.09) 1px, transparent 1px) 0 0 / 12.5% 100%,
+    rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  cursor: crosshair;
+  padding: 0;
+  touch-action: none;
+}
+
+.timeline-overview-track.dragging {
+  cursor: grabbing;
+}
+
+.timeline-overview-work,
+.timeline-overview-keys,
+.timeline-overview-viewport,
+.timeline-overview-playhead {
+  position: absolute;
+  pointer-events: none;
+}
+
+.timeline-overview-work {
+  top: 5px;
+  bottom: 5px;
+  z-index: 1;
+  border: 1px solid rgba(32, 191, 169, 0.38);
+  border-radius: 5px;
+  background: rgba(32, 191, 169, 0.12);
+}
+
+.timeline-overview-keys {
+  inset: 0;
+  z-index: 2;
+}
+
+.timeline-overview-key {
+  position: absolute;
+  top: 7px;
+  width: 3px;
+  height: 16px;
+  border-radius: 99px;
+  background: rgba(26, 35, 42, 0.34);
+  transform: translateX(-50%);
+}
+
+.timeline-overview-key.selected {
+  width: 5px;
+  background: var(--teal);
+}
+
+.timeline-overview-viewport {
+  top: 3px;
+  bottom: 3px;
+  z-index: 3;
+  border: 1px solid rgba(26, 35, 42, 0.42);
+  border-radius: 6px;
+  background: rgba(26, 35, 42, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.timeline-overview-playhead {
+  top: 2px;
+  bottom: 2px;
+  z-index: 4;
+  width: 2px;
+  border-radius: 99px;
+  background: #df4f66;
+  box-shadow: 0 0 0 2px rgba(223, 79, 102, 0.14);
+  transform: translateX(-50%);
 }
 
 .timeline-workspace {

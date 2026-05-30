@@ -194,6 +194,15 @@ export function studioTemplate(): string {
               <span id="timeline-ease-label">Linear</span>
             </div>
           </div>
+          <div class="timeline-overview" id="timeline-overview" aria-label="Timeline overview navigator">
+            <div class="timeline-overview-label">Overview</div>
+            <button class="timeline-overview-track" id="timeline-overview-track" type="button" aria-label="Timeline overview navigator" title="Click to move the playhead. Drag the highlighted window to pan the timeline.">
+              <span class="timeline-overview-work" id="timeline-overview-work"></span>
+              <span class="timeline-overview-keys" id="timeline-overview-keys"></span>
+              <span class="timeline-overview-viewport" id="timeline-overview-viewport"></span>
+              <span class="timeline-overview-playhead" id="timeline-overview-playhead"></span>
+            </button>
+          </div>
           <div class="timeline-graph-panel" id="timeline-graph-panel" aria-label="Selected track value graph">
             <div class="timeline-graph-header">
               <strong id="timeline-graph-title">Value Graph</strong>

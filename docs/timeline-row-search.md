@@ -16,6 +16,9 @@ to isolate relevant rows without changing object selection.
   even when the row filter is set to Focus Rows.
 - `Ctrl+F` / `Cmd+F` focuses the timeline row search field.
 - `Escape` clears the search field and restores the normal row filter view.
+- Property reveal shortcuts fill search automatically for common AE-style
+  targets: `Alt+P` Position, `Alt+R` Rotation, `Alt+S` Scale, and `Alt+T`
+  Opacity.
 - The search text is stored in `localStorage` as an editor preference.
 
 ## Architecture
@@ -35,4 +38,5 @@ project data.
 
 The core Playwright smoke test focuses search with `Ctrl+F`, filters to camera
 rows, filters to a light intensity row, verifies the empty state, then clears
-search with `Escape`.
+search with `Escape`. The property reveal coverage verifies that keyboard and
+Command Palette reveal commands update active track and search state together.

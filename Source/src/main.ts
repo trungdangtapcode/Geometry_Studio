@@ -997,6 +997,10 @@ function boot(root: HTMLDivElement): void {
       command("timeline.graph", "Toggle Value Graph", "View", () => query<HTMLButtonElement>("#timeline-graph-toggle").click(), { keywords: ["curve editor"] }),
       command("timeline.selection-tool", "Timeline Selection Tool", "View", () => setTimelineDopeSheetTool("selection"), { shortcut: "V", keywords: ["marquee", "select keyframes", "arrow"] }),
       command("timeline.pan-tool", "Timeline Pan Tool", "View", () => setTimelineDopeSheetTool("pan"), { shortcut: "H", keywords: ["hand", "scroll", "pan timeline"] }),
+      command("timeline.reveal-position", "Reveal Position Rows", "View", () => revealTimelineRows("position", "position", "Position"), { shortcut: "Alt+P", keywords: ["show position", "property shortcut", "ae"] }),
+      command("timeline.reveal-rotation", "Reveal Rotation Rows", "View", () => revealTimelineRows("rotation", "rotation", "Rotation"), { shortcut: "Alt+R", keywords: ["show rotation", "property shortcut", "ae"] }),
+      command("timeline.reveal-scale", "Reveal Scale Rows", "View", () => revealTimelineRows("scale", "scale", "Scale"), { shortcut: "Alt+S", keywords: ["show scale", "property shortcut", "ae"] }),
+      command("timeline.reveal-opacity", "Reveal Opacity Rows", "View", () => revealTimelineRows("objectOpacity", "opacity", "Opacity"), { shortcut: "Alt+T", keywords: ["show opacity", "transparency", "property shortcut", "ae"] }),
       command("timeline.zoom-in", "Zoom Timeline In", "View", () => timelinePanel.zoomTimeline(1), { shortcut: "=" }),
       command("timeline.zoom-out", "Zoom Timeline Out", "View", () => timelinePanel.zoomTimeline(-1), { shortcut: "-" }),
       command("timeline.fit", "Fit Timeline To Duration", "View", () => timelinePanel.fitTimelineToDuration(), { shortcut: "0" }),
@@ -1505,6 +1509,26 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "p") {
+      event.preventDefault();
+      revealTimelineRows("position", "position", "Position");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "r") {
+      event.preventDefault();
+      revealTimelineRows("rotation", "rotation", "Rotation");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "s") {
+      event.preventDefault();
+      revealTimelineRows("scale", "scale", "Scale");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "t") {
+      event.preventDefault();
+      revealTimelineRows("objectOpacity", "opacity", "Opacity");
+      return;
+    }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "v") {
       event.preventDefault();
       setTimelineDopeSheetTool("selection");
@@ -2319,6 +2343,11 @@ function boot(root: HTMLDivElement): void {
   function setTimelineDopeSheetTool(tool: TimelineDopeSheetTool): void {
     const activeTool = timelinePanel.setDopeSheetTool(tool);
     showToast(`Timeline ${activeTool === "pan" ? "pan" : "selection"} tool active`, "good");
+  }
+
+  function revealTimelineRows(kind: TimelineTrackKind, search: string, label: string): void {
+    timelinePanel.revealRows(kind, search);
+    showToast(`${label} rows revealed`, "good");
   }
 
   function selectAllActiveTimelineKeyframes(): void {
