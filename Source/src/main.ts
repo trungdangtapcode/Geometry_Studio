@@ -1538,9 +1538,12 @@ function boot(root: HTMLDivElement): void {
     if (key === "delete" || key === "backspace") {
       event.preventDefault();
       const selectedTimelineKeys = timelinePanel.selectedKeyframeIdsList();
+      if (event.shiftKey) {
+        rippleDeleteTimelineKeyframes(selectedTimelineKeys);
+        return;
+      }
       if (selectedTimelineKeys.length > 0) {
-        if (event.shiftKey) rippleDeleteTimelineKeyframes(selectedTimelineKeys);
-        else deleteTimelineKeyframes(selectedTimelineKeys);
+        deleteTimelineKeyframes(selectedTimelineKeys);
       }
       else deleteSelected();
     }

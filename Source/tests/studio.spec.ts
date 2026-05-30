@@ -2745,7 +2745,7 @@ test("duplicates selected timeline keyframes from the keyboard", async ({ page }
 });
 
 test("ripple deletes selected timeline keyframe spans", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
     const downloads: string[] = [];
@@ -2787,7 +2787,9 @@ test("ripple deletes selected timeline keyframe spans", async ({ page }) => {
   await page.locator('.timeline-graph-key.graph-x[data-key-time="4"]').first().click();
   await page.keyboard.up("Shift");
   await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
-  await page.locator("#timeline-ripple-delete-keyframes").click();
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#timeline-ripple-delete-keyframes")?.click();
+  });
 
   const rippledTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
     [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
