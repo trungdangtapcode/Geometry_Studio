@@ -20,6 +20,11 @@ export class TimelinePlayheadController {
   constructor(private readonly options: TimelinePlayheadControllerOptions) {}
 
   render(timelineDocument: SceneTimelineDocument): void {
+    const scrubZone = document.createElement("div");
+    scrubZone.className = "timeline-ruler-scrub-zone";
+    scrubZone.setAttribute("aria-hidden", "true");
+    this.options.markerStrip.appendChild(scrubZone);
+
     const handle = document.createElement("button");
     handle.type = "button";
     handle.className = "timeline-ruler-playhead";
@@ -34,13 +39,13 @@ export class TimelinePlayheadController {
 
   startDrag(event: PointerEvent): void {
     if (event.button !== 0) return;
-    const handle = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-ruler-playhead");
-    if (!handle || !this.options.getTimelineDocument()) return;
+    const target = event.target as HTMLElement;
+    const handle = target.closest<HTMLButtonElement>(".timeline-ruler-playhead");
+    const scrubZone = target.closest<HTMLElement>(".timeline-ruler-scrub-zone");
+    if ((!handle && !scrubZone) || !this.options.getTimelineDocument()) return;
 
-    this.dragState = {
-      pointerId: event.pointerId
-    };
-    handle.classList.add("dragging");
+    this.dragState = { pointerId: event.pointerId };
+    this.options.markerStrip.querySelector(".timeline-ruler-playhead")?.classList.add("dragging");
     this.options.markerStrip.classList.add("scrubbing");
     document.addEventListener("pointermove", this.handleDragMove);
     document.addEventListener("pointerup", this.handleDragEnd);

@@ -276,7 +276,8 @@ animation runtime where it fits:
 - J/K/L transport shortcuts provide forward, pause, reverse, and repeated-key
   `1x` / `2x` / `4x` shuttle playback inside the active work area.
 - The red Current Time Indicator in the timeline ruler can be dragged directly
-  to scrub the scene, with the matching playhead line shown across layer ranges.
+  to scrub the scene, and the ruler scrub lane supports direct click-to-seek,
+  with the matching playhead line shown across layer ranges.
 - Timeline drags snap to authored landmarks such as markers, keyframes, Work
   In/Out, and layer boundaries before falling back to the frame grid.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,

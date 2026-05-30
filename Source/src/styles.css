@@ -1158,6 +1158,33 @@ svg {
   touch-action: none;
 }
 
+.timeline-ruler-scrub-zone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 7px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.timeline-ruler-scrub-zone::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
+  left: 8px;
+  height: 2px;
+  border-radius: 99px;
+  background: rgba(26, 35, 42, 0.16);
+}
+
+.timeline-ruler-scrub-zone:hover::after,
+.timeline-marker-strip.scrubbing .timeline-ruler-scrub-zone::after {
+  background: rgba(223, 79, 102, 0.44);
+}
+
 .timeline-ruler-playhead:hover,
 .timeline-ruler-playhead:focus-visible,
 .timeline-ruler-playhead.dragging {

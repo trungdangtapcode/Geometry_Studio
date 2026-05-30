@@ -2109,9 +2109,17 @@ test("supports draggable timeline playhead ruler", async ({ page }) => {
     await page.mouse.move(targetX, startY, { steps: 8 });
     await page.mouse.up();
   };
+  const clickRulerTo = async (time: number) => {
+    const stripBox = await elementBox("#timeline-marker-strip");
+    const zoneBox = await elementBox(".timeline-ruler-scrub-zone");
+    expect(stripBox.width).toBeGreaterThan(0);
+    expect(zoneBox.height).toBeGreaterThan(0);
+    await page.mouse.click(stripBox.x + stripBox.width * (time / 8), zoneBox.y + zoneBox.height / 2);
+  };
 
   await page.goto("/");
   await expect(page.locator(".timeline-ruler-playhead")).toBeVisible();
+  await expect(page.locator(".timeline-ruler-scrub-zone")).toBeVisible();
   await expect(page.locator(".timeline-layer-playhead")).toBeVisible();
   await page.locator("#timeline-snap").uncheck();
   await page.locator("#timeline-current-time").evaluate((input) => {
@@ -2131,6 +2139,10 @@ test("supports draggable timeline playhead ruler", async ({ page }) => {
   await dragPlayheadTo(2.25);
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(2.25, 3);
   await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "2.25");
+
+  await clickRulerTo(6);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(6, 3);
+  await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "6");
 
   await dragPlayheadTo(4);
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(4, 3);
