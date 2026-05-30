@@ -83,6 +83,18 @@ export function objectLayerRanges(timeline: SceneTimelineDocument, objectId: str
   return visibleRangesFromTrack(track, timeline.duration);
 }
 
+export function objectLayerKeyframeIds(timeline: SceneTimelineDocument, objectId: string): string[] {
+  const range = objectLayerRange(timeline, objectId);
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  if (!range || !objectTimeline) return [];
+
+  return objectTimeline.tracks.flatMap((track) =>
+    track.keyframes
+      .filter((keyframe) => keyframe.time >= range.start - 0.001 && keyframe.time <= range.end + 0.001)
+      .map((keyframe) => keyframe.id)
+  );
+}
+
 export function sequenceObjectLayerRanges(
   timeline: SceneTimelineDocument,
   objectIds: string[],
