@@ -30,11 +30,15 @@ the view operation through `fitTimelineToRange(start, end)`, which uses
 - `valToPx()` to convert the fitted range start into timeline pixels.
 - `scrollLeft` to bring the range into view with padding.
 
+The panel converts from user-facing visual zoom into the library's inverse
+internal zoom value, so fitting a short keyframe span expands it on screen
+instead of compressing it.
+
 This keeps edit-state rules in the application shell while keeping view math in
 the timeline panel adapter.
 
 ## Validation
 
 Playwright verifies that the command is disabled before a keyframe exists,
-becomes enabled after setting a key, and increases the timeline zoom level when
-executed from the Command Palette.
+becomes enabled after setting a key, and increases the normalized user-facing
+timeline zoom level when executed from the Command Palette.

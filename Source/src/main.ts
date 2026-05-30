@@ -108,7 +108,7 @@ import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetBy
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
-import { KeyframeTimelinePanel, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
+import { KeyframeTimelinePanel, type TimelineDopeSheetTool, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
 import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
 import { bindUiDensityControl } from "./ui/density";
 import { studioTemplate } from "./ui/template";
@@ -995,6 +995,8 @@ function boot(root: HTMLDivElement): void {
       command("timeline.cascade", "Cascade Target Keyframes From Playhead", "Retiming", () => cascadeTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Alt+Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
 
       command("timeline.graph", "Toggle Value Graph", "View", () => query<HTMLButtonElement>("#timeline-graph-toggle").click(), { keywords: ["curve editor"] }),
+      command("timeline.selection-tool", "Timeline Selection Tool", "View", () => setTimelineDopeSheetTool("selection"), { shortcut: "V", keywords: ["marquee", "select keyframes", "arrow"] }),
+      command("timeline.pan-tool", "Timeline Pan Tool", "View", () => setTimelineDopeSheetTool("pan"), { shortcut: "H", keywords: ["hand", "scroll", "pan timeline"] }),
       command("timeline.zoom-in", "Zoom Timeline In", "View", () => timelinePanel.zoomTimeline(1), { shortcut: "=" }),
       command("timeline.zoom-out", "Zoom Timeline Out", "View", () => timelinePanel.zoomTimeline(-1), { shortcut: "-" }),
       command("timeline.fit", "Fit Timeline To Duration", "View", () => timelinePanel.fitTimelineToDuration(), { shortcut: "0" }),
@@ -1002,6 +1004,9 @@ function boot(root: HTMLDivElement): void {
         shortcut: "Shift+0",
         keywords: ["zoom selection", "view selected keys"],
         disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.follow-playhead", "Toggle Follow Playhead", "View", toggleTimelineFollowPlayhead, {
+        keywords: ["auto scroll", "current time indicator", "timeline view"]
       }),
       command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
 
@@ -1500,6 +1505,16 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "v") {
+      event.preventDefault();
+      setTimelineDopeSheetTool("selection");
+      return;
+    }
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "h") {
+      event.preventDefault();
+      setTimelineDopeSheetTool("pan");
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && key === "z") {
       event.preventDefault();
       undo();
@@ -2294,6 +2309,16 @@ function boot(root: HTMLDivElement): void {
 
     timelinePanel.fitTimelineToRange(range.start, range.end);
     showToast(`Timeline view fit to ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`, "good");
+  }
+
+  function toggleTimelineFollowPlayhead(): void {
+    const enabled = timelinePanel.toggleFollowPlayhead();
+    showToast(`Follow playhead ${enabled ? "enabled" : "disabled"}`, "good");
+  }
+
+  function setTimelineDopeSheetTool(tool: TimelineDopeSheetTool): void {
+    const activeTool = timelinePanel.setDopeSheetTool(tool);
+    showToast(`Timeline ${activeTool === "pan" ? "pan" : "selection"} tool active`, "good");
   }
 
   function selectAllActiveTimelineKeyframes(): void {

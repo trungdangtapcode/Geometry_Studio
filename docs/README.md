@@ -74,9 +74,15 @@ PDF.
   documents one-command preview playback for selected keyframe spans.
 - [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and
   keyboard timeline zoom behavior.
+- [Timeline Selection And Pan Tools](timeline-selection-pan-tools.md) documents
+  the explicit dope-sheet Selection and Hand/Pan tools backed by
+  `animation-timeline-js` interaction modes.
 - [Timeline Fit Selected Keyframes](timeline-fit-selection.md) documents the
   AE-style command for zooming the timeline view around selected or playhead
   keyframes.
+- [Timeline Follow Playhead](timeline-follow-playhead.md) documents the
+  local editor preference that auto-scrolls the dope sheet to keep current time
+  visible during playback and scrubbing.
 - [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents
   J/K/L forward, pause, and reverse playback behavior.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents

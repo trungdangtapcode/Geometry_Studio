@@ -166,6 +166,12 @@ test("renders the studio and core controls", async ({ page }) => {
   await page.locator("#timeline-zoom-fit").click();
   await expect(page.locator("#timeline-zoom-fit")).toBeVisible();
   await expect(page.locator("#timeline-zoom-selection")).toBeVisible();
+  await expect(page.locator("#timeline-selection-tool")).toHaveAttribute("aria-pressed", "true");
+  await page.locator("#timeline-pan-tool").click();
+  await expect(page.locator("#timeline-pan-tool")).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("v");
+  await expect(page.locator("#timeline-selection-tool")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#timeline-follow-playhead")).toBeVisible();
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
@@ -325,6 +331,21 @@ test("opens the command palette and runs timeline commands", async ({ page }) =>
   await expect.poll(timelineZoom, { timeout: 10_000 }).toBeGreaterThan(zoomBeforeFit);
 
   await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("follow playhead");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-follow-playhead")).toHaveAttribute("aria-pressed", "true");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("pan tool");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-pan-tool")).toHaveAttribute("aria-pressed", "true");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("selection tool");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-selection-tool")).toHaveAttribute("aria-pressed", "true");
+
+  await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("easy ease");
   await expect(page.locator('[data-command-id="timeline.ease-smooth"]')).toBeEnabled();
   await page.keyboard.press("Enter");
@@ -368,6 +389,42 @@ test("runs timeline commands from the command palette", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.locator("#command-palette")).not.toHaveClass(/open/);
 
+  expect(errors).toEqual([]);
+});
+
+test("keeps the playhead visible when follow playhead is enabled", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-follow-playhead")).toHaveAttribute("aria-pressed", "false");
+
+  await page.evaluate(() => {
+    const durationInput = document.querySelector<HTMLInputElement>("#timeline-duration");
+    durationInput!.value = "30";
+    durationInput!.dispatchEvent(new Event("change", { bubbles: true }));
+    for (let index = 0; index < 6; index += 1) document.querySelector<HTMLButtonElement>("#timeline-zoom-in")!.click();
+    document.querySelector<HTMLButtonElement>("#timeline-follow-playhead")!.click();
+  });
+  await expect(page.locator("#timeline-follow-playhead")).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(
+    async () => page.locator("#timeline-canvas .scroll-container").evaluate((element) => element.scrollWidth - element.clientWidth),
+    { timeout: 10_000 }
+  ).toBeGreaterThan(0);
+
+  const timelineScrollLeft = async () => page.locator("#timeline-canvas .scroll-container").evaluate((element) => element.scrollLeft);
+  await page.evaluate(() => {
+    const timeInput = document.querySelector<HTMLInputElement>("#timeline-current-time");
+    timeInput!.value = "30";
+    timeInput!.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect.poll(timelineScrollLeft, { timeout: 10_000 }).toBeGreaterThan(0);
+
+  await page.reload();
+  await expect(page.locator("#timeline-follow-playhead")).toHaveAttribute("aria-pressed", "true");
   expect(errors).toEqual([]);
 });
 

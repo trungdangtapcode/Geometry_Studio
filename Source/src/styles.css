@@ -1613,7 +1613,10 @@ svg {
 .lighting-preset.active,
 .material-preset.active,
 .interpolation-button.active,
-#timeline-graph-toggle.active {
+#timeline-graph-toggle.active,
+#timeline-selection-tool.active,
+#timeline-pan-tool.active,
+#timeline-follow-playhead.active {
   color: #ffffff;
   background: #20272c;
   border-color: #20272c;

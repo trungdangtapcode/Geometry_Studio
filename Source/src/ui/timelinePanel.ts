@@ -1,5 +1,6 @@
 import {
   Timeline,
+  TimelineInteractionMode,
   type TimelineKeyframe,
   TimelineKeyframeShape,
   type TimelineModel,
@@ -45,6 +46,7 @@ import {
 } from "./timelineTrackMetadata";
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
+export type TimelineDopeSheetTool = "selection" | "pan";
 
 export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
@@ -178,6 +180,7 @@ const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
 const ROW_SEARCH_STORAGE_KEY = "geometry-studio-timeline-row-search";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
+const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
 const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
 const MIN_DOCK_HEIGHT = 190;
 const DEFAULT_ROW_HEIGHT = 30;
@@ -230,6 +233,9 @@ export class KeyframeTimelinePanel {
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly soloTrackButton = query<HTMLButtonElement>("#timeline-solo-track");
   private readonly clearTrackButton = query<HTMLButtonElement>("#timeline-clear-track");
+  private readonly selectionToolButton = query<HTMLButtonElement>("#timeline-selection-tool");
+  private readonly panToolButton = query<HTMLButtonElement>("#timeline-pan-tool");
+  private readonly followPlayheadButton = query<HTMLButtonElement>("#timeline-follow-playhead");
   private readonly timeInput = query<HTMLInputElement>("#timeline-current-time");
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
   private readonly workStartInput = query<HTMLInputElement>("#timeline-work-start");
@@ -271,6 +277,8 @@ export class KeyframeTimelinePanel {
   private selectedAxis: TimelineAxis | null = null;
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
   private rowSearchText = loadTimelineRowSearch();
+  private followPlayhead = loadTimelineFollowPlayhead();
+  private dopeSheetTool: TimelineDopeSheetTool = "selection";
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
   private markerDragState: TimelineMarkerDragState | null = null;
@@ -359,6 +367,7 @@ export class KeyframeTimelinePanel {
     }, { rows: [] });
 
     this.timeline._formatUnitsText = (value: number) => `${formatNumber(value)}s`;
+    this.setDopeSheetTool("selection");
     this.bindEvents();
     this.syncZoomState();
   }
@@ -416,6 +425,8 @@ export class KeyframeTimelinePanel {
     this.timeline.setTime(timelineDocument.currentTime);
     this.timeline.rescale();
     this.bindTimelineScroller();
+    this.syncFollowPlayheadButton();
+    this.ensurePlayheadVisible(timelineDocument.currentTime, playing);
     this.renderMarkers(timelineDocument);
     this.syncSelectionWidgets(timelineDocument, selectedId);
     this.renderGraph(timelineDocument, selectedId);
@@ -532,8 +543,8 @@ export class KeyframeTimelinePanel {
   }
 
   zoomTimeline(direction: -1 | 1): void {
-    if (direction > 0) this.timeline.zoomIn(0.25);
-    else this.timeline.zoomOut(0.25);
+    if (direction > 0) this.timeline.zoomOut(0.25);
+    else this.timeline.zoomIn(0.25);
     this.syncZoomState();
     this.refreshCanvas();
   }
@@ -561,11 +572,26 @@ export class KeyframeTimelinePanel {
     const clientWidth = Math.max(this.timeline.getClientWidth(), 1);
     const padding = Math.min(Math.max(clientWidth * 0.14, 40), 140);
     const availableWidth = Math.max(clientWidth - padding * 2, clientWidth * 0.4, 1);
-    const zoom = Math.max(0.05, Math.min(8, availableWidth / (Math.max(viewEnd - viewStart, minimumSpan) * 80)));
+    const zoom = Math.max(0.05, Math.min(8, (Math.max(viewEnd - viewStart, minimumSpan) * 80) / availableWidth));
     this.timeline.setZoom(zoom);
     this.timeline.scrollLeft = Math.max(0, this.timeline.valToPx(viewStart) - padding);
     this.syncZoomState();
     this.timeline.redraw();
+  }
+
+  toggleFollowPlayhead(): boolean {
+    this.followPlayhead = !this.followPlayhead;
+    storeTimelineFollowPlayhead(this.followPlayhead);
+    this.syncFollowPlayheadButton();
+    if (this.lastTimelineDocument) this.ensurePlayheadVisible(this.lastTimelineDocument.currentTime, true);
+    return this.followPlayhead;
+  }
+
+  setDopeSheetTool(tool: TimelineDopeSheetTool): TimelineDopeSheetTool {
+    this.dopeSheetTool = tool;
+    this.timeline.setInteractionMode(tool === "pan" ? TimelineInteractionMode.Pan : TimelineInteractionMode.Selection);
+    this.syncDopeSheetToolButtons();
+    return this.dopeSheetTool;
   }
 
   setClipboardState(summary: { count: number; duration: number } | null): void {
@@ -589,6 +615,7 @@ export class KeyframeTimelinePanel {
     hydrateIcons(this.playButton);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.timeline.setTime(timelineDocument.currentTime);
+    this.ensurePlayheadVisible(timelineDocument.currentTime, playing);
     this.syncRowKeyButtons(timelineDocument);
     this.syncRowValueReadouts(timelineDocument);
     this.syncTimecode(timelineDocument);
@@ -808,6 +835,9 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.zoomTimeline(1));
     query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimelineToDuration());
     query<HTMLButtonElement>("#timeline-zoom-selection").addEventListener("click", () => this.callbacks.onFitSelectedRange());
+    this.selectionToolButton.addEventListener("click", () => this.setDopeSheetTool("selection"));
+    this.panToolButton.addEventListener("click", () => this.setDopeSheetTool("pan"));
+    this.followPlayheadButton.addEventListener("click", () => this.toggleFollowPlayhead());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workStartInput.value)));
     query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workEndInput.value)));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
@@ -1918,7 +1948,7 @@ export class KeyframeTimelinePanel {
   private fitTimeline(): void {
     const duration = Math.max(Number(this.durationInput.value) || 8, 0.5);
     const clientWidth = Math.max(this.timeline.getClientWidth(), 1);
-    const zoom = Math.max(0.05, Math.min(8, (clientWidth - 32) / (duration * 80)));
+    const zoom = Math.max(0.05, Math.min(8, (duration * 80) / Math.max(clientWidth - 32, 1)));
     this.timeline.setZoom(zoom);
     this.timeline.scrollLeft = 0;
     this.syncZoomState();
@@ -1926,7 +1956,39 @@ export class KeyframeTimelinePanel {
   }
 
   private syncZoomState(): void {
-    this.root.dataset.zoomLevel = formatNumber(this.timeline.getZoom());
+    this.root.dataset.zoomLevel = formatNumber(1 / Math.max(this.timeline.getZoom(), 0.001));
+  }
+
+  private syncDopeSheetToolButtons(): void {
+    const selectionActive = this.dopeSheetTool === "selection";
+    this.selectionToolButton.classList.toggle("active", selectionActive);
+    this.panToolButton.classList.toggle("active", !selectionActive);
+    this.selectionToolButton.setAttribute("aria-pressed", String(selectionActive));
+    this.panToolButton.setAttribute("aria-pressed", String(!selectionActive));
+    this.root.dataset.timelineTool = this.dopeSheetTool;
+  }
+
+  private syncFollowPlayheadButton(): void {
+    this.followPlayheadButton.classList.toggle("active", this.followPlayhead);
+    this.followPlayheadButton.setAttribute("aria-pressed", String(this.followPlayhead));
+    this.followPlayheadButton.title = this.followPlayhead ? "Following playhead" : "Follow playhead";
+  }
+
+  private ensurePlayheadVisible(time: number, force = false): void {
+    if (!this.followPlayhead && !force) return;
+    if (this.root.classList.contains("collapsed")) return;
+    const scroller = this.timelineScroller ?? this.canvasHost.querySelector<HTMLElement>(".scroll-container");
+    if (!scroller) return;
+
+    const playheadX = this.timeline.valToPx(time);
+    const viewportStart = scroller.scrollLeft;
+    const viewportEnd = viewportStart + scroller.clientWidth;
+    const padding = Math.min(Math.max(scroller.clientWidth * 0.2, 48), 160);
+    if (playheadX < viewportStart + padding) {
+      this.timeline.scrollLeft = Math.max(0, playheadX - padding);
+    } else if (playheadX > viewportEnd - padding) {
+      this.timeline.scrollLeft = Math.max(0, playheadX - scroller.clientWidth + padding);
+    }
   }
 
   private renderGraph(timelineDocument: SceneTimelineDocument, selectedId: string): void {
@@ -2061,6 +2123,23 @@ function clearTimelineDockHeight(): void {
     window.localStorage.removeItem(DOCK_HEIGHT_STORAGE_KEY);
   } catch {
     // Dock sizing is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function loadTimelineFollowPlayhead(): boolean {
+  try {
+    return window.localStorage.getItem(FOLLOW_PLAYHEAD_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function storeTimelineFollowPlayhead(enabled: boolean): void {
+  try {
+    if (enabled) window.localStorage.setItem(FOLLOW_PLAYHEAD_STORAGE_KEY, "true");
+    else window.localStorage.removeItem(FOLLOW_PLAYHEAD_STORAGE_KEY);
+  } catch {
+    // Follow-playhead is an editor preference; blocked storage should not affect timeline editing.
   }
 }
 

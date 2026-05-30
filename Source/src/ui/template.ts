@@ -148,9 +148,12 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-solo-track" type="button"><span data-icon="Circle"></span><span>Solo Off</span></button>
               <button class="mini-button" id="timeline-lock-track" type="button"><span data-icon="Unlock"></span><span>Unlocked</span></button>
               <button class="mini-button danger" id="timeline-clear-track" type="button"><span data-icon="Eraser"></span><span>Clear Track</span></button>
+              <button class="mini-button icon-mini" id="timeline-selection-tool" type="button" aria-label="Timeline selection tool" title="Timeline selection tool (V)" aria-pressed="true"><span data-icon="MousePointer2"></span></button>
+              <button class="mini-button icon-mini" id="timeline-pan-tool" type="button" aria-label="Timeline pan tool" title="Timeline pan tool (H)" aria-pressed="false"><span data-icon="Hand"></span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-out" type="button" aria-label="Zoom timeline out" title="Zoom timeline out"><span data-icon="ZoomOut"></span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-fit" type="button" aria-label="Fit timeline" title="Fit timeline"><span data-icon="Maximize2"></span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-selection" type="button" aria-label="Fit selected keyframes" title="Fit selected keyframes"><span data-icon="ScanSearch"></span></button>
+              <button class="mini-button icon-mini" id="timeline-follow-playhead" type="button" aria-label="Follow playhead" title="Follow playhead" aria-pressed="false"><span data-icon="LocateFixed"></span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-in" type="button" aria-label="Zoom timeline in" title="Zoom timeline in"><span data-icon="ZoomIn"></span></button>
             </div>
           </header>
