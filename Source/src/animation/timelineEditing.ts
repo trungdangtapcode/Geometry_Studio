@@ -74,6 +74,12 @@ export interface NudgeTimelineResult extends TimelineEditResult {
   currentTime: number;
 }
 
+export interface RippleDeleteTimelineResult extends TimelineEditResult {
+  deleted: number;
+  shifted: number;
+  currentTime: number;
+}
+
 export interface TimelineKeyframeRange {
   start: number;
   end: number;
@@ -248,6 +254,75 @@ export function nudgeResolvedKeyframes(
     nudged: updates.length,
     skipped: sources.length - updates.length,
     currentTime: updates.length ? Math.min(...updates.map((update) => update.time)) : timeline.currentTime,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
+export function rippleDeleteResolvedKeyframes(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): RippleDeleteTimelineResult {
+  if (sources.length === 0) {
+    return { deleted: 0, shifted: 0, skipped: 0, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const selectedIds = new Set(sources.map((source) => source.keyframe.id));
+  const start = Math.max(0, Math.min(...sources.map((source) => source.keyframe.time)));
+  const end = Math.min(timeline.duration, Math.max(...sources.map((source) => source.keyframe.time)));
+  const minimumGap = Math.max(timeline.snapStep, 1 / Math.max(timeline.fps, 1), 0.001);
+  const gap = roundTime(Math.max(end - start, minimumGap));
+  const trackGroups = new Map<TimelineTrackDocument, TimelineKeyframeSource[]>();
+  const changedTransformObjectIds = new Set<string>();
+  let deleted = 0;
+  let shifted = 0;
+  let skipped = 0;
+
+  sources.forEach((source) => {
+    const group = trackGroups.get(source.track);
+    if (group) group.push(source);
+    else trackGroups.set(source.track, [source]);
+    if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) changedTransformObjectIds.add(source.objectId);
+  });
+
+  trackGroups.forEach((groupSources, track) => {
+    const groupSelectedIds = new Set(groupSources.map((source) => source.keyframe.id));
+    const remaining = track.keyframes.filter((keyframe) => !groupSelectedIds.has(keyframe.id));
+    deleted += track.keyframes.length - remaining.length;
+
+    const occupiedTimes = new Set(
+      remaining
+        .filter((keyframe) => keyframe.time <= end + 0.001)
+        .map((keyframe) => timelineTimeKey(keyframe.time))
+    );
+
+    remaining
+      .filter((keyframe) => keyframe.time > end + 0.001)
+      .sort((left, right) => left.time - right.time)
+      .forEach((keyframe) => {
+        const nextTime = roundTime(keyframe.time - gap);
+        const timeKey = timelineTimeKey(nextTime);
+        if (nextTime < 0 || nextTime > timeline.duration || occupiedTimes.has(timeKey)) {
+          occupiedTimes.add(timelineTimeKey(keyframe.time));
+          skipped += 1;
+          return;
+        }
+
+        occupiedTimes.add(timeKey);
+        if (Math.abs(keyframe.time - nextTime) < 0.001) return;
+        keyframe.time = nextTime;
+        shifted += 1;
+      });
+
+    track.keyframes = remaining;
+    sortTimelineKeyframes(track);
+  });
+
+  const staleSelections = selectedIds.size - deleted;
+  return {
+    deleted,
+    shifted,
+    skipped: skipped + Math.max(staleSelections, 0),
+    currentTime: roundTime(start),
     changedTransformObjectIds: [...changedTransformObjectIds]
   };
 }

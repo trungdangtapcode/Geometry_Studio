@@ -57,6 +57,7 @@ export interface KeyframeTimelineCallbacks {
   onSetWorkAreaToLayer(): void;
   onEditLayerRange(objectId: string, start: number, end: number, shiftKeyframes: boolean): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
+  onRippleDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onCopyVisibleTimeKeyframes(): void;
   onCutVisibleTimeKeyframes(): void;
@@ -551,6 +552,9 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-layer-work").addEventListener("click", () => this.callbacks.onSetWorkAreaToLayer());
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-ripple-delete-keyframes").addEventListener("click", () => {
+      this.callbacks.onRippleDeleteKeyframes([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-copy-keyframes").addEventListener("click", () => {
       this.callbacks.onCopyKeyframes([...this.selectedKeyframeIds]);

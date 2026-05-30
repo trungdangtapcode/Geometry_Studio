@@ -17,6 +17,7 @@ import {
   pasteTimelineClipboard,
   resolveTimelineKeyframeSources,
   reverseResolvedKeyframes,
+  rippleDeleteResolvedKeyframes,
   roveResolvedKeyframesAcrossTime,
   selectedResolvedKeyframeRange,
   snapResolvedKeyframesToFrames,
@@ -205,6 +206,7 @@ function boot(root: HTMLDivElement): void {
     onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
     onEditLayerRange: editTimelineLayerRange,
     onDeleteKeyframes: deleteTimelineKeyframes,
+    onRippleDeleteKeyframes: rippleDeleteTimelineKeyframes,
     onCopyKeyframes: copyTimelineKeyframes,
     onCopyVisibleTimeKeyframes: copyVisibleTimelineTimeKeyframes,
     onCutVisibleTimeKeyframes: cutVisibleTimelineTimeKeyframes,
@@ -1534,8 +1536,12 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     if (key === "delete" || key === "backspace") {
+      event.preventDefault();
       const selectedTimelineKeys = timelinePanel.selectedKeyframeIdsList();
-      if (selectedTimelineKeys.length > 0) deleteTimelineKeyframes(selectedTimelineKeys);
+      if (selectedTimelineKeys.length > 0) {
+        if (event.shiftKey) rippleDeleteTimelineKeyframes(selectedTimelineKeys);
+        else deleteTimelineKeyframes(selectedTimelineKeys);
+      }
       else deleteSelected();
     }
   }
@@ -2569,6 +2575,36 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes([]);
     if (options.notify !== false) showToast(`${ids.size} keyframe${ids.size === 1 ? "" : "s"} deleted`, "good");
+  }
+
+  function rippleDeleteTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (sources.length === 0) {
+      showToast("Select keyframes, or park the playhead on one in the active track.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "ripple deleting keyframes")) return;
+
+    recordHistory();
+    const result = rippleDeleteResolvedKeyframes(sceneTimeline, sources);
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+
+    if (result.deleted === 0) {
+      updateAllUI();
+      showToast("No selected keyframes could be ripple deleted.", "bad");
+      return;
+    }
+
+    pruneEmptyTimelineTracks(sceneTimeline);
+    sceneTimeline.currentTime = clamp(result.currentTime, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes([]);
+    showToast(`${result.deleted} keyframe${result.deleted === 1 ? "" : "s"} ripple deleted, ${result.shifted} shifted${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function copyTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList(), options: { preserveObjectTargets?: boolean } = {}): void {

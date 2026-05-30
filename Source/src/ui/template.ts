@@ -114,6 +114,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-add-marker" type="button"><span data-icon="Flag"></span><span>Marker</span></button>
               <button class="mini-button danger" id="timeline-delete-marker" type="button"><span data-icon="Trash2"></span><span>Marker</span></button>
               <button class="mini-button danger" id="timeline-delete-keyframe" type="button"><span data-icon="DiamondMinus"></span><span>Delete</span></button>
+              <button class="mini-button danger" id="timeline-ripple-delete-keyframes" type="button" title="Delete selected keyframes and close the timing gap on their tracks (Shift+Delete)"><span data-icon="ListX"></span><span>Ripple Del</span></button>
               <button class="mini-button" id="timeline-copy-keyframes" type="button"><span data-icon="ClipboardCopy"></span><span>Copy</span></button>
               <button class="mini-button" id="timeline-copy-time" type="button" title="Copy visible-row keyframes at the current playhead time"><span data-icon="CopyCheck"></span><span>Copy Time</span></button>
               <button class="mini-button danger" id="timeline-cut-time" type="button" title="Cut visible-row keyframes at the current playhead time"><span data-icon="Scissors"></span><span>Cut Time</span></button>

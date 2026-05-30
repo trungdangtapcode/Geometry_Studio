@@ -86,7 +86,8 @@ These should remain later phases because they require more schema and UI work:
 - Curve editor / graph editor.
 - Separate per-axis tracks.
 - Texture source switching and other deeper material tracks.
-- Clip blocks with ripple editing.
+- Full layer clip blocks with ripple editing. Keyframe-level ripple delete is
+  implemented first as a smaller, deterministic editing primitive.
 - Audio/video tracks.
 
 ## Architecture Constraint
