@@ -199,6 +199,8 @@ export class KeyframeTimelinePanel {
   private readonly setVisibleButton = query<HTMLButtonElement>("#timeline-set-visible");
   private readonly copyTimeButton = query<HTMLButtonElement>("#timeline-copy-time");
   private readonly cutTimeButton = query<HTMLButtonElement>("#timeline-cut-time");
+  private readonly pasteButton = query<HTMLButtonElement>("#timeline-paste-keyframes");
+  private readonly pasteInsertButton = query<HTMLButtonElement>("#timeline-paste-insert-keyframes");
   private readonly duplicateTimeButton = query<HTMLButtonElement>("#timeline-duplicate-time");
   private readonly deleteTimeButton = query<HTMLButtonElement>("#timeline-delete-time");
   private readonly insertGapButton = query<HTMLButtonElement>("#timeline-insert-gap");
@@ -517,6 +519,19 @@ export class KeyframeTimelinePanel {
     this.fitTimeline();
   }
 
+  setClipboardState(summary: { count: number; duration: number } | null): void {
+    const disabled = !summary || summary.count === 0;
+    const keyText = summary?.count === 1 ? "1 keyframe" : `${summary?.count ?? 0} keyframes`;
+    this.pasteButton.disabled = disabled;
+    this.pasteInsertButton.disabled = disabled;
+    this.pasteButton.title = disabled
+      ? "Copy keyframes before pasting"
+      : `Paste ${keyText} at the playhead`;
+    this.pasteInsertButton.title = disabled
+      ? "Copy keyframes before insert-pasting"
+      : `Paste ${keyText} and shift later destination keys by ${formatNumber(summary.duration)}s`;
+  }
+
   setPlaybackTime(timelineDocument: SceneTimelineDocument, playing: boolean): void {
     this.updating = true;
     this.root.classList.toggle("playing", playing);
@@ -576,10 +591,10 @@ export class KeyframeTimelinePanel {
     this.cutTimeButton.addEventListener("click", () => {
       this.callbacks.onCutVisibleTimeKeyframes();
     });
-    query<HTMLButtonElement>("#timeline-paste-keyframes").addEventListener("click", () => {
+    this.pasteButton.addEventListener("click", () => {
       this.callbacks.onPasteKeyframes();
     });
-    query<HTMLButtonElement>("#timeline-paste-insert-keyframes").addEventListener("click", () => {
+    this.pasteInsertButton.addEventListener("click", () => {
       this.callbacks.onPasteInsertKeyframes();
     });
     query<HTMLButtonElement>("#timeline-select-workarea").addEventListener("click", () => {

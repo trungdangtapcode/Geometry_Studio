@@ -10,6 +10,7 @@ behavior and complements the existing overwrite-style `Paste` command.
 
 - Toolbar command: `Paste Insert`.
 - Keyboard shortcut: `Ctrl+Shift+V` or `Cmd+Shift+V`.
+- Paste controls are disabled until the timeline clipboard contains keyframes.
 - Uses the current playhead time as the paste start.
 - Computes the copied keyframe block duration from the clipboard timing span.
 - Shifts compatible destination-track keyframes at or after the playhead later

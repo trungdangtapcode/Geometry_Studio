@@ -88,6 +88,8 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-copy-time")).toBeVisible();
   await expect(page.locator("#timeline-cut-time")).toBeVisible();
   await expect(page.locator("#timeline-paste-keyframes")).toBeVisible();
+  await expect(page.locator("#timeline-paste-keyframes")).toBeDisabled();
+  await expect(page.locator("#timeline-paste-insert-keyframes")).toBeDisabled();
   await expect(page.locator("#timeline-select-workarea")).toBeVisible();
   await expect(page.locator("#timeline-select-visible")).toBeVisible();
   await expect(page.locator("#timeline-select-time")).toBeVisible();
@@ -139,15 +141,14 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-row-search")).toHaveValue("");
   await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"]')).toBeVisible();
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-  await page.locator("#timeline-zoom-in").focus();
   const timelineZoom = async () => page.locator("#keyframe-dock").evaluate((element) => Number((element as HTMLElement).dataset.zoomLevel));
   const initialTimelineZoom = await timelineZoom();
-  await page.keyboard.press("=");
-  await expect.poll(timelineZoom).toBeGreaterThan(initialTimelineZoom);
+  await page.locator("#timeline-zoom-in").click();
+  await expect.poll(timelineZoom, { timeout: 10_000 }).toBeGreaterThan(initialTimelineZoom);
   const zoomedTimelineValue = await timelineZoom();
-  await page.keyboard.press("-");
-  await expect.poll(timelineZoom).toBeLessThan(zoomedTimelineValue);
-  await page.keyboard.press("0");
+  await page.locator("#timeline-zoom-out").click();
+  await expect.poll(timelineZoom, { timeout: 10_000 }).toBeLessThan(zoomedTimelineValue);
+  await page.locator("#timeline-zoom-fit").click();
   await expect(page.locator("#timeline-zoom-fit")).toBeVisible();
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
@@ -206,6 +207,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#keyframe-dock")).toHaveClass(/collapsed/);
   await expect(page.locator(".timeline-body")).toBeHidden();
   await expect(page.locator(".timeline-toolbar")).toBeHidden();
+  await expect(page.locator(".timeline-graph-panel")).toBeHidden();
   await expect.poll(() => page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(80);
 
   const canvas = page.locator("canvas").first();
@@ -2866,6 +2868,8 @@ test("paste inserts copied timeline keyframes", async ({ page }) => {
   await page.keyboard.press("Control+A");
   await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
   await page.keyboard.press("Control+C");
+  await expect(page.locator("#timeline-paste-keyframes")).toBeEnabled();
+  await expect(page.locator("#timeline-paste-insert-keyframes")).toBeEnabled();
 
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "5";

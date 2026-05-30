@@ -725,6 +725,10 @@ svg {
   display: grid;
 }
 
+.keyframe-dock.collapsed.graph-visible .timeline-graph-panel {
+  display: none;
+}
+
 .timeline-graph-header {
   display: grid;
   align-content: center;

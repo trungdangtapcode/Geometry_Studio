@@ -219,7 +219,8 @@ animation runtime where it fits:
   keys earlier on affected tracks, adding the first practical ripple-editing
   workflow from the AE/Premiere research plan.
 - `Paste Insert` and `Ctrl/Cmd+Shift+V` paste copied keyframes after shifting
-  later destination keys by the copied timing span.
+  later destination keys by the copied timing span, with Paste controls enabled
+  only when copied keyframes are available.
 - A compact keyframe editor allows precise selected/playhead keyframe time and
   value edits.
 - Track enable/disable controls mute individual property tracks without deleting

@@ -118,8 +118,8 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-copy-keyframes" type="button"><span data-icon="ClipboardCopy"></span><span>Copy</span></button>
               <button class="mini-button" id="timeline-copy-time" type="button" title="Copy visible-row keyframes at the current playhead time"><span data-icon="CopyCheck"></span><span>Copy Time</span></button>
               <button class="mini-button danger" id="timeline-cut-time" type="button" title="Cut visible-row keyframes at the current playhead time"><span data-icon="Scissors"></span><span>Cut Time</span></button>
-              <button class="mini-button" id="timeline-paste-keyframes" type="button"><span data-icon="ClipboardPaste"></span><span>Paste</span></button>
-              <button class="mini-button" id="timeline-paste-insert-keyframes" type="button" title="Paste copied keyframes and shift later destination keys to make room (Ctrl+Shift+V)"><span data-icon="ListPlus"></span><span>Paste Insert</span></button>
+              <button class="mini-button" id="timeline-paste-keyframes" type="button" disabled title="Copy keyframes before pasting"><span data-icon="ClipboardPaste"></span><span>Paste</span></button>
+              <button class="mini-button" id="timeline-paste-insert-keyframes" type="button" disabled title="Copy keyframes before insert-pasting"><span data-icon="ListPlus"></span><span>Paste Insert</span></button>
               <button class="mini-button" id="timeline-select-workarea" type="button"><span data-icon="ListFilter"></span><span>Select Work</span></button>
               <button class="mini-button" id="timeline-select-visible" type="button" title="Select all keyframes on currently visible timeline rows"><span data-icon="ListChecks"></span><span>Select Visible</span></button>
               <button class="mini-button" id="timeline-select-time" type="button" title="Select visible-row keyframes at the current playhead time"><span data-icon="Crosshair"></span><span>Select Time</span></button>

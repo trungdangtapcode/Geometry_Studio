@@ -868,9 +868,24 @@ function boot(root: HTMLDivElement): void {
     syncRenderUI();
     syncHistoryButtons();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
+    syncTimelineClipboardUI();
     updatePlayButton();
     syncMotionPath();
     updateTelemetry();
+  }
+
+  function syncTimelineClipboardUI(): void {
+    timelinePanel.setClipboardState(timelineClipboard
+      ? {
+          count: timelineClipboard.keyframes.length,
+          duration: timelineClipboardSpan(timelineClipboard)
+        }
+      : null);
+  }
+
+  function timelineClipboardSpan(clipboard: TimelineClipboard): number {
+    if (clipboard.keyframes.length === 0) return 0;
+    return roundTime(Math.max(...clipboard.keyframes.map((keyframe) => keyframe.relativeTime)));
   }
 
   function renderOutliner(): void {
@@ -2641,6 +2656,7 @@ function boot(root: HTMLDivElement): void {
     }
 
     timelineClipboard = createTimelineClipboard(sources, options);
+    syncTimelineClipboardUI();
     showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} copied`, "good");
   }
 
@@ -2661,6 +2677,7 @@ function boot(root: HTMLDivElement): void {
     }
     if (!assertTimelineSourcesUnlocked(sources, "cutting keyframes")) return;
     timelineClipboard = createTimelineClipboard(sources, options);
+    syncTimelineClipboardUI();
     deleteTimelineKeyframes(sources.map((source) => source.keyframe.id), { notify: false });
     showToast(`${sources.length} keyframe${sources.length === 1 ? "" : "s"} cut`, "good");
   }
