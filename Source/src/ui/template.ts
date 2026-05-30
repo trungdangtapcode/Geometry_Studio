@@ -108,6 +108,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-layer-out" type="button" title="Trim selected layer out at the playhead (Alt+])"><span data-icon="LogOut"></span><span>Layer Out</span></button>
               <button class="mini-button" id="timeline-split-layer" type="button" title="Split selected layer at the playhead (Ctrl+Shift+D)"><span data-icon="Scissors"></span><span>Split</span></button>
               <button class="mini-button" id="timeline-layer-work" type="button" title="Set work area to selected layer range (Alt+Shift+B)"><span data-icon="StretchHorizontal"></span><span>Layer Work</span></button>
+              <button class="mini-button" id="timeline-sequence-layers" type="button" title="Sequence all object layer ranges from the playhead (Alt+Shift+L)"><span data-icon="ListOrdered"></span><span>Sequence</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-in" type="button" data-interpolation="easeIn"><span data-icon="CornerDownRight"></span><span>Ease In</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-out" type="button" data-interpolation="easeOut"><span data-icon="CornerRightDown"></span><span>Ease Out</span></button>
@@ -163,6 +164,16 @@ export function studioTemplate(): string {
             <label><span>Work In</span><input id="timeline-work-start" type="number" min="0" max="120" step="0.1" value="0" /></label>
             <label><span>Work Out</span><input id="timeline-work-end" type="number" min="0.1" max="120" step="0.1" value="8" /></label>
             <label><span>FPS</span><input id="timeline-fps" type="number" min="1" max="120" step="1" value="30" /></label>
+            <label>
+              <span>Speed</span>
+              <select id="timeline-playback-rate" aria-label="Timeline playback speed">
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="1" selected>1x</option>
+                <option value="2">2x</option>
+                <option value="4">4x</option>
+              </select>
+            </label>
             <label><span>Snap</span><input id="timeline-snap-step" type="number" min="0.001" max="10" step="0.001" value="0.033" /></label>
             <label>
               <span>Interpolation</span>

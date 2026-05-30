@@ -1,4 +1,5 @@
 export type PlaybackDirection = -1 | 1;
+export const PLAYBACK_RATES = [0.25, 0.5, 1, 2, 4] as const;
 
 export interface TimelineTransportState {
   playing: boolean;
@@ -30,14 +31,18 @@ export class TimelineTransport {
   }
 
   pause(): TimelineTransportState {
-    return this.set(false, this.state.direction, 1);
+    return this.set(false, this.state.direction, this.state.rate);
   }
 
-  set(playing: boolean, direction: PlaybackDirection = this.state.direction, rate = 1): TimelineTransportState {
+  setRate(rate: number): TimelineTransportState {
+    return this.set(this.state.playing, this.state.direction, rate);
+  }
+
+  set(playing: boolean, direction: PlaybackDirection = this.state.direction, rate = this.state.rate): TimelineTransportState {
     this.state = {
       playing,
       direction,
-      rate: playing ? clampPlaybackRate(rate) : 1
+      rate: clampPlaybackRate(rate)
     };
     return this.snapshot();
   }
@@ -60,7 +65,8 @@ export class TimelineTransport {
   }
 
   private nextRate(direction: PlaybackDirection): number {
-    if (!this.state.playing || this.state.direction !== direction) return 1;
+    if (!this.state.playing || this.state.direction !== direction) return this.state.rate;
+    if (this.state.rate < 1) return 1;
     if (this.state.rate < 2) return 2;
     return 4;
   }
@@ -71,11 +77,15 @@ export class TimelineTransport {
 }
 
 export function clampPlaybackRate(rate: number): number {
-  if (rate >= 4) return 4;
-  if (rate >= 2) return 2;
-  return 1;
+  if (!Number.isFinite(rate)) return 1;
+  if (rate <= 0.25) return 0.25;
+  if (rate <= 0.5) return 0.5;
+  if (rate <= 1) return 1;
+  if (rate <= 2) return 2;
+  return 4;
 }
 
 export function formatPlaybackRate(rate: number): string {
-  return `${clampPlaybackRate(rate)}x`;
+  const safeRate = clampPlaybackRate(rate);
+  return `${Number.isInteger(safeRate) ? safeRate.toFixed(0) : safeRate}x`;
 }

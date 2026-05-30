@@ -90,7 +90,7 @@ svg {
   --timeline-header-column: 40px;
   --timeline-header-padding-x: 10px;
   --timeline-header-padding-top: 8px;
-  --timeline-settings-columns: repeat(5, minmax(82px, 1fr)) repeat(3, auto);
+  --timeline-settings-columns: repeat(6, minmax(76px, 1fr)) repeat(3, auto);
   --timeline-track-label-width: 178px;
   --timeline-track-row-height: 32px;
   --timeline-track-top-padding: 28px;
@@ -155,7 +155,7 @@ svg {
   --timeline-header-column: 34px;
   --timeline-header-padding-x: 8px;
   --timeline-header-padding-top: 6px;
-  --timeline-settings-columns: repeat(6, minmax(74px, 1fr)) repeat(3, auto);
+  --timeline-settings-columns: repeat(7, minmax(66px, 1fr)) repeat(3, auto);
   --timeline-track-label-width: 154px;
   --timeline-track-row-height: 28px;
   --timeline-track-top-padding: 24px;
@@ -214,7 +214,7 @@ svg {
   --timeline-header-column: 30px;
   --timeline-header-padding-x: 7px;
   --timeline-header-padding-top: 5px;
-  --timeline-settings-columns: repeat(7, minmax(66px, 1fr)) repeat(3, auto);
+  --timeline-settings-columns: repeat(8, minmax(58px, 1fr)) repeat(3, auto);
   --timeline-track-label-width: 136px;
   --timeline-track-row-height: 24px;
   --timeline-track-top-padding: 20px;

@@ -90,6 +90,8 @@ PDF.
   AE-style Position, Rotation, Scale, and Opacity row reveal commands.
 - [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents
   J/K/L forward, pause, and reverse playback behavior.
+- [Timeline Playback Speed](timeline-playback-speed.md) documents explicit
+  `0.25x` to `4x` preview speed controls and command palette integration.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Paste Insert](timeline-paste-insert.md) documents insert-style
@@ -173,6 +175,9 @@ PDF.
   AE-style Layer In, Layer Out, Split, layer boundary jumps, layer work-area
   commands, and draggable object duration bars that can trim visibility or move
   object keyframes with the layer.
+- [Timeline Layer Sequencing](timeline-layer-sequencing.md) documents the
+  toolbar, command-palette, and `Alt+Shift+L` workflow for arranging object
+  layer ranges from the playhead.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
   documents direct Linear, Ease In, Ease Out, Easy Ease, and Hold timing
   controls.
@@ -322,7 +327,8 @@ animation runtime where it fits:
   authoring and range selection. The ruler scrub lane also supports `Shift`
   click for Work In and `Alt` click for Work Out.
 - J/K/L transport shortcuts provide forward, pause, reverse, and repeated-key
-  `1x` / `2x` / `4x` shuttle playback inside the active work area.
+  shuttle playback inside the active work area, while the Speed selector gives
+  direct `0.25x` to `4x` preview rates.
 - The red Current Time Indicator in the timeline ruler can be dragged directly
   to scrub the scene, and the ruler scrub lane supports direct click-to-seek,
   with the matching playhead line shown across layer ranges.
@@ -358,8 +364,9 @@ object appearance, camera, and light tracks:
   evaluator.
 - `animation/timelinePlayer.ts` evaluates Position, Rotation, and Scale tracks
   directly from the timeline document.
-- `animation/timelineTransport.ts` owns J/K/L playback direction, shuttle rate,
-  button labels, and signed playback delta calculation.
+- `animation/timelineTransport.ts` owns J/K/L playback direction, explicit
+  preview speed, shuttle rate, button labels, and signed playback delta
+  calculation.
 - `ui/timelinePanel.ts` wraps `animation-timeline-js` and connects the visual
   timeline to editor callbacks.
 - `ui/commandPalette.ts` owns the searchable command surface and disabled-state

@@ -28,6 +28,18 @@ export interface ShiftLayerKeyframesResult {
   changedTransformObjectIds: string[];
 }
 
+export interface SequenceLayerRangesResult {
+  sequenced: number;
+  skipped: number;
+  shifted: number;
+  shiftSkipped: number;
+  start: number;
+  end: number;
+  keyframeIds: string[];
+  shiftedKeyframeIds: string[];
+  changedTransformObjectIds: string[];
+}
+
 export function setObjectVisibilityRange(
   timeline: SceneTimelineDocument,
   objectId: string,
@@ -69,6 +81,96 @@ export function objectLayerRanges(timeline: SceneTimelineDocument, objectId: str
   if (!track?.enabled || !track.keyframes.length) return [{ start: 0, end: Math.max(timeline.duration, 0.001) }];
 
   return visibleRangesFromTrack(track, timeline.duration);
+}
+
+export function sequenceObjectLayerRanges(
+  timeline: SceneTimelineDocument,
+  objectIds: string[],
+  startTime: number,
+  maxDuration = 120
+): SequenceLayerRangesResult {
+  const uniqueObjectIds = [...new Set(objectIds)];
+  const minimumSpan = Math.max(Math.min(timeline.snapStep || 1 / Math.max(timeline.fps, 1), 0.25), 0.001);
+  const start = snapTimelineTime(timeline, Math.min(Math.max(startTime, 0), maxDuration));
+  const planned = uniqueObjectIds.map((objectId) => {
+    const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+    const visibilityTrack = objectTimeline?.tracks.find((track) => track.kind === "objectVisibility");
+    const range = objectLayerRange(timeline, objectId) ?? { start: 0, end: Math.max(timeline.duration, minimumSpan) };
+    const span = Math.max(range.end - range.start, minimumSpan);
+    return { objectId, range, span, locked: Boolean(visibilityTrack?.locked) };
+  });
+  const eligible = planned.filter((item) => !item.locked);
+  const initiallySkipped = planned.length - eligible.length;
+  if (eligible.length === 0) {
+    return {
+      sequenced: 0,
+      skipped: initiallySkipped,
+      shifted: 0,
+      shiftSkipped: 0,
+      start,
+      end: start,
+      keyframeIds: [],
+      shiftedKeyframeIds: [],
+      changedTransformObjectIds: []
+    };
+  }
+
+  const plannedEnd = roundTime(eligible.reduce((cursor, item) => cursor + item.span, start));
+  const targetDuration = Math.min(maxDuration, Math.max(timeline.duration, plannedEnd, minimumSpan));
+  timeline.duration = targetDuration;
+  timeline.currentTime = Math.min(Math.max(timeline.currentTime, 0), timeline.duration);
+  timeline.workStart = Math.min(Math.max(timeline.workStart, 0), Math.max(timeline.duration - 0.001, 0));
+  timeline.workEnd = Math.min(Math.max(timeline.workEnd, timeline.workStart + 0.001), timeline.duration);
+
+  const keyframeIds: string[] = [];
+  const shiftedKeyframeIds: string[] = [];
+  const changedTransformObjectIds = new Set<string>();
+  let shifted = 0;
+  let shiftSkipped = 0;
+  let sequenced = 0;
+  let skipped = initiallySkipped;
+  let cursor = start;
+
+  eligible.forEach((item) => {
+    if (cursor >= timeline.duration - minimumSpan) {
+      skipped += 1;
+      return;
+    }
+
+    const nextStart = roundTime(cursor);
+    const nextEnd = roundTime(Math.min(nextStart + item.span, timeline.duration));
+    if (nextEnd <= nextStart + 0.001) {
+      skipped += 1;
+      return;
+    }
+
+    const shiftResult = shiftObjectLayerKeyframes(timeline, item.objectId, nextStart - item.range.start);
+    const visibilityResult = setObjectVisibilityRange(
+      timeline,
+      item.objectId,
+      nextStart,
+      nextEnd >= timeline.duration - 0.001 ? null : nextEnd
+    );
+    keyframeIds.push(...visibilityResult.keyframeIds);
+    shiftedKeyframeIds.push(...shiftResult.keyframeIds);
+    shiftResult.changedTransformObjectIds.forEach((objectId) => changedTransformObjectIds.add(objectId));
+    shifted += shiftResult.shifted;
+    shiftSkipped += shiftResult.skipped;
+    sequenced += 1;
+    cursor = nextEnd;
+  });
+
+  return {
+    sequenced,
+    skipped,
+    shifted,
+    shiftSkipped,
+    start,
+    end: cursor,
+    keyframeIds,
+    shiftedKeyframeIds,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
 }
 
 function visibleRangesFromTrack(track: TimelineTrackDocument, duration: number): TimelineLayerRange[] {

@@ -31,10 +31,16 @@ import {
   type TimelineKeyframeSource
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
-import { objectLayerRange, setObjectVisibilityRange, shiftObjectLayerKeyframes, type TimelineLayerRange } from "./animation/timelineLayers";
+import {
+  objectLayerRange,
+  sequenceObjectLayerRanges,
+  setObjectVisibilityRange,
+  shiftObjectLayerKeyframes,
+  type TimelineLayerRange
+} from "./animation/timelineLayers";
 import { TimelinePlayer } from "./animation/timelinePlayer";
 import { dedupeTimelineRowTargets, resolveTimelineRowTrackTargets } from "./animation/timelineTargets";
-import { TimelineTransport, type PlaybackDirection } from "./animation/timelineTransport";
+import { formatPlaybackRate, TimelineTransport, type PlaybackDirection } from "./animation/timelineTransport";
 import {
   copyTimelineObject,
   createDefaultTimeline,
@@ -209,6 +215,7 @@ function boot(root: HTMLDivElement): void {
     onTrimLayerOut: trimSelectedLayerOutPoint,
     onSplitLayer: splitSelectedLayerAtPlayhead,
     onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
+    onSequenceLayers: sequenceTimelineObjectLayers,
     onEditLayerRange: editTimelineLayerRange,
     onDeleteKeyframes: deleteTimelineKeyframes,
     onRippleDeleteKeyframes: rippleDeleteTimelineKeyframes,
@@ -485,6 +492,9 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#duplicate-selected").addEventListener("click", duplicateSelected);
     query<HTMLButtonElement>("#reset-scene").addEventListener("click", resetScene);
     query<HTMLButtonElement>("#play-toggle").addEventListener("click", togglePlay);
+    query<HTMLSelectElement>("#timeline-playback-rate").addEventListener("change", (event) => {
+      setTimelinePlaybackRate(Number((event.target as HTMLSelectElement).value));
+    });
     query<HTMLButtonElement>("#cinematic-btn").addEventListener("click", startCinematicDemo);
     query<HTMLButtonElement>("#command-palette-btn").addEventListener("click", () => commandPalette.open());
     query<HTMLButtonElement>("#evaluation-btn").addEventListener("click", startEvaluationTour);
@@ -911,6 +921,11 @@ function boot(root: HTMLDivElement): void {
       command("timeline.reverse", "Play Backward", "Playback", () => playTimeline(-1), { shortcut: "J", keywords: ["transport"] }),
       command("timeline.pause", "Pause Timeline", "Playback", () => pauseTimeline(), { shortcut: "K", keywords: ["transport"] }),
       command("timeline.forward", "Play Forward", "Playback", () => playTimeline(1), { shortcut: "L", keywords: ["transport"] }),
+      command("timeline.speed-quarter", "Set Playback Speed 0.25x", "Playback", () => setTimelinePlaybackRate(0.25), { keywords: ["slow", "preview", "transport"] }),
+      command("timeline.speed-half", "Set Playback Speed 0.5x", "Playback", () => setTimelinePlaybackRate(0.5), { keywords: ["slow", "preview", "transport"] }),
+      command("timeline.speed-normal", "Set Playback Speed 1x", "Playback", () => setTimelinePlaybackRate(1), { keywords: ["normal", "preview", "transport"] }),
+      command("timeline.speed-double", "Set Playback Speed 2x", "Playback", () => setTimelinePlaybackRate(2), { keywords: ["fast", "preview", "transport"] }),
+      command("timeline.speed-quad", "Set Playback Speed 4x", "Playback", () => setTimelinePlaybackRate(4), { keywords: ["fast", "preview", "transport"] }),
       command("timeline.preview-selection", "Preview Selected Keyframe Range", "Playback", previewSelectedTimelineKeyRange, {
         shortcut: "Shift+Space",
         keywords: ["work area", "selection"],
@@ -993,6 +1008,11 @@ function boot(root: HTMLDivElement): void {
       command("timeline.fit-work", "Fit Keyframes To Work Area", "Retiming", () => fitTimelineKeyframesToWorkArea(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+F", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.stagger", "Stagger Keyframes From Playhead", "Retiming", () => staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.cascade", "Cascade Target Keyframes From Playhead", "Retiming", () => cascadeTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Alt+Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.sequence-layers", "Sequence Object Layers", "Retiming", sequenceTimelineObjectLayers, {
+        shortcut: "Alt+Shift+L",
+        keywords: ["layer timing", "after effects", "sequence layers"],
+        disabled: () => !hasSequenceLayerTargets()
+      }),
 
       command("timeline.graph", "Toggle Value Graph", "View", () => query<HTMLButtonElement>("#timeline-graph-toggle").click(), { keywords: ["curve editor"] }),
       command("timeline.selection-tool", "Timeline Selection Tool", "View", () => setTimelineDopeSheetTool("selection"), { shortcut: "V", keywords: ["marquee", "select keyframes", "arrow"] }),
@@ -1047,6 +1067,10 @@ function boot(root: HTMLDivElement): void {
   function hasClearableTimelineTrack(): boolean {
     const track = activeTimelineTrack(timelinePanel.selectedTrackKind());
     return Boolean(track && track.keyframes.length > 0 && !track.locked);
+  }
+
+  function hasSequenceLayerTargets(): boolean {
+    return entries.size >= 2;
   }
 
   function renderOutliner(): void {
@@ -1646,6 +1670,11 @@ function boot(root: HTMLDivElement): void {
       setTimelineWorkAreaToSelectedLayer();
       return;
     }
+    if (event.altKey && event.shiftKey && key === "l") {
+      event.preventDefault();
+      sequenceTimelineObjectLayers();
+      return;
+    }
     if (event.shiftKey && key === "enter") {
       event.preventDefault();
       moveTimelineKeyframesToPlayhead(timelinePanel.selectedKeyframeIdsList());
@@ -1828,12 +1857,30 @@ function boot(root: HTMLDivElement): void {
     else playTimeline(1, "Timeline running");
   }
 
+  function setTimelinePlaybackRate(rate: number, notify = true): void {
+    if (recordingPreview) {
+      transport.setRate(1);
+      syncPlaybackRateControl();
+      updatePlayButton();
+      if (notify) showToast("WebM recording uses fixed 1x playback.", "bad");
+      return;
+    }
+    const state = transport.setRate(rate);
+    syncPlaybackRateControl();
+    updatePlayButton();
+    if (notify) showToast(`Playback speed ${formatPlaybackRate(state.rate)}`, "good");
+  }
+
+  function syncPlaybackRateControl(): void {
+    query<HTMLSelectElement>("#timeline-playback-rate").value = String(transport.rate);
+  }
+
   function playTimeline(direction: PlaybackDirection, message = direction > 0 ? "Timeline running forward" : "Timeline running backward"): void {
     const state = transport.play(direction);
     syncPlaybackBoundary();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
-    showToast(`${message} ${state.rate}x`, "good");
+    showToast(`${message} ${formatPlaybackRate(state.rate)}`, "good");
   }
 
   function pauseTimeline(message = "Timeline paused"): void {
@@ -2577,6 +2624,42 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     updateAllUI();
     showToast(`${selection.entry.name} work area ${formatNumber(selection.range.start)}-${formatNumber(selection.range.end)}s`, "good");
+  }
+
+  function sequenceTimelineObjectLayers(): void {
+    const objectIds = [...entries.keys()];
+    if (objectIds.length < 2) {
+      showToast("Add at least two objects before sequencing layers.", "bad");
+      return;
+    }
+
+    const start = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    recordHistory();
+    const result = sequenceObjectLayerRanges(sceneTimeline, objectIds, start);
+    if (result.sequenced === 0) {
+      updateAllUI();
+      showToast(result.skipped ? "No unlocked layer ranges could be sequenced." : "No layer ranges changed.", "bad");
+      return;
+    }
+
+    sceneTimeline.currentTime = result.start;
+    sceneTimeline.workStart = result.start;
+    sceneTimeline.workEnd = Math.min(Math.max(result.end, result.start + 0.001), sceneTimeline.duration);
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+
+    const shifted = result.shifted ? `, ${result.shifted} keys shifted` : "";
+    const skipped = result.skipped || result.shiftSkipped
+      ? ` (${result.skipped} layers, ${result.shiftSkipped} keys skipped)`
+      : "";
+    showToast(
+      `${result.sequenced} object layer${result.sequenced === 1 ? "" : "s"} sequenced from ${formatNumber(result.start)}s to ${formatNumber(result.end)}s${shifted}${skipped}`,
+      "good"
+    );
   }
 
   function editTimelineLayerRange(objectId: string, start: number, end: number, shiftKeyframes: boolean): void {
@@ -4049,6 +4132,7 @@ function boot(root: HTMLDivElement): void {
 
   function updatePlayButton(): void {
     query<HTMLDivElement>("#status-line").textContent = recordingPreview ? recordingStatusLabel() : transport.statusLabel();
+    syncPlaybackRateControl();
     const label = transport.buttonLabel();
     const iconName = transport.iconName();
     const button = query<HTMLButtonElement>("#play-toggle");

@@ -86,6 +86,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-layer-out")).toBeVisible();
   await expect(page.locator("#timeline-split-layer")).toBeVisible();
   await expect(page.locator("#timeline-layer-work")).toBeVisible();
+  await expect(page.locator("#timeline-sequence-layers")).toBeVisible();
   await expect(page.locator("#timeline-overview-track")).toBeVisible();
   await expect(page.locator("#timeline-layer-strip")).toBeVisible();
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toContainText("Cube");
@@ -352,6 +353,71 @@ test("opens the command palette and runs timeline commands", async ({ page }) =>
   await page.keyboard.press("Enter");
   await expect(page.locator("#command-palette")).toHaveAttribute("aria-hidden", "true");
   await expect(page.locator("#timeline-ease-smooth")).toHaveClass(/active/);
+
+  expect(errors).toEqual([]);
+});
+
+test("sets explicit timeline playback speed from UI and command palette", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-playback-rate")).toHaveValue("1");
+  await page.locator("#timeline-playback-rate").selectOption("0.5");
+  await expect(page.locator("#timeline-playback-rate")).toHaveValue("0.5");
+
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("l");
+  await expect(page.locator("#status-line")).toContainText("Forward 0.5x");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Pause 0.5x");
+
+  await page.keyboard.press("l");
+  await expect(page.locator("#status-line")).toContainText("Forward 1x");
+  await expect(page.locator("#timeline-playback-rate")).toHaveValue("1");
+
+  await page.keyboard.press("k");
+  await expect(page.locator("#status-line")).toContainText("Ready");
+  await expect(page.locator("#timeline-playback-rate")).toHaveValue("1");
+
+  await page.locator("#timeline-playback-rate").selectOption("0.25");
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("j");
+  await expect(page.locator("#status-line")).toContainText("Reverse 0.25x");
+
+  await page.keyboard.press("k");
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("speed 4x");
+  await expect(page.locator('[data-command-id="timeline.speed-quad"]')).toBeVisible();
+  await page.locator('[data-command-id="timeline.speed-quad"]').click();
+  await expect(page.locator("#timeline-playback-rate")).toHaveValue("4");
+  await expect(page.locator("#status-line")).toContainText("Ready");
+
+  expect(errors).toEqual([]);
+});
+
+test("sequences object layer ranges from the command palette", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("sequence object layers");
+  await expect(page.locator('[data-command-id="timeline.sequence-layers"]')).toBeEnabled();
+  await page.locator('[data-command-id="timeline.sequence-layers"]').click();
+
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBe(1);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBeGreaterThan(1);
+  await expect(page.locator("#timeline-selection")).toContainText("keyframe");
 
   expect(errors).toEqual([]);
 });
@@ -1410,6 +1476,79 @@ test("trims and splits selected object layers", async ({ page }) => {
   await page.locator('.timeline-layer-bar[data-object-id="object-1"]').click();
   await expect(page.locator("#selection-summary")).toContainText("Cube");
   await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
+  expect(errors).toEqual([]);
+});
+
+test("sequences object layer ranges from the playhead", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  const exportedScene = async () => {
+    const previousCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
+    await page.evaluate(() => {
+      document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+    });
+    const sceneText = await page.waitForFunction((count) => {
+      const downloads = (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads;
+      return downloads && downloads.length > count ? downloads.at(-1) : null;
+    }, previousCount);
+    const sceneJson = await sceneText.jsonValue();
+    return JSON.parse(sceneJson as string);
+  };
+  const objectTrack = (sceneDocument: {
+    timeline: { objects: Array<{ objectId: string; tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string }> }> }> };
+  }, objectId: string, kind: string) =>
+    sceneDocument.timeline.objects
+      .find((object) => object.objectId === objectId)
+      ?.tracks.find((track) => track.kind === kind);
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-sequence-layers")).toBeVisible();
+  await page.locator("#timeline-sequence-layers").click();
+  await expect.poll(async () => Number(await page.locator("#timeline-duration").inputValue())).toBe(24);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBe(0);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBe(24);
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-start", "0");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-end", "8");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-2"]')).toHaveAttribute("data-layer-start", "8");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-2"]')).toHaveAttribute("data-layer-end", "16");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-3"]')).toHaveAttribute("data-layer-start", "16");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-3"]')).toHaveAttribute("data-layer-end", "24");
+  await expect(page.locator("#timeline-selection")).toContainText("7 keyframes selected");
+
+  const sceneDocument = await exportedScene();
+  expect(objectTrack(sceneDocument, "object-1", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
+    [0, 1],
+    [8, 0]
+  ]);
+  expect(objectTrack(sceneDocument, "object-2", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
+    [0, 0],
+    [8, 1],
+    [16, 0]
+  ]);
+  expect(objectTrack(sceneDocument, "object-3", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
+    [0, 0],
+    [16, 1]
+  ]);
+  expect(objectTrack(sceneDocument, "object-2", "rotation")?.keyframes.map((keyframe) => keyframe.time)).toEqual([8, 16]);
+  expect(objectTrack(sceneDocument, "object-3", "scale")?.keyframes.map((keyframe) => keyframe.time)).toEqual([16, 20, 24]);
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("sequence object layers");
+  await expect(page.locator('[data-command-id="timeline.sequence-layers"]')).toBeEnabled();
   expect(errors).toEqual([]);
 });
 

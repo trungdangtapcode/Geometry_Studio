@@ -12,10 +12,13 @@ timeline graph.
 - `J` plays the timeline backward through the active Work In/Out range.
 - `K` pauses playback.
 - `L` plays the timeline forward through the active Work In/Out range.
-- Repeated `J` or `L` presses shuttle the current direction through `1x`,
-  `2x`, and `4x`.
-- Pressing the opposite direction resets the shuttle speed to `1x` in that
-  direction.
+- The timeline Speed selector can set `0.25x`, `0.5x`, `1x`, `2x`, or `4x`
+  preview playback without changing FPS or keyframe timing.
+- Repeated `J` or `L` presses shuttle the current direction from slow speeds to
+  `1x`, then `2x`, then `4x`.
+- Pressing the opposite direction keeps the selected speed in that direction,
+  making slow reverse preview possible.
+- `K` pauses playback without resetting the selected speed.
 - `Space` keeps the existing play/pause behavior and starts forward playback
   when resuming from a paused state.
 
@@ -32,5 +35,5 @@ work-area boundary. Shuttle speed multiplies the signed delta before the
 timeline document is evaluated, so transform, camera, light, material, texture,
 visibility, and motion-path preview tracks all remain synchronized.
 
-WebM preview recording always starts with forward playback from Work In so
+WebM preview recording always starts with forward `1x` playback from Work In so
 exports remain deterministic.
