@@ -13,6 +13,8 @@ and edited directly without dragging.
   based on the selected track type.
 - Editing value fields updates selected keyframes. With no explicit selection,
   the editor falls back to the playhead keyframe on the active track.
+- Keyframe-specific commands are disabled when there is no selected keyframe
+  and no active-track keyframe under the playhead.
 - Multiple selected keyframes can receive shared value edits. Time is disabled
   for multi-selection to avoid accidental destructive retiming.
 - Transform keyframe edits disable preset object animations for that object, so

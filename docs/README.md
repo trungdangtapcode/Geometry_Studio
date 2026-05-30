@@ -222,7 +222,8 @@ animation runtime where it fits:
   later destination keys by the copied timing span, with Paste controls enabled
   only when copied keyframes are available.
 - A compact keyframe editor allows precise selected/playhead keyframe time and
-  value edits.
+  value edits, and selection-only timeline actions are disabled when no
+  selected or playhead keyframe can be edited.
 - Track enable/disable controls mute individual property tracks without deleting
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation

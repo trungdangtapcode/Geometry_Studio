@@ -168,14 +168,20 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(cameraTrackLabel).toHaveClass(/active/);
   await cameraTrackLabel.locator(".timeline-row-key").click();
   await expect(page.locator("#timeline-key-label")).toContainText("Camera | Camera Position X");
-  const dockHeight = await page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height);
-  const resizeBox = await page.locator("#timeline-resize-handle").boundingBox();
+  let resizeBox = await page.locator("#timeline-resize-handle").boundingBox();
+  expect(resizeBox).toBeTruthy();
+  await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y + 4);
+  await page.mouse.down();
+  await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y + 90);
+  await page.mouse.up();
+  const shrunkenDockHeight = await page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height);
+  resizeBox = await page.locator("#timeline-resize-handle").boundingBox();
   expect(resizeBox).toBeTruthy();
   await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y + 4);
   await page.mouse.down();
   await page.mouse.move(resizeBox!.x + resizeBox!.width / 2, resizeBox!.y - 120);
   await page.mouse.up();
-  await expect.poll(() => page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(dockHeight + 20);
+  await expect.poll(() => page.locator("#keyframe-dock").evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(shrunkenDockHeight + 20);
   await page.locator("#timeline-next-frame").click();
   await expect(page.locator("#timeline-timecode")).toContainText("F0001");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0);
@@ -239,6 +245,32 @@ test("renders the studio and core controls", async ({ page }) => {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("button", { name: "Cube", exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("disables keyframe target actions when no keyframe is active", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const targetActions = [
+    page.locator("#timeline-delete-keyframe"),
+    page.locator("#timeline-copy-keyframes"),
+    page.locator("#timeline-duplicate-keyframe"),
+    page.locator("#timeline-preview-selection"),
+    page.locator("#timeline-nudge-right")
+  ];
+
+  await expect(page.locator("#timeline-selection")).toContainText("No keyframe selected");
+  for (const action of targetActions) await expect(action).toBeDisabled();
+
+  await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-selection")).toContainText("1 keyframe selected");
+  for (const action of targetActions) await expect(action).toBeEnabled();
+
   expect(errors).toEqual([]);
 });
 

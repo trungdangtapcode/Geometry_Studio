@@ -206,6 +206,24 @@ export class KeyframeTimelinePanel {
   private readonly insertGapButton = query<HTMLButtonElement>("#timeline-insert-gap");
   private readonly liftWorkButton = query<HTMLButtonElement>("#timeline-lift-work");
   private readonly extractWorkButton = query<HTMLButtonElement>("#timeline-extract-work");
+  private readonly keyframeTargetButtons = [
+    query<HTMLButtonElement>("#timeline-delete-keyframe"),
+    query<HTMLButtonElement>("#timeline-ripple-delete-keyframes"),
+    query<HTMLButtonElement>("#timeline-copy-keyframes"),
+    query<HTMLButtonElement>("#timeline-preview-selection"),
+    query<HTMLButtonElement>("#timeline-nudge-left"),
+    query<HTMLButtonElement>("#timeline-nudge-right"),
+    query<HTMLButtonElement>("#timeline-move-to-playhead"),
+    query<HTMLButtonElement>("#timeline-center-keyframes"),
+    query<HTMLButtonElement>("#timeline-rove-keyframes"),
+    query<HTMLButtonElement>("#timeline-reverse-keyframes"),
+    query<HTMLButtonElement>("#timeline-snap-keyframes"),
+    query<HTMLButtonElement>("#timeline-distribute-keyframes"),
+    query<HTMLButtonElement>("#timeline-fit-keyframes"),
+    query<HTMLButtonElement>("#timeline-stagger-keyframes"),
+    query<HTMLButtonElement>("#timeline-cascade-keyframes"),
+    query<HTMLButtonElement>("#timeline-duplicate-keyframe")
+  ];
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly soloTrackButton = query<HTMLButtonElement>("#timeline-solo-track");
@@ -1660,8 +1678,20 @@ export class KeyframeTimelinePanel {
       : sources.length
         ? "Playhead keyframe active"
       : "No keyframe selected";
+    this.syncKeyframeTargetButtons(sources.length);
     this.syncKeyframeEditor(timelineDocument, selectedId, sources);
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
+  }
+
+  private syncKeyframeTargetButtons(targetCount: number): void {
+    const disabled = targetCount === 0;
+    this.keyframeTargetButtons.forEach((button) => {
+      button.dataset.enabledTitle ??= button.title;
+      button.disabled = disabled;
+      button.title = disabled
+        ? "Select keyframes or park the playhead on an active-track keyframe"
+        : button.dataset.enabledTitle ?? "";
+    });
   }
 
   private syncTimecode(timelineDocument: SceneTimelineDocument): void {
