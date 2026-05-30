@@ -15,11 +15,19 @@ the evaluator can reload a scene and keep its timeline annotations.
   marker at the playhead.
 - Previous/next marker buttons jump between marker cue points.
 - Marker chips in the marker strip jump the playhead when clicked.
+- Dragging a marker chip retimes the marker on the active snap grid and moves
+  the playhead to the new cue point.
 - Deleting removes the marker at the playhead.
 
 Marker color is saved in scene JSON and rendered as the marker chip's left
 accent border. This allows beat types such as camera, lighting, material, and
 demo cues to be visually separated in the timeline.
+
+Marker dragging is implemented in the timeline panel as a DOM overlay
+interaction, matching the layer overview strip. The panel previews the marker
+position during the pointer drag, then delegates the final snapped time to the
+main editor callback so Undo/Redo, sorting, playhead sync, and JSON persistence
+remain centralized.
 
 ## Keyboard Workflow
 

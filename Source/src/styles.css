@@ -1193,11 +1193,20 @@ svg {
   text-overflow: ellipsis;
   white-space: nowrap;
   transform: translateX(-2px);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
 }
 
 .timeline-marker.active {
   background: var(--charcoal);
   color: #ffffff;
+}
+
+.timeline-marker.dragging {
+  cursor: grabbing;
+  border-color: rgba(32, 191, 169, 0.56);
+  box-shadow: 0 0 0 2px rgba(32, 191, 169, 0.16);
 }
 
 .timeline-canvas {

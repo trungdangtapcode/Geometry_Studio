@@ -80,6 +80,7 @@ export interface KeyframeTimelineCallbacks {
   onDeleteMarker(markerId: string | null): void;
   onRenameMarker(markerId: string, label: string): void;
   onSetMarkerColor(markerId: string, color: string): void;
+  onMoveMarker(markerId: string, time: number): void;
   onStepMarker(direction: -1 | 1): void;
   onClearTrack(kind: TimelineTrackKind): void;
   onToggleTrack(kind: TimelineTrackKind, targetId?: string): void;
@@ -140,6 +141,18 @@ type TimelineLayerDragState = {
   originalEnd: number;
   nextStart: number;
   nextEnd: number;
+  duration: number;
+  width: number;
+  moved: boolean;
+};
+
+type TimelineMarkerDragState = {
+  pointerId: number;
+  button: HTMLButtonElement;
+  markerId: string;
+  startClientX: number;
+  originalTime: number;
+  nextTime: number;
   duration: number;
   width: number;
   moved: boolean;
@@ -223,13 +236,17 @@ export class KeyframeTimelinePanel {
   private rowSearchText = loadTimelineRowSearch();
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
+  private markerDragState: TimelineMarkerDragState | null = null;
   private layerDragState: TimelineLayerDragState | null = null;
+  private suppressMarkerClick = false;
   private suppressLayerClick = false;
   private timelineScroller: HTMLElement | null = null;
   private syncingScroll = false;
   private updating = false;
   private readonly handleResizeMove = (event: PointerEvent) => this.resizeDock(event);
   private readonly handleResizeEnd = (event: PointerEvent) => this.finishResize(event);
+  private readonly handleMarkerDragMove = (event: PointerEvent) => this.dragMarker(event);
+  private readonly handleMarkerDragEnd = (event: PointerEvent) => this.finishMarkerDrag(event);
   private readonly handleLayerDragMove = (event: PointerEvent) => this.dragLayerRange(event);
   private readonly handleLayerDragEnd = (event: PointerEvent) => this.finishLayerRangeDrag(event);
   private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
@@ -588,7 +605,13 @@ export class KeyframeTimelinePanel {
     this.markerColorInput.addEventListener("change", () => {
       if (this.activeMarkerId) this.callbacks.onSetMarkerColor(this.activeMarkerId, this.markerColorInput.value);
     });
+    this.markerStrip.addEventListener("pointerdown", (event) => this.startMarkerDrag(event));
     this.markerStrip.addEventListener("click", (event) => {
+      if (this.suppressMarkerClick) {
+        this.suppressMarkerClick = false;
+        event.preventDefault();
+        return;
+      }
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-marker");
       if (!button) return;
       const time = Number(button.dataset.time);
@@ -878,6 +901,68 @@ export class KeyframeTimelinePanel {
     this.syncMarkerEditor(timelineDocument, activeMarker);
   }
 
+  private startMarkerDrag(event: PointerEvent): void {
+    if (event.button !== 0 || !this.lastTimelineDocument) return;
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-marker");
+    if (!button) return;
+    const markerId = button.dataset.markerId;
+    const originalTime = Number(button.dataset.time);
+    if (!markerId || !Number.isFinite(originalTime)) return;
+
+    const stripRect = this.markerStrip.getBoundingClientRect();
+    if (stripRect.width <= 0) return;
+    this.markerDragState = {
+      pointerId: event.pointerId,
+      button,
+      markerId,
+      startClientX: event.clientX,
+      originalTime,
+      nextTime: originalTime,
+      duration: Math.max(this.lastTimelineDocument.duration, 0.001),
+      width: stripRect.width,
+      moved: false
+    };
+    button.classList.add("dragging");
+    button.setPointerCapture(event.pointerId);
+    button.addEventListener("pointermove", this.handleMarkerDragMove);
+    button.addEventListener("pointerup", this.handleMarkerDragEnd);
+    button.addEventListener("pointercancel", this.handleMarkerDragEnd);
+    event.preventDefault();
+  }
+
+  private dragMarker(event: PointerEvent): void {
+    const state = this.markerDragState;
+    if (!state || event.pointerId !== state.pointerId) return;
+    const deltaTime = ((event.clientX - state.startClientX) / state.width) * state.duration;
+    const nextTime = this.snapTimelineUiTime(clamp(state.originalTime + deltaTime, 0, state.duration));
+    state.nextTime = nextTime;
+    state.moved ||= Math.abs(event.clientX - state.startClientX) > 2;
+    this.previewMarkerTime(state.button, nextTime, state.duration);
+  }
+
+  private finishMarkerDrag(event: PointerEvent): void {
+    const state = this.markerDragState;
+    if (!state || event.pointerId !== state.pointerId) return;
+    state.button.classList.remove("dragging");
+    state.button.removeEventListener("pointermove", this.handleMarkerDragMove);
+    state.button.removeEventListener("pointerup", this.handleMarkerDragEnd);
+    state.button.removeEventListener("pointercancel", this.handleMarkerDragEnd);
+    if (state.button.hasPointerCapture(event.pointerId)) state.button.releasePointerCapture(event.pointerId);
+    this.markerDragState = null;
+
+    if (state.moved && Math.abs(state.nextTime - state.originalTime) > 0.001) {
+      this.suppressMarkerClick = true;
+      this.callbacks.onMoveMarker(state.markerId, state.nextTime);
+    }
+  }
+
+  private previewMarkerTime(button: HTMLButtonElement, time: number, duration: number): void {
+    const left = Math.min(100, Math.max(0, (time / Math.max(duration, 0.001)) * 100));
+    button.dataset.time = formatNumber(time);
+    button.style.left = `${left}%`;
+    button.title = `${button.textContent ?? "Marker"} at ${formatNumber(time)}s`;
+  }
+
   private renderLayerStrip(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string): void {
     const rowHeight = Math.max(18, this.timelineRowHeight());
     const maxVisibleRows = 5;
@@ -1019,6 +1104,10 @@ export class KeyframeTimelinePanel {
   }
 
   private snapLayerTime(time: number): number {
+    return this.snapTimelineUiTime(time);
+  }
+
+  private snapTimelineUiTime(time: number): number {
     const timelineDocument = this.lastTimelineDocument;
     if (!timelineDocument?.snapEnabled || timelineDocument.snapStep <= 0) return roundTimelineTime(time);
     return roundTimelineTime(Math.round(time / timelineDocument.snapStep) * timelineDocument.snapStep);

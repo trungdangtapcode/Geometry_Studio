@@ -1895,6 +1895,21 @@ test("supports timeline marker keyboard shortcuts", async ({ page }) => {
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
+  const dragMarker = async (index: number, deltaSeconds: number) => {
+    const strip = page.locator("#timeline-marker-strip");
+    const marker = page.locator(".timeline-marker").nth(index);
+    const stripBox = await strip.boundingBox();
+    const markerBox = await marker.boundingBox();
+    expect(stripBox).toBeTruthy();
+    expect(markerBox).toBeTruthy();
+    const startX = markerBox!.x + markerBox!.width / 2;
+    const startY = markerBox!.y + markerBox!.height / 2;
+    const deltaX = stripBox!.width * (deltaSeconds / 8);
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + deltaX, startY, { steps: 6 });
+    await page.mouse.up();
+  };
 
   await page.goto("/");
   await expect(page.locator("#timeline-add-marker")).toBeVisible();
@@ -1907,6 +1922,9 @@ test("supports timeline marker keyboard shortcuts", async ({ page }) => {
   await page.keyboard.press("m");
   await expect(page.locator(".timeline-marker")).toHaveCount(1);
   await expect(page.locator(".timeline-marker").first()).toContainText("Marker 1");
+  await dragMarker(0, 1);
+  await expect.poll(async () => Number(await page.locator(".timeline-marker").first().getAttribute("data-time"))).toBeCloseTo(1.267, 2);
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(1.267, 2);
 
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "2";
@@ -1918,7 +1936,7 @@ test("supports timeline marker keyboard shortcuts", async ({ page }) => {
   await expect(page.locator(".timeline-marker").nth(1)).toContainText("Marker 2");
 
   await page.keyboard.press("Alt+M");
-  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(0.267, 2);
+  expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(1.267, 2);
   await page.keyboard.press("Shift+M");
   expect(Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(2, 2);
   await page.keyboard.press("Shift+Alt+M");

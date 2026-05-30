@@ -48,7 +48,8 @@ PDF.
   texture Repeat, Offset, and Rotation tracks.
 - [Timeline Work Area](timeline-work-area.md) documents schema v8 Work In/Out
   playback range behavior.
-- [Timeline Markers](timeline-markers.md) documents schema v9 marker cue points.
+- [Timeline Markers](timeline-markers.md) documents schema v9 marker cue
+  points, marker colors, marker navigation, and draggable marker retiming.
 - [Timeline Preset Baking](timeline-preset-baking.md) documents why preset
   animation buttons now generate visible keyframes instead of hidden procedural
   motion.
@@ -260,8 +261,8 @@ animation runtime where it fits:
 - Selected objects with two or more Position keys show a viewport motion path,
   turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
 - Timeline markers add named cue points for animation beats and demo segments,
-  with `M`, `Shift+M`, `Alt+M`, and `Shift+Alt+M` shortcuts for keyboard
-  authoring, navigation, and cleanup.
+  with direct marker dragging plus `M`, `Shift+M`, `Alt+M`, and `Shift+Alt+M`
+  shortcuts for authoring, navigation, and cleanup.
 - Work area editing supports Start/Out buttons plus `B`, `N`, `I`, `O`,
   `Shift+B`, and `Ctrl/Cmd+Shift+A` keyboard workflows for fast preview-range
   authoring and range selection.

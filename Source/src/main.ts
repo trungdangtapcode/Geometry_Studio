@@ -231,6 +231,7 @@ function boot(root: HTMLDivElement): void {
     onDeleteMarker: deleteTimelineMarker,
     onRenameMarker: renameTimelineMarker,
     onSetMarkerColor: setTimelineMarkerColor,
+    onMoveMarker: moveTimelineMarker,
     onStepMarker: stepTimelineMarker,
     onClearTrack: clearTimelineTrack,
     onToggleTrack: toggleTimelineTrack,
@@ -2977,6 +2978,20 @@ function boot(root: HTMLDivElement): void {
     marker.color = nextColor;
     updateAllUI();
     showToast(`Marker color updated: ${marker.label}`, "good");
+  }
+
+  function moveTimelineMarker(markerId: string, time: number): void {
+    const marker = sceneTimeline.markers.find((candidate) => candidate.id === markerId);
+    if (!marker || !Number.isFinite(time)) return;
+    const nextTime = snapTimelineTime(sceneTimeline, clamp(time, 0, sceneTimeline.duration));
+    if (Math.abs(marker.time - nextTime) < 0.001) return;
+    recordHistory();
+    marker.time = nextTime;
+    sortTimelineMarkers(sceneTimeline);
+    sceneTimeline.currentTime = marker.time;
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    updateAllUI();
+    showToast(`Marker moved: ${marker.label} at ${formatNumber(marker.time)}s`, "good");
   }
 
   function stepTimelineMarker(direction: -1 | 1): void {
