@@ -785,6 +785,18 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#post-fxaa-toggle").addEventListener("change", (event) => {
       updatePostProcessingSettings({ fxaa: (event.target as HTMLInputElement).checked });
     });
+    query<HTMLInputElement>("#post-dof-toggle").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ dof: (event.target as HTMLInputElement).checked });
+    });
+    query<HTMLInputElement>("#post-dof-focus").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ dofFocus: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-dof-aperture").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ dofAperture: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-dof-maxblur").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ dofMaxBlur: Number((event.target as HTMLInputElement).value) });
+    });
     query<HTMLInputElement>("#post-bloom-toggle").addEventListener("change", (event) => {
       updatePostProcessingSettings({ bloom: (event.target as HTMLInputElement).checked });
     });
@@ -928,6 +940,10 @@ function boot(root: HTMLDivElement): void {
         shortcut: "Delete",
         disabled: () => !hasTimelineKeyframeTarget()
       }),
+      command("timeline.clear-track", "Clear Active Track", "Keyframes", () => clearTimelineTrack(timelinePanel.selectedTrackKind()), {
+        keywords: ["delete track keys", "remove all keyframes", "property"],
+        disabled: () => !hasClearableTimelineTrack()
+      }),
       command("timeline.ripple-delete", "Ripple Delete Selected Keyframes", "Keyframes", () => rippleDeleteTimelineKeyframes(), {
         shortcut: "Shift+Delete",
         keywords: ["close gap"],
@@ -1011,6 +1027,11 @@ function boot(root: HTMLDivElement): void {
 
   function hasTimelineKeyframeTarget(): boolean {
     return resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList()).length > 0;
+  }
+
+  function hasClearableTimelineTrack(): boolean {
+    const track = activeTimelineTrack(timelinePanel.selectedTrackKind());
+    return Boolean(track && track.keyframes.length > 0 && !track.locked);
   }
 
   function renderOutliner(): void {
@@ -1219,6 +1240,10 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#shadow-quality").value = renderSettings.shadowQuality;
     query<HTMLSelectElement>("#environment-preset").value = renderSettings.environment;
     query<HTMLInputElement>("#post-fxaa-toggle").checked = renderSettings.postProcessing.fxaa;
+    query<HTMLInputElement>("#post-dof-toggle").checked = renderSettings.postProcessing.dof;
+    query<HTMLInputElement>("#post-dof-focus").value = String(renderSettings.postProcessing.dofFocus);
+    query<HTMLInputElement>("#post-dof-aperture").value = String(renderSettings.postProcessing.dofAperture);
+    query<HTMLInputElement>("#post-dof-maxblur").value = String(renderSettings.postProcessing.dofMaxBlur);
     query<HTMLInputElement>("#post-bloom-toggle").checked = renderSettings.postProcessing.bloom;
     query<HTMLInputElement>("#post-bloom-strength").value = String(renderSettings.postProcessing.bloomStrength);
     query<HTMLInputElement>("#post-bloom-threshold").value = String(renderSettings.postProcessing.bloomThreshold);

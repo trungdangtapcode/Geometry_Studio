@@ -30,7 +30,10 @@ PDF.
 - [OBJ + MTL Import](obj-mtl-import.md) documents multi-file OBJ material
   loading and imported source-material preservation.
 - [Post-Processing Toggles](post-processing.md) documents SSAO, Bloom,
-  Vignette, FXAA, and the EffectComposer pass chain.
+  Vignette, FXAA, Depth of Field, and the EffectComposer pass chain.
+- [Depth Of Field Post-Processing](depth-of-field.md) documents the Three.js
+  `BokehPass` integration, focus/aperture controls, scene JSON persistence, and
+  why the effect remains real-time WebGL raster rendering.
 - [FXAA Anti-Aliasing](fxaa-antialiasing.md) documents the lightweight
   anti-aliasing pass decision and scene JSON persistence.
 - [SSAO Rendering](ssao-rendering.md) documents optional screen-space ambient
@@ -104,6 +107,9 @@ PDF.
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
   enable/disable, solo, and lock/unlock behavior.
+- [Timeline Clear Track](timeline-clear-track.md) documents deleting all
+  keyframes from the active property track through the toolbar or Command
+  Palette without deleting the target object.
 - [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
   label selection and active/disabled row states.
 - [Timeline Row Keying](timeline-row-keying.md) documents the AE-style diamond

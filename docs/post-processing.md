@@ -17,6 +17,7 @@ main renderer interactive and browser-safe.
 - `SSAOPass` is a built-in Three.js addon for basic screen-space ambient
   occlusion. It is cheaper than heavier AO passes and fits an interactive
   editor viewport.
+- `BokehPass` is a built-in Three.js addon for camera-style depth of field.
 - `UnrealBloomPass` provides strength, threshold, and radius controls for glow.
 - `ShaderPass` can run shader effects such as `VignetteShader`.
 
@@ -26,23 +27,36 @@ main renderer interactive and browser-safe.
 
 1. `RenderPass`
 2. `SSAOPass`
-3. `UnrealBloomPass`
-4. `ShaderPass(VignetteShader)`
-5. `OutlinePass`
-6. `FXAAPass`
-7. `OutputPass`
+3. `BokehPass`
+4. `UnrealBloomPass`
+5. `ShaderPass(VignetteShader)`
+6. `OutlinePass`
+7. `FXAAPass`
+8. `OutputPass`
 
 `Source/src/renderer/postProcessing.ts` owns defaults, normalization, pass
 application, and display labels. The settings are nested under
 `RenderSettings.postProcessing` and persisted in scene document version 6.
+It also selects an adaptive pixel budget for expensive pass combinations, so
+DOF plus SSAO stays interactive instead of forcing every pass to run at the
+full canvas drawing-buffer size.
 
 Defaults keep optional effects disabled so existing saved scenes load with the
-same basic visual style. Users can enable FXAA, SSAO, Bloom, and Vignette from
-the Rendering Lab.
+same basic visual style. Users can enable FXAA, Depth of Field, SSAO, Bloom,
+and Vignette from the Rendering Lab.
+
+Heavy passes such as Depth of Field and SSAO are disabled in automated browsers
+and on detected software WebGL renderers such as SwiftShader. User settings
+still persist in scene JSON. In supported hardware-backed browsers, the same
+effects use a smaller internal drawing buffer when enabled.
 
 ## Controls
 
 - FXAA toggle
+- Depth of Field toggle
+- DOF Focus
+- DOF Aperture
+- DOF Blur
 - SSAO toggle
 - SSAO Radius
 - SSAO Min Distance
@@ -59,6 +73,8 @@ effects are active.
 
 ## Validation
 
-The core Playwright smoke test enables FXAA, SSAO, Bloom, and Vignette, verifies
-the renderer summary updates, and confirms the editor remains usable. Typecheck
-and production build are required before committing release assets.
+The core Playwright smoke test enables FXAA, Depth of Field, Bloom, and
+Vignette, verifies the renderer summary updates, and confirms the editor remains
+usable. Focused post-processing tests verify Depth of Field persistence and
+FXAA plus SSAO persistence. Typecheck and production build are required before
+committing release assets.

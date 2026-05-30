@@ -479,6 +479,19 @@ export function studioTemplate(): string {
               </select>
             </label>
             <label class="toggle-line"><input id="post-fxaa-toggle" type="checkbox" /><span>FXAA</span></label>
+            <label class="toggle-line"><input id="post-dof-toggle" type="checkbox" /><span>Depth of Field</span></label>
+            <label>
+              <span>DOF Focus</span>
+              <input id="post-dof-focus" type="range" min="0.1" max="80" step="0.1" value="8" />
+            </label>
+            <label>
+              <span>DOF Aperture</span>
+              <input id="post-dof-aperture" type="range" min="0" max="0.2" step="0.001" value="0.025" />
+            </label>
+            <label>
+              <span>DOF Blur</span>
+              <input id="post-dof-maxblur" type="range" min="0" max="0.08" step="0.001" value="0.012" />
+            </label>
             <label class="toggle-line"><input id="post-bloom-toggle" type="checkbox" /><span>Bloom</span></label>
             <label>
               <span>Bloom Strength</span>

@@ -3,6 +3,10 @@ import type { RenderPipeline } from "./pipeline";
 
 export const DEFAULT_POST_PROCESSING_SETTINGS: PostProcessingSettings = {
   fxaa: false,
+  dof: false,
+  dofFocus: 8,
+  dofAperture: 0.025,
+  dofMaxBlur: 0.012,
   bloom: false,
   bloomStrength: 0.42,
   bloomRadius: 0.22,
@@ -19,6 +23,10 @@ export function normalizePostProcessingSettings(value: unknown): PostProcessingS
   const source = value && typeof value === "object" ? value as Partial<PostProcessingSettings> : {};
   return {
     fxaa: typeof source.fxaa === "boolean" ? source.fxaa : DEFAULT_POST_PROCESSING_SETTINGS.fxaa,
+    dof: typeof source.dof === "boolean" ? source.dof : DEFAULT_POST_PROCESSING_SETTINGS.dof,
+    dofFocus: finiteNumber(source.dofFocus, DEFAULT_POST_PROCESSING_SETTINGS.dofFocus, 0.1, 80),
+    dofAperture: finiteNumber(source.dofAperture, DEFAULT_POST_PROCESSING_SETTINGS.dofAperture, 0, 0.2),
+    dofMaxBlur: finiteNumber(source.dofMaxBlur, DEFAULT_POST_PROCESSING_SETTINGS.dofMaxBlur, 0, 0.08),
     bloom: typeof source.bloom === "boolean" ? source.bloom : DEFAULT_POST_PROCESSING_SETTINGS.bloom,
     bloomStrength: finiteNumber(source.bloomStrength, DEFAULT_POST_PROCESSING_SETTINGS.bloomStrength, 0, 2),
     bloomRadius: finiteNumber(source.bloomRadius, DEFAULT_POST_PROCESSING_SETTINGS.bloomRadius, 0, 1),
@@ -33,9 +41,16 @@ export function normalizePostProcessingSettings(value: unknown): PostProcessingS
 }
 
 export function applyPostProcessingSettings(pipeline: RenderPipeline, settings: PostProcessingSettings): void {
+  pipeline.setPixelBudget(postProcessingPixelBudget(settings));
   pipeline.fxaaPass.enabled = settings.fxaa;
 
-  pipeline.ssaoPass.enabled = settings.ssao;
+  pipeline.bokehPass.enabled = settings.dof && pipeline.heavyPostProcessingSupported;
+  const bokehUniforms = pipeline.bokehPass.uniforms as Record<"focus" | "aperture" | "maxblur", { value: number }>;
+  bokehUniforms.focus.value = settings.dofFocus;
+  bokehUniforms.aperture.value = settings.dofAperture;
+  bokehUniforms.maxblur.value = settings.dofMaxBlur;
+
+  pipeline.ssaoPass.enabled = settings.ssao && pipeline.heavyPostProcessingSupported;
   pipeline.ssaoPass.kernelRadius = settings.ssaoRadius;
   pipeline.ssaoPass.minDistance = settings.ssaoMinDistance;
   pipeline.ssaoPass.maxDistance = Math.max(settings.ssaoMaxDistance, settings.ssaoMinDistance + 0.001);
@@ -53,11 +68,18 @@ export function applyPostProcessingSettings(pipeline: RenderPipeline, settings: 
 export function postProcessingLabel(settings: PostProcessingSettings): string {
   const active = [
     settings.fxaa ? "FXAA On" : "",
+    settings.dof ? "DOF On" : "",
     settings.ssao ? "SSAO On" : "",
     settings.bloom ? "Bloom On" : "",
     settings.vignette ? "Vignette On" : ""
   ].filter(Boolean);
   return active.length > 0 ? active.join(" + ") : "Post Off";
+}
+
+function postProcessingPixelBudget(settings: PostProcessingSettings): number {
+  if (settings.dof || settings.ssao) return 640 * 360;
+  if (settings.bloom) return 1280 * 720;
+  return 2560 * 1440;
 }
 
 function finiteNumber(value: unknown, fallback: number, min: number, max: number): number {

@@ -54,6 +54,10 @@ export type EnvironmentPresetId = "off" | "studio" | "gallery" | "warm" | "cool"
 
 export interface PostProcessingSettings {
   fxaa: boolean;
+  dof: boolean;
+  dofFocus: number;
+  dofAperture: number;
+  dofMaxBlur: number;
   bloom: boolean;
   bloomStrength: number;
   bloomRadius: number;

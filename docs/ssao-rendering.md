@@ -37,6 +37,10 @@ with the rest of the rendering configuration.
 
 Defaults keep SSAO disabled to preserve performance and compatibility. The
 evaluator can enable it from Rendering Lab when demonstrating shading effects.
+The pass is disabled in automated browsers and on detected software WebGL
+backends, while the user's setting still remains visible and persists in scene
+JSON. In supported hardware-backed browsers, enabling SSAO lowers the internal
+post-processing pixel budget so the editor remains interactive.
 
 ## Validation
 

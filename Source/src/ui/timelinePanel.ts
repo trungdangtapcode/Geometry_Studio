@@ -227,6 +227,7 @@ export class KeyframeTimelinePanel {
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly soloTrackButton = query<HTMLButtonElement>("#timeline-solo-track");
+  private readonly clearTrackButton = query<HTMLButtonElement>("#timeline-clear-track");
   private readonly timeInput = query<HTMLInputElement>("#timeline-current-time");
   private readonly durationInput = query<HTMLInputElement>("#timeline-duration");
   private readonly workStartInput = query<HTMLInputElement>("#timeline-work-start");
@@ -389,6 +390,7 @@ export class KeyframeTimelinePanel {
     this.syncToggleTrackButton(timelineDocument, selectedId);
     this.syncLockTrackButton(timelineDocument, selectedId);
     this.syncSoloTrackButton(timelineDocument, selectedId);
+    this.syncClearTrackButton(timelineDocument, selectedId);
 
     const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
     const rowHeight = this.timelineRowHeight();
@@ -726,7 +728,7 @@ export class KeyframeTimelinePanel {
     this.extractWorkButton.addEventListener("click", () => {
       this.callbacks.onExtractVisibleWorkArea(this.visibleRowTargets());
     });
-    query<HTMLButtonElement>("#timeline-clear-track").addEventListener("click", () => {
+    this.clearTrackButton.addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());
     });
     this.toggleTrackButton.addEventListener("click", () => this.callbacks.onToggleTrack(this.selectedTrackKind()));
@@ -1609,6 +1611,16 @@ export class KeyframeTimelinePanel {
     const label = state.solo ? "Solo On" : state.muted ? "Muted" : "Solo Off";
     this.soloTrackButton.innerHTML = `<span data-icon="${state.solo ? "CircleDot" : "Circle"}"></span><span>${label}</span>`;
     hydrateIcons(this.soloTrackButton);
+  }
+
+  private syncClearTrackButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    const state = this.selectedTrackState(timelineDocument, selectedId);
+    this.clearTrackButton.disabled = !state.hasKeyframes || state.locked;
+    this.clearTrackButton.title = !state.hasKeyframes
+      ? "Add keyframes before clearing the active track"
+      : state.locked
+        ? "Unlock the active track before clearing it"
+        : "Clear all keyframes from the active track";
   }
 
   private syncAddKeyframeButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {

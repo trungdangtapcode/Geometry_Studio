@@ -19,7 +19,10 @@ const SHADOW_QUALITY: Record<ShadowQuality, { directional: number; local: number
 };
 
 export function createDefaultRenderSettings(): RenderSettings {
-  return { ...DEFAULT_RENDER_SETTINGS };
+  return {
+    ...DEFAULT_RENDER_SETTINGS,
+    postProcessing: { ...DEFAULT_RENDER_SETTINGS.postProcessing }
+  };
 }
 
 export function normalizeRenderSettings(value: unknown): RenderSettings {

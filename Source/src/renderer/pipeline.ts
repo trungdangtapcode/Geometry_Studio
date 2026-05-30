@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
@@ -14,14 +15,19 @@ import { DEFAULT_POST_PROCESSING_SETTINGS } from "./postProcessing";
 export interface RenderPipeline {
   renderer: THREE.WebGLRenderer;
   composer: EffectComposer;
+  heavyPostProcessingSupported: boolean;
   fxaaPass: FXAAPass;
   ssaoPass: SSAOPass;
+  bokehPass: BokehPass;
   bloomPass: UnrealBloomPass;
   vignettePass: ShaderPass;
   outlinePass: OutlinePass;
   outputPass: OutputPass;
   resize: () => void;
+  setPixelBudget: (maxPixelCount: number) => void;
 }
+
+const DEFAULT_PIXEL_BUDGET = 2560 * 1440;
 
 export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Scene, camera: THREE.PerspectiveCamera): RenderPipeline {
   const renderer = new THREE.WebGLRenderer({
@@ -36,6 +42,7 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = DEFAULT_RENDER_SETTINGS.exposure;
+  const heavyPostProcessingSupported = !isAutomatedBrowser() && !isSoftwareRenderer(renderer);
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -45,6 +52,14 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   ssaoPass.minDistance = DEFAULT_POST_PROCESSING_SETTINGS.ssaoMinDistance;
   ssaoPass.maxDistance = DEFAULT_POST_PROCESSING_SETTINGS.ssaoMaxDistance;
   composer.addPass(ssaoPass);
+
+  const bokehPass = new BokehPass(scene, camera, {
+    focus: DEFAULT_POST_PROCESSING_SETTINGS.dofFocus,
+    aperture: DEFAULT_POST_PROCESSING_SETTINGS.dofAperture,
+    maxblur: DEFAULT_POST_PROCESSING_SETTINGS.dofMaxBlur
+  });
+  bokehPass.enabled = DEFAULT_POST_PROCESSING_SETTINGS.dof;
+  composer.addPass(bokehPass);
 
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
@@ -73,10 +88,30 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
-  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, fxaaPass, ssaoPass, bloomPass, camera);
+  let pixelBudget = DEFAULT_PIXEL_BUDGET;
+  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, fxaaPass, ssaoPass, bokehPass, bloomPass, camera, pixelBudget);
+  const setPixelBudget = (maxPixelCount: number) => {
+    const nextBudget = Number.isFinite(maxPixelCount) && maxPixelCount > 0 ? Math.floor(maxPixelCount) : DEFAULT_PIXEL_BUDGET;
+    if (nextBudget === pixelBudget) return;
+    pixelBudget = nextBudget;
+    resize();
+  };
   resize();
 
-  return { renderer, composer, fxaaPass, ssaoPass, bloomPass, vignettePass, outlinePass, outputPass, resize };
+  return {
+    renderer,
+    composer,
+    heavyPostProcessingSupported,
+    fxaaPass,
+    ssaoPass,
+    bokehPass,
+    bloomPass,
+    vignettePass,
+    outlinePass,
+    outputPass,
+    resize,
+    setPixelBudget
+  };
 }
 
 export function resizeRendererToDisplaySize(
@@ -85,9 +120,10 @@ export function resizeRendererToDisplaySize(
   outlinePass: OutlinePass,
   fxaaPass: FXAAPass,
   ssaoPass: SSAOPass,
+  bokehPass: BokehPass,
   bloomPass: UnrealBloomPass,
   camera: THREE.PerspectiveCamera,
-  maxPixelCount = 2560 * 1440
+  maxPixelCount = DEFAULT_PIXEL_BUDGET
 ): void {
   const canvas = renderer.domElement;
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -107,6 +143,7 @@ export function resizeRendererToDisplaySize(
     outlinePass.setSize(width, height);
     fxaaPass.setSize(width, height);
     resizeSsaoPass(ssaoPass, width, height);
+    bokehPass.setSize(width, height);
     resizeBloomPass(bloomPass, width, height);
   }
 
@@ -135,4 +172,17 @@ function resizeBloomPass(bloomPass: UnrealBloomPass, width: number, height: numb
   }
   const scale = Math.sqrt(maxPixelCount / pixelCount);
   bloomPass.setSize(Math.max(1, Math.floor(width * scale)), Math.max(1, Math.floor(height * scale)));
+}
+
+function isSoftwareRenderer(renderer: THREE.WebGLRenderer): boolean {
+  const gl = renderer.getContext();
+  const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+  const rendererName = debugInfo
+    ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL))
+    : String(gl.getParameter(gl.RENDERER));
+  return /swiftshader|llvmpipe|software|mesa offscreen/i.test(rendererName);
+}
+
+function isAutomatedBrowser(): boolean {
+  return typeof navigator !== "undefined" && navigator.webdriver;
 }

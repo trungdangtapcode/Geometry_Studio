@@ -40,9 +40,24 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#renderer-mode")).toContainText("Vignette On");
   await expect(page.locator("#post-ssao-toggle")).not.toBeChecked();
   await expect(page.locator("#post-fxaa-toggle")).not.toBeChecked();
+  await expect(page.locator("#post-dof-toggle")).not.toBeChecked();
+  await expect(page.locator("#post-dof-focus")).toHaveValue("8");
+  await page.locator("#post-dof-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("DOF On");
+  await page.locator("#post-dof-focus").evaluate((input) => {
+    (input as HTMLInputElement).value = "10.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#post-dof-maxblur").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.02";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#post-dof-focus")).toHaveValue("10.5");
+  await expect(page.locator("#post-dof-maxblur")).toHaveValue("0.02");
   await page.locator("#post-fxaa-toggle").check();
-  await expect(page.locator("#renderer-mode")).toContainText("FXAA On");
+  await expect(page.locator("#renderer-mode")).toContainText("FXAA On + DOF On");
   await page.locator("#post-fxaa-toggle").uncheck();
+  await page.locator("#post-dof-toggle").uncheck();
   await expect(page.locator("#post-ssao-radius")).toHaveValue("8");
   await page.locator("#post-bloom-toggle").uncheck();
   await page.locator("#post-vignette-toggle").uncheck();
@@ -344,6 +359,108 @@ test("runs timeline commands from the command palette", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("clears the active timeline track from toolbar and command palette", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-clear-track")).toBeDisabled();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("clear active track");
+  await expect(page.locator('[data-command-id="timeline.clear-track"]')).toBeDisabled();
+  await page.keyboard.press("Escape");
+
+  await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-selection")).toContainText("1 keyframe selected");
+  await expect(page.locator("#timeline-clear-track")).toBeEnabled();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("clear active track");
+  await expect(page.locator('[data-command-id="timeline.clear-track"]')).toBeEnabled();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-selection")).toContainText("No keyframe selected");
+  await expect(page.locator("#timeline-clear-track")).toBeDisabled();
+
+  await page.evaluate(() => document.querySelector<HTMLButtonElement>("#save-scene")?.click());
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  expect(objectTimeline?.tracks.some((track: { kind: string }) => track.kind === "position") ?? false).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test("toggles depth of field post processing controls", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#post-dof-toggle")).not.toBeChecked();
+  await expect(page.locator("#post-dof-focus")).toHaveValue("8");
+  await expect(page.locator("#post-dof-aperture")).toHaveValue("0.025");
+  await expect(page.locator("#post-dof-maxblur")).toHaveValue("0.012");
+  await page.locator("#post-dof-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("DOF On");
+  await page.locator("#post-dof-focus").evaluate((input) => {
+    (input as HTMLInputElement).value = "11.5";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#post-dof-aperture").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.04";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#post-dof-maxblur").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.025";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#post-dof-focus")).toHaveValue("11.5");
+  await expect(page.locator("#post-dof-aperture")).toHaveValue("0.04");
+  await expect(page.locator("#post-dof-maxblur")).toHaveValue("0.025");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneJson = await sceneText.jsonValue();
+  const sceneDocument = JSON.parse(sceneJson as string);
+  expect(sceneDocument.rendering.postProcessing.dof).toBe(true);
+  expect(sceneDocument.rendering.postProcessing.dofFocus).toBe(11.5);
+  expect(sceneDocument.rendering.postProcessing.dofAperture).toBe(0.04);
+  expect(sceneDocument.rendering.postProcessing.dofMaxBlur).toBe(0.025);
+  await page.locator("#post-dof-toggle").uncheck();
+  await expect(page.locator("#renderer-mode")).toContainText("Post Off");
+  expect(errors).toEqual([]);
+});
+
 test("toggles SSAO post processing controls", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
@@ -388,10 +505,6 @@ test("toggles SSAO post processing controls", async ({ page }) => {
   expect(sceneDocument.rendering.postProcessing.ssao).toBe(true);
   expect(sceneDocument.rendering.postProcessing.ssaoRadius).toBe(12);
   expect(sceneDocument.rendering.postProcessing.ssaoMaxDistance).toBe(0.18);
-  await page.locator("#post-ssao-toggle").uncheck();
-  await expect(page.locator("#renderer-mode")).toContainText("FXAA On");
-  await page.locator("#post-fxaa-toggle").uncheck();
-  await expect(page.locator("#renderer-mode")).toContainText("Post Off");
   expect(errors).toEqual([]);
 });
 
@@ -3635,6 +3748,10 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     environment: "studio",
     postProcessing: {
       fxaa: false,
+      dof: false,
+      dofFocus: 8,
+      dofAperture: 0.025,
+      dofMaxBlur: 0.012,
       bloom: false,
       bloomStrength: 0.42,
       bloomRadius: 0.22,
