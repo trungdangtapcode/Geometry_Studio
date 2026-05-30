@@ -2024,6 +2024,63 @@ test("supports I/O work area keyboard shortcuts", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("supports draggable timeline work area range", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  const elementBox = async (selector: string) => page.locator(selector).evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height
+    };
+  });
+  const dragWorkArea = async (hit: "start" | "body" | "end", deltaSeconds: number) => {
+    const stripBox = await elementBox("#timeline-marker-strip");
+    const areaBox = await elementBox(".timeline-work-area");
+    expect(stripBox.width).toBeGreaterThan(0);
+    expect(areaBox.width).toBeGreaterThan(0);
+    const startX = hit === "start"
+      ? areaBox.x + 6
+      : hit === "end"
+        ? areaBox.x + areaBox.width - 6
+        : areaBox.x + areaBox.width / 2;
+    const startY = areaBox.y + areaBox.height / 2;
+    const deltaX = stripBox.width * (deltaSeconds / 8);
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + deltaX, startY, { steps: 8 });
+    await page.mouse.up();
+  };
+
+  await page.goto("/");
+  await expect(page.locator(".timeline-work-area")).toBeVisible();
+  await page.locator("#timeline-snap-step").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+  await dragWorkArea("end", -2);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBeCloseTo(6, 3);
+  await expect(page.locator(".timeline-work-area")).toHaveAttribute("data-work-end", "6");
+
+  await dragWorkArea("body", 1);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBeCloseTo(1, 3);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBeCloseTo(7, 3);
+
+  await dragWorkArea("start", 1);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBeCloseTo(2, 3);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBeCloseTo(7, 3);
+  await expect(page.locator(".timeline-work-area")).toHaveAttribute("data-work-start", "2");
+
+  expect(errors).toEqual([]);
+});
+
 test("evaluates ease in and ease out timeline interpolation", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

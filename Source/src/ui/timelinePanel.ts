@@ -29,6 +29,7 @@ import {
   type TimelineGraphSelectionMode,
   type TimelineKeySelectionMode
 } from "./timelineValueGraph";
+import { TimelineWorkAreaController } from "./timelineWorkArea";
 import {
   CAMERA_TRACKS,
   CHANNEL_EXPANDED_TRACKS,
@@ -224,6 +225,7 @@ export class KeyframeTimelinePanel {
   };
   private readonly markerLabelInput = query<HTMLInputElement>("#timeline-marker-label");
   private readonly markerColorInput = query<HTMLInputElement>("#timeline-marker-color");
+  private readonly workAreaController: TimelineWorkAreaController;
   private selectedKeyframeIds = new Set<string>();
   private lastTimelineDocument: SceneTimelineDocument | null = null;
   private lastEntries: SceneEntry[] = [];
@@ -253,6 +255,13 @@ export class KeyframeTimelinePanel {
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
     this.applyStoredDockHeight();
+    this.workAreaController = new TimelineWorkAreaController({
+      markerStrip: this.markerStrip,
+      workStartInput: this.workStartInput,
+      workEndInput: this.workEndInput,
+      getTimelineDocument: () => this.lastTimelineDocument,
+      onCommit: (patch) => this.callbacks.onSettingsChanged(patch)
+    });
     this.valueGraph = new TimelineValueGraph({
       root: this.root,
       toggleButton: query<HTMLButtonElement>("#timeline-graph-toggle"),
@@ -605,6 +614,7 @@ export class KeyframeTimelinePanel {
     this.markerColorInput.addEventListener("change", () => {
       if (this.activeMarkerId) this.callbacks.onSetMarkerColor(this.activeMarkerId, this.markerColorInput.value);
     });
+    this.markerStrip.addEventListener("pointerdown", (event) => this.workAreaController.startDrag(event));
     this.markerStrip.addEventListener("pointerdown", (event) => this.startMarkerDrag(event));
     this.markerStrip.addEventListener("click", (event) => {
       if (this.suppressMarkerClick) {
@@ -883,6 +893,7 @@ export class KeyframeTimelinePanel {
 
   private renderMarkers(timelineDocument: SceneTimelineDocument): void {
     this.markerStrip.innerHTML = "";
+    this.workAreaController.render(timelineDocument);
     const activeMarker = this.currentMarker(timelineDocument);
     this.activeMarkerId = activeMarker?.id ?? null;
     timelineDocument.markers.forEach((marker) => {
@@ -902,7 +913,7 @@ export class KeyframeTimelinePanel {
   }
 
   private startMarkerDrag(event: PointerEvent): void {
-    if (event.button !== 0 || !this.lastTimelineDocument) return;
+    if (event.defaultPrevented || event.button !== 0 || !this.lastTimelineDocument) return;
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-marker");
     if (!button) return;
     const markerId = button.dataset.markerId;

@@ -1063,6 +1063,86 @@ svg {
   border-radius: 0 var(--control-radius) 0 0;
 }
 
+.timeline-work-area {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) 12px;
+  align-items: stretch;
+  min-width: 26px;
+  overflow: hidden;
+  border: 1px solid rgba(32, 191, 169, 0.58);
+  border-radius: 5px;
+  background:
+    linear-gradient(90deg, rgba(32, 191, 169, 0.2), rgba(79, 141, 247, 0.14)),
+    rgba(255, 255, 255, 0.72);
+  color: var(--charcoal);
+  cursor: grab;
+  font: inherit;
+  padding: 0;
+  user-select: none;
+  touch-action: none;
+}
+
+.timeline-work-area:hover,
+.timeline-work-area:focus-visible,
+.timeline-work-area.dragging {
+  border-color: rgba(32, 191, 169, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(32, 191, 169, 0.18), 0 0 0 2px rgba(32, 191, 169, 0.12);
+  outline: 0;
+}
+
+.timeline-work-area.dragging {
+  cursor: grabbing;
+}
+
+.timeline-work-area-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  cursor: grab;
+}
+
+.timeline-work-area.dragging-move .timeline-work-area-body {
+  cursor: grabbing;
+}
+
+.timeline-work-area-label {
+  overflow: hidden;
+  color: rgba(26, 35, 42, 0.74);
+  font-size: var(--ui-tiny-font);
+  font-weight: 900;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-work-area-handle {
+  position: relative;
+  cursor: ew-resize;
+}
+
+.timeline-work-area-handle::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  border-radius: 99px;
+  background: rgba(26, 35, 42, 0.36);
+}
+
+.timeline-work-area-handle-start::after {
+  left: 4px;
+}
+
+.timeline-work-area-handle-end::after {
+  right: 4px;
+}
+
 .timeline-layer-strip {
   border-bottom: 0;
   background:
@@ -1175,6 +1255,7 @@ svg {
 .timeline-marker {
   position: absolute;
   top: 3px;
+  z-index: 3;
   min-width: 18px;
   max-width: 136px;
   height: calc(var(--control-height) - 6px);

@@ -47,7 +47,8 @@ PDF.
 - [Texture Timeline Tracks](texture-timeline-tracks.md) documents schema v7
   texture Repeat, Offset, and Rotation tracks.
 - [Timeline Work Area](timeline-work-area.md) documents schema v8 Work In/Out
-  playback range behavior.
+  playback range behavior, keyboard shortcuts, and direct draggable range
+  editing.
 - [Timeline Markers](timeline-markers.md) documents schema v9 marker cue
   points, marker colors, marker navigation, and draggable marker retiming.
 - [Timeline Preset Baking](timeline-preset-baking.md) documents why preset
@@ -191,6 +192,8 @@ animation runtime where it fits:
   In/Out while keeping grouped pose keys aligned.
 - Fit Selected Keyframes to Work Area proportionally scales selected timing
   columns into Work In/Out while preserving authored spacing.
+- The visible work-area band supports edge trimming and body dragging, so the
+  playback preview range can be adjusted directly in the timeline header.
 - Stagger Selected Keyframes sequences selected timing columns from the playhead
   by the active snap step, giving quick cascade and follow-through timing.
 - Cascade Selected Keyframes sequences selected object, camera, or light target
