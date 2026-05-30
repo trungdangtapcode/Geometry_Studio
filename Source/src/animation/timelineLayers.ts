@@ -56,15 +56,19 @@ export function setObjectVisibilityRange(
 }
 
 export function objectLayerRange(timeline: SceneTimelineDocument, objectId: string): TimelineLayerRange | null {
-  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
-  const track = objectTimeline?.tracks.find((candidate) => candidate.kind === "objectVisibility");
-  if (!track?.enabled || !track.keyframes.length) return { start: 0, end: Math.max(timeline.duration, 0.001) };
-
-  const ranges = visibleRangesFromTrack(track, timeline.duration);
+  const ranges = objectLayerRanges(timeline, objectId);
   if (ranges.length === 0) return null;
   return ranges.find((range) =>
     timeline.currentTime >= range.start - 0.001 && timeline.currentTime <= range.end + 0.001
   ) ?? ranges[0];
+}
+
+export function objectLayerRanges(timeline: SceneTimelineDocument, objectId: string): TimelineLayerRange[] {
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  const track = objectTimeline?.tracks.find((candidate) => candidate.kind === "objectVisibility");
+  if (!track?.enabled || !track.keyframes.length) return [{ start: 0, end: Math.max(timeline.duration, 0.001) }];
+
+  return visibleRangesFromTrack(track, timeline.duration);
 }
 
 function visibleRangesFromTrack(track: TimelineTrackDocument, duration: number): TimelineLayerRange[] {

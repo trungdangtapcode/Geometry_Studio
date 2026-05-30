@@ -2082,7 +2082,7 @@ test("supports draggable timeline work area range", async ({ page }) => {
 });
 
 test("supports draggable timeline playhead ruler", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -2113,11 +2113,24 @@ test("supports draggable timeline playhead ruler", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".timeline-ruler-playhead")).toBeVisible();
   await expect(page.locator(".timeline-layer-playhead")).toBeVisible();
+  await page.locator("#timeline-snap").uncheck();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2.25";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-marker-label").fill("Snap Cue");
+  await page.locator("#timeline-add-marker").click();
+  await expect(page.locator(".timeline-marker")).toHaveCount(1);
+  await page.locator("#timeline-snap").check();
   await page.locator("#timeline-snap-step").evaluate((input) => {
-    (input as HTMLInputElement).value = "1";
+    (input as HTMLInputElement).value = "0.5";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+  await dragPlayheadTo(2.25);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(2.25, 3);
+  await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "2.25");
 
   await dragPlayheadTo(4);
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(4, 3);

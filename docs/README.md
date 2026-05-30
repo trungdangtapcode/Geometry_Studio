@@ -60,6 +60,8 @@ PDF.
   frame-step controls, Work Out jump, and timecode display.
 - [Timeline Playhead Ruler](timeline-playhead-ruler.md) documents the draggable
   Current Time Indicator and layer overview playhead line.
+- [Timeline Landmark Snapping](timeline-snapping.md) documents marker, keyframe,
+  work-area, and layer-boundary snap targets for timeline drags.
 - [Timeline Selected Key Boundaries](timeline-selected-key-boundaries.md)
   documents first/last selected keyframe navigation.
 - [Timeline Selected Range Preview](timeline-selected-range-preview.md)
@@ -275,6 +277,8 @@ animation runtime where it fits:
   `1x` / `2x` / `4x` shuttle playback inside the active work area.
 - The red Current Time Indicator in the timeline ruler can be dragged directly
   to scrub the scene, with the matching playhead line shown across layer ranges.
+- Timeline drags snap to authored landmarks such as markers, keyframes, Work
+  In/Out, and layer boundaries before falling back to the frame grid.
 - Preset animation buttons bake visible Position, Rotation, or Scale keyframes,
   keeping playback inspectable from the timeline.
 - The keyframe dock has a persisted height resize handle, with row labels and
@@ -307,6 +311,8 @@ object appearance, camera, and light tracks:
   display, channel normalization, and graph time/value drag interaction.
 - `ui/timelinePlayhead.ts` owns the draggable ruler Current Time Indicator and
   visual layer-overview playhead line.
+- `ui/timelineSnapping.ts` owns shared landmark snapping for playhead, marker,
+  work-area, and layer-range drag workflows.
 - `ui/timelineWorkArea.ts` owns direct Work In/Out range dragging in the timeline
   header.
 - `ui/density.ts` owns UI-density persistence and root layout mode application.

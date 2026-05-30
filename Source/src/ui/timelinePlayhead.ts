@@ -1,6 +1,6 @@
-import { snapTimelineTime } from "../animation/timelineSchema";
 import type { SceneTimelineDocument } from "../editor/types";
 import { clamp, formatNumber } from "../utils/dom";
+import { snapTimelineEditorTime } from "./timelineSnapping";
 
 type TimelinePlayheadDragState = {
   pointerId: number;
@@ -73,7 +73,7 @@ export class TimelinePlayheadController {
     const stripRect = this.options.markerStrip.getBoundingClientRect();
     if (stripRect.width <= 0) return;
     const rawTime = clamp((event.clientX - stripRect.left) / stripRect.width, 0, 1) * timelineDocument.duration;
-    const nextTime = snapTimelineTime(timelineDocument, rawTime);
+    const nextTime = snapTimelineEditorTime(timelineDocument, rawTime, { includeLayerRanges: true });
     const handle = this.options.markerStrip.querySelector<HTMLButtonElement>(".timeline-ruler-playhead");
     if (handle) this.previewTime(handle, nextTime, timelineDocument.duration);
     this.options.onTimeChanged(nextTime);

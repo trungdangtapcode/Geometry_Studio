@@ -8,8 +8,9 @@ header ruler and layer overview:
 - A red playhead handle appears in the marker/work-area strip.
 - The playhead line continues through the layer overview strip, so object layer
   ranges can be compared against the current frame.
-- Dragging the handle scrubs the timeline using the existing timeline snapping
-  settings.
+- Dragging the handle scrubs the timeline using shared timeline snapping,
+  including markers, keyframes, Work In/Out, layer boundaries, and the fallback
+  snap-step grid.
 
 ## Runtime Rules
 

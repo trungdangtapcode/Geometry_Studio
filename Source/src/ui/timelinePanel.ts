@@ -30,6 +30,7 @@ import {
   type TimelineKeySelectionMode
 } from "./timelineValueGraph";
 import { appendLayerPlayhead, TimelinePlayheadController } from "./timelinePlayhead";
+import { snapTimelineEditorTime, type TimelineSnapOptions } from "./timelineSnapping";
 import { TimelineWorkAreaController } from "./timelineWorkArea";
 import {
   CAMERA_TRACKS,
@@ -954,7 +955,7 @@ export class KeyframeTimelinePanel {
     const state = this.markerDragState;
     if (!state || event.pointerId !== state.pointerId) return;
     const deltaTime = ((event.clientX - state.startClientX) / state.width) * state.duration;
-    const nextTime = this.snapTimelineUiTime(clamp(state.originalTime + deltaTime, 0, state.duration));
+    const nextTime = this.snapTimelineUiTime(clamp(state.originalTime + deltaTime, 0, state.duration), { ignoreTimes: [state.originalTime] });
     state.nextTime = nextTime;
     state.moved ||= Math.abs(event.clientX - state.startClientX) > 2;
     this.previewMarkerTime(state.button, nextTime, state.duration);
@@ -1075,13 +1076,13 @@ export class KeyframeTimelinePanel {
     let nextEnd = state.originalEnd;
 
     if (state.mode === "trimStart") {
-      nextStart = this.snapLayerTime(clamp(state.originalStart + deltaTime, 0, state.originalEnd - this.minimumLayerSpan()));
+      nextStart = this.snapLayerTime(clamp(state.originalStart + deltaTime, 0, state.originalEnd - this.minimumLayerSpan()), { ignoreTimes: [state.originalStart] });
       nextStart = Math.min(nextStart, state.originalEnd - this.minimumLayerSpan());
     } else if (state.mode === "trimEnd") {
-      nextEnd = this.snapLayerTime(clamp(state.originalEnd + deltaTime, state.originalStart + this.minimumLayerSpan(), state.duration));
+      nextEnd = this.snapLayerTime(clamp(state.originalEnd + deltaTime, state.originalStart + this.minimumLayerSpan(), state.duration), { ignoreTimes: [state.originalEnd] });
       nextEnd = Math.max(nextEnd, state.originalStart + this.minimumLayerSpan());
     } else {
-      nextStart = this.snapLayerTime(clamp(state.originalStart + deltaTime, 0, state.duration - span));
+      nextStart = this.snapLayerTime(clamp(state.originalStart + deltaTime, 0, state.duration - span), { ignoreTimes: [state.originalStart, state.originalEnd] });
       nextEnd = nextStart + span;
     }
 
@@ -1124,14 +1125,14 @@ export class KeyframeTimelinePanel {
     return Math.max(Math.min(this.lastTimelineDocument?.snapStep ?? 1 / 30, 0.25), 0.001);
   }
 
-  private snapLayerTime(time: number): number {
-    return this.snapTimelineUiTime(time);
+  private snapLayerTime(time: number, options: TimelineSnapOptions = {}): number {
+    return this.snapTimelineUiTime(time, { ...options, includeLayerRanges: true });
   }
 
-  private snapTimelineUiTime(time: number): number {
+  private snapTimelineUiTime(time: number, options: TimelineSnapOptions = {}): number {
     const timelineDocument = this.lastTimelineDocument;
-    if (!timelineDocument?.snapEnabled || timelineDocument.snapStep <= 0) return roundTimelineTime(time);
-    return roundTimelineTime(Math.round(time / timelineDocument.snapStep) * timelineDocument.snapStep);
+    if (!timelineDocument) return roundTimelineTime(time);
+    return snapTimelineEditorTime(timelineDocument, time, options);
   }
 
   private syncMarkerEditor(timelineDocument: SceneTimelineDocument, marker = this.currentMarker(timelineDocument)): void {

@@ -1,5 +1,6 @@
 import type { SceneTimelineDocument } from "../editor/types";
 import { clamp, formatNumber } from "../utils/dom";
+import { snapTimelineEditorTime } from "./timelineSnapping";
 
 type TimelineWorkAreaDragMode = "move" | "start" | "end";
 
@@ -160,8 +161,8 @@ export class TimelineWorkAreaController {
 
   private snapTime(time: number): number {
     const timelineDocument = this.options.getTimelineDocument();
-    if (!timelineDocument?.snapEnabled || timelineDocument.snapStep <= 0) return roundTimelineTime(time);
-    return roundTimelineTime(Math.round(time / timelineDocument.snapStep) * timelineDocument.snapStep);
+    if (!timelineDocument) return roundTimelineTime(time);
+    return snapTimelineEditorTime(timelineDocument, time, { includeLayerRanges: true });
   }
 }
 
