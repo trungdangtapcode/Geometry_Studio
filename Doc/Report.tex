@@ -240,10 +240,13 @@ in the style of motion-graphics editors. Named timeline markers add cue points
 for animation beats, camera moves, and demo sections.
 Frame-accurate navigation is available through previous/next frame buttons and
 keyboard shortcuts, while selected keyframes can be nudged one frame left or
-right for precise retiming. A compact keyframe editor allows precise numeric
-edits to keyframe time and vector or scalar values. Linear, Easy Ease, and Hold
-interpolation are available through direct timeline buttons, synchronized with a
-compact curve preview and F9-style keyboard shortcuts. The timeline also
+right for precise retiming. The transport includes explicit preview-speed
+controls from \(0.25\times\) to \(4\times\), separate from FPS so slow-motion
+inspection does not alter the authored timeline. A compact keyframe editor
+allows precise numeric edits to keyframe time and vector or scalar values.
+Linear, Easy Ease, and Hold interpolation are available through direct timeline
+buttons, synchronized with a compact curve preview and F9-style keyboard
+shortcuts. The timeline also
 provides an active-track value graph that samples the same runtime interpolation
 function used by playback, so Hold, Linear, and Easy Ease segments shown in the
 graph match the object, camera, light, or material values seen while scrubbing.
@@ -252,6 +255,12 @@ vertical dragging to retime a keyframe and edit a keyed channel value; each
 graph drag is recorded as one undoable edit. Graph retiming follows the
 timeline Snap setting, and Shift-dragging constrains the edit to the dominant
 drag direction for more precise graph adjustments.
+Object layer ranges are represented by normal Visibility keyframes, allowing
+Layer In, Layer Out, Split, draggable layer bars, work-area matching, and
+Sequence Layers behavior without a second hidden timing model. The Sequence
+command arranges object layer ranges from the playhead in outliner order and
+moves unlocked object keyframes with each layer, matching the expected
+motion-graphics workflow for staged object entrances.
 The editor stores rotation keyframes in readable Euler degrees and evaluates
 rotation playback per axis, preserving authored full turns such as \(0^\circ\)
 to \(360^\circ\).
@@ -409,6 +418,13 @@ current time, and a draggable viewport window for long animation edits.}
 
 \begin{figure}[htbp]
 \centering
+\includegraphics[width=\linewidth]{screenshots/11-timeline-sequence-layers.png}
+\caption{Sequenced object layer ranges showing staged object visibility,
+expanded duration, selected Visibility keys, and shifted object animation keys.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
 \includegraphics[width=\linewidth]{screenshots/05-sample-model-workflow.png}
 \caption{Built-in sample model workflow demonstrating model-style objects in
 the same outliner, transform, render, and animation system.}
@@ -453,6 +469,8 @@ animation/timelineSchema.ts & Timeline defaults, validation, migration, snapping
 animation/timelineEditing.ts & Pure keyframe editing operations such as source resolution, copy, paste, duplicate, frame nudge, and numeric keyframe edits. \\
 animation/interpolation.ts & Shared per-keyframe evaluator for Hold, Linear, and Easy Ease timing. \\
 animation/timelinePlayer.ts & Applies object Position, Rotation, and Scale tracks directly to scene objects. \\
+animation/timelineLayers.ts & Object layer visibility ranges, layer trimming, keyframe shifting, and layer sequencing helpers. \\
+animation/timelineTransport.ts & Playback direction, explicit preview speed, shuttle rate, button labels, and signed playback delta calculation. \\
 scene/primitives.ts & Primitive geometry, extra shapes, labels, and built-in sample model. \\
 scene/materialPresets.ts & PBR and legacy material preset definitions. \\
 scene/materials.ts & Materials, texture presets, and solid/point/line visual construction. \\
