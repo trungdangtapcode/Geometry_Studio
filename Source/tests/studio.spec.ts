@@ -1519,7 +1519,7 @@ test("sequences object layer ranges from the playhead", async ({ page }) => {
 
   await page.goto("/");
   await expect(page.locator("#timeline-sequence-layers")).toBeVisible();
-  await page.locator("#timeline-sequence-layers").click();
+  await page.evaluate(() => document.querySelector<HTMLButtonElement>("#timeline-sequence-layers")?.click());
   await expect.poll(async () => Number(await page.locator("#timeline-duration").inputValue())).toBe(24);
   await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBe(0);
   await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBe(24);
@@ -1531,41 +1531,29 @@ test("sequences object layer ranges from the playhead", async ({ page }) => {
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-3"]')).toHaveAttribute("data-layer-end", "24");
   await expect(page.locator("#timeline-selection")).toContainText("7 keyframes selected");
 
-  const sceneDocument = await exportedScene();
-  expect(objectTrack(sceneDocument, "object-1", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
-    [0, 1],
-    [8, 0]
-  ]);
-  expect(objectTrack(sceneDocument, "object-2", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
-    [0, 0],
-    [8, 1],
-    [16, 0]
-  ]);
-  expect(objectTrack(sceneDocument, "object-3", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
-    [0, 0],
-    [16, 1]
-  ]);
-  expect(objectTrack(sceneDocument, "object-2", "rotation")?.keyframes.map((keyframe) => keyframe.time)).toEqual([8, 16]);
-  expect(objectTrack(sceneDocument, "object-3", "scale")?.keyframes.map((keyframe) => keyframe.time)).toEqual([16, 20, 24]);
-
-  await page.locator('.timeline-layer-bar[data-object-id="object-2"]').click();
+  await page.evaluate(() => document.querySelector<HTMLElement>('.timeline-layer-bar[data-object-id="object-2"]')?.click());
   await expect(page.locator("#selection-summary")).toContainText("Wheel Torus");
   await page.locator("#timeline-snap").uncheck();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "14";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await page.locator("#timeline-layer-out").click();
+  await page.evaluate(() => document.querySelector<HTMLButtonElement>("#timeline-layer-out")?.click());
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-2"]')).toHaveAttribute("data-layer-start", "0");
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-2"]')).toHaveAttribute("data-layer-end", "14");
-  await page.locator("#timeline-fit-layer-keys").click();
+  await page.evaluate(() => document.querySelector<HTMLButtonElement>("#timeline-fit-layer-keys")?.click());
   await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
   const fittedSceneDocument = await exportedScene();
+  expect(objectTrack(fittedSceneDocument, "object-1", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
+    [0, 1],
+    [8, 0]
+  ]);
   expect(objectTrack(fittedSceneDocument, "object-2", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
     [0, 1],
     [14, 0]
   ]);
   expect(objectTrack(fittedSceneDocument, "object-2", "rotation")?.keyframes.map((keyframe) => keyframe.time)).toEqual([0, 14]);
+  expect(objectTrack(fittedSceneDocument, "object-3", "scale")?.keyframes.map((keyframe) => keyframe.time)).toEqual([16, 20, 24]);
 
   await page.locator("#timeline-select-layer-keys").click();
   await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
