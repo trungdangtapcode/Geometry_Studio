@@ -272,7 +272,8 @@ animation runtime where it fits:
   shortcuts for authoring, navigation, and cleanup.
 - Work area editing supports Start/Out buttons plus `B`, `N`, `I`, `O`,
   `Shift+B`, and `Ctrl/Cmd+Shift+A` keyboard workflows for fast preview-range
-  authoring and range selection.
+  authoring and range selection. The ruler scrub lane also supports `Shift`
+  click for Work In and `Alt` click for Work Out.
 - J/K/L transport shortcuts provide forward, pause, reverse, and repeated-key
   `1x` / `2x` / `4x` shuttle playback inside the active work area.
 - The red Current Time Indicator in the timeline ruler can be dragged directly

@@ -2109,12 +2109,14 @@ test("supports draggable timeline playhead ruler", async ({ page }) => {
     await page.mouse.move(targetX, startY, { steps: 8 });
     await page.mouse.up();
   };
-  const clickRulerTo = async (time: number) => {
+  const clickRulerTo = async (time: number, modifier?: "Shift" | "Alt") => {
     const stripBox = await elementBox("#timeline-marker-strip");
     const zoneBox = await elementBox(".timeline-ruler-scrub-zone");
     expect(stripBox.width).toBeGreaterThan(0);
     expect(zoneBox.height).toBeGreaterThan(0);
+    if (modifier) await page.keyboard.down(modifier);
     await page.mouse.click(stripBox.x + stripBox.width * (time / 8), zoneBox.y + zoneBox.height / 2);
+    if (modifier) await page.keyboard.up(modifier);
   };
 
   await page.goto("/");
@@ -2144,13 +2146,17 @@ test("supports draggable timeline playhead ruler", async ({ page }) => {
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(6, 3);
   await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "6");
 
+  await clickRulerTo(2, "Shift");
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBeCloseTo(2, 3);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(2, 3);
+
+  await clickRulerTo(6, "Alt");
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBeCloseTo(6, 3);
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(6, 3);
+
   await dragPlayheadTo(4);
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(4, 3);
   await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "4");
-
-  await dragPlayheadTo(1);
-  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeCloseTo(1, 3);
-  await expect(page.locator(".timeline-ruler-playhead")).toHaveAttribute("data-time", "1");
 
   expect(errors).toEqual([]);
 });

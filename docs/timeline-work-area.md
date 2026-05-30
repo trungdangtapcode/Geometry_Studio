@@ -52,6 +52,10 @@ back to the full timeline.
   snapping applied.
 - Dragging the visible work-area body moves `workStart` and `workEnd` together
   while preserving the range length.
+- `Shift` clicking the timeline ruler scrub lane sets `workStart` at the
+  clicked time.
+- `Alt` clicking the timeline ruler scrub lane sets `workEnd` at the clicked
+  time.
 - Pressing `Shift+B` reads the selected keyframe times and sets the work area to
   the selected span. A one-key selection creates a minimum visible span using
   the snap step or one frame.

@@ -8,6 +8,8 @@ header ruler and layer overview:
 - A red playhead handle appears in the marker/work-area strip.
 - A thin scrub lane in the ruler accepts direct clicks or drags to move the
   playhead without grabbing markers or the work-area band.
+- `Shift` clicking the scrub lane sets Work In at the clicked time.
+- `Alt` clicking the scrub lane sets Work Out at the clicked time.
 - The playhead line continues through the layer overview strip, so object layer
   ranges can be compared against the current frame.
 - Dragging the handle scrubs the timeline using shared timeline snapping,
@@ -20,6 +22,9 @@ header ruler and layer overview:
   input, timeline canvas scrubbing, transport buttons, and keyboard shortcuts.
 - Clicking or dragging the ruler scrub lane uses the same path as dragging the
   playhead handle.
+- `Shift` / `Alt` ruler clicks first move the playhead to the clicked time and
+  then commit Work In / Work Out through the same settings update path as the
+  numeric fields.
 - Timeline playback state, camera tracks, light tracks, object tracks, and UI
   readouts all update from the existing central time-change flow.
 - The ruler handle has higher pointer priority than markers and work-area
@@ -36,7 +41,9 @@ Playwright verifies that:
 2. Dragging the ruler playhead to `4s` updates the timeline time input and
    handle state.
 3. Clicking the ruler scrub lane jumps the playhead to the clicked time.
-4. Dragging back to `1s` updates the same state without console errors.
+4. `Shift` clicking the ruler updates Work In.
+5. `Alt` clicking the ruler updates Work Out.
+6. Dragging to another time updates the same state without console errors.
 
 Manual check:
 
@@ -46,5 +53,7 @@ Manual check:
    with the same timeline position.
 4. Click the thin scrub lane at another time and confirm the playhead jumps
    there.
-5. Drag the handle back to `1s`.
-6. Confirm markers and work-area handles still drag independently.
+5. `Shift` click the scrub lane and confirm Work In updates.
+6. `Alt` click the scrub lane and confirm Work Out updates.
+7. Drag the handle to another time.
+8. Confirm markers and work-area handles still drag independently.

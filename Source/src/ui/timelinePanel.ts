@@ -261,7 +261,8 @@ export class KeyframeTimelinePanel {
     this.playheadController = new TimelinePlayheadController({
       markerStrip: this.markerStrip,
       getTimelineDocument: () => this.lastTimelineDocument,
-      onTimeChanged: (time) => this.callbacks.onTimeChanged(time)
+      onTimeChanged: (time) => this.callbacks.onTimeChanged(time),
+      onWorkAreaEdgeChanged: (edge, time) => this.callbacks.onSettingsChanged(edge === "start" ? { workStart: time } : { workEnd: time })
     });
     this.workAreaController = new TimelineWorkAreaController({
       markerStrip: this.markerStrip,

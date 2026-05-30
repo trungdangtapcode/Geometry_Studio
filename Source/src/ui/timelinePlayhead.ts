@@ -10,6 +10,7 @@ export interface TimelinePlayheadControllerOptions {
   markerStrip: HTMLDivElement;
   getTimelineDocument(): SceneTimelineDocument | null;
   onTimeChanged(time: number): void;
+  onWorkAreaEdgeChanged(edge: "start" | "end", time: number): void;
 }
 
 export class TimelinePlayheadController {
@@ -43,6 +44,14 @@ export class TimelinePlayheadController {
     const handle = target.closest<HTMLButtonElement>(".timeline-ruler-playhead");
     const scrubZone = target.closest<HTMLElement>(".timeline-ruler-scrub-zone");
     if ((!handle && !scrubZone) || !this.options.getTimelineDocument()) return;
+    if (scrubZone && (event.shiftKey || event.altKey)) {
+      const nextTime = this.timeFromPointer(event);
+      if (nextTime === null) return;
+      this.options.onTimeChanged(nextTime);
+      this.options.onWorkAreaEdgeChanged(event.altKey ? "end" : "start", nextTime);
+      event.preventDefault();
+      return;
+    }
 
     this.dragState = { pointerId: event.pointerId };
     this.options.markerStrip.querySelector(".timeline-ruler-playhead")?.classList.add("dragging");
@@ -74,14 +83,20 @@ export class TimelinePlayheadController {
 
   private commitPointerTime(event: PointerEvent): void {
     const timelineDocument = this.options.getTimelineDocument();
-    if (!timelineDocument) return;
-    const stripRect = this.options.markerStrip.getBoundingClientRect();
-    if (stripRect.width <= 0) return;
-    const rawTime = clamp((event.clientX - stripRect.left) / stripRect.width, 0, 1) * timelineDocument.duration;
-    const nextTime = snapTimelineEditorTime(timelineDocument, rawTime, { includeLayerRanges: true });
+    const nextTime = this.timeFromPointer(event);
+    if (!timelineDocument || nextTime === null) return;
     const handle = this.options.markerStrip.querySelector<HTMLButtonElement>(".timeline-ruler-playhead");
     if (handle) this.previewTime(handle, nextTime, timelineDocument.duration);
     this.options.onTimeChanged(nextTime);
+  }
+
+  private timeFromPointer(event: PointerEvent): number | null {
+    const timelineDocument = this.options.getTimelineDocument();
+    if (!timelineDocument) return null;
+    const stripRect = this.options.markerStrip.getBoundingClientRect();
+    if (stripRect.width <= 0) return null;
+    const rawTime = clamp((event.clientX - stripRect.left) / stripRect.width, 0, 1) * timelineDocument.duration;
+    return snapTimelineEditorTime(timelineDocument, rawTime, { includeLayerRanges: true });
   }
 
   private previewTime(handle: HTMLButtonElement, time: number, duration: number): void {
