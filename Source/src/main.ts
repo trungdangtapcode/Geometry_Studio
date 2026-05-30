@@ -27,7 +27,7 @@ import {
   type TimelineKeyframeSource
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
-import { objectLayerRange, setObjectVisibilityRange, type TimelineLayerRange } from "./animation/timelineLayers";
+import { objectLayerRange, setObjectVisibilityRange, shiftObjectLayerKeyframes, type TimelineLayerRange } from "./animation/timelineLayers";
 import { TimelinePlayer } from "./animation/timelinePlayer";
 import { TimelineTransport, type PlaybackDirection } from "./animation/timelineTransport";
 import {
@@ -2295,7 +2295,7 @@ function boot(root: HTMLDivElement): void {
     showToast(`${selection.entry.name} work area ${formatNumber(selection.range.start)}-${formatNumber(selection.range.end)}s`, "good");
   }
 
-  function editTimelineLayerRange(objectId: string, start: number, end: number): void {
+  function editTimelineLayerRange(objectId: string, start: number, end: number, shiftKeyframes: boolean): void {
     const entry = entries.get(objectId);
     if (!entry) {
       showToast("Layer object no longer exists.", "bad");
@@ -2307,7 +2307,10 @@ function boot(root: HTMLDivElement): void {
     const duration = Math.max(sceneTimeline.duration, 0.001);
     const safeStart = clamp(Math.min(start, end - 0.001), 0, duration);
     const safeEnd = clamp(Math.max(end, safeStart + 0.001), safeStart + 0.001, duration);
+    const previousRange = objectLayerRange(sceneTimeline, entry.id);
+    const layerMoveDelta = shiftKeyframes && previousRange ? safeStart - previousRange.start : 0;
     recordHistory();
+    const shiftResult = shiftKeyframes ? shiftObjectLayerKeyframes(sceneTimeline, entry.id, layerMoveDelta) : null;
     const result = setObjectVisibilityRange(sceneTimeline, entry.id, safeStart, safeEnd >= duration - 0.001 ? null : safeEnd);
     selectedId = entry.id;
     transformControls.attach(entry.root);
@@ -2317,7 +2320,9 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     timelinePanel.selectKeyframes(result.keyframeIds);
-    showToast(`${entry.name} layer range ${formatNumber(safeStart)}-${formatNumber(safeEnd)}s`, "good");
+    const shifted = shiftResult?.shifted ? `, ${shiftResult.shifted} keys shifted` : "";
+    const skipped = shiftResult?.skipped ? ` (${shiftResult.skipped} locked/out-of-range keys skipped)` : "";
+    showToast(`${entry.name} layer range ${formatNumber(safeStart)}-${formatNumber(safeEnd)}s${shifted}${skipped}`, "good");
   }
 
   function stepSelectedLayerBoundary(edge: "in" | "out"): void {

@@ -134,8 +134,8 @@ PDF.
   rows for vector object, texture, camera, and light tracks.
 - [Timeline Layer Ranges And Overview](timeline-layer-trim-split.md) documents
   AE-style Layer In, Layer Out, Split, layer boundary jumps, layer work-area
-  commands, and draggable object duration bars backed by Visibility hold
-  keyframes.
+  commands, and draggable object duration bars that can trim visibility or move
+  object keyframes with the layer.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
   documents direct Linear, Ease In, Ease Out, Easy Ease, and Hold timing
   controls.
@@ -241,8 +241,9 @@ animation runtime where it fits:
   light Color R/G/B.
 - Layer In, Layer Out, Split, layer boundary jumps, Layer Work, and draggable
   object layer bars provide AE-style object timing using Visibility hold
-  keyframes, with `Alt+[`, `Alt+]`, `Ctrl/Cmd+Shift+D`, `Alt+I`, `Alt+O`, and
-  `Alt+Shift+B` shortcuts.
+  keyframes; body dragging shifts unlocked object keyframes with the layer. The
+  shortcuts are `Alt+[`, `Alt+]`, `Ctrl/Cmd+Shift+D`, `Alt+I`, `Alt+O`, and
+  `Alt+Shift+B`.
 - Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation have direct
   toolbar controls, synchronized dropdown state, keyboard shortcuts, and a
   compact curve preview.

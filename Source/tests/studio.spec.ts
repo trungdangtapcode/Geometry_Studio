@@ -891,12 +891,15 @@ test("trims and splits selected object layers", async ({ page }) => {
     const sceneJson = await sceneText.jsonValue();
     return JSON.parse(sceneJson as string);
   };
-  const visibilityTrack = (sceneDocument: {
+  const objectTrack = (sceneDocument: {
     timeline: { objects: Array<{ objectId: string; tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string }> }> }> };
-  }, objectId: string) =>
+  }, objectId: string, kind: string) =>
     sceneDocument.timeline.objects
       .find((object) => object.objectId === objectId)
-      ?.tracks.find((track) => track.kind === "objectVisibility");
+      ?.tracks.find((track) => track.kind === kind);
+  const visibilityTrack = (sceneDocument: {
+    timeline: { objects: Array<{ objectId: string; tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string }> }> }> };
+  }, objectId: string) => objectTrack(sceneDocument, objectId, "objectVisibility");
   const dragLayerBarPart = async (objectId: string, part: "body" | "start" | "end", deltaSeconds: number) => {
     const strip = page.locator("#timeline-layer-strip");
     const bar = page.locator(`.timeline-layer-bar[data-object-id="${objectId}"]`);
@@ -919,6 +922,16 @@ test("trims and splits selected object layers", async ({ page }) => {
   };
 
   await page.goto("/");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "2";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -958,20 +971,24 @@ test("trims and splits selected object layers", async ({ page }) => {
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-end", "6");
   sceneDocument = await exportedScene();
   track = visibilityTrack(sceneDocument, "object-1");
+  let positionTrack = objectTrack(sceneDocument, "object-1", "position");
   expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
     [0, 1, "hold"],
     [6, 0, "hold"]
   ]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.time)).toEqual([1, 2]);
   await dragLayerBarPart("object-1", "body", 1);
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-start", "1");
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toHaveAttribute("data-layer-end", "7");
   sceneDocument = await exportedScene();
   track = visibilityTrack(sceneDocument, "object-1");
+  positionTrack = objectTrack(sceneDocument, "object-1", "position");
   expect(track?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0], keyframe.interpolation])).toEqual([
     [0, 0, "hold"],
     [1, 1, "hold"],
     [7, 0, "hold"]
   ]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.time)).toEqual([2, 3]);
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("Alt+I");
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(1);

@@ -3,9 +3,11 @@ import {
   createTimelineKeyframe,
   ensureObjectTimeline,
   ensureTimelineTrack,
+  roundTime,
   snapTimelineTime,
   sortTimelineKeyframes
 } from "./timelineSchema";
+import { isObjectTransformTrackKind } from "./timelineTracks";
 
 export interface VisibilityRangeResult {
   edited: number;
@@ -17,6 +19,13 @@ export interface VisibilityRangeResult {
 export interface TimelineLayerRange {
   start: number;
   end: number;
+}
+
+export interface ShiftLayerKeyframesResult {
+  shifted: number;
+  skipped: number;
+  keyframeIds: string[];
+  changedTransformObjectIds: string[];
 }
 
 export function setObjectVisibilityRange(
@@ -75,6 +84,48 @@ function visibleRangesFromTrack(track: TimelineTrackDocument, duration: number):
   });
   if (cursor < safeDuration - 0.001 && visible) ranges.push({ start: cursor, end: safeDuration });
   return ranges.filter((range) => range.end > range.start + 0.001);
+}
+
+export function shiftObjectLayerKeyframes(
+  timeline: SceneTimelineDocument,
+  objectId: string,
+  delta: number
+): ShiftLayerKeyframesResult {
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  if (!objectTimeline || Math.abs(delta) < 0.001) {
+    return { shifted: 0, skipped: 0, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const duration = Math.max(timeline.duration, 0);
+  const changedTransformObjectIds = new Set<string>();
+  const keyframeIds: string[] = [];
+  let shifted = 0;
+  let skipped = 0;
+
+  objectTimeline.tracks.forEach((track) => {
+    if (track.kind === "objectVisibility" || track.keyframes.length === 0) return;
+    if (track.locked) {
+      skipped += track.keyframes.length;
+      return;
+    }
+
+    const nextTimes = track.keyframes.map((keyframe) => roundTime(keyframe.time + delta));
+    const outOfRange = nextTimes.some((time) => time < -0.001 || time > duration + 0.001);
+    if (outOfRange) {
+      skipped += track.keyframes.length;
+      return;
+    }
+
+    track.keyframes.forEach((keyframe, index) => {
+      keyframe.time = Math.min(Math.max(nextTimes[index], 0), duration);
+      keyframeIds.push(keyframe.id);
+      shifted += 1;
+    });
+    sortTimelineKeyframes(track);
+    if (isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+  });
+
+  return { shifted, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
 function visibilityRangeKeyframes(start: number, end: number | null): TimelineKeyframeDocument[] {

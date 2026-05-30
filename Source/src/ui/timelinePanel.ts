@@ -52,7 +52,7 @@ export interface KeyframeTimelineCallbacks {
   onTrimLayerOut(): void;
   onSplitLayer(): void;
   onSetWorkAreaToLayer(): void;
-  onEditLayerRange(objectId: string, start: number, end: number): void;
+  onEditLayerRange(objectId: string, start: number, end: number, shiftKeyframes: boolean): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
   onCopyVisibleTimeKeyframes(): void;
@@ -998,7 +998,7 @@ export class KeyframeTimelinePanel {
     const changed = Math.abs(state.nextStart - state.originalStart) > 0.001 || Math.abs(state.nextEnd - state.originalEnd) > 0.001;
     if (state.moved && changed) {
       this.suppressLayerClick = true;
-      this.callbacks.onEditLayerRange(state.objectId, state.nextStart, state.nextEnd);
+      this.callbacks.onEditLayerRange(state.objectId, state.nextStart, state.nextEnd, state.mode === "move");
     }
   }
 
