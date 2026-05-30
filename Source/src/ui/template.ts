@@ -150,6 +150,7 @@ export function studioTemplate(): string {
               <button class="mini-button danger" id="timeline-clear-track" type="button"><span data-icon="Eraser"></span><span>Clear Track</span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-out" type="button" aria-label="Zoom timeline out" title="Zoom timeline out"><span data-icon="ZoomOut"></span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-fit" type="button" aria-label="Fit timeline" title="Fit timeline"><span data-icon="Maximize2"></span></button>
+              <button class="mini-button icon-mini" id="timeline-zoom-selection" type="button" aria-label="Fit selected keyframes" title="Fit selected keyframes"><span data-icon="ScanSearch"></span></button>
               <button class="mini-button icon-mini" id="timeline-zoom-in" type="button" aria-label="Zoom timeline in" title="Zoom timeline in"><span data-icon="ZoomIn"></span></button>
             </div>
           </header>

@@ -94,6 +94,7 @@ export interface KeyframeTimelineCallbacks {
   onToggleTrack(kind: TimelineTrackKind, targetId?: string): void;
   onToggleTrackLock(kind: TimelineTrackKind, targetId?: string): void;
   onToggleTrackSolo(kind: TimelineTrackKind, targetId?: string): void;
+  onFitSelectedRange(): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
@@ -222,7 +223,8 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-fit-keyframes"),
     query<HTMLButtonElement>("#timeline-stagger-keyframes"),
     query<HTMLButtonElement>("#timeline-cascade-keyframes"),
-    query<HTMLButtonElement>("#timeline-duplicate-keyframe")
+    query<HTMLButtonElement>("#timeline-duplicate-keyframe"),
+    query<HTMLButtonElement>("#timeline-zoom-selection")
   ];
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
@@ -540,6 +542,32 @@ export class KeyframeTimelinePanel {
     this.fitTimeline();
   }
 
+  fitTimelineToRange(start: number, end: number): void {
+    const timelineDocument = this.lastTimelineDocument;
+    const fallbackDuration = Number(this.durationInput.value) || 8;
+    const duration = Math.max(timelineDocument?.duration ?? fallbackDuration, 0.5);
+    const rawStart = clamp(Math.min(start, end), 0, duration);
+    const rawEnd = clamp(Math.max(start, end), 0, duration);
+    const minimumSpan = Math.max(timelineDocument?.snapStep ?? 1 / 30, 1 / (timelineDocument?.fps ?? 30), 0.5);
+    const center = clamp((rawStart + rawEnd) / 2, 0, duration);
+    const span = Math.max(rawEnd - rawStart, minimumSpan);
+    let viewStart = clamp(center - span / 2, 0, duration);
+    let viewEnd = clamp(center + span / 2, 0, duration);
+    if (viewEnd - viewStart < span) {
+      if (viewStart === 0) viewEnd = clamp(span, 0, duration);
+      else if (viewEnd === duration) viewStart = clamp(duration - span, 0, duration);
+    }
+
+    const clientWidth = Math.max(this.timeline.getClientWidth(), 1);
+    const padding = Math.min(Math.max(clientWidth * 0.14, 40), 140);
+    const availableWidth = Math.max(clientWidth - padding * 2, clientWidth * 0.4, 1);
+    const zoom = Math.max(0.05, Math.min(8, availableWidth / (Math.max(viewEnd - viewStart, minimumSpan) * 80)));
+    this.timeline.setZoom(zoom);
+    this.timeline.scrollLeft = Math.max(0, this.timeline.valToPx(viewStart) - padding);
+    this.syncZoomState();
+    this.timeline.redraw();
+  }
+
   setClipboardState(summary: { count: number; duration: number } | null): void {
     const disabled = !summary || summary.count === 0;
     const keyText = summary?.count === 1 ? "1 keyframe" : `${summary?.count ?? 0} keyframes`;
@@ -779,6 +807,7 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-zoom-out").addEventListener("click", () => this.zoomTimeline(-1));
     query<HTMLButtonElement>("#timeline-zoom-in").addEventListener("click", () => this.zoomTimeline(1));
     query<HTMLButtonElement>("#timeline-zoom-fit").addEventListener("click", () => this.fitTimelineToDuration());
+    query<HTMLButtonElement>("#timeline-zoom-selection").addEventListener("click", () => this.callbacks.onFitSelectedRange());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workStartInput.value)));
     query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workEndInput.value)));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());

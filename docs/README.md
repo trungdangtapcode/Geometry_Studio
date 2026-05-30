@@ -74,6 +74,9 @@ PDF.
   documents one-command preview playback for selected keyframe spans.
 - [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and
   keyboard timeline zoom behavior.
+- [Timeline Fit Selected Keyframes](timeline-fit-selection.md) documents the
+  AE-style command for zooming the timeline view around selected or playhead
+  keyframes.
 - [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents
   J/K/L forward, pause, and reverse playback behavior.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents

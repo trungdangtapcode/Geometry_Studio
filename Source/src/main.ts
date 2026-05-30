@@ -248,6 +248,7 @@ function boot(root: HTMLDivElement): void {
     onToggleTrack: toggleTimelineTrack,
     onToggleTrackLock: toggleTimelineTrackLock,
     onToggleTrackSolo: toggleTimelineTrackSolo,
+    onFitSelectedRange: fitTimelineViewToSelectedKeyRange,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
@@ -997,6 +998,11 @@ function boot(root: HTMLDivElement): void {
       command("timeline.zoom-in", "Zoom Timeline In", "View", () => timelinePanel.zoomTimeline(1), { shortcut: "=" }),
       command("timeline.zoom-out", "Zoom Timeline Out", "View", () => timelinePanel.zoomTimeline(-1), { shortcut: "-" }),
       command("timeline.fit", "Fit Timeline To Duration", "View", () => timelinePanel.fitTimelineToDuration(), { shortcut: "0" }),
+      command("timeline.fit-selection", "Fit Selected Keyframes", "View", fitTimelineViewToSelectedKeyRange, {
+        shortcut: "Shift+0",
+        keywords: ["zoom selection", "view selected keys"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
       command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
 
       command("tool.move", "Move Tool", "Tools", () => setTransformMode("translate"), { shortcut: "T" }),
@@ -1682,8 +1688,11 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "0") {
       event.preventDefault();
-      timelinePanel.fitTimelineToDuration();
-      showToast("Timeline fit to duration", "good");
+      if (event.shiftKey) fitTimelineViewToSelectedKeyRange();
+      else {
+        timelinePanel.fitTimelineToDuration();
+        showToast("Timeline fit to duration", "good");
+      }
       return;
     }
     if (key === "m" && !event.ctrlKey && !event.metaKey) {
@@ -2277,6 +2286,14 @@ function boot(root: HTMLDivElement): void {
     setTimelineTime(range.start);
     transport.pause();
     playTimeline(1, `Previewing ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`);
+  }
+
+  function fitTimelineViewToSelectedKeyRange(): void {
+    const range = selectedTimelineKeyRange("Select timeline keyframes before fitting the timeline view.");
+    if (!range) return;
+
+    timelinePanel.fitTimelineToRange(range.start, range.end);
+    showToast(`Timeline view fit to ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`, "good");
   }
 
   function selectAllActiveTimelineKeyframes(): void {

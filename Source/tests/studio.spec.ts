@@ -165,6 +165,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect.poll(timelineZoom, { timeout: 10_000 }).toBeLessThan(zoomedTimelineValue);
   await page.locator("#timeline-zoom-fit").click();
   await expect(page.locator("#timeline-zoom-fit")).toBeVisible();
+  await expect(page.locator("#timeline-zoom-selection")).toBeVisible();
   const rotationTrackLabel = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
   await rotationTrackLabel.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
@@ -276,6 +277,7 @@ test("disables keyframe target actions when no keyframe is active", async ({ pag
     page.locator("#timeline-copy-keyframes"),
     page.locator("#timeline-duplicate-keyframe"),
     page.locator("#timeline-preview-selection"),
+    page.locator("#timeline-zoom-selection"),
     page.locator("#timeline-nudge-right"),
     page.locator("#timeline-interpolation"),
     page.locator("#timeline-ease-smooth")
@@ -306,11 +308,21 @@ test("opens the command palette and runs timeline commands", async ({ page }) =>
 
   await page.locator("#command-palette-search").fill("paste insert");
   await expect(page.locator('[data-command-id="timeline.paste-insert"]')).toBeDisabled();
+  await page.locator("#command-palette-search").fill("fit selected");
+  await expect(page.locator('[data-command-id="timeline.fit-selection"]')).toBeDisabled();
 
   await page.locator("#command-palette-search").fill("set key");
   await page.keyboard.press("Enter");
   await expect(page.locator("#command-palette")).toHaveAttribute("aria-hidden", "true");
   await expect(page.locator("#timeline-selection")).toContainText("1 keyframe selected");
+
+  const timelineZoom = async () => page.locator("#keyframe-dock").evaluate((element) => Number((element as HTMLElement).dataset.zoomLevel));
+  const zoomBeforeFit = await timelineZoom();
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("fit selected");
+  await expect(page.locator('[data-command-id="timeline.fit-selection"]')).toBeEnabled();
+  await page.keyboard.press("Enter");
+  await expect.poll(timelineZoom, { timeout: 10_000 }).toBeGreaterThan(zoomBeforeFit);
 
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("easy ease");
