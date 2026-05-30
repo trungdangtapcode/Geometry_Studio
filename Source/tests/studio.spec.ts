@@ -87,6 +87,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-split-layer")).toBeVisible();
   await expect(page.locator("#timeline-layer-work")).toBeVisible();
   await expect(page.locator("#timeline-select-layer-keys")).toBeVisible();
+  await expect(page.locator("#timeline-fit-layer-keys")).toBeVisible();
   await expect(page.locator("#timeline-sequence-layers")).toBeVisible();
   await expect(page.locator("#timeline-overview-track")).toBeVisible();
   await expect(page.locator("#timeline-layer-strip")).toBeVisible();
@@ -1549,12 +1550,33 @@ test("sequences object layer ranges from the playhead", async ({ page }) => {
 
   await page.locator('.timeline-layer-bar[data-object-id="object-2"]').click();
   await expect(page.locator("#selection-summary")).toContainText("Wheel Torus");
+  await page.locator("#timeline-snap").uncheck();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "14";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-layer-out").click();
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-2"]')).toHaveAttribute("data-layer-start", "0");
+  await expect(page.locator('.timeline-layer-bar[data-object-id="object-2"]')).toHaveAttribute("data-layer-end", "14");
+  await page.locator("#timeline-fit-layer-keys").click();
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  const fittedSceneDocument = await exportedScene();
+  expect(objectTrack(fittedSceneDocument, "object-2", "objectVisibility")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([
+    [0, 1],
+    [14, 0]
+  ]);
+  expect(objectTrack(fittedSceneDocument, "object-2", "rotation")?.keyframes.map((keyframe) => keyframe.time)).toEqual([0, 14]);
+
   await page.locator("#timeline-select-layer-keys").click();
   await expect(page.locator("#timeline-selection")).toContainText("4 keyframes selected");
 
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("selected layer keyframes");
   await expect(page.locator('[data-command-id="timeline.select-layer-keys"]')).toBeEnabled();
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("fit selected layer");
+  await expect(page.locator('[data-command-id="timeline.fit-layer-keys"]')).toBeEnabled();
   await page.keyboard.press("Escape");
 
   await page.keyboard.press("Control+K");

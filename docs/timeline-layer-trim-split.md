@@ -18,6 +18,8 @@ track. The current implementation maps layer timing commands onto
   layer range.
 - `Layer Keys` selects every keyframe on the selected object whose time falls
   inside the selected visible layer range.
+- `Fit Layer` retimes all unlocked non-Visibility keyframes on the selected
+  object so their first and last authored times fit the selected layer range.
 - The layer overview strip renders each object as a clickable duration bar
   above the keyframe rows. The bar reads the same Visibility range, so Layer In,
   Layer Out, Split, save/load, and playback stay consistent.
@@ -31,6 +33,8 @@ track. The current implementation maps layer timing commands onto
   - `Alt+I` jumps to the selected layer in point.
   - `Alt+O` jumps to the selected layer out point.
   - `Alt+Shift+B` sets the work area to the selected layer range.
+  - `Alt+Shift+F` fits the selected object's animation keys into the selected
+    layer range.
   - `Alt+Shift+K` selects the selected layer's in-range keyframes.
 
 ## Data Model
@@ -58,6 +62,14 @@ keyframes from all tracks belonging to the selected object. Boundary keys are
 included so layer in/out Visibility keys remain editable with the animation
 block. This gives the retiming tools a direct AE-style layer selection target
 after sequencing, trimming, or dragging layer bars.
+
+`Fit Layer` uses the selected object's active visible interval as the target
+range, then scales every unlocked non-Visibility object keyframe from the
+object's first authored key time to its last authored key time. Visibility keys
+are not retimed by this command because they define the layer boundaries. This
+mirrors a time-stretch workflow: after trimming a layer shorter or longer, the
+object's motion, material, and texture keys can be compressed or expanded to fit
+the new layer duration.
 
 The overview strip is intentionally a DOM layer above `animation-timeline-js`,
 not a custom fork of the library. `animation-timeline-js` remains responsible
@@ -89,7 +101,8 @@ The Playwright workflow verifies the overview strip, trims a layer in and out,
 checks that the bar updates to the matching range, drags the right edge to trim
 out, drags the bar body to move the visible range, verifies that Position keys
 shift with the layer body move, sets the work area to the layer range, jumps to
-layer in/out points, selects in-range layer keyframes, exports scene JSON,
+layer in/out points, trims a sequenced layer shorter, fits its motion keys into
+the shorter layer range, selects in-range layer keyframes, exports scene JSON,
 verifies hold visibility keys, reloads, splits the layer, verifies both original
 and duplicate visibility ranges, clicks the original layer bar, and confirms
 object selection changes.

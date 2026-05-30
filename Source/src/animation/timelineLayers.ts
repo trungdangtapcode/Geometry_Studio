@@ -40,6 +40,17 @@ export interface SequenceLayerRangesResult {
   changedTransformObjectIds: string[];
 }
 
+export interface FitLayerKeyframesResult {
+  edited: number;
+  skipped: number;
+  targetStart: number;
+  targetEnd: number;
+  sourceStart: number;
+  sourceEnd: number;
+  keyframeIds: string[];
+  changedTransformObjectIds: string[];
+}
+
 export function setObjectVisibilityRange(
   timeline: SceneTimelineDocument,
   objectId: string,
@@ -93,6 +104,88 @@ export function objectLayerKeyframeIds(timeline: SceneTimelineDocument, objectId
       .filter((keyframe) => keyframe.time >= range.start - 0.001 && keyframe.time <= range.end + 0.001)
       .map((keyframe) => keyframe.id)
   );
+}
+
+export function fitObjectLayerKeyframesToRange(
+  timeline: SceneTimelineDocument,
+  objectId: string
+): FitLayerKeyframesResult {
+  const range = objectLayerRange(timeline, objectId);
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  if (!range || !objectTimeline) return emptyFitLayerResult(timeline.currentTime, timeline.currentTime);
+
+  const targetStart = snapTimelineTime(timeline, Math.min(Math.max(range.start, 0), timeline.duration));
+  const targetEnd = snapTimelineTime(timeline, Math.min(Math.max(range.end, targetStart), timeline.duration));
+  if (targetEnd <= targetStart + 0.001) return emptyFitLayerResult(targetStart, targetEnd);
+
+  const changedTransformObjectIds = new Set<string>();
+  const movingKeyframes = new Map<TimelineKeyframeDocument, TimelineTrackDocument>();
+  let skipped = 0;
+  objectTimeline.tracks.forEach((track) => {
+    if (track.kind === "objectVisibility" || track.keyframes.length === 0) return;
+    if (track.locked) {
+      skipped += track.keyframes.length;
+      return;
+    }
+    track.keyframes.forEach((keyframe) => movingKeyframes.set(keyframe, track));
+  });
+
+  const keyframes = [...movingKeyframes.keys()];
+  const keyframeIds = keyframes.map((keyframe) => keyframe.id);
+  if (keyframes.length < 2) {
+    return { ...emptyFitLayerResult(targetStart, targetEnd), skipped: skipped + keyframes.length, keyframeIds };
+  }
+
+  const sourceStart = Math.min(...keyframes.map((keyframe) => keyframe.time));
+  const sourceEnd = Math.max(...keyframes.map((keyframe) => keyframe.time));
+  if (sourceEnd <= sourceStart + 0.001) {
+    return { ...emptyFitLayerResult(targetStart, targetEnd), skipped: skipped + keyframes.length, keyframeIds, sourceStart, sourceEnd };
+  }
+
+  const movingIds = new Set(keyframeIds);
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+  objectTimeline.tracks.forEach((track) => {
+    if (track.kind === "objectVisibility" || track.locked) return;
+    occupiedTimes.set(track, new Set(
+      track.keyframes
+        .filter((keyframe) => !movingIds.has(keyframe.id))
+        .map((keyframe) => timelineTimeKey(keyframe.time))
+    ));
+  });
+
+  let edited = 0;
+  keyframes
+    .sort((left, right) => left.time - right.time)
+    .forEach((keyframe) => {
+      const track = movingKeyframes.get(keyframe);
+      if (!track) return;
+      const ratio = (keyframe.time - sourceStart) / (sourceEnd - sourceStart);
+      const nextTime = snapTimelineTime(timeline, targetStart + (targetEnd - targetStart) * ratio);
+      const occupancy = occupiedTimes.get(track);
+      const timeKey = timelineTimeKey(nextTime);
+      if (!occupancy || nextTime < 0 || nextTime > timeline.duration || occupancy.has(timeKey)) {
+        skipped += 1;
+        return;
+      }
+
+      occupancy.add(timeKey);
+      if (Math.abs(keyframe.time - nextTime) < 0.001) return;
+      keyframe.time = nextTime;
+      edited += 1;
+      if (isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+    });
+
+  objectTimeline.tracks.forEach(sortTimelineKeyframes);
+  return {
+    edited,
+    skipped,
+    targetStart,
+    targetEnd,
+    sourceStart,
+    sourceEnd,
+    keyframeIds,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
 }
 
 export function sequenceObjectLayerRanges(
@@ -202,6 +295,23 @@ function visibleRangesFromTrack(track: TimelineTrackDocument, duration: number):
   });
   if (cursor < safeDuration - 0.001 && visible) ranges.push({ start: cursor, end: safeDuration });
   return ranges.filter((range) => range.end > range.start + 0.001);
+}
+
+function emptyFitLayerResult(targetStart: number, targetEnd: number): FitLayerKeyframesResult {
+  return {
+    edited: 0,
+    skipped: 0,
+    targetStart,
+    targetEnd,
+    sourceStart: targetStart,
+    sourceEnd: targetEnd,
+    keyframeIds: [],
+    changedTransformObjectIds: []
+  };
+}
+
+function timelineTimeKey(time: number): number {
+  return Math.round(time * 1000);
 }
 
 export function shiftObjectLayerKeyframes(

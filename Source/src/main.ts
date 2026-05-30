@@ -32,6 +32,7 @@ import {
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
 import {
+  fitObjectLayerKeyframesToRange,
   objectLayerKeyframeIds,
   objectLayerRange,
   sequenceObjectLayerRanges,
@@ -217,6 +218,7 @@ function boot(root: HTMLDivElement): void {
     onSplitLayer: splitSelectedLayerAtPlayhead,
     onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
     onSelectLayerKeyframes: selectSelectedLayerKeyframes,
+    onFitLayerKeyframes: fitSelectedLayerKeyframes,
     onSequenceLayers: sequenceTimelineObjectLayers,
     onEditLayerRange: editTimelineLayerRange,
     onDeleteKeyframes: deleteTimelineKeyframes,
@@ -1015,6 +1017,11 @@ function boot(root: HTMLDivElement): void {
         keywords: ["layer keys", "selected layer", "after effects"],
         disabled: () => !selectedEntry()
       }),
+      command("timeline.fit-layer-keys", "Fit Selected Layer Keyframes", "Retiming", fitSelectedLayerKeyframes, {
+        shortcut: "Alt+Shift+F",
+        keywords: ["time stretch", "retime layer", "after effects"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.sequence-layers", "Sequence Object Layers", "Retiming", sequenceTimelineObjectLayers, {
         shortcut: "Alt+Shift+L",
         keywords: ["layer timing", "after effects", "sequence layers"],
@@ -1680,6 +1687,11 @@ function boot(root: HTMLDivElement): void {
     if (event.altKey && event.shiftKey && key === "k") {
       event.preventDefault();
       selectSelectedLayerKeyframes();
+      return;
+    }
+    if (event.altKey && event.shiftKey && key === "f") {
+      event.preventDefault();
+      fitSelectedLayerKeyframes();
       return;
     }
     if (event.altKey && event.shiftKey && key === "l") {
@@ -2649,6 +2661,37 @@ function boot(root: HTMLDivElement): void {
     }
     showToast(
       `${keyframeIds.length} ${selection.entry.name} layer keyframe${keyframeIds.length === 1 ? "" : "s"} selected`,
+      "good"
+    );
+  }
+
+  function fitSelectedLayerKeyframes(): void {
+    const selection = selectedLayerRange();
+    if (!selection) return;
+
+    recordHistory();
+    const result = fitObjectLayerKeyframesToRange(sceneTimeline, selection.entry.id);
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+    sceneTimeline.currentTime = clamp(result.targetStart, 0, sceneTimeline.duration);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    if (result.edited === 0) {
+      showToast(
+        result.keyframeIds.length
+          ? `${selection.entry.name} layer keyframes already fit ${formatNumber(result.targetStart)}-${formatNumber(result.targetEnd)}s${skipped}.`
+          : `${selection.entry.name} has no layer keyframes to fit${skipped}.`,
+        result.keyframeIds.length ? "good" : "bad"
+      );
+      return;
+    }
+
+    showToast(
+      `${result.edited} ${selection.entry.name} keyframe${result.edited === 1 ? "" : "s"} fit from ${formatNumber(result.sourceStart)}-${formatNumber(result.sourceEnd)}s into ${formatNumber(result.targetStart)}-${formatNumber(result.targetEnd)}s${skipped}`,
       "good"
     );
   }
