@@ -6,6 +6,7 @@ Visible gap editing adds Premiere/After Effects style timing operations to the
 filtered dope sheet:
 
 - `Insert Gap` creates timing room at the playhead.
+- `Lift Work` removes the Work In/Out span without closing the timing gap.
 - `Extract Work` removes the Work In/Out span and closes the timing gap.
 
 Both commands operate only on currently visible timeline rows, so row search
@@ -20,6 +21,15 @@ and row filtering define the edit scope.
 - Shifts visible-row keyframes at or after the playhead later by that duration.
 - Skips keyframes that would move beyond the timeline duration.
 - Locked visible tracks are skipped.
+- Keyboard shortcut: `,`, following the common NLE Insert convention.
+
+### Lift Work
+
+- Toolbar command: `Lift Work`.
+- Deletes visible-row keyframes inside Work In/Out.
+- Later keyframes keep their original time.
+- Locked visible tracks are skipped.
+- Keyboard shortcut: `;`, matching the common NLE Lift convention.
 
 ### Extract Work
 
@@ -30,6 +40,7 @@ and row filtering define the edit scope.
 - Skips shifted keyframes if moving them would collide with an earlier
   unselected key.
 - Locked visible tracks are skipped.
+- Keyboard shortcut: `'`, matching the common NLE Extract convention.
 
 ## Scope Rules
 
@@ -45,6 +56,7 @@ the same gap-edit code path.
 
 - `animation/timelineEditing.ts` owns the pure helpers:
   - `insertTimelineGapOnTracks`
+  - `liftTimelineRangeOnTracks`
   - `extractTimelineRangeOnTracks`
 - `main.ts` resolves visible UI rows into editable timeline tracks, handles
   history, runtime rebuild, selection clearing, and preset-animation cleanup.
@@ -61,4 +73,8 @@ Playwright verifies:
 - The graph reflects shifted key times after insertion.
 - Extracting the Work In/Out span deletes keys inside the range and shifts
   later keys earlier.
+- Lifting the Work In/Out span deletes keys inside the range while keeping
+  later keys fixed.
+- Comma, semicolon, and quote shortcuts reach the same visible-row edit paths
+  as the toolbar buttons.
 - The final timing and values persist in exported scene JSON.

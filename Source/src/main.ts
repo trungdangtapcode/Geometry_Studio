@@ -14,6 +14,7 @@ import {
   extractTimelineRangeOnTracks,
   fitResolvedKeyframesToRange,
   insertTimelineGapOnTracks,
+  liftTimelineRangeOnTracks,
   moveResolvedKeyframesToTime,
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
@@ -222,6 +223,7 @@ function boot(root: HTMLDivElement): void {
     onDuplicateVisibleTimeKeyframes: duplicateVisibleTimelineTimeKeyframes,
     onDeleteVisibleTimeKeyframes: deleteVisibleTimelineTimeKeyframes,
     onInsertVisibleTimeGap: insertVisibleTimelineTimeGap,
+    onLiftVisibleWorkArea: liftVisibleTimelineWorkArea,
     onExtractVisibleWorkArea: extractVisibleTimelineWorkArea,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
@@ -1376,6 +1378,21 @@ function boot(root: HTMLDivElement): void {
     if (key === "f9") {
       event.preventDefault();
       setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), interpolationFromF9Shortcut(event));
+      return;
+    }
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && code === "comma") {
+      event.preventDefault();
+      insertVisibleTimelineTimeGap(timelinePanel.visibleRowTargetsList());
+      return;
+    }
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && code === "semicolon") {
+      event.preventDefault();
+      liftVisibleTimelineWorkArea(timelinePanel.visibleRowTargetsList());
+      return;
+    }
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && code === "quote") {
+      event.preventDefault();
+      extractVisibleTimelineWorkArea(timelinePanel.visibleRowTargetsList());
       return;
     }
     if (event.altKey && key === "[") {
@@ -2802,6 +2819,28 @@ function boot(root: HTMLDivElement): void {
 
     const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
     showToast(`${result.deleted} keyframe${result.deleted === 1 ? "" : "s"} extracted, ${result.shifted} shifted${skipped}`, "good");
+  }
+
+  function liftVisibleTimelineWorkArea(rows: TimelineVisibleRowTarget[]): void {
+    const resolved = resolveVisibleTimelineTrackTargets(rows);
+    if (resolved.targets.length === 0) {
+      showToast(resolved.lockedCount > 0 ? "All visible timeline rows are locked." : "No visible timeline rows have keyframes to lift.", "bad");
+      return;
+    }
+
+    const start = Math.min(sceneTimeline.workStart, sceneTimeline.workEnd);
+    const end = Math.max(sceneTimeline.workStart, sceneTimeline.workEnd);
+    recordHistory();
+    const result = liftTimelineRangeOnTracks(sceneTimeline, resolved.targets, start, end);
+    pruneEmptyTimelineTracks(sceneTimeline);
+    finishTimelineGapEdit(result.changedTransformObjectIds, result.currentTime);
+
+    if (result.deleted === 0) {
+      showToast("No visible-row keyframes inside the work area.", "bad");
+      return;
+    }
+
+    showToast(`${result.deleted} keyframe${result.deleted === 1 ? "" : "s"} lifted from Work In/Out`, "good");
   }
 
   function nudgeTimelineKeyframes(direction: -1 | 1, keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {

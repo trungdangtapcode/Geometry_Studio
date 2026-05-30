@@ -2827,7 +2827,7 @@ test("ripple deletes selected timeline keyframe spans", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("inserts and extracts visible timeline gaps", async ({ page }) => {
+test("handles visible timeline gap edit shortcuts", async ({ page }) => {
   test.setTimeout(180_000);
   const errors: string[] = [];
   await page.addInitScript(() => {
@@ -2877,9 +2877,7 @@ test("inserts and extracts visible timeline gaps", async ({ page }) => {
     (input as HTMLInputElement).value = "2";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await page.evaluate(() => {
-    document.querySelector<HTMLButtonElement>("#timeline-insert-gap")?.click();
-  });
+  await page.keyboard.press("Comma");
 
   const insertedTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
     [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
@@ -2887,14 +2885,22 @@ test("inserts and extracts visible timeline gaps", async ({ page }) => {
   );
   expect(insertedTimes).toEqual([0, 4, 6]);
 
-  await page.evaluate(() => {
-    document.querySelector<HTMLButtonElement>("#timeline-extract-work")?.click();
-  });
+  await page.keyboard.press("Quote");
   const extractedTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
     [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
       .sort((left, right) => left - right)
   );
   expect(extractedTimes).toEqual([2, 4]);
+
+  await page.locator("#timeline-work-end").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-work-start").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.keyboard.press("Semicolon");
 
   await page.evaluate(() => {
     document.querySelector<HTMLButtonElement>("#save-scene")?.click();
@@ -2908,7 +2914,7 @@ test("inserts and extracts visible timeline gaps", async ({ page }) => {
   const savedKeys = positionTrack.keyframes
     .map((keyframe: { time: number; value: [number, number, number] }) => ({ time: keyframe.time, x: keyframe.value[0] }))
     .sort((left: { time: number }, right: { time: number }) => left.time - right.time);
-  expect(savedKeys).toEqual([{ time: 2, x: 2 }, { time: 4, x: 4 }]);
+  expect(savedKeys).toEqual([{ time: 4, x: 4 }]);
 
   expect(errors).toEqual([]);
 });

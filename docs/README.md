@@ -243,10 +243,11 @@ animation runtime where it fits:
 - The `Del Time` command removes visible-row keyframes at the playhead under
   one undoable edit.
 - `Insert Gap` shifts visible-row keyframes at or after the playhead later by
-  the Work In/Out duration, creating room for new timing.
+  the Work In/Out duration, creating room for new timing; shortcut `,`.
+- `Lift Work` deletes visible-row keyframes inside Work In/Out without shifting
+  later visible-row keys; shortcut `;`.
 - `Extract Work` deletes visible-row keyframes inside Work In/Out and shifts
-  later visible-row keys earlier, completing the row-filtered lift/extract
-  timing workflow.
+  later visible-row keys earlier; shortcut `'`.
 - Previous/next visible-row keyframe commands jump the playhead through the
   current row filter/search result instead of only the active track.
 - Timeline row labels show live property values, so scrubbed Position, Rotation,

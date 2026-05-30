@@ -454,6 +454,38 @@ export function extractTimelineRangeOnTracks(
   };
 }
 
+export function liftTimelineRangeOnTracks(
+  timeline: SceneTimelineDocument,
+  targets: TimelineTrackEditTarget[],
+  startTime: number,
+  endTime: number
+): TimelineGapEditResult {
+  const start = Math.max(0, Math.min(startTime, endTime, timeline.duration));
+  const end = Math.max(start, Math.min(Math.max(startTime, endTime), timeline.duration));
+  const trackTargets = dedupeTimelineTrackTargets(targets);
+  const changedTransformObjectIds = new Set<string>();
+  let deleted = 0;
+
+  trackTargets.forEach((target) => {
+    const beforeCount = target.track.keyframes.length;
+    target.track.keyframes = target.track.keyframes.filter((keyframe) => keyframe.time < start - 0.001 || keyframe.time > end + 0.001);
+    const trackDeleted = beforeCount - target.track.keyframes.length;
+    deleted += trackDeleted;
+    if (trackDeleted === 0) return;
+    sortTimelineKeyframes(target.track);
+    if (target.scope === "object" && isObjectTransformTrackKind(target.track.kind)) changedTransformObjectIds.add(target.objectId);
+  });
+
+  return {
+    deleted,
+    shifted: 0,
+    skipped: 0,
+    tracks: trackTargets.length,
+    currentTime: roundTime(start),
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
 export function editResolvedKeyframes(
   timeline: SceneTimelineDocument,
   sources: TimelineKeyframeSource[],

@@ -70,6 +70,7 @@ export interface KeyframeTimelineCallbacks {
   onDuplicateVisibleTimeKeyframes(): void;
   onDeleteVisibleTimeKeyframes(): void;
   onInsertVisibleTimeGap(rows: TimelineVisibleRowTarget[]): void;
+  onLiftVisibleWorkArea(rows: TimelineVisibleRowTarget[]): void;
   onExtractVisibleWorkArea(rows: TimelineVisibleRowTarget[]): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
@@ -200,6 +201,7 @@ export class KeyframeTimelinePanel {
   private readonly duplicateTimeButton = query<HTMLButtonElement>("#timeline-duplicate-time");
   private readonly deleteTimeButton = query<HTMLButtonElement>("#timeline-delete-time");
   private readonly insertGapButton = query<HTMLButtonElement>("#timeline-insert-gap");
+  private readonly liftWorkButton = query<HTMLButtonElement>("#timeline-lift-work");
   private readonly extractWorkButton = query<HTMLButtonElement>("#timeline-extract-work");
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
@@ -487,6 +489,10 @@ export class KeyframeTimelinePanel {
     return [...times].sort((left, right) => left - right);
   }
 
+  visibleRowTargetsList(): TimelineVisibleRowTarget[] {
+    return this.visibleRowTargets();
+  }
+
   cycleRowFilter(): string {
     const currentIndex = ROW_FILTER_SEQUENCE.indexOf(this.rowFilter);
     const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
@@ -676,6 +682,9 @@ export class KeyframeTimelinePanel {
     });
     this.insertGapButton.addEventListener("click", () => {
       this.callbacks.onInsertVisibleTimeGap(this.visibleRowTargets());
+    });
+    this.liftWorkButton.addEventListener("click", () => {
+      this.callbacks.onLiftVisibleWorkArea(this.visibleRowTargets());
     });
     this.extractWorkButton.addEventListener("click", () => {
       this.callbacks.onExtractVisibleWorkArea(this.visibleRowTargets());
