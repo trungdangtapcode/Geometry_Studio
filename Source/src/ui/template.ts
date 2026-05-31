@@ -139,6 +139,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-paste-insert-keyframes" type="button" disabled title="Copy keyframes before insert-pasting"><span data-icon="ListPlus"></span><span>Paste Insert</span></button>
               <button class="mini-button" id="timeline-select-workarea" type="button"><span data-icon="ListFilter"></span><span>Select Work</span></button>
               <button class="mini-button" id="timeline-select-visible" type="button" title="Select all keyframes on currently visible timeline rows"><span data-icon="ListChecks"></span><span>Select Visible</span></button>
+              <button class="mini-button" id="timeline-select-pinned" type="button" title="Select all keyframes on pinned timeline rows"><span data-icon="Pin"></span><span>Select Pinned</span></button>
               <button class="mini-button" id="timeline-select-time" type="button" title="Select visible-row keyframes at the current playhead time"><span data-icon="Crosshair"></span><span>Select Time</span></button>
               <button class="mini-button" id="timeline-duplicate-time" type="button" title="Duplicate visible-row keyframes at the current playhead time"><span data-icon="CopyPlus"></span><span>Dup Time</span></button>
               <button class="mini-button danger" id="timeline-delete-time" type="button" title="Delete visible-row keyframes at the current playhead time"><span data-icon="Trash2"></span><span>Del Time</span></button>
@@ -678,7 +679,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
               <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
-              <div class="quick-help-item"><strong>Pin Rows</strong><span>Row star / Commands / Set Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast TRS setup, then key the pinned set.</p></div>
+              <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast TRS setup, then key or select the pinned set.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
             </section>

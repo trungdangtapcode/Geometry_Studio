@@ -20,10 +20,13 @@ timeline rows and switch the row filter to `Pinned Rows`.
 - `Set Pinned` records keys on every pinned row, even when row search or the
   current filter hides those rows. This makes pinned rows work as a reusable
   keying set for Position/Rotation/Scale, camera, light, or material channels.
+- `Select Pinned` selects keyframes on pinned rows, which makes pinned rows a
+  reusable retiming/easing/copy-delete selection set as well as a keying set.
 - The command palette includes `Pin Active Timeline Row`, `Pin Visible Timeline
   Rows`, `Unpin Visible Timeline Rows`, `Clear Pinned Timeline Rows`, `Show
   Pinned Timeline Rows`, `Pin Selected Transform Rows`, and `Set Keys On Pinned
-  Rows`.
+  Rows`, `Select Pinned Row Keyframes`, and `Select Pinned Row Work Area
+  Keyframes`.
 - `Pinned Rows` in the timeline row filter shows pinned rows plus the active
   row. The filter label shows the current pinned-row count.
 - Pinned rows also remain visible in `Focus Rows` and `Keyed Rows`, so important
@@ -54,4 +57,4 @@ rows hide, reloads the app, confirms the pinned row and filter persist, then
 covers bulk visible-row pinning and clearing through the toolbar and command
 palette. It also verifies that `Set Keys On Pinned Rows` can key a pinned row
 while that row is hidden by row search, and that `Pin Selected Transform Rows`
-creates a three-track transform keying set for `Set Pinned`.
+creates a three-track transform keying set for `Set Pinned` and `Select Pinned`.

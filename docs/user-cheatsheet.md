@@ -140,6 +140,7 @@ Scale recorded together.
 | Paste Insert | Paste and push later keys forward |
 | Select Work | Select active-track keys inside Work In/Out |
 | Select Visible | Select keys on visible rows |
+| Select Pinned | Select keys on pinned rows |
 | Select Time | Select keys at current playhead time |
 | Dup Time / Del Time | Duplicate or delete visible-row keys at the playhead |
 | Insert Gap | Push later visible-row keys by Work In/Out length |
@@ -249,7 +250,9 @@ If a key already exists at that time, `Set Key` updates it.
 4. Switch the row filter to `Pinned Rows`, or search `Show Pinned Timeline Rows`.
 5. Click `Set Pinned` when you want the pinned rows to act like a reusable
    keying set.
-6. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
+6. Click `Select Pinned` when you want to retime, copy, ease, or delete keys
+   only on that pinned keying set.
+7. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
    pinned set is no longer useful.
 
 ### Animate Camera

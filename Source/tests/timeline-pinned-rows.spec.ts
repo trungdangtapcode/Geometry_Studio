@@ -155,4 +155,13 @@ test("pins selected transform rows as a reusable keying set", async ({ page }) =
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/has-keyframes/);
   await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toHaveClass(/has-keyframes/);
   await expect(page.locator('.timeline-track-label[data-track-kind="scale"]').first()).toHaveClass(/has-keyframes/);
+
+  await page.locator("#timeline-track-kind").selectOption("objectColor");
+  await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-selection")).toContainText("1 keyframe");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("select pinned row keyframes");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes");
 });

@@ -246,6 +246,7 @@ function boot(root: HTMLDivElement): void {
     onPasteInsertKeyframes: pasteInsertTimelineKeyframes,
     onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
     onSelectVisibleKeyframes: selectVisibleTimelineKeyframes,
+    onSelectPinnedKeyframes: selectPinnedTimelineKeyframes,
     onSelectVisibleTimeKeyframes: selectVisibleTimelineTimeKeyframes,
     onPreviewSelectedRange: previewSelectedTimelineKeyRange,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
@@ -1040,6 +1041,12 @@ function boot(root: HTMLDivElement): void {
       command("timeline.select-work", "Select Active Track Work Area Keyframes", "Selection", selectTimelineWorkAreaKeyframes, { shortcut: "Ctrl+Shift+A" }),
       command("timeline.select-visible", "Select Visible Row Keyframes", "Selection", () => selectVisibleTimelineKeyframes(false), { shortcut: "Ctrl+Alt+A" }),
       command("timeline.select-visible-work", "Select Visible Row Work Area Keyframes", "Selection", () => selectVisibleTimelineKeyframes(true), { shortcut: "Ctrl+Alt+Shift+A" }),
+      command("timeline.select-pinned", "Select Pinned Row Keyframes", "Selection", () => selectPinnedTimelineKeyframes(false), {
+        keywords: ["pin", "pinned", "favorite", "keying set", "rows", "channels"]
+      }),
+      command("timeline.select-pinned-work", "Select Pinned Row Work Area Keyframes", "Selection", () => selectPinnedTimelineKeyframes(true), {
+        keywords: ["pin", "pinned", "favorite", "keying set", "work area", "rows"]
+      }),
       command("timeline.select-time", "Select Visible Row Keys At Playhead", "Selection", selectVisibleTimelineTimeKeyframes, { shortcut: "Ctrl+Alt+K" }),
 
       command("timeline.ease-linear", "Apply Linear Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "linear"), {
@@ -2892,6 +2899,17 @@ function boot(root: HTMLDivElement): void {
       : workAreaOnly
         ? "No visible-row keyframes inside the work area."
         : "No keyframes on visible timeline rows.",
+      selectedCount ? "good" : "bad");
+  }
+
+  function selectPinnedTimelineKeyframes(workAreaOnly = false): void {
+    const selectedCount = timelinePanel.selectPinnedRowKeyframes(workAreaOnly);
+    const scope = workAreaOnly ? "pinned work-area" : "pinned-row";
+    showToast(selectedCount
+      ? `${selectedCount} ${scope} keyframe${selectedCount === 1 ? "" : "s"} selected`
+      : workAreaOnly
+        ? "No pinned-row keyframes inside the work area."
+        : "No keyframes on pinned timeline rows.",
       selectedCount ? "good" : "bad");
   }
 

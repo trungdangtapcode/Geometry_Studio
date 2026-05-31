@@ -178,7 +178,12 @@ export class CommandPalette {
 
   private filteredAndOrderedCommands(queryText: string): CommandPaletteCommand[] {
     const matches = this.commands.filter((command) => matchesCommand(command, queryText));
-    if (queryText) return matches;
+    if (queryText) {
+      return matches
+        .map((command, index) => ({ command, index, score: commandSearchScore(command, queryText) }))
+        .sort((left, right) => right.score - left.score || left.index - right.index)
+        .map((entry) => entry.command);
+    }
 
     const byId = new Map(this.commands.map((command) => [command.id, command]));
     const pinned = this.pinnedCommandIds
@@ -227,6 +232,34 @@ function matchesCommand(command: CommandPaletteCommand, queryText: string): bool
     ...(command.keywords ?? [])
   ].join(" "));
   return queryText.split(" ").every((part) => haystack.includes(part));
+}
+
+function commandSearchScore(command: CommandPaletteCommand, queryText: string): number {
+  const title = normalizeSearch(command.title);
+  const category = normalizeSearch(command.category);
+  const shortcut = normalizeSearch(command.shortcut ?? "");
+  const keywords = (command.keywords ?? []).map(normalizeSearch);
+  const titleWords = title.split(/\s+/);
+  const queryParts = queryText.split(" ").filter(Boolean);
+  let score = 0;
+
+  if (title === queryText) score += 10000;
+  else if (title.startsWith(queryText)) score += 6000;
+  else if (title.includes(queryText)) score += 3000;
+
+  queryParts.forEach((part) => {
+    if (titleWords.includes(part)) score += 120;
+    else if (titleWords.some((word) => word.startsWith(part))) score += 70;
+    else if (title.includes(part)) score += 35;
+
+    if (keywords.some((keyword) => keyword === part || keyword.split(/\s+/).includes(part))) score += 30;
+    else if (keywords.some((keyword) => keyword.includes(part))) score += 12;
+
+    if (category.includes(part)) score += 4;
+    if (shortcut.includes(part)) score += 4;
+  });
+
+  return score;
 }
 
 function normalizeSearch(value: string): string {

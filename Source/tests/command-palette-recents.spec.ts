@@ -25,3 +25,11 @@ test("promotes recently used commands when the command palette opens", async ({ 
   await expect(persistedFirstCommand).toHaveAttribute("data-command-id", "view.frame-all");
   await expect(persistedFirstCommand.locator(".command-palette-text span")).toContainText("Recent");
 });
+
+test("prioritizes exact title matches over broad keyword matches", async ({ page }) => {
+  await page.goto("/");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("select pinned row keyframes");
+  await expect(page.locator(".command-palette-item").first()).toHaveAttribute("data-command-id", "timeline.select-pinned");
+});

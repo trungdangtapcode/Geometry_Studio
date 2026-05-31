@@ -75,6 +75,7 @@ export interface KeyframeTimelineCallbacks {
   onPasteInsertKeyframes(): void;
   onSelectWorkAreaKeyframes(): void;
   onSelectVisibleKeyframes(workAreaOnly: boolean): void;
+  onSelectPinnedKeyframes(workAreaOnly: boolean): void;
   onSelectVisibleTimeKeyframes(): void;
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
@@ -247,6 +248,7 @@ export class KeyframeTimelinePanel {
   private readonly cutTimeButton = query<HTMLButtonElement>("#timeline-cut-time");
   private readonly pasteButton = query<HTMLButtonElement>("#timeline-paste-keyframes");
   private readonly pasteInsertButton = query<HTMLButtonElement>("#timeline-paste-insert-keyframes");
+  private readonly selectPinnedButton = query<HTMLButtonElement>("#timeline-select-pinned");
   private readonly duplicateTimeButton = query<HTMLButtonElement>("#timeline-duplicate-time");
   private readonly deleteTimeButton = query<HTMLButtonElement>("#timeline-delete-time");
   private readonly insertGapButton = query<HTMLButtonElement>("#timeline-insert-gap");
@@ -543,11 +545,21 @@ export class KeyframeTimelinePanel {
 
   selectVisibleRowKeyframes(workAreaOnly = false): number {
     if (!this.lastTimelineDocument) return 0;
+    return this.selectRowTargetKeyframes(this.visibleRowTargets(), workAreaOnly);
+  }
+
+  selectPinnedRowKeyframes(workAreaOnly = false): number {
+    if (!this.lastTimelineDocument) return 0;
+    return this.selectRowTargetKeyframes(this.pinnedRowTargets(), workAreaOnly);
+  }
+
+  private selectRowTargetKeyframes(rows: TimelineVisibleRowTarget[], workAreaOnly = false): number {
+    if (!this.lastTimelineDocument) return 0;
     const timelineDocument = this.lastTimelineDocument;
     const workStart = Math.min(timelineDocument.workStart, timelineDocument.workEnd);
     const workEnd = Math.max(timelineDocument.workStart, timelineDocument.workEnd);
     const selectedIds = new Set<string>();
-    this.visibleRowTargets().forEach((target) => {
+    rows.forEach((target) => {
       const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
       track?.keyframes.forEach((keyframe) => {
         const insideWorkArea = keyframe.time >= workStart - 0.001 && keyframe.time <= workEnd + 0.001;
@@ -865,6 +877,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-select-visible").addEventListener("click", () => {
       this.callbacks.onSelectVisibleKeyframes(false);
+    });
+    this.selectPinnedButton.addEventListener("click", () => {
+      this.callbacks.onSelectPinnedKeyframes(false);
     });
     query<HTMLButtonElement>("#timeline-select-time").addEventListener("click", () => {
       this.callbacks.onSelectVisibleTimeKeyframes();
@@ -1497,10 +1512,15 @@ export class KeyframeTimelinePanel {
 
   private syncPinnedKeyingButton(): void {
     const count = this.pinnedRowTargets().length;
+    const suffix = count === 1 ? "" : "s";
     this.setPinnedButton.disabled = count === 0;
+    this.selectPinnedButton.disabled = count === 0;
     this.setPinnedButton.title = count > 0
-      ? `Set keys on ${count} pinned timeline row${count === 1 ? "" : "s"}`
+      ? `Set keys on ${count} pinned timeline row${suffix}`
       : "Pin timeline rows before setting pinned keys";
+    this.selectPinnedButton.title = count > 0
+      ? `Select keyframes on ${count} pinned timeline row${suffix}`
+      : "Pin timeline rows before selecting pinned keys";
   }
 
   private timelineGroupIds(): string[] {

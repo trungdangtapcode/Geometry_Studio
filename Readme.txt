@@ -109,6 +109,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - Toolbar pin button: pin every currently visible timeline row.
 - Toolbar pin-off button: clear all pinned timeline rows.
 - Set Pinned: key every pinned row at the playhead.
+- Select Pinned: select keyframes on pinned rows for retiming, easing, copy, or delete operations.
 - Plus / Minus / 0: zoom the timeline in, zoom out, or fit the duration.
 - Alt+Mouse Wheel or Ctrl/Cmd+Mouse Wheel over the timeline: zoom around the cursor.
 - Shift+Mouse Wheel or horizontal trackpad wheel over the timeline: pan horizontally.
