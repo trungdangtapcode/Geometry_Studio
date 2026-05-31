@@ -59,6 +59,7 @@ import {
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
 export type TimelineDopeSheetTool = "selection" | "pan";
 export type TimelineLayerKeyframeEditMode = "none" | "shift" | "stretch";
+export type TimelineTransportButtonAction = "play" | "stop";
 
 export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
@@ -130,7 +131,7 @@ export interface KeyframeTimelineCallbacks {
   onKeyframeValueChanged(keyframeId: string, axis: TimelineAxis, value: number): void;
   onDragFinished(): void;
   onSettingsChanged(patch: TimelineSettingsPatch): void;
-  onTogglePlayback(): void;
+  onTogglePlayback(action: TimelineTransportButtonAction): void;
 }
 
 export interface TimelineVisibleRowTarget {
@@ -225,6 +226,10 @@ const MIN_LABEL_WIDTH = 112;
 const MAX_LABEL_WIDTH = 340;
 const DEFAULT_ROW_HEIGHT = 30;
 const DEFAULT_HEADER_HEIGHT = 28;
+
+function parseTimelineTransportButtonAction(value: string | undefined): TimelineTransportButtonAction {
+  return value === "stop" ? "stop" : "play";
+}
 
 export class KeyframeTimelinePanel {
   private readonly timeline: Timeline;
@@ -351,6 +356,7 @@ export class KeyframeTimelinePanel {
   private syncingScroll = false;
   private layerStretchModifierActive = false;
   private updating = false;
+  private lastFullPlaybackSyncAt = 0;
   private readonly handleResizeMove = (event: PointerEvent) => this.resizeDock(event);
   private readonly handleResizeEnd = (event: PointerEvent) => this.finishResize(event);
   private readonly handleLabelResizeMove = (event: PointerEvent) => this.resizeLabelColumn(event);
@@ -848,6 +854,13 @@ export class KeyframeTimelinePanel {
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.timeline.setTime(timelineDocument.currentTime);
     this.ensurePlayheadVisible(timelineDocument.currentTime, playing);
+    if (playing) {
+      this.syncTimecode(timelineDocument);
+      this.syncOverviewPlayhead(timelineDocument);
+      this.throttlePlaybackReadouts(timelineDocument);
+      this.updating = false;
+      return;
+    }
     this.syncRowKeyButtons(timelineDocument);
     this.syncRowValueReadouts(timelineDocument);
     this.syncTimecode(timelineDocument);
@@ -863,10 +876,19 @@ export class KeyframeTimelinePanel {
   private syncPlayButton(playing: boolean): void {
     const label = playing ? "Stop" : "Play";
     const ariaLabel = playing ? "Stop timeline playback" : "Play timeline playback";
+    this.playButton.dataset.transportAction = playing ? "stop" : "play";
     this.playButton.innerHTML = `<span data-icon="${playing ? "Square" : "Play"}"></span><span>${label}</span>`;
     this.playButton.setAttribute("aria-label", ariaLabel);
     this.playButton.title = ariaLabel;
     hydrateIcons(this.playButton);
+  }
+
+  private throttlePlaybackReadouts(timelineDocument: SceneTimelineDocument): void {
+    const now = performance.now();
+    if (now - this.lastFullPlaybackSyncAt < 180) return;
+    this.lastFullPlaybackSyncAt = now;
+    this.syncRowValueReadouts(timelineDocument);
+    this.syncSelectionWidgets(timelineDocument, this.lastSelectedId);
   }
 
   private syncTimeInputHints(fps: number): void {
@@ -1211,7 +1233,9 @@ export class KeyframeTimelinePanel {
     this.followPlayheadButton.addEventListener("click", () => this.toggleFollowPlayhead());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workStartInput, this.lastTimelineDocument?.workStart ?? 0)));
     query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workEndInput, this.lastTimelineDocument?.workEnd ?? 0)));
-    this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
+    this.playButton.addEventListener("click", () => {
+      this.callbacks.onTogglePlayback(parseTimelineTransportButtonAction(this.playButton.dataset.transportAction));
+    });
     this.timeInput.addEventListener("change", () => this.commitTimeInput(this.timeInput, this.lastTimelineDocument?.currentTime ?? 0, (time) => this.callbacks.onTimeChanged(time)));
     this.durationInput.addEventListener("change", () => this.commitTimeInput(this.durationInput, this.lastTimelineDocument?.duration ?? 8, (duration) => this.callbacks.onSettingsChanged({ duration })));
     this.workStartInput.addEventListener("change", () => this.commitTimeInput(this.workStartInput, this.lastTimelineDocument?.workStart ?? 0, (workStart) => this.callbacks.onSettingsChanged({ workStart })));
@@ -1805,8 +1829,13 @@ export class KeyframeTimelinePanel {
     const workEnd = clamp(Math.max(timelineDocument.workStart, timelineDocument.workEnd), 0, duration);
     this.overviewWork.style.left = `${(workStart / duration) * 100}%`;
     this.overviewWork.style.width = `${Math.max(((workEnd - workStart) / duration) * 100, 0.4)}%`;
-    this.overviewPlayhead.style.left = `${clamp((timelineDocument.currentTime / duration) * 100, 0, 100)}%`;
+    this.syncOverviewPlayhead(timelineDocument);
     this.syncOverviewViewport();
+  }
+
+  private syncOverviewPlayhead(timelineDocument: SceneTimelineDocument): void {
+    const duration = Math.max(timelineDocument.duration, 0.001);
+    this.overviewPlayhead.style.left = `${clamp((timelineDocument.currentTime / duration) * 100, 0, 100)}%`;
   }
 
   private syncOverviewViewport(): void {

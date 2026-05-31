@@ -126,7 +126,14 @@ import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetBy
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
-import { KeyframeTimelinePanel, type TimelineDopeSheetTool, type TimelineLayerKeyframeEditMode, type TimelineRowFilter, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
+import {
+  KeyframeTimelinePanel,
+  type TimelineDopeSheetTool,
+  type TimelineLayerKeyframeEditMode,
+  type TimelineRowFilter,
+  type TimelineTransportButtonAction,
+  type TimelineVisibleRowTarget
+} from "./ui/timelinePanel";
 import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
 import { bindUiDensityControl } from "./ui/density";
 import { QuickHelpOverlay } from "./ui/helpOverlay";
@@ -138,6 +145,7 @@ import { applyCameraPreset, boxForObjects, frameCameraToBox as fitCameraToBox } 
 import { configureViewportNavigation, resetBlenderNavigationMouseButton, syncBlenderNavigationMouseButton } from "./viewport/navigation";
 
 const app = document.querySelector<HTMLDivElement>("#app");
+const TRANSPORT_RESTART_GUARD_MS = 300;
 
 interface TransformPoseClipboard {
   sourceName: string;
@@ -214,6 +222,7 @@ function boot(root: HTMLDivElement): void {
   let pendingTimelineDragSnapshot: SceneDocument | null = null;
   let evaluationTourTimers: number[] = [];
   let pathTraceControlsEnabled = true;
+  let lastTransportStopAt = 0;
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -299,7 +308,7 @@ function boot(root: HTMLDivElement): void {
     onKeyframeValueChanged: moveTimelineKeyframeValue,
     onDragFinished: finishTimelineDrag,
     onSettingsChanged: updateTimelineSettings,
-    onTogglePlayback: togglePlay
+    onTogglePlayback: handleTransportButtonAction
   });
   window.addEventListener("studio-density-change", () => {
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
@@ -525,7 +534,9 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#delete-selected").addEventListener("click", deleteSelected);
     query<HTMLButtonElement>("#duplicate-selected").addEventListener("click", duplicateSelected);
     query<HTMLButtonElement>("#reset-scene").addEventListener("click", resetScene);
-    query<HTMLButtonElement>("#play-toggle").addEventListener("click", togglePlay);
+    query<HTMLButtonElement>("#play-toggle").addEventListener("click", (event) => {
+      handleTransportButtonAction(readTransportButtonAction(event.currentTarget as HTMLButtonElement));
+    });
     query<HTMLSelectElement>("#timeline-playback-rate").addEventListener("change", (event) => {
       setTimelinePlaybackRate(Number((event.target as HTMLSelectElement).value));
     });
@@ -2348,9 +2359,21 @@ function boot(root: HTMLDivElement): void {
     showToast(message, "good");
   }
 
+  function readTransportButtonAction(button: HTMLButtonElement): TimelineTransportButtonAction {
+    return button.dataset.transportAction === "stop" ? "stop" : "play";
+  }
+
+  function handleTransportButtonAction(action: TimelineTransportButtonAction): void {
+    if (action === "stop" || transport.playing) {
+      pauseTimeline("Timeline stopped");
+      return;
+    }
+    playTimeline(1, "Timeline running", { guardRecentStop: true });
+  }
+
   function togglePlay(): void {
     if (transport.playing) pauseTimeline("Timeline stopped");
-    else playTimeline(1, "Timeline running");
+    else playTimeline(1, "Timeline running", { guardRecentStop: true });
   }
 
   function setTimelinePlaybackRate(rate: number, notify = true): void {
@@ -2371,7 +2394,15 @@ function boot(root: HTMLDivElement): void {
     query<HTMLSelectElement>("#timeline-playback-rate").value = String(transport.rate);
   }
 
-  function playTimeline(direction: PlaybackDirection, message = direction > 0 ? "Timeline running forward" : "Timeline running backward"): void {
+  function playTimeline(
+    direction: PlaybackDirection,
+    message = direction > 0 ? "Timeline running forward" : "Timeline running backward",
+    options: { guardRecentStop?: boolean } = {}
+  ): void {
+    if (options.guardRecentStop && performance.now() - lastTransportStopAt < TRANSPORT_RESTART_GUARD_MS) {
+      updatePlayButton();
+      return;
+    }
     stopPathTracePreview(false);
     const state = transport.play(direction);
     syncPlaybackBoundary();
@@ -2381,6 +2412,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function pauseTimeline(message = "Timeline stopped"): void {
+    lastTransportStopAt = performance.now();
     transport.pause();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
@@ -2419,7 +2451,7 @@ function boot(root: HTMLDivElement): void {
     setSelected(teapot.id);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
-    if (!transport.playing) togglePlay();
+    if (!transport.playing) playTimeline(1, "Cinematic demo running");
     updateAllUI();
     showToast("Cinematic demo staged", "good");
   }
@@ -2450,7 +2482,7 @@ function boot(root: HTMLDivElement): void {
     setSelected(cube.id);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
-    if (!transport.playing) togglePlay();
+    if (!transport.playing) playTimeline(1, "Evaluation tour running");
     updateAllUI();
     const steps = [
       "Evaluation Tour: required primitives are visible.",
@@ -4922,11 +4954,13 @@ function boot(root: HTMLDivElement): void {
     const iconName = transport.iconName();
     const ariaLabel = transport.playing ? `Stop timeline playback at ${formatPlaybackRate(transport.rate)}` : "Play timeline animation";
     const button = query<HTMLButtonElement>("#play-toggle");
+    button.dataset.transportAction = transport.playing ? "stop" : "play";
     button.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
     button.setAttribute("aria-label", ariaLabel);
     button.title = ariaLabel;
     hydrateIcons(button);
     const timelineButton = query<HTMLButtonElement>("#timeline-play-toggle");
+    timelineButton.dataset.transportAction = transport.playing ? "stop" : "play";
     timelineButton.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
     timelineButton.setAttribute("aria-label", ariaLabel);
     timelineButton.title = ariaLabel;
