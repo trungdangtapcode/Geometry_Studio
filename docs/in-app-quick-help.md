@@ -11,6 +11,8 @@ overlay gives users a searchable control map inside the editor.
 - Bottom viewport bar: `Help`.
 - Keyboard: `?`.
 - Command palette: `Open Quick Help`.
+- Command palette filtered entries: `Open Shortcut Help`, `Open Timeline Help`,
+  `Open Viewport Help`, and `Open Rendering Help`.
 
 ## Content Scope
 
@@ -24,9 +26,17 @@ The overlay intentionally focuses on high-frequency workflows:
 - Command Palette motion presets that bake Turntable, Float Loop, Pop Intro,
   and Product Reveal into editable keys;
 - playback, work area, and selected-range preview;
-- interpolation, overshoot easing, visible-row before/after playhead selection,
-  and retiming commands;
+- timeline-toolbar interpolation dropdown, overshoot easing, visible-row
+  before/after playhead selection, and retiming commands;
 - save/load, screenshot, WebM recording, Rendering Lab, and import.
+
+The top filter chips narrow the same content without requiring a search query:
+
+- `All` shows the complete compact map.
+- `Shortcuts` shows items with keyboard or mouse shortcuts.
+- `Viewport` shows camera navigation and transform workflow items.
+- `Timeline` shows keyframing, playback, and retiming items.
+- `Rendering` shows output, import, and Rendering Lab items.
 
 The complete long-form tutorial remains in `docs/beginner-tutorial.md`, and the
 full shortcut map remains in `docs/user-cheatsheet.md`.
@@ -46,6 +56,7 @@ Automated browser coverage lives in `Source/tests/quick-help.spec.ts`. The test
 verifies:
 
 - opening from the bottom `Help` button;
+- switching category filters;
 - filtering to a known timeline command;
 - empty-state rendering;
 - closing with `Escape`;

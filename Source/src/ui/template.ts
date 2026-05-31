@@ -122,6 +122,15 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-select-layer-keys" type="button" title="Select keyframes inside the selected layer range (Alt+Shift+K)"><span data-icon="KeyRound"></span><span>Layer Keys</span></button>
               <button class="mini-button" id="timeline-fit-layer-keys" type="button" title="Retiming-fit selected object keyframes into its layer range (Alt+Shift+F)"><span data-icon="MoveHorizontal"></span><span>Fit Layer</span></button>
               <button class="mini-button" id="timeline-sequence-layers" type="button" title="Sequence all object layer ranges from the playhead (Alt+Shift+L)"><span data-icon="ListOrdered"></span><span>Sequence</span></button>
+              <select id="timeline-interpolation" class="timeline-ease-select" aria-label="Keyframe interpolation" title="Select keyframes or park the playhead on an active-track keyframe, then choose interpolation">
+                <option value="linear">Linear</option>
+                <option value="easeIn">Ease In</option>
+                <option value="easeOut">Ease Out</option>
+                <option value="smooth">Easy Ease</option>
+                <option value="backIn">Back In</option>
+                <option value="backOut">Back Out</option>
+                <option value="hold">Hold</option>
+              </select>
               <button class="mini-button interpolation-button" id="timeline-ease-linear" type="button" data-interpolation="linear"><span data-icon="MoveRight"></span><span>Linear</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-in" type="button" data-interpolation="easeIn"><span data-icon="CornerDownRight"></span><span>Ease In</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-out" type="button" data-interpolation="easeOut"><span data-icon="CornerRightDown"></span><span>Ease Out</span></button>
@@ -189,18 +198,6 @@ export function studioTemplate(): string {
               </select>
             </label>
             <label><span>Snap</span><input id="timeline-snap-step" type="number" min="0.001" max="10" step="0.001" value="0.033" /></label>
-            <label>
-              <span>Interpolation</span>
-              <select id="timeline-interpolation" aria-label="Keyframe interpolation">
-                <option value="linear">Linear</option>
-                <option value="easeIn">Ease In</option>
-                <option value="easeOut">Ease Out</option>
-                <option value="smooth">Smooth</option>
-                <option value="backIn">Back In</option>
-                <option value="backOut">Back Out</option>
-                <option value="hold">Hold</option>
-              </select>
-            </label>
             <label class="toggle-line"><input id="timeline-loop" type="checkbox" checked /><span>Loop</span></label>
             <label class="toggle-line"><input id="timeline-snap" type="checkbox" checked /><span>Snap</span></label>
             <label class="toggle-line"><input id="timeline-auto-key" type="checkbox" /><span>Auto-Key</span></label>
@@ -654,14 +651,21 @@ export function studioTemplate(): string {
             <span data-icon="Search"></span>
             <input id="quick-help-search" type="search" placeholder="Search help, e.g. Set TRS, camera, render, ease" autocomplete="off" />
           </label>
+          <div class="quick-help-filters" role="toolbar" aria-label="Help categories">
+            <button class="quick-help-filter active" type="button" data-help-filter="all" aria-pressed="true">All</button>
+            <button class="quick-help-filter" type="button" data-help-filter="shortcuts" aria-pressed="false">Shortcuts</button>
+            <button class="quick-help-filter" type="button" data-help-filter="viewport" aria-pressed="false">Viewport</button>
+            <button class="quick-help-filter" type="button" data-help-filter="timeline" aria-pressed="false">Timeline</button>
+            <button class="quick-help-filter" type="button" data-help-filter="rendering" aria-pressed="false">Rendering</button>
+          </div>
           <div class="quick-help-body">
-            <section class="quick-help-section">
+            <section class="quick-help-section" data-help-category="shortcuts">
               <h3>Start Here</h3>
               <div class="quick-help-item"><strong>Commands</strong><span>Ctrl+K / F3</span><p>Search every major app action without finding the exact button.</p></div>
               <div class="quick-help-item"><strong>Help</strong><span>?</span><p>Open this cheatsheet.</p></div>
               <div class="quick-help-item"><strong>Blender Density</strong><span>Inspector header</span><p>Use the smaller professional layout when controls feel too large.</p></div>
             </section>
-            <section class="quick-help-section">
+            <section class="quick-help-section" data-help-category="viewport shortcuts">
               <h3>Viewport</h3>
               <div class="quick-help-item"><strong>Orbit</strong><span>Left drag / MMB</span><p>Rotate the camera around the current target.</p></div>
               <div class="quick-help-item"><strong>Pan</strong><span>Shift+MMB / right drag</span><p>Move the camera target without rotating.</p></div>
@@ -669,14 +673,14 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Frame Selected</strong><span>F / Numpad .</span><p>Recover the view around the selected object.</p></div>
               <div class="quick-help-item"><strong>Frame All</strong><span>Camera panel</span><p>Fit all visible scene objects.</p></div>
             </section>
-            <section class="quick-help-section">
+            <section class="quick-help-section" data-help-category="viewport timeline shortcuts">
               <h3>Transform</h3>
               <div class="quick-help-item"><strong>Move</strong><span>T</span><p>Use translate gizmo.</p></div>
               <div class="quick-help-item"><strong>Rotate</strong><span>R</span><p>Use rotation gizmo.</p></div>
               <div class="quick-help-item"><strong>Scale</strong><span>S</span><p>Use scale gizmo.</p></div>
               <div class="quick-help-item"><strong>Copy / Paste Pose</strong><span>Transform panel</span><p>Copy selected Position, Rotation, and Scale, then paste onto another time or object.</p></div>
             </section>
-            <section class="quick-help-section">
+            <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Keyframing</h3>
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
               <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
@@ -686,7 +690,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
             </section>
-            <section class="quick-help-section">
+            <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Playback</h3>
               <div class="quick-help-item"><strong>Play / Pause</strong><span>Space</span><p>Preview the active Work In/Out range.</p></div>
               <div class="quick-help-item"><strong>Shuttle</strong><span>J / K / L</span><p>Play backward, pause, or play forward.</p></div>
@@ -694,14 +698,14 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Work In / Work Out</strong><span>B / N or I / O</span><p>Set the preview and WebM export range.</p></div>
               <div class="quick-help-item"><strong>Preview Selected</strong><span>Shift+Space</span><p>Play only the selected keyframe span.</p></div>
             </section>
-            <section class="quick-help-section">
+            <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Retiming</h3>
-              <div class="quick-help-item"><strong>Interpolation</strong><span>F9 / Commands</span><p>Apply Easy Ease, Linear, Hold, Back In, or Back Out timing to selected keys.</p></div>
+              <div class="quick-help-item"><strong>Interpolation</strong><span>Dropdown / F9</span><p>Select a keyframe, then apply Linear, Easy Ease, Hold, Back In, or Back Out timing.</p></div>
               <div class="quick-help-item"><strong>Move To Playhead</strong><span>Shift+Enter</span><p>Move selected key timing so the block starts at the playhead.</p></div>
               <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
               <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>
             </section>
-            <section class="quick-help-section">
+            <section class="quick-help-section" data-help-category="rendering">
               <h3>Scene And Output</h3>
               <div class="quick-help-item"><strong>Save / Load JSON</strong><span>Document panel</span><p>Persist scene objects, camera, lights, materials, and timeline.</p></div>
               <div class="quick-help-item"><strong>Screenshot</strong><span>Bottom bar</span><p>Export the current viewport as PNG for the report.</p></div>

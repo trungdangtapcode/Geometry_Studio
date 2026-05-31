@@ -64,7 +64,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - WebM Preview Export: records the active Work In/Out range with progress shown in the status line and record button.
 - Telemetry: displays FPS, draw calls, triangles, lines, points, geometry count, texture count, and object count.
 - UI Density: choose Blender, Compact, or Comfortable sizing from the inspector header. Blender density is the default for a smaller professional editing layout.
-- In-App Quick Help: use the Help button, `?`, or command palette search to open a searchable controls and shortcuts overlay.
+- In-App Quick Help: use the Help button, `?`, category filters, or command palette search to open searchable controls, shortcuts, timeline, viewport, and rendering guides.
 - Command Palette Pins: star important commands so they stay above recents.
 - Command Palette Recents: recently used commands are promoted when the palette opens, making repeated editing workflows faster.
 
@@ -147,7 +147,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - Import a .glb, .gltf, .obj, or .stl model.
 - Add Position / Rotation / Scale keyframes in the bottom timeline using Set Key / Update Key, Set TRS for grouped object poses, an object group pose-key button, transform pose copy/paste with Auto-Key, or a row diamond key button, copy/paste a keyframe, move selected keys to the playhead, center selected timing on the playhead, rove interior selected keys between fixed endpoints, reverse selected key timing, snap selected keys to frames, distribute selected keyframes across Work In/Out, fit selected key timing to Work In/Out, scrub the playhead, and verify motion plays.
 - Confirm Position, Rotation, and Scale appear as X/Y/Z rows in the timeline for easier transform inspection.
-- Apply Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation from the timeline toolbar and confirm the curve preview updates.
+- Apply Linear, Ease In, Ease Out, Easy Ease, Back In, Back Out, and Hold interpolation from the timeline toolbar dropdown/direct buttons and confirm the curve preview updates.
 - Toggle Graph in the timeline and confirm a keyed Position / Rotation / Scale track draws value curves while scrubbing. Ctrl/Cmd-click graph keys to toggle selection, Shift-click to select a key range, drag a graph marquee to select multiple keys, drag one selected key to move selected keys together, Alt-drag one selected key to stretch selected-key timing, drag horizontally and vertically to retime or edit channel values, hold Shift while dragging to constrain direction, then Undo to restore it.
 - Use Alt+Mouse Wheel over the timeline to zoom around the cursor, then Shift+Mouse Wheel or horizontal trackpad wheel to pan across dense keys.
 - Drag the vertical handle between timeline labels and the dope sheet to resize the layer/property label column, reload, and confirm the width persists.

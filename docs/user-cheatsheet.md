@@ -21,6 +21,10 @@ editor.
 - Button: `Help` in the bottom viewport bar.
 - Shortcut: `?`.
 - Command palette: search `Quick Help`.
+- Filter chips: `Shortcuts`, `Viewport`, `Timeline`, and `Rendering` narrow the
+  help overlay when you only need one part of the editor.
+- Direct command searches: `Shortcut Help`, `Timeline Help`, `Viewport Help`, or
+  `Rendering Help`.
 
 ## Viewport And Camera
 
@@ -137,6 +141,7 @@ Scale recorded together.
 | Fit Layer | Fit selected object keys into its layer range |
 | Sequence | Sequence object layer ranges from the playhead |
 | Linear / Ease In / Ease Out / Ease / Back In / Back Out / Hold | Change selected key interpolation |
+| Interpolation dropdown | Full interpolation list; disabled until a keyframe is selected or the playhead is on an active-track key |
 | Graph | Show/hide value graph for the active track |
 | Marker | Add/update or delete timeline marker |
 | Delete | Delete selected keyframes |

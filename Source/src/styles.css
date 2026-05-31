@@ -603,6 +603,11 @@ svg {
   width: var(--timeline-select-width);
 }
 
+.timeline-toolbar .timeline-ease-select {
+  width: max(var(--timeline-select-width), 124px);
+  font-weight: 850;
+}
+
 .timeline-search {
   display: inline-flex;
   align-items: center;
@@ -2418,7 +2423,7 @@ svg {
   width: min(960px, calc(100vw - 44px));
   max-height: min(760px, calc(100vh - 44px));
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 10px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 8px;
@@ -2473,6 +2478,36 @@ svg {
   color: var(--ink);
   font-size: 14px;
   font-weight: 700;
+}
+
+.quick-help-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quick-help-filter {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--charcoal);
+  padding: 0 11px;
+  font-size: var(--ui-small-font);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.quick-help-filter.active,
+.quick-help-filter[aria-pressed="true"] {
+  border-color: rgba(20, 184, 166, 0.55);
+  background: rgba(209, 250, 244, 0.8);
+  color: #0f766e;
+}
+
+.quick-help-filter:focus-visible {
+  outline: 2px solid rgba(20, 184, 166, 0.45);
+  outline-offset: 2px;
 }
 
 .quick-help-body {

@@ -24,12 +24,14 @@ a hidden data field.
 - The dope-sheet key markers use distinct styling for Hold, Ease In, Ease Out,
   Easy Ease, Back In/Out, and Linear so timing intent is visible without opening
   the editor.
-- The interpolation dropdown remains available and stays synchronized with the
-  direct buttons.
+- The interpolation dropdown is in the timeline toolbar so the full mode list is
+  reachable beside the direct Linear/Ease/Hold buttons.
 - Back In and Back Out are available from the interpolation dropdown and Command
   Palette search.
 - Interpolation buttons and the dropdown are disabled when there is no selected
-  keyframe and no active-track keyframe under the playhead.
+  keyframe and no active-track keyframe under the playhead. In that state the UI
+  still displays `Linear` as the default mode, but clicking it cannot change a
+  key because no keyframe target exists yet.
 
 ## Keyboard Shortcuts
 

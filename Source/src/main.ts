@@ -979,6 +979,18 @@ function boot(root: HTMLDivElement): void {
         shortcut: "?",
         keywords: ["cheatsheet", "shortcut", "buttons", "tutorial", "controls"]
       }),
+      command("help.shortcuts", "Open Shortcut Help", "Help", () => quickHelp.open("", "shortcuts"), {
+        keywords: ["cheatsheet", "keyboard", "hotkeys", "buttons", "controls"]
+      }),
+      command("help.timeline", "Open Timeline Help", "Help", () => quickHelp.open("", "timeline"), {
+        keywords: ["keyframes", "after effects", "ae", "dope sheet", "animation"]
+      }),
+      command("help.viewport", "Open Viewport Help", "Help", () => quickHelp.open("", "viewport"), {
+        keywords: ["camera", "orbit", "pan", "zoom", "blender"]
+      }),
+      command("help.rendering", "Open Rendering Help", "Help", () => quickHelp.open("", "rendering"), {
+        keywords: ["shading", "toon", "ssao", "path trace", "screenshot", "export"]
+      }),
       command("timeline.play", "Play / Pause Timeline", "Playback", togglePlay, { shortcut: "Space", keywords: ["transport", "preview"] }),
       command("timeline.reverse", "Play Backward", "Playback", () => playTimeline(-1), { shortcut: "J", keywords: ["transport"] }),
       command("timeline.pause", "Pause Timeline", "Playback", () => pauseTimeline(), { shortcut: "K", keywords: ["transport"] }),
