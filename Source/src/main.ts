@@ -276,6 +276,8 @@ function boot(root: HTMLDivElement): void {
     onToggleTrackSolo: toggleTimelineTrackSolo,
     onRenameObject: renameTimelineObject,
     onFitSelectedRange: fitTimelineViewToSelectedKeyRange,
+    onPinVisibleRows: pinVisibleTimelineRows,
+    onClearPinnedRows: clearPinnedTimelineRows,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
@@ -1105,6 +1107,18 @@ function boot(root: HTMLDivElement): void {
       command("timeline.pin-active-row", "Pin Active Timeline Row", "View", toggleActiveTimelineRowPin, {
         shortcut: "Shift+P",
         keywords: ["pin", "pinned", "star", "row", "track", "timeline"]
+      }),
+      command("timeline.pin-visible-rows", "Pin Visible Timeline Rows", "View", pinVisibleTimelineRows, {
+        keywords: ["pin", "pinned", "star", "rows", "tracks", "visible", "timeline"]
+      }),
+      command("timeline.unpin-visible-rows", "Unpin Visible Timeline Rows", "View", unpinVisibleTimelineRows, {
+        keywords: ["unpin", "pinned", "star", "rows", "tracks", "visible", "timeline"]
+      }),
+      command("timeline.clear-pinned-rows", "Clear Pinned Timeline Rows", "View", clearPinnedTimelineRows, {
+        keywords: ["unpin", "clear", "pinned", "star", "rows", "tracks", "timeline"]
+      }),
+      command("timeline.show-pinned-rows", "Show Pinned Timeline Rows", "View", showPinnedTimelineRows, {
+        keywords: ["filter", "pinned", "star", "rows", "tracks", "timeline"]
       }),
       command("timeline.collapse-groups", "Collapse Timeline Groups", "View", collapseTimelineGroups, {
         keywords: ["layers", "disclosure", "twirl", "fold", "after effects"]
@@ -2770,6 +2784,39 @@ function boot(root: HTMLDivElement): void {
   function toggleActiveTimelineRowPin(): void {
     const result = timelinePanel.toggleActiveRowPin();
     showToast(result ? `${result.label} row ${result.pinned ? "pinned" : "unpinned"}` : "No active timeline row to pin.", result ? "good" : "bad");
+  }
+
+  function pinVisibleTimelineRows(): void {
+    const result = timelinePanel.pinVisibleRows();
+    if (result.visible === 0) {
+      showToast("No visible timeline rows to pin.", "bad");
+      return;
+    }
+    showToast(result.changed
+      ? `${result.changed} visible row${result.changed === 1 ? "" : "s"} pinned`
+      : "Visible timeline rows are already pinned.",
+      "good");
+  }
+
+  function unpinVisibleTimelineRows(): void {
+    const result = timelinePanel.unpinVisibleRows();
+    if (result.visible === 0) {
+      showToast("No visible timeline rows to unpin.", "bad");
+      return;
+    }
+    showToast(result.changed
+      ? `${result.changed} visible row${result.changed === 1 ? "" : "s"} unpinned`
+      : "No visible pinned rows to unpin.",
+      result.changed ? "good" : "bad");
+  }
+
+  function clearPinnedTimelineRows(): void {
+    const count = timelinePanel.clearPinnedRows();
+    showToast(count ? `${count} pinned row${count === 1 ? "" : "s"} cleared` : "No pinned timeline rows to clear.", count ? "good" : "bad");
+  }
+
+  function showPinnedTimelineRows(): void {
+    showToast(`Timeline rows: ${timelinePanel.showPinnedRows()}`, "good");
   }
 
   function collapseTimelineGroups(): void {

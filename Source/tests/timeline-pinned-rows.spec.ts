@@ -44,3 +44,35 @@ test("pins the active timeline row from keyboard and command palette", async ({ 
   await page.keyboard.press("Enter");
   await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).not.toHaveClass(/pinned-track/);
 });
+
+test("bulk pins visible timeline rows and clears pinned rows", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  await page.locator("#timeline-row-filter").selectOption("all");
+  await page.locator("#timeline-row-search").fill("rotation");
+  await page.locator("#timeline-pin-visible-rows").click();
+  await expect(page.locator('#timeline-row-filter option[value="pinned"]')).toHaveText(/Pinned Rows \([1-9]\d*\)/);
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("show pinned timeline rows");
+  await page.keyboard.press("Enter");
+  await page.locator("#timeline-row-search").fill("");
+
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toHaveClass(/pinned-track/);
+  await expect(page.locator('.timeline-track-label[data-track-kind="scale"]').first()).toBeHidden();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("clear pinned timeline rows");
+  await page.keyboard.press("Enter");
+
+  await expect(page.locator('#timeline-row-filter option[value="pinned"]')).toHaveText("Pinned Rows");
+  await page.locator("#timeline-row-filter").selectOption("all");
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).not.toHaveClass(/pinned-track/);
+});

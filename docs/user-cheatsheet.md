@@ -109,6 +109,8 @@ Scale recorded together.
 | Track dropdown | Chooses which property the main `Set Key` button records |
 | Row filter | `Focus`, `Keyed`, `Pinned`, or `All` timeline rows |
 | Search rows | Filter dense object/camera/light/material rows |
+| Pin visible rows | Pins every row currently visible after search/filtering |
+| Clear pinned rows | Removes every pinned-row preference |
 
 ## Timeline Buttons
 
@@ -234,6 +236,16 @@ Scale recorded together.
 5. Click `Set Key` or the diamond on that property row.
 
 If a key already exists at that time, `Set Key` updates it.
+
+### Keep Important Tracks Visible
+
+1. Use row search or `Alt+P` / `Alt+R` / `Alt+S` to reveal the rows you care
+   about.
+2. Click the toolbar pin button, or search `Pin Visible Timeline Rows` in the
+   command palette.
+3. Switch the row filter to `Pinned Rows`, or search `Show Pinned Timeline Rows`.
+4. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
+   pinned set is no longer useful.
 
 ### Animate Camera
 

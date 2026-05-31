@@ -109,6 +109,8 @@ export function studioTemplate(): string {
                 <span data-icon="Search"></span>
                 <input id="timeline-row-search" type="search" placeholder="Search rows" autocomplete="off" />
               </label>
+              <button class="mini-button icon-mini" id="timeline-pin-visible-rows" type="button" title="Pin every currently visible timeline row" aria-label="Pin visible timeline rows"><span data-icon="Pin"></span></button>
+              <button class="mini-button icon-mini" id="timeline-clear-pinned-rows" type="button" title="Clear all pinned timeline rows" aria-label="Clear pinned timeline rows"><span data-icon="PinOff"></span></button>
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
               <button class="mini-button" id="timeline-set-transform" type="button"><span data-icon="Box"></span><span>Set TRS</span></button>
               <button class="mini-button" id="timeline-set-visible" type="button" title="Set keys on every currently visible timeline row"><span data-icon="ListChecks"></span><span>Set Visible</span></button>
@@ -675,7 +677,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
               <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
-              <div class="quick-help-item"><strong>Pin Row</strong><span>Row star / Shift+P</span><p>Keep important tracks visible and use the Pinned Rows filter in dense timelines.</p></div>
+              <div class="quick-help-item"><strong>Pin Rows</strong><span>Row star / Shift+P / Toolbar pin</span><p>Keep important tracks visible, bulk-pin visible rows, and use the Pinned Rows filter in dense timelines.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
             </section>

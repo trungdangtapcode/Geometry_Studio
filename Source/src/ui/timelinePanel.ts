@@ -105,6 +105,8 @@ export interface KeyframeTimelineCallbacks {
   onToggleTrackSolo(kind: TimelineTrackKind, targetId?: string): void;
   onRenameObject(targetId: string, name: string): void;
   onFitSelectedRange(): void;
+  onPinVisibleRows(): void;
+  onClearPinnedRows(): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
@@ -229,6 +231,8 @@ export class KeyframeTimelinePanel {
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
   private readonly rowSearchInput = query<HTMLInputElement>("#timeline-row-search");
+  private readonly pinVisibleRowsButton = query<HTMLButtonElement>("#timeline-pin-visible-rows");
+  private readonly clearPinnedRowsButton = query<HTMLButtonElement>("#timeline-clear-pinned-rows");
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
@@ -436,6 +440,7 @@ export class KeyframeTimelinePanel {
     this.lastSelectedId = selectedId;
     this.lastPlaying = playing;
     this.lastEntryNames = new Map(entryList.map((entry) => [entry.id, entry.name]));
+    this.prunePinnedRows(timelineDocument, entryList);
     this.pruneSelectedKeyframes(timelineDocument);
     this.root.classList.toggle("playing", playing);
     this.root.classList.toggle("auto-key-active", timelineDocument.autoKey);
@@ -450,7 +455,7 @@ export class KeyframeTimelinePanel {
     this.snapInput.checked = timelineDocument.snapEnabled;
     this.autoKeyInput.checked = timelineDocument.autoKey;
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
-    this.rowFilterSelect.value = this.rowFilter;
+    this.syncRowFilterSelect();
     this.rowSearchInput.value = this.rowSearchText;
     this.syncInterpolationControls(this.currentInterpolation(timelineDocument, selectedId));
     this.syncAddKeyframeButton(timelineDocument, selectedId);
@@ -603,9 +608,46 @@ export class KeyframeTimelinePanel {
     const pinned = !this.pinnedRows.has(key);
     if (pinned) this.pinnedRows.add(key);
     else this.pinnedRows.delete(key);
-    storePinnedTimelineRows(this.pinnedRows);
-    if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+    this.persistPinnedRows();
     return { pinned, label: trackLabel(kind) };
+  }
+
+  pinVisibleRows(): { changed: number; visible: number; total: number } {
+    const rows = this.visibleRowTargets();
+    let changed = 0;
+    rows.forEach((row) => {
+      const key = timelineRowKey(row.targetId, row.kind);
+      if (this.pinnedRows.has(key)) return;
+      this.pinnedRows.add(key);
+      changed += 1;
+    });
+    if (changed > 0) this.persistPinnedRows();
+    return { changed, visible: rows.length, total: this.pinnedRows.size };
+  }
+
+  unpinVisibleRows(): { changed: number; visible: number; total: number } {
+    const rows = this.visibleRowTargets();
+    let changed = 0;
+    rows.forEach((row) => {
+      const key = timelineRowKey(row.targetId, row.kind);
+      if (!this.pinnedRows.delete(key)) return;
+      changed += 1;
+    });
+    if (changed > 0) this.persistPinnedRows();
+    return { changed, visible: rows.length, total: this.pinnedRows.size };
+  }
+
+  clearPinnedRows(): number {
+    const count = this.pinnedRows.size;
+    if (count === 0) return 0;
+    this.pinnedRows.clear();
+    this.persistPinnedRows();
+    return count;
+  }
+
+  showPinnedRows(): string {
+    this.applyRowFilter("pinned");
+    return rowFilterLabel(this.rowFilter);
   }
 
   collapseAllTimelineGroups(): number {
@@ -626,7 +668,7 @@ export class KeyframeTimelinePanel {
     this.selectedAxis = null;
     this.rowFilter = filter;
     this.rowSearchText = normalizeRowSearch(search);
-    this.rowFilterSelect.value = this.rowFilter;
+    this.syncRowFilterSelect();
     this.rowSearchInput.value = this.rowSearchText;
     storeTimelineRowFilter(this.rowFilter);
     storeTimelineRowSearch(this.rowSearchText);
@@ -1022,6 +1064,8 @@ export class KeyframeTimelinePanel {
     this.rowFilterSelect.addEventListener("change", () => {
       this.applyRowFilter(parseTimelineRowFilter(this.rowFilterSelect.value));
     });
+    this.pinVisibleRowsButton.addEventListener("click", () => this.callbacks.onPinVisibleRows());
+    this.clearPinnedRowsButton.addEventListener("click", () => this.callbacks.onClearPinnedRows());
     this.rowSearchInput.addEventListener("input", () => {
       this.applyRowSearch(this.rowSearchInput.value);
     });
@@ -1274,7 +1318,7 @@ export class KeyframeTimelinePanel {
 
   private applyRowFilter(filter: TimelineRowFilter): void {
     this.rowFilter = filter;
-    this.rowFilterSelect.value = filter;
+    this.syncRowFilterSelect();
     storeTimelineRowFilter(filter);
     if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
   }
@@ -1357,8 +1401,41 @@ export class KeyframeTimelinePanel {
     const key = timelineRowKey(targetId, kind);
     if (this.pinnedRows.has(key)) this.pinnedRows.delete(key);
     else this.pinnedRows.add(key);
+    this.persistPinnedRows();
+  }
+
+  private persistPinnedRows(): void {
     storePinnedTimelineRows(this.pinnedRows);
+    this.syncRowFilterSelect();
     if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+  }
+
+  private syncRowFilterSelect(): void {
+    const pinnedOption = this.rowFilterSelect.querySelector<HTMLOptionElement>('option[value="pinned"]');
+    if (pinnedOption) {
+      pinnedOption.textContent = this.pinnedRows.size > 0 ? `Pinned Rows (${this.pinnedRows.size})` : "Pinned Rows";
+    }
+    this.rowFilterSelect.value = this.rowFilter;
+  }
+
+  private prunePinnedRows(timelineDocument: SceneTimelineDocument, entries: SceneEntry[]): void {
+    if (this.pinnedRows.size === 0) return;
+    const validKeys = new Set<string>();
+    entries.forEach((entry) => {
+      OBJECT_TRACKS.forEach((kind) => validKeys.add(timelineRowKey(entry.id, kind)));
+    });
+    CAMERA_TRACKS.forEach((kind) => validKeys.add(timelineRowKey(CAMERA_TARGET_ID, kind)));
+    LIGHT_TRACKS.forEach((kind) => validKeys.add(timelineRowKey(LIGHT_TARGET_ID, kind)));
+    timelineDocument.objects.forEach((object) => {
+      object.tracks.forEach((track) => validKeys.add(timelineRowKey(object.objectId, track.kind)));
+    });
+    let changed = false;
+    this.pinnedRows.forEach((key) => {
+      if (validKeys.has(key)) return;
+      this.pinnedRows.delete(key);
+      changed = true;
+    });
+    if (changed) storePinnedTimelineRows(this.pinnedRows);
   }
 
   private isPinnedRow(targetId: string, kind: TimelineTrackKind): boolean {

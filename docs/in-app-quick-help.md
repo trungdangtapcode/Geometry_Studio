@@ -19,7 +19,7 @@ The overlay intentionally focuses on high-frequency workflows:
 - command palette and density controls;
 - viewport navigation and camera recovery;
 - transform tools;
-- `Set Key`, `Set TRS`, Auto-Key, row reveal, and Graph;
+- `Set Key`, `Set TRS`, Auto-Key, row reveal, row pinning, and Graph;
 - playback, work area, and selected-range preview;
 - interpolation and retiming commands;
 - save/load, screenshot, WebM recording, Rendering Lab, and import.
