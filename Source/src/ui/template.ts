@@ -135,6 +135,8 @@ export function studioTemplate(): string {
               <button class="mini-button interpolation-button" id="timeline-ease-in" type="button" data-interpolation="easeIn"><span data-icon="CornerDownRight"></span><span>Ease In</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-out" type="button" data-interpolation="easeOut"><span data-icon="CornerRightDown"></span><span>Ease Out</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-smooth" type="button" data-interpolation="smooth"><span data-icon="Spline"></span><span>Ease</span></button>
+              <button class="mini-button interpolation-button" id="timeline-ease-back-in" type="button" data-interpolation="backIn"><span data-icon="Undo2"></span><span>Back In</span></button>
+              <button class="mini-button interpolation-button" id="timeline-ease-back-out" type="button" data-interpolation="backOut"><span data-icon="Redo2"></span><span>Back Out</span></button>
               <button class="mini-button interpolation-button" id="timeline-ease-hold" type="button" data-interpolation="hold"><span data-icon="StepForward"></span><span>Hold</span></button>
               <button class="mini-button" id="timeline-graph-toggle" type="button" aria-pressed="false"><span data-icon="Activity"></span><span>Graph</span></button>
               <button class="mini-button" id="timeline-add-marker" type="button"><span data-icon="Flag"></span><span>Marker</span></button>
@@ -700,7 +702,7 @@ export function studioTemplate(): string {
             </section>
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Retiming</h3>
-              <div class="quick-help-item"><strong>Interpolation</strong><span>Dropdown / F9</span><p>Select a keyframe, then apply Linear, Easy Ease, Hold, Back In, or Back Out timing.</p></div>
+              <div class="quick-help-item"><strong>Interpolation</strong><span>Dropdown / F9</span><p>Select a keyframe, then apply Linear, Easy Ease, Hold, Back In, or Back Out timing from the toolbar.</p></div>
               <div class="quick-help-item"><strong>Move To Playhead</strong><span>Shift+Enter</span><p>Move selected key timing so the block starts at the playhead.</p></div>
               <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
               <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>

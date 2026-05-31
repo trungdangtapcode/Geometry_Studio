@@ -141,7 +141,7 @@ Scale recorded together.
 | Fit Layer | Fit selected object keys into its layer range |
 | Sequence | Sequence object layer ranges from the playhead |
 | Linear / Ease In / Ease Out / Ease / Back In / Back Out / Hold | Change selected key interpolation |
-| Interpolation dropdown | Full interpolation list; disabled until a keyframe is selected or the playhead is on an active-track key |
+| Interpolation dropdown | Full interpolation list; choose a keyframe first before applying a mode |
 | Graph | Show/hide value graph for the active track |
 | Marker | Add/update or delete timeline marker |
 | Delete | Delete selected keyframes |

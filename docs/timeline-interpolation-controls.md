@@ -26,12 +26,12 @@ a hidden data field.
   the editor.
 - The interpolation dropdown is in the timeline toolbar so the full mode list is
   reachable beside the direct Linear/Ease/Hold buttons.
-- Back In and Back Out are available from the interpolation dropdown and Command
-  Palette search.
-- Interpolation buttons and the dropdown are disabled when there is no selected
-  keyframe and no active-track keyframe under the playhead. In that state the UI
-  still displays `Linear` as the default mode, but clicking it cannot change a
-  key because no keyframe target exists yet.
+- Back In and Back Out are available as direct toolbar buttons, from the
+  interpolation dropdown, and through Command Palette search.
+- Interpolation controls stay visible even when there is no selected keyframe
+  and no active-track keyframe under the playhead. Choosing a mode in that state
+  shows a clear "select a keyframe" toast and restores the current mode instead
+  of hiding the available timing options.
 
 ## Keyboard Shortcuts
 
@@ -69,6 +69,8 @@ The browser suite verifies that:
 
 - Linear, Ease In, Ease Out, Easy Ease, Back In, Back Out, and Hold controls are
   visible through toolbar/dropdown/command coverage.
+- Interpolation controls are visible before a keyframe target exists and show a
+  clear toast instead of hiding the available modes.
 - The easing preview is visible.
 - Applying Easy Ease through the toolbar updates the active button and preview.
 - Applying Ease In and Ease Out changes runtime interpolation at the segment

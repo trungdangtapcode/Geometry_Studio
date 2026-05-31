@@ -2686,16 +2686,16 @@ export class KeyframeTimelinePanel {
 
   private syncInterpolationAvailability(targetCount: number): void {
     const disabled = targetCount === 0;
-    this.interpolationSelect.disabled = disabled;
     this.interpolationSelect.title = disabled
-      ? "Select keyframes or park the playhead on an active-track keyframe"
+      ? "Choose a timing mode to see the options. Select a keyframe before the mode can be applied."
       : "Keyframe interpolation";
+    this.interpolationSelect.dataset.needsKeyframe = String(disabled);
     this.interpolationButtons.forEach((button) => {
       button.dataset.enabledTitle ??= button.title;
-      button.disabled = disabled;
       button.title = disabled
-        ? "Select keyframes or park the playhead on an active-track keyframe"
+        ? "Select a keyframe or park the playhead on an active-track keyframe before applying interpolation"
         : button.dataset.enabledTitle ?? "";
+      button.dataset.needsKeyframe = String(disabled);
     });
   }
 

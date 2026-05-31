@@ -4245,6 +4245,7 @@ function boot(root: HTMLDivElement): void {
     const sources = resolveInterpolationTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
       showToast("Select a keyframe, or park the playhead on one in the active track.", "bad");
+      updateAllUI();
       return;
     }
     if (!assertTimelineSourcesUnlocked(sources, "changing interpolation")) return;

@@ -34,6 +34,23 @@ async function exportedScene(page: Page): Promise<{
   return JSON.parse((await sceneText.jsonValue()) as string);
 }
 
+test("shows interpolation modes before a keyframe target exists", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("/");
+
+  await expect(page.locator("#timeline-interpolation")).toBeEnabled();
+  await expect(page.locator("#timeline-ease-back-in")).toBeVisible();
+  await expect(page.locator("#timeline-ease-back-out")).toBeVisible();
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0.37";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-interpolation").selectOption("easeIn");
+  await expect(page.locator(".toast", { hasText: "Select a keyframe" })).toBeVisible();
+  await expect(page.locator("#timeline-interpolation")).toHaveValue("linear");
+});
+
 test("applies back out interpolation with visible overshoot playback", async ({ page }) => {
   test.setTimeout(120_000);
   await installSceneDownloadCapture(page);
@@ -52,9 +69,15 @@ test("applies back out interpolation with visible overshoot playback", async ({ 
   await page.locator("#timeline-add-keyframe").click();
 
   await page.keyboard.press("Control+A");
-  await runCommand(page, "apply back out interpolation");
+  await page.locator("#timeline-ease-back-out").click();
   await expect(page.locator("#timeline-interpolation")).toHaveValue("backOut");
   await expect(page.locator("#timeline-ease-label")).toContainText("Back Out");
+
+  await runCommand(page, "apply back in interpolation");
+  await expect(page.locator("#timeline-interpolation")).toHaveValue("backIn");
+
+  await page.locator("#timeline-ease-back-out").click();
+  await expect(page.locator("#timeline-interpolation")).toHaveValue("backOut");
 
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
