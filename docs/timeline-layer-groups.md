@@ -12,6 +12,8 @@ their editable property tracks.
 - Click an object, camera, or light group row to select that timeline target.
 - Double-click an object group row, or focus it and press `F2`, to rename the
   object directly from the timeline. `Enter` commits and `Escape` cancels.
+- Click the small box/diamond control on an object group row to record a full
+  Position, Rotation, and Scale pose key at the playhead for that object.
 - Click the disclosure control on a group row to collapse or expand its tracks.
 - `Alt`-click a disclosure control to collapse all groups or expand all groups,
   matching the clicked group's next state.
@@ -40,6 +42,12 @@ Timeline group rename uses the same object rename callback as the inspector, so
 the object root, outliner, inspector, timeline labels, scene JSON, and undo
 history all stay on one naming path.
 
+Timeline group pose keying uses the same transform-key command as the toolbar
+`Set TRS` action. The panel passes the object id to the editor shell, and
+`main.ts` selects that object, captures its current Position, Rotation, and
+Scale values, writes or updates the three transform tracks at the playhead, and
+selects the created keyframes for immediate retiming.
+
 The implementation does not replace `animation-timeline-js`; it uses the
 existing row model and adds a lightweight grouping layer around it.
 
@@ -49,6 +57,7 @@ Automated browser coverage lives in
 `Source/tests/timeline-group-collapse.spec.ts`. The test verifies that an object
 group can be collapsed, its property rows disappear, row search reveals matching
 properties, clearing search restores the collapse state, row clicks select the
-target without collapsing it, object groups can be renamed in place, `Alt`-click
-collapses all groups, the Command Palette expands all groups, and the state
-persists after reload.
+target without collapsing it, object groups can be renamed in place, object
+group pose keying creates three selected transform keys, `Alt`-click collapses
+all groups, the Command Palette expands all groups, and the state persists after
+reload.

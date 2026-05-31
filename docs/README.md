@@ -143,7 +143,8 @@ PDF.
 - [Timeline Row Selection](timeline-row-selection.md) documents dope-sheet row
   label selection and active/disabled row states.
 - [Timeline Layer Groups](timeline-layer-groups.md) documents AE-style
-  collapsible object, camera, and light disclosure rows.
+  collapsible object, camera, and light disclosure rows plus object pose-key
+  buttons.
 - [Timeline Row Keying](timeline-row-keying.md) documents the AE-style diamond
   key buttons on each property row.
 - [Timeline Visible Row Keying](timeline-visible-row-keying.md) documents the

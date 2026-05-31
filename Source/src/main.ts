@@ -216,6 +216,7 @@ function boot(root: HTMLDivElement): void {
     onTimeChanged: setTimelineTime,
     onAddKeyframe: addTimelineKeyframe,
     onSetTransformKeyframes: setTransformTimelineKeyframes,
+    onSetObjectTransformKeyframes: setTransformTimelineKeyframes,
     onSetVisibleKeyframes: setVisibleTimelineKeyframes,
     onTrimLayerIn: trimSelectedLayerInPoint,
     onTrimLayerOut: trimSelectedLayerOutPoint,
@@ -2763,11 +2764,16 @@ function boot(root: HTMLDivElement): void {
     return keyframe;
   }
 
-  function setTransformTimelineKeyframes(): void {
-    const entry = selectedEntry();
+  function setTransformTimelineKeyframes(targetId = selectedId): void {
+    const entry = entries.get(targetId) ?? null;
     if (!entry) {
       showToast("Select an object before setting transform keyframes.", "bad");
       return;
+    }
+    if (selectedId !== entry.id) {
+      selectedId = entry.id;
+      transformControls.attach(entry.root);
+      syncOutline();
     }
 
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
@@ -2782,9 +2788,10 @@ function boot(root: HTMLDivElement): void {
     };
 
     recordHistory();
+    const keyframeIds: string[] = [];
     (["position", "rotation", "scale"] as const).forEach((kind) => {
       const track = ensureTimelineTrack(objectTimeline, kind);
-      upsertTimelineKeyframe(track, time, values[kind]);
+      keyframeIds.push(upsertTimelineKeyframe(track, time, values[kind]).id);
     });
     entry.animation = "none";
     sceneTimeline.currentTime = time;
@@ -2792,7 +2799,8 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyObjectPropertyTimeline();
     updateAllUI();
-    showToast(`Position, rotation, and scale keys set at ${formatNumber(time)}s`, "good");
+    timelinePanel.selectKeyframes(keyframeIds);
+    showToast(`${entry.name} pose keys set at ${formatNumber(time)}s`, "good");
   }
 
   function setVisibleTimelineKeyframes(rows: TimelineVisibleRowTarget[]): void {

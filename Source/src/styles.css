@@ -962,6 +962,10 @@ svg {
   text-align: left;
 }
 
+.timeline-track-group.pose-keyable {
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size);
+}
+
 .timeline-track-group:hover,
 .timeline-track-group.active {
   background: rgba(32, 191, 169, 0.12);
@@ -1108,7 +1112,8 @@ svg {
 }
 
 .timeline-row-switch,
-.timeline-row-key {
+.timeline-row-key,
+.timeline-group-pose-key {
   width: calc(var(--icon-mini-size) - 4px);
   height: calc(var(--timeline-track-row-height) - 4px);
   display: grid;
@@ -1120,12 +1125,14 @@ svg {
   padding: 0;
 }
 
-.timeline-row-key {
+.timeline-row-key,
+.timeline-group-pose-key {
   justify-self: end;
 }
 
 .timeline-row-switch:disabled,
-.timeline-row-key:disabled {
+.timeline-row-key:disabled,
+.timeline-group-pose-key:disabled {
   opacity: 0.42;
   cursor: not-allowed;
 }
@@ -1145,10 +1152,16 @@ svg {
 .timeline-row-key:hover,
 .timeline-row-key:focus-visible,
 .timeline-row-switch:hover,
-.timeline-row-switch:focus-visible {
+.timeline-row-switch:focus-visible,
+.timeline-group-pose-key:hover,
+.timeline-group-pose-key:focus-visible {
   border-color: var(--teal);
   color: var(--teal);
   outline: 0;
+}
+
+.timeline-group-pose-key {
+  color: rgba(26, 35, 42, 0.62);
 }
 
 .timeline-track-label.has-keyframes .timeline-row-key {

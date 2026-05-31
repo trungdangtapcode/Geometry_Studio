@@ -55,6 +55,7 @@ export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
   onAddKeyframe(kind: TimelineTrackKind): void;
   onSetTransformKeyframes(): void;
+  onSetObjectTransformKeyframes(targetId: string): void;
   onSetVisibleKeyframes(rows: TimelineVisibleRowTarget[]): void;
   onTrimLayerIn(): void;
   onTrimLayerOut(): void;
@@ -877,6 +878,7 @@ export class KeyframeTimelinePanel {
     this.soloTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackSolo(this.selectedTrackKind()));
     this.labels.addEventListener("click", (event) => {
       const groupToggle = (event.target as HTMLElement).closest<HTMLElement>(".timeline-group-toggle");
+      const groupPoseKey = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-pose-key");
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
         const targetId = group.dataset.groupTargetId;
@@ -884,6 +886,8 @@ export class KeyframeTimelinePanel {
           if (groupToggle) {
             if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
             else this.toggleTimelineGroup(targetId);
+          } else if (groupPoseKey) {
+            this.callbacks.onSetObjectTransformKeyframes(targetId);
           } else if (event.detail >= 2) {
             this.startTimelineGroupRename(group);
           } else {
@@ -1770,7 +1774,8 @@ export class KeyframeTimelinePanel {
           active: entry.id === selectedId,
           collapsed,
           rowCount: visibleRows.length,
-          keyframeCount: countTrackKeyframes(objectTimeline?.tracks)
+          keyframeCount: countTrackKeyframes(objectTimeline?.tracks),
+          poseKey: true
         });
         if (collapsed) return [groupLabel];
         return [
@@ -1876,13 +1881,14 @@ export class KeyframeTimelinePanel {
     collapsed: boolean;
     rowCount: number;
     keyframeCount: number;
+    poseKey?: boolean;
     extraClass?: string;
   }): string {
     const rowText = options.rowCount === 1 ? "1 row" : `${options.rowCount} rows`;
     const keyText = options.keyframeCount === 1 ? "1 key" : `${options.keyframeCount} keys`;
     const stateText = options.collapsed ? "Expand" : "Collapse";
     return `
-      <div class="${["timeline-track-group", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
+      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
         <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
           <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
         </button>
@@ -1891,6 +1897,9 @@ export class KeyframeTimelinePanel {
           <strong>${escapeHtml(options.targetName)}</strong>
           <small>${options.targetType} | ${rowText} | ${keyText}</small>
         </span>
+        ${options.poseKey
+          ? `<button class="timeline-group-pose-key" type="button" aria-label="Set Position, Rotation, and Scale keys for ${escapeHtml(options.targetName)}" title="Set Position, Rotation, and Scale keys at the playhead"><span data-icon="Box"></span></button>`
+          : ""}
       </div>
     `;
   }

@@ -16,6 +16,9 @@ not need to switch to a global track dropdown before adding a key.
   key at that time.
 - The separate `Set TRS` command records Position, Rotation, and Scale together
   for the selected object when the user wants to key a complete pose.
+- Object group rows expose the same pose-key command, so a user can key a
+  complete object pose directly from the layer stack without first selecting a
+  transform child row.
 - Object rows select the matching scene object before writing the key.
 - Camera and light rows write to their global timeline tracks.
 - A row diamond is filled only when the current playhead time already has a key
@@ -33,12 +36,19 @@ runtime playback, and refreshes UI state.
 This keeps the interaction AE-like without creating a second keyframe writing
 path.
 
+Group-row pose keying follows the same rule. The group button calls
+`onSetObjectTransformKeyframes(targetId)`, and the editor shell reuses the
+toolbar transform-key command to capture Position, Rotation, and Scale in one
+undoable operation.
+
 ## Testing
 
 The Playwright smoke workflow verifies row-level keying for:
 
 - Object Rotation rows.
 - Camera Position rows.
+- Object group pose-key buttons creating selected Position, Rotation, and Scale
+  keys.
 
 The release browser smoke also verifies no console errors during row-key
 creation.
