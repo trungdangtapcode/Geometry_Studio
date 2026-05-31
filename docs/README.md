@@ -64,6 +64,8 @@ PDF.
 - [Command Palette](command-palette.md) documents the searchable editor command
   surface for reaching timeline, playback, scene, and tool commands without
   expanding the permanent toolbar.
+- [Command Palette Recents](command-palette-recents.md) documents persisted
+  most-recent command promotion for faster repeated workflows.
 - [Light Timeline Tracks](light-timeline-tracks.md) documents the implemented
   light property tracks, playback rules, and current schema status.
 - [Object Property Timeline Tracks](object-property-timeline-tracks.md)
