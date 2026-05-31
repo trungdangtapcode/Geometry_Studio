@@ -146,7 +146,7 @@ type TimelineUiRow = TimelineRow & {
   group?: boolean;
 };
 
-type TimelineRowFilter = "focus" | "keyed" | "pinned" | "all";
+export type TimelineRowFilter = "focus" | "keyed" | "pinned" | "all";
 type TimelineLayerDragMode = "move" | "trimStart" | "trimEnd";
 type TimelineRowDescriptor = {
   kind: TimelineTrackKind;
@@ -600,6 +600,11 @@ export class KeyframeTimelinePanel {
     return rowFilterLabel(next);
   }
 
+  setRowFilter(filter: TimelineRowFilter): string {
+    this.applyRowFilter(filter);
+    return rowFilterLabel(this.rowFilter);
+  }
+
   toggleActiveRowPin(): { pinned: boolean; label: string } | null {
     const targetId = this.activeRowTargetId();
     const kind = this.selectedTrackKind();
@@ -643,11 +648,6 @@ export class KeyframeTimelinePanel {
     this.pinnedRows.clear();
     this.persistPinnedRows();
     return count;
-  }
-
-  showPinnedRows(): string {
-    this.applyRowFilter("pinned");
-    return rowFilterLabel(this.rowFilter);
   }
 
   collapseAllTimelineGroups(): number {

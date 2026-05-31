@@ -17,6 +17,9 @@ turning the dope sheet into a long, noisy list.
 - `U` cycles Focus -> Keyed -> Pinned -> All -> Focus when focus is outside
   form fields, matching the reveal-animated-properties habit from
   motion-graphics tools.
+- The command palette exposes direct jumps for `Show Focus Timeline Rows`,
+  `Show Keyed Timeline Rows`, `Show Pinned Timeline Rows`, and `Show All
+  Timeline Rows`. These avoid repeated cycling when the timeline is dense.
 
 ## Implementation
 
@@ -25,6 +28,6 @@ local storage and intentionally excluded from scene JSON. The filter is applied
 to both the left row labels and the `animation-timeline-js` row model so label
 and canvas rows stay aligned.
 
-The keyboard cycle uses the same `applyRowFilter` path as the select control, so
-the persisted preference, dropdown state, row labels, canvas rows, and graph
-preview refresh together.
+The keyboard cycle, command palette direct jumps, and select control all use the
+same `setRowFilter` / `applyRowFilter` path, so the persisted preference,
+dropdown state, row labels, canvas rows, and graph preview refresh together.

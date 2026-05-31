@@ -76,3 +76,30 @@ test("bulk pins visible timeline rows and clears pinned rows", async ({ page }) 
   await page.locator("#timeline-row-filter").selectOption("all");
   await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).not.toHaveClass(/pinned-track/);
 });
+
+test("jumps directly to timeline row filters from the command palette", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  const runCommand = async (query: string) => {
+    await page.keyboard.press("Control+K");
+    await page.locator("#command-palette-search").fill(query);
+    await page.keyboard.press("Enter");
+  };
+
+  await runCommand("show all timeline rows");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("all");
+
+  await runCommand("show focus timeline rows");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
+
+  await runCommand("show keyed timeline rows");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("keyed");
+
+  await runCommand("show pinned timeline rows");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+});

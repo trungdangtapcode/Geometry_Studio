@@ -107,7 +107,7 @@ Scale recorded together.
 | Loop | Repeat Work In/Out during playback |
 | Auto-Key | Automatically records changed values when time is not at the first pose |
 | Track dropdown | Chooses which property the main `Set Key` button records |
-| Row filter | `Focus`, `Keyed`, `Pinned`, or `All` timeline rows |
+| Row filter | `Focus`, `Keyed`, `Pinned`, or `All` timeline rows; command palette can jump directly to any mode |
 | Search rows | Filter dense object/camera/light/material rows |
 | Pin visible rows | Pins every row currently visible after search/filtering |
 | Clear pinned rows | Removes every pinned-row preference |

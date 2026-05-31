@@ -677,7 +677,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
               <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
-              <div class="quick-help-item"><strong>Pin Rows</strong><span>Row star / Shift+P / Toolbar pin</span><p>Keep important tracks visible, bulk-pin visible rows, and use the Pinned Rows filter in dense timelines.</p></div>
+              <div class="quick-help-item"><strong>Pin Rows</strong><span>Row star / Shift+P / Toolbar pin</span><p>Keep important tracks visible, bulk-pin visible rows, and jump directly to Focus, Keyed, Pinned, or All row filters from Commands.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
             </section>

@@ -119,7 +119,7 @@ import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetBy
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
-import { KeyframeTimelinePanel, type TimelineDopeSheetTool, type TimelineLayerKeyframeEditMode, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
+import { KeyframeTimelinePanel, type TimelineDopeSheetTool, type TimelineLayerKeyframeEditMode, type TimelineRowFilter, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
 import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
 import { bindUiDensityControl } from "./ui/density";
 import { QuickHelpOverlay } from "./ui/helpOverlay";
@@ -1104,6 +1104,18 @@ function boot(root: HTMLDivElement): void {
         keywords: ["auto scroll", "current time indicator", "timeline view"]
       }),
       command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
+      command("timeline.rows-focus", "Show Focus Timeline Rows", "View", () => setTimelineRowFilter("focus"), {
+        keywords: ["filter", "focused", "selected", "rows", "tracks", "timeline"]
+      }),
+      command("timeline.rows-keyed", "Show Keyed Timeline Rows", "View", () => setTimelineRowFilter("keyed"), {
+        keywords: ["filter", "keyframed", "animated", "rows", "tracks", "timeline"]
+      }),
+      command("timeline.rows-pinned", "Show Pinned Timeline Rows", "View", () => setTimelineRowFilter("pinned"), {
+        keywords: ["filter", "pinned", "star", "rows", "tracks", "timeline"]
+      }),
+      command("timeline.rows-all", "Show All Timeline Rows", "View", () => setTimelineRowFilter("all"), {
+        keywords: ["filter", "all", "rows", "tracks", "timeline"]
+      }),
       command("timeline.pin-active-row", "Pin Active Timeline Row", "View", toggleActiveTimelineRowPin, {
         shortcut: "Shift+P",
         keywords: ["pin", "pinned", "star", "row", "track", "timeline"]
@@ -1116,9 +1128,6 @@ function boot(root: HTMLDivElement): void {
       }),
       command("timeline.clear-pinned-rows", "Clear Pinned Timeline Rows", "View", clearPinnedTimelineRows, {
         keywords: ["unpin", "clear", "pinned", "star", "rows", "tracks", "timeline"]
-      }),
-      command("timeline.show-pinned-rows", "Show Pinned Timeline Rows", "View", showPinnedTimelineRows, {
-        keywords: ["filter", "pinned", "star", "rows", "tracks", "timeline"]
       }),
       command("timeline.collapse-groups", "Collapse Timeline Groups", "View", collapseTimelineGroups, {
         keywords: ["layers", "disclosure", "twirl", "fold", "after effects"]
@@ -2815,8 +2824,8 @@ function boot(root: HTMLDivElement): void {
     showToast(count ? `${count} pinned row${count === 1 ? "" : "s"} cleared` : "No pinned timeline rows to clear.", count ? "good" : "bad");
   }
 
-  function showPinnedTimelineRows(): void {
-    showToast(`Timeline rows: ${timelinePanel.showPinnedRows()}`, "good");
+  function setTimelineRowFilter(filter: TimelineRowFilter): void {
+    showToast(`Timeline rows: ${timelinePanel.setRowFilter(filter)}`, "good");
   }
 
   function collapseTimelineGroups(): void {
