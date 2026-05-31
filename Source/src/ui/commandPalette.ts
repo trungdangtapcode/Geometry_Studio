@@ -1,7 +1,9 @@
 import { query } from "../utils/dom";
 
 const RECENT_COMMANDS_STORAGE_KEY = "geometry-studio-recent-commands";
+const PINNED_COMMANDS_STORAGE_KEY = "geometry-studio-pinned-commands";
 const MAX_RECENT_COMMANDS = 6;
+const MAX_PINNED_COMMANDS = 8;
 
 export interface CommandPaletteCommand {
   id: string;
@@ -19,6 +21,7 @@ export class CommandPalette {
   private readonly list = query<HTMLDivElement>("#command-palette-list");
   private commands: CommandPaletteCommand[] = [];
   private filteredCommands: CommandPaletteCommand[] = [];
+  private pinnedCommandIds = loadPinnedCommandIds();
   private recentCommandIds = loadRecentCommandIds();
   private activeIndex = 0;
 
@@ -29,6 +32,12 @@ export class CommandPalette {
     this.searchInput.addEventListener("input", () => this.render());
     this.searchInput.addEventListener("keydown", (event) => this.handleKeydown(event));
     this.list.addEventListener("click", (event) => {
+      const pin = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-pin-command-id]");
+      if (pin?.dataset.pinCommandId) {
+        event.preventDefault();
+        this.togglePinnedCommand(pin.dataset.pinCommandId);
+        return;
+      }
       const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>("[data-command-id]");
       if (!button) return;
       const command = this.filteredCommands.find((candidate) => candidate.id === button.dataset.commandId);
@@ -84,6 +93,10 @@ export class CommandPalette {
     if (event.key === "Enter") {
       event.preventDefault();
       const command = this.filteredCommands[this.activeIndex];
+      if (command && event.shiftKey) {
+        this.togglePinnedCommand(command.id);
+        return;
+      }
       if (command) this.runCommand(command);
     }
   }
@@ -107,8 +120,10 @@ export class CommandPalette {
       button.type = "button";
       button.className = "command-palette-item";
       button.classList.toggle("active", index === this.activeIndex);
+      button.classList.toggle("pinned", this.isPinnedCommand(command.id));
       button.disabled = Boolean(command.disabled?.());
       button.dataset.commandId = command.id;
+      button.dataset.pinned = String(this.isPinnedCommand(command.id));
 
       const text = document.createElement("span");
       text.className = "command-palette-text";
@@ -117,10 +132,21 @@ export class CommandPalette {
       title.textContent = command.title;
 
       const category = document.createElement("span");
-      category.textContent = this.isRecentCommand(command.id) && !queryText ? `${command.category} · Recent` : command.category;
+      category.textContent = commandCategoryLabel(command.category, {
+        pinned: this.isPinnedCommand(command.id) && !queryText,
+        recent: this.isRecentCommand(command.id) && !queryText
+      });
 
       text.append(title, category);
       button.appendChild(text);
+
+      const pin = document.createElement("span");
+      pin.className = "command-palette-pin";
+      pin.dataset.pinCommandId = command.id;
+      pin.textContent = this.isPinnedCommand(command.id) ? "★" : "☆";
+      pin.title = this.isPinnedCommand(command.id) ? "Unpin command" : "Pin command";
+      pin.setAttribute("aria-label", this.isPinnedCommand(command.id) ? "Unpin command" : "Pin command");
+      button.appendChild(pin);
 
       if (command.shortcut) {
         const shortcut = document.createElement("kbd");
@@ -155,11 +181,19 @@ export class CommandPalette {
     if (queryText) return matches;
 
     const byId = new Map(this.commands.map((command) => [command.id, command]));
+    const pinned = this.pinnedCommandIds
+      .map((id) => byId.get(id))
+      .filter((command): command is CommandPaletteCommand => Boolean(command));
     const recent = this.recentCommandIds
       .map((id) => byId.get(id))
       .filter((command): command is CommandPaletteCommand => Boolean(command));
+    const pinnedIds = new Set(pinned.map((command) => command.id));
     const recentIds = new Set(recent.map((command) => command.id));
-    return [...recent, ...matches.filter((command) => !recentIds.has(command.id))];
+    return [
+      ...pinned,
+      ...recent.filter((command) => !pinnedIds.has(command.id)),
+      ...matches.filter((command) => !pinnedIds.has(command.id) && !recentIds.has(command.id))
+    ];
   }
 
   private recordRecentCommand(commandId: string): void {
@@ -169,6 +203,18 @@ export class CommandPalette {
 
   private isRecentCommand(commandId: string): boolean {
     return this.recentCommandIds.includes(commandId);
+  }
+
+  private togglePinnedCommand(commandId: string): void {
+    this.pinnedCommandIds = this.isPinnedCommand(commandId)
+      ? this.pinnedCommandIds.filter((id) => id !== commandId)
+      : [commandId, ...this.pinnedCommandIds.filter((id) => id !== commandId)].slice(0, MAX_PINNED_COMMANDS);
+    storePinnedCommandIds(this.pinnedCommandIds);
+    this.render();
+  }
+
+  private isPinnedCommand(commandId: string): boolean {
+    return this.pinnedCommandIds.includes(commandId);
   }
 }
 
@@ -190,6 +236,32 @@ function normalizeSearch(value: string): string {
 function clampIndex(index: number, length: number): number {
   if (length <= 0) return 0;
   return Math.max(0, Math.min(index, length - 1));
+}
+
+function commandCategoryLabel(category: string, flags: { pinned: boolean; recent: boolean }): string {
+  const labels = [category];
+  if (flags.pinned) labels.push("Pinned");
+  if (flags.recent) labels.push("Recent");
+  return labels.join(" · ");
+}
+
+function loadPinnedCommandIds(): string[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PINNED_COMMANDS_STORAGE_KEY) ?? "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === "string").slice(0, MAX_PINNED_COMMANDS)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function storePinnedCommandIds(commandIds: string[]): void {
+  try {
+    window.localStorage.setItem(PINNED_COMMANDS_STORAGE_KEY, JSON.stringify(commandIds.slice(0, MAX_PINNED_COMMANDS)));
+  } catch {
+    // Pinned commands are a convenience preference; storage failures should not block command use.
+  }
 }
 
 function loadRecentCommandIds(): string[] {

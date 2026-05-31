@@ -2304,9 +2304,9 @@ svg {
 .command-palette-item {
   min-height: 50px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 28px auto;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -2327,6 +2327,10 @@ svg {
   opacity: 0.48;
 }
 
+.command-palette-item.pinned {
+  border-color: rgba(244, 173, 47, 0.42);
+}
+
 .command-palette-text {
   min-width: 0;
   display: grid;
@@ -2344,6 +2348,27 @@ svg {
   color: var(--muted);
   font-size: var(--ui-small-font);
   font-weight: 700;
+}
+
+.command-palette-pin {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.command-palette-pin:hover,
+.command-palette-item.pinned .command-palette-pin {
+  border-color: rgba(244, 173, 47, 0.58);
+  background: rgba(244, 173, 47, 0.16);
+  color: #9a6405;
 }
 
 .command-palette-item kbd {

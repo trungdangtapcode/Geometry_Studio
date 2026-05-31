@@ -11,6 +11,8 @@ Use the command palette when you cannot remember a button.
 - Shortcut: `Ctrl+K` or `F3`.
 - Search examples: `frame`, `set trs`, `ease`, `render`, `timeline`, `camera`,
   `clear track`, `preview`, `record`.
+- Star a command to pin it above recents. `Shift+Enter` toggles the active
+  command pin from the keyboard.
 - Recently used commands are promoted to the top when the search box is empty.
 
 Use in-app Quick Help when you need a compact control map without leaving the

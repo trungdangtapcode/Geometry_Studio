@@ -64,6 +64,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Telemetry: displays FPS, draw calls, triangles, lines, points, geometry count, texture count, and object count.
 - UI Density: choose Blender, Compact, or Comfortable sizing from the inspector header. Blender density is the default for a smaller professional editing layout.
 - In-App Quick Help: use the Help button, `?`, or command palette search to open a searchable controls and shortcuts overlay.
+- Command Palette Pins: star important commands so they stay above recents.
 - Command Palette Recents: recently used commands are promoted when the palette opens, making repeated editing workflows faster.
 
 7. Keyboard Shortcuts
@@ -75,7 +76,8 @@ Geometry_Studio/docs/beginner-tutorial.md
 - R: Rotate.
 - S: Scale.
 - ?: open Quick Help.
-- Ctrl+K / F3: open command palette; recent commands appear first when search is empty.
+- Ctrl+K / F3: open command palette; pinned and recent commands appear first when search is empty.
+- Shift+Enter in command palette: pin or unpin the active command.
 - Space: Play or pause animation.
 - Shift+Space: preview the currently selected keyframe range.
 - J / K / L: play backward, pause, or play forward inside the work area. Press J or L repeatedly for 2x and 4x shuttle speed.

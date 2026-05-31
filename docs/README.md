@@ -64,6 +64,8 @@ PDF.
 - [Command Palette](command-palette.md) documents the searchable editor command
   surface for reaching timeline, playback, scene, and tool commands without
   expanding the permanent toolbar.
+- [Command Palette Pins](command-palette-pins.md) documents pinned commands for
+  keeping high-frequency actions above recents.
 - [Command Palette Recents](command-palette-recents.md) documents persisted
   most-recent command promotion for faster repeated workflows.
 - [Light Timeline Tracks](light-timeline-tracks.md) documents the implemented

@@ -31,7 +31,8 @@ Open `http://127.0.0.1:8080`.
 - Bottom timeline: record and edit keyframes.
 
 When unsure, press `Ctrl+K` or click `Commands`, then search by action name.
-Recently used commands appear first the next time the palette opens.
+Star a command to pin it above the normal list. Recently used commands appear
+first below pinned commands the next time the palette opens.
 Press `?` or click `Help` for the in-app cheatsheet.
 
 ## 3. Navigate Like A 3D Editor
