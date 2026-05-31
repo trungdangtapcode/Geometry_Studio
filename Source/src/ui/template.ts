@@ -221,9 +221,9 @@ export function studioTemplate(): string {
             <label><span>Key Time</span><input id="timeline-key-time" type="text" inputmode="decimal" disabled /></label>
             <label><span>End</span><input id="timeline-key-end" type="text" inputmode="decimal" disabled /></label>
             <label><span>Span</span><input id="timeline-key-span" type="text" inputmode="decimal" disabled /></label>
-            <label><span id="timeline-key-x-label">X</span><input id="timeline-key-x" type="number" step="0.001" disabled /></label>
-            <label><span id="timeline-key-y-label">Y</span><input id="timeline-key-y" type="number" step="0.001" disabled /></label>
-            <label><span id="timeline-key-z-label">Z</span><input id="timeline-key-z" type="number" step="0.001" disabled /></label>
+            <label><span id="timeline-key-x-label">X</span><input id="timeline-key-x" type="text" inputmode="decimal" disabled /></label>
+            <label><span id="timeline-key-y-label">Y</span><input id="timeline-key-y" type="text" inputmode="decimal" disabled /></label>
+            <label><span id="timeline-key-z-label">Z</span><input id="timeline-key-z" type="text" inputmode="decimal" disabled /></label>
             <label><span>Marker</span><input id="timeline-marker-label" type="text" maxlength="48" disabled /></label>
             <label><span>Color</span><input id="timeline-marker-color" type="color" value="#f4ad2f" disabled /></label>
             <div class="timeline-ease-preview" id="timeline-ease-preview" aria-label="Interpolation preview">
@@ -705,6 +705,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on non-transform tracks. Use row diamonds for one transform row.</p></div>
               <div class="quick-help-item"><strong>Set Pose</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Deselect Keys</strong><span>Escape</span><p>Clear selected timeline keyframes without changing object selection or playback time.</p></div>
+              <div class="quick-help-item"><strong>Offset Values</strong><span>+= / -=</span><p>Type +=1 or -=1 in a key value field to offset selected keys without flattening them.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
               <div class="quick-help-item"><strong>Pose Keys</strong><span>Auto-Key option</span><p>With Auto-Key enabled, record Position, Rotation, and Scale together whenever transform values change.</p></div>
               <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast transform setup, then key, select, fit, or preview the pinned set.</p></div>

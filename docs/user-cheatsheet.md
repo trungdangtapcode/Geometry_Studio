@@ -282,6 +282,14 @@ If a key already exists at that time, the row diamond or `Set Key` updates it.
 6. These fields accept seconds, frames like `90f`, timecode like
    `00:00:03:00`, and relative offsets like `+10f`.
 
+### Offset Selected Key Values
+
+1. Select one or more keyframes.
+2. Edit `X`, `Y`, `Z`, or the active value field.
+3. Type an absolute value such as `4` to set all selected keys to that value.
+4. Type `+=1`, `-=0.5`, or `+2` to offset selected keys while preserving their
+   relative value differences.
+
 ### Apply A Motion Preset
 
 1. Select the object.

@@ -2335,6 +2335,70 @@ test("stretches multiple selected keyframes from the key editor end time", async
   expect(errors).toEqual([]);
 });
 
+test("offsets selected keyframe values from the key editor", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const setTime = async (time: number) => {
+    await page.locator("#timeline-current-time").evaluate((input, value) => {
+      (input as HTMLInputElement).value = String(value);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+  };
+  const setPositionX = async (value: number) => {
+    await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+  };
+
+  await setPositionX(1);
+  await page.locator("#timeline-add-keyframe").click();
+  await setTime(1);
+  await setPositionX(3);
+  await page.locator("#timeline-add-keyframe").click();
+
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  await expect(page.locator("#timeline-key-x")).toHaveAttribute("placeholder", /Mixed/);
+
+  await page.locator("#timeline-key-x").evaluate((input) => {
+    (input as HTMLInputElement).value = "+=2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-key-x").evaluate((input) => {
+    (input as HTMLInputElement).value = "-=1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await setTime(0.5);
+  expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(3, 1);
+
+  await page.locator("#save-scene").click();
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneDocument = JSON.parse((await sceneText.jsonValue()) as string);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const positionTrack = objectTimeline.tracks.find((track: { kind: string }) => track.kind === "position");
+  expect(positionTrack.keyframes.map((keyframe: { value: number[] }) => keyframe.value[0])).toEqual([2, 4]);
+  expect(errors).toEqual([]);
+});
+
 test("seeds initial camera value for first camera auto-key edit", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

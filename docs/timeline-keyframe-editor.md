@@ -22,6 +22,9 @@ and edited directly without dragging.
   based on the selected track type.
 - Editing value fields updates selected keyframes. With no explicit selection,
   the editor falls back to the playhead keyframe on the active track.
+- Value fields accept absolute values such as `12.5` and selected-key offsets
+  such as `+=2`, `-=1`, or `+0.25`. Offsets preserve the selected keys'
+  relative value differences instead of flattening them to one shared value.
 - Keyframe-specific commands are disabled when there is no selected keyframe
   and no active-track keyframe under the playhead.
 - Multiple selected keyframes can receive shared value edits. Their time can

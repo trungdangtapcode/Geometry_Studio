@@ -144,6 +144,7 @@ export interface TimelineVisibleRowTarget {
 export interface TimelineKeyframeEditPatch {
   time?: number;
   value?: Partial<Record<"x" | "y" | "z", number>>;
+  valueDelta?: Partial<Record<"x" | "y" | "z", number>>;
 }
 
 type TimelineUiKeyframe = TimelineKeyframe & {
@@ -983,6 +984,33 @@ export class KeyframeTimelinePanel {
     this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
   }
 
+  private parseKeyframeValueEditInput(axis: "x" | "y" | "z"): TimelineKeyframeEditPatch | null {
+    const input = this.keyframeValueInputs[axis];
+    const rawValue = input.value.trim();
+    if (!rawValue) {
+      this.restoreKeyframeEditor();
+      return null;
+    }
+
+    const relativeMatch = rawValue.match(/^([+-]=|\+)\s*(-?\d+(?:\.\d+)?|\.\d+)$/);
+    if (relativeMatch) {
+      const magnitude = Number(relativeMatch[2]);
+      if (!Number.isFinite(magnitude)) {
+        this.restoreKeyframeEditor();
+        return null;
+      }
+      const sign = relativeMatch[1].startsWith("-") ? -1 : 1;
+      return { valueDelta: { [axis]: sign * magnitude } };
+    }
+
+    const absoluteValue = Number(rawValue);
+    if (!Number.isFinite(absoluteValue)) {
+      this.restoreKeyframeEditor();
+      return null;
+    }
+    return { value: { [axis]: absoluteValue } };
+  }
+
   private selectedKeyframeTimeRange(): { start: number; end: number } | null {
     if (!this.lastTimelineDocument) return null;
     const sources = this.detailSources(this.lastTimelineDocument, this.lastSelectedId);
@@ -1184,7 +1212,9 @@ export class KeyframeTimelinePanel {
     });
     (["x", "y", "z"] as const).forEach((axis) => {
       this.keyframeValueInputs[axis].addEventListener("change", () => {
-        this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { value: { [axis]: Number(this.keyframeValueInputs[axis].value) } });
+        const patch = this.parseKeyframeValueEditInput(axis);
+        if (!patch) return;
+        this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], patch);
       });
     });
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
@@ -2980,7 +3010,10 @@ export class KeyframeTimelinePanel {
       this.keyframeValueInputs[axis].value = axisEnabled
         ? commonValue(sources.map((source) => source.keyframe.value[index]))
         : "";
-      this.keyframeValueInputs[axis].placeholder = sources.length > 1 ? "Mixed" : "";
+      this.keyframeValueInputs[axis].placeholder = sources.length > 1 ? "Mixed or +=1" : "";
+      this.keyframeValueInputs[axis].title = axisEnabled
+        ? "Enter an absolute value, or use +=1, -=1, or +1 to offset selected keyframes"
+        : "Select a keyframe before editing values";
     });
 
     this.keyframeTimeInput.disabled = sources.length === 0;

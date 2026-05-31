@@ -111,6 +111,7 @@ export interface TimelineKeyframeRange {
 export interface TimelineKeyframeEditPatch {
   time?: number;
   value?: Partial<Record<"x" | "y" | "z", number>>;
+  valueDelta?: Partial<Record<"x" | "y" | "z", number>>;
 }
 
 export interface EditTimelineResult extends TimelineEditResult {
@@ -637,6 +638,16 @@ export function editResolvedKeyframes(
           source.keyframe.value[index] = value;
           changed = true;
         }
+      });
+    }
+
+    if (patch.valueDelta) {
+      (["x", "y", "z"] as const).forEach((axis) => {
+        const deltaValue = patch.valueDelta?.[axis];
+        if (typeof deltaValue !== "number" || !Number.isFinite(deltaValue)) return;
+        if (Math.abs(deltaValue) < 0.0001) return;
+        source.keyframe.value[AXIS_INDEX[axis]] += deltaValue;
+        changed = true;
       });
     }
 
