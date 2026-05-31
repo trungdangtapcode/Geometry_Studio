@@ -268,6 +268,13 @@ Position, Rotation, and Scale recorded together.
 
 If a key already exists at that time, `Set Key` updates it.
 
+### Retime A Selected Key Block Numerically
+
+1. Select multiple keyframes.
+2. Edit `Key Time` in the keyframe editor.
+3. The earliest selected key moves to that time, and the rest of the selected
+   keys keep their relative spacing.
+
 ### Apply A Motion Preset
 
 1. Select the object.

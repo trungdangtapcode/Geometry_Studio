@@ -9,14 +9,16 @@ and edited directly without dragging.
 ## Behavior
 
 - `Key Time` retimes one active keyframe with snapping and collision checks.
+  When multiple keyframes are selected, it edits the earliest selected key as
+  the anchor and shifts the selected block while preserving relative spacing.
 - `X/Y/Z`, `R/G/B`, `FOV/Near/Far`, `U/V`, or scalar `Value` fields are shown
   based on the selected track type.
 - Editing value fields updates selected keyframes. With no explicit selection,
   the editor falls back to the playhead keyframe on the active track.
 - Keyframe-specific commands are disabled when there is no selected keyframe
   and no active-track keyframe under the playhead.
-- Multiple selected keyframes can receive shared value edits. Time is disabled
-  for multi-selection to avoid accidental destructive retiming.
+- Multiple selected keyframes can receive shared value edits. Their time can
+  also be edited as an anchored group retime.
 - Transform keyframe edits disable preset object animations for that object, so
   authored timeline motion remains authoritative.
 

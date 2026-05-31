@@ -2907,9 +2907,14 @@ export class KeyframeTimelinePanel {
       this.keyframeValueInputs[axis].placeholder = sources.length > 1 ? "Mixed" : "";
     });
 
-    this.keyframeTimeInput.disabled = sources.length !== 1;
-    this.keyframeTimeInput.value = sources.length === 1 ? formatNumber(first.keyframe.time) : "";
-    this.keyframeTimeInput.placeholder = sources.length > 1 ? "Multiple" : "";
+    this.keyframeTimeInput.disabled = sources.length === 0;
+    this.keyframeTimeInput.value = sources.length > 0
+      ? formatNumber(Math.min(...sources.map((source) => source.keyframe.time)))
+      : "";
+    this.keyframeTimeInput.placeholder = sources.length > 1 ? "Anchor" : "";
+    this.keyframeTimeInput.title = sources.length > 1
+      ? "Move selected keyframes as a block by setting the earliest selected key time"
+      : "Selected keyframe time";
     if (!first) {
       this.keyframeLabel.textContent = "No keyframe selected";
     } else if (sources.length === 1) {

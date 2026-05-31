@@ -2177,6 +2177,57 @@ test("auto-key pose records position rotation and scale together", async ({ page
   expect(errors).toEqual([]);
 });
 
+test("retimes multiple selected keyframes from the key editor anchor time", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const setTime = async (time: number) => {
+    await page.locator("#timeline-current-time").evaluate((input, value) => {
+      (input as HTMLInputElement).value = String(value);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+  };
+
+  await setTime(1);
+  await page.locator("#timeline-add-keyframe").click();
+  await setTime(2);
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-row-search").fill("position");
+  await page.locator("#timeline-select-visible").click();
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  await expect(page.locator("#timeline-key-time")).toBeEnabled();
+  await expect(page.locator("#timeline-key-time")).toHaveValue("1");
+
+  await page.locator("#timeline-key-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#timeline-key-time")).toHaveValue("3");
+
+  await page.locator("#save-scene").click();
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneDocument = JSON.parse((await sceneText.jsonValue()) as string);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const positionTrack = objectTimeline.tracks.find((track: { kind: string }) => track.kind === "position");
+  expect(positionTrack.keyframes.map((keyframe: { time: number }) => keyframe.time)).toEqual([3, 4]);
+  expect(errors).toEqual([]);
+});
+
 test("seeds initial camera value for first camera auto-key edit", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
