@@ -182,6 +182,9 @@ PDF.
   pose.
 - [Transform Inspector Keying](transform-inspector-keying.md) documents the
   AE-style diamond buttons beside Position, Rotation, and Scale in the inspector.
+- [Transform Pose Clipboard](transform-pose-clipboard.md) documents copying and
+  pasting complete Position, Rotation, and Scale poses, including Auto-Key
+  behavior.
 - [Auto-Key Initial Pose](auto-key-initial-pose.md) documents automatic Work In
   pose seeding for first transform auto-key edits.
 - [Timeline Axis Rows](timeline-axis-rows.md) documents X/Y/Z timeline rows for

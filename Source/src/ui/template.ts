@@ -336,6 +336,10 @@ export function studioTemplate(): string {
             <button class="wide-button" id="toggle-space" type="button"><span data-icon="Globe2"></span><span>World Space</span></button>
             <button class="wide-button" id="reset-transform" type="button"><span data-icon="Undo2"></span><span>Reset</span></button>
           </div>
+          <div class="compact-row">
+            <button class="wide-button" id="copy-transform-pose" type="button"><span data-icon="ClipboardCopy"></span><span>Copy Pose</span></button>
+            <button class="wide-button" id="paste-transform-pose" type="button" disabled><span data-icon="ClipboardPaste"></span><span>Paste Pose</span></button>
+          </div>
           <div class="matrix-grid" id="transform-grid"></div>
         </section>
 

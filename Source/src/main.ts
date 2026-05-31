@@ -130,6 +130,13 @@ import { configureViewportNavigation, resetBlenderNavigationMouseButton, syncBle
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
+interface TransformPoseClipboard {
+  sourceName: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+}
+
 if (!app) {
   throw new Error("Missing #app container.");
 }
@@ -191,6 +198,7 @@ function boot(root: HTMLDivElement): void {
   let previewChunks: Blob[] = [];
   let previewRecordingRange: { start: number; end: number } | null = null;
   let timelineClipboard: TimelineClipboard | null = null;
+  let transformPoseClipboard: TransformPoseClipboard | null = null;
   let pendingDragSnapshot: SceneDocument | null = null;
   let pendingCanvasPick: { pointerId: number; x: number; y: number } | null = null;
   let pendingTransformAutoKeySeedValues: Record<TransformProperty, [number, number, number]> | null = null;
@@ -565,6 +573,8 @@ function boot(root: HTMLDivElement): void {
       syncSelectedBases();
       updateAllUI();
     });
+    query<HTMLButtonElement>("#copy-transform-pose").addEventListener("click", copySelectedTransformPose);
+    query<HTMLButtonElement>("#paste-transform-pose").addEventListener("click", pasteTransformPose);
 
     query<HTMLSelectElement>("#material-mode").addEventListener("change", (event) => {
       updateSelectedEntry((entry) => {
@@ -916,6 +926,7 @@ function boot(root: HTMLDivElement): void {
   function updateAllUI(): void {
     renderOutliner();
     syncTransformUI();
+    syncTransformPoseClipboardUI();
     syncCameraUI();
     syncLightUI();
     syncSelectionSummary();
@@ -963,6 +974,14 @@ function boot(root: HTMLDivElement): void {
 
       command("timeline.set-key", "Set Key On Active Track", "Keyframes", () => addTimelineKeyframe(timelinePanel.selectedTrackKind()), { keywords: ["diamond", "update"] }),
       command("timeline.set-transform", "Set Transform Keys", "Keyframes", setTransformTimelineKeyframes, { keywords: ["trs", "position", "rotation", "scale"] }),
+      command("transform.copy-pose", "Copy Transform Pose", "Keyframes", copySelectedTransformPose, {
+        keywords: ["pose", "position", "rotation", "scale", "clipboard"],
+        disabled: () => !selectedEntry()
+      }),
+      command("transform.paste-pose", "Paste Transform Pose", "Keyframes", pasteTransformPose, {
+        keywords: ["pose", "position", "rotation", "scale", "clipboard", "auto-key"],
+        disabled: () => !selectedEntry() || !hasTransformPoseClipboard()
+      }),
       command("timeline.set-visible", "Set Keys On Visible Rows", "Keyframes", () => setVisibleTimelineKeyframes(timelinePanel.visibleRowTargetsList()), { keywords: ["rows", "channels"] }),
       command("timeline.copy", "Copy Selected Keyframes", "Keyframes", () => copyTimelineKeyframes(), {
         shortcut: "Ctrl+C",
@@ -1116,6 +1135,10 @@ function boot(root: HTMLDivElement): void {
     return Boolean(timelineClipboard && timelineClipboard.keyframes.length > 0);
   }
 
+  function hasTransformPoseClipboard(): boolean {
+    return transformPoseClipboard !== null;
+  }
+
   function hasTimelineKeyframeTarget(): boolean {
     return resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList()).length > 0;
   }
@@ -1161,12 +1184,91 @@ function boot(root: HTMLDivElement): void {
     });
   }
 
+  function syncTransformPoseClipboardUI(): void {
+    const pasteButton = query<HTMLButtonElement>("#paste-transform-pose");
+    pasteButton.disabled = !transformPoseClipboard || !selectedEntry();
+    pasteButton.title = transformPoseClipboard
+      ? `Paste pose copied from ${transformPoseClipboard.sourceName}${sceneTimeline.autoKey ? " and set transform keys" : ""}`
+      : "Copy a transform pose before pasting";
+  }
+
   function transformKeyState(kind: TransformProperty): { locked: boolean; hasPlayheadKey: boolean } {
     const track = activeTimelineTrack(kind);
     return {
       locked: Boolean(track?.locked),
       hasPlayheadKey: Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - sceneTimeline.currentTime) < 0.001))
     };
+  }
+
+  function copySelectedTransformPose(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before copying a pose.", "bad");
+      return;
+    }
+    transformPoseClipboard = {
+      sourceName: entry.name,
+      ...captureTransformValues(entry)
+    };
+    syncTransformPoseClipboardUI();
+    showToast(`Copied ${entry.name} transform pose`, "good");
+  }
+
+  function pasteTransformPose(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before pasting a pose.", "bad");
+      return;
+    }
+    if (!transformPoseClipboard) {
+      showToast("Copy a transform pose before pasting.", "bad");
+      return;
+    }
+
+    const lockedTransformTrack = sceneTimeline.autoKey
+      ? sceneTimeline.objects.find((object) => object.objectId === entry.id)?.tracks.find((track) => isObjectTransformTrackKind(track.kind) && track.locked)
+      : undefined;
+    if (!assertTimelineTrackUnlocked(lockedTransformTrack, "pasting a pose with Auto-Key")) return;
+
+    const previousValues = captureTransformValues(entry);
+    recordHistory();
+    applyTransformPose(entry, transformPoseClipboard);
+    syncSelectedBases();
+
+    let keyframeIds: string[] = [];
+    if (sceneTimeline.autoKey) {
+      const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+      const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+      (["position", "rotation", "scale"] as const).forEach((kind) => {
+        seedInitialTransformAutoKey(entry, kind, previousValues[kind]);
+        const track = ensureTimelineTrack(objectTimeline, kind);
+        keyframeIds.push(upsertTimelineKeyframe(track, time, transformPoseClipboard![kind]).id);
+      });
+      entry.animation = "none";
+      sceneTimeline.currentTime = time;
+      rebuildTimelineRuntime();
+      timelinePlayer.setTime(sceneTimeline.currentTime);
+      applyObjectPropertyTimeline();
+    }
+
+    updateAllUI();
+    if (keyframeIds.length > 0) timelinePanel.selectKeyframes(keyframeIds);
+    showToast(
+      sceneTimeline.autoKey
+        ? `Pasted ${transformPoseClipboard.sourceName} pose to ${entry.name} and keyed it`
+        : `Pasted ${transformPoseClipboard.sourceName} pose to ${entry.name}`,
+      "good"
+    );
+  }
+
+  function applyTransformPose(entry: SceneEntry, pose: Pick<TransformPoseClipboard, "position" | "rotation" | "scale">): void {
+    entry.root.position.fromArray(pose.position);
+    entry.root.rotation.set(
+      THREE.MathUtils.degToRad(pose.rotation[0]),
+      THREE.MathUtils.degToRad(pose.rotation[1]),
+      THREE.MathUtils.degToRad(pose.rotation[2])
+    );
+    entry.root.scale.fromArray(pose.scale);
   }
 
   function updateTransformValue(prop: TransformProperty, axis: TransformAxis, value: number): void {
