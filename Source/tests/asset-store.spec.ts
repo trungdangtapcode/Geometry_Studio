@@ -1,7 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
 type SceneExport = {
-  objects: Array<{ name: string; textureName: string; renderMode: string }>;
+  objects: Array<{
+    name: string;
+    textureName: string;
+    renderMode: string;
+    assetSource?: { providerLabel: string; sourceUrl: string; previewUrl?: string; attribution?: string };
+  }>;
   rendering: {
     exposure: number;
     shadowQuality: string;
@@ -12,7 +17,17 @@ type SceneExport = {
 test("applies built-in asset store looks, textures, and models", async ({ page }) => {
   test.setTimeout(180_000);
   await installSceneDownloadCapture(page);
-  await page.route("**/Avocado.glb", (route) => {
+  await page.route("**/Avocado.glb", async (route) => {
+    const body = createMinimalGlb();
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({
+      status: 200,
+      contentType: "model/gltf-binary",
+      headers: { "access-control-allow-origin": "*", "content-length": String(body.length) },
+      body
+    });
+  });
+  await page.route("**/Barrel.glb", (route) => {
     const body = createMinimalGlb();
     void route.fulfill({
       status: 200,
@@ -21,14 +36,61 @@ test("applies built-in asset store looks, textures, and models", async ({ page }
       body
     });
   });
+  await page.route("**/screenshot/**", (route) => {
+    void route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: createOnePixelPng()
+    });
+  });
+  await page.route("**/*_thumbnail.png", (route) => {
+    void route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: createOnePixelPng()
+    });
+  });
   await page.goto("/");
 
   await page.locator("#asset-browser-toggle").click();
   await expect(page.locator("#asset-store")).toBeVisible();
   await expect(page.locator("#asset-browser")).toBeVisible();
+  await expect(page.locator(".remote-asset-card").first()).toContainText("Khronos glTF Sample Assets");
+  await expect(page.locator(".remote-asset-card").first().locator("img")).toHaveAttribute("src", /Avocado\/screenshot\/screenshot\.jpg/);
+  const os3aBarrelCard = page.locator(".remote-asset-card", { has: page.locator('[data-remote-asset-id="os3a-medieval-barrel"]') });
+  await expect(os3aBarrelCard).toContainText("OpenSource3DAssets / Polygonal Mind");
+  await expect(os3aBarrelCard.locator("img")).toHaveAttribute("src", /medieval-fair\/Barrel_thumbnail\.png/);
 
-  await page.locator('[data-remote-asset-id="khronos-avocado"]').click();
-  await expect(page.locator("#selection-summary")).toContainText("Avocado");
+  await page.locator('[data-asset-tab="campus"]').click();
+  const campusCard = page.locator('[data-remote-asset-card="campus-e-hall"]');
+  await expect(campusCard).toBeVisible();
+  await expect(campusCard).toContainText("Local Campus Project");
+  await expect(campusCard).toContainText("41.4 MB");
+  await expect(campusCard.locator("img")).toHaveAttribute("src", /assets\/campus\/campus-preview\.png/);
+  await expect(page.locator("#load-campus-landscape")).toBeVisible();
+  await expect(page.locator("#load-campus-landscape")).toContainText("Load Campus");
+  await page.locator('[data-asset-tab="online"]').click();
+
+  const avocadoCard = page.locator('[data-remote-asset-card="khronos-avocado"]');
+  const avocadoButton = avocadoCard.locator('[data-remote-asset-id="khronos-avocado"]');
+  await avocadoButton.click();
+  await expect(avocadoButton).toBeDisabled();
+  await expect(avocadoButton.locator("[data-remote-asset-button-label]")).toHaveText(/Downloading|Importing/);
+  await expect(avocadoCard.locator("[data-remote-asset-status]")).toContainText(/Connecting|downloaded|Download complete|Importing|Imported/i);
+  await expect(avocadoCard.locator(".asset-card-progress span")).toHaveAttribute("style", /width: [1-9]/);
+  await expect(page.locator("#selection-summary")).toContainText("Avocado", { timeout: 15_000 });
+  await expect(page.locator("#selection-summary")).toContainText("Khronos glTF Sample Assets");
+  await expect(page.locator("#asset-source-section")).toBeVisible();
+  await expect(page.locator("#asset-source-section")).toContainText("Khronos glTF Sample Assets");
+  await expect(page.locator("#asset-source-section")).toContainText("CC0 1.0");
+  await expect(page.locator("#asset-source-section")).toContainText("Microsoft for Everything");
+  await expect(page.locator("#asset-source-preview")).toHaveAttribute("src", /Avocado\/screenshot\/screenshot\.jpg/);
+
+  await page.locator('[data-remote-asset-id="os3a-medieval-barrel"]').click();
+  await expect(page.locator("#selection-summary")).toContainText("Medieval Barrel");
+  await expect(page.locator("#selection-summary")).toContainText("OpenSource3DAssets / Polygonal Mind");
+  await expect(page.locator("#asset-source-section")).toContainText("CC0 1.0");
+  await expect(page.locator("#asset-source-section")).toContainText("Polygonal Mind via OpenSource3DAssets");
 
   await page.locator('[data-asset-tab="built-in"]').click();
   await page.locator('[data-asset-id="texture-bricks"]').click();
@@ -46,8 +108,14 @@ test("applies built-in asset store looks, textures, and models", async ({ page }
   const scene = await saveScene(page);
   expect(scene.objects.some((object) => object.textureName === "bricks")).toBe(true);
   expect(scene.objects.some((object) => object.name === "Avocado")).toBe(true);
+  expect(scene.objects.some((object) => object.name === "Medieval Barrel")).toBe(true);
   expect(scene.objects.some((object) => object.name === "Teapot")).toBe(true);
   expect(scene.objects.some((object) => object.name === "Sample Drone")).toBe(true);
+  expect(scene.objects.find((object) => object.name === "Avocado")?.assetSource?.providerLabel).toBe("Khronos glTF Sample Assets");
+  expect(scene.objects.find((object) => object.name === "Avocado")?.assetSource?.sourceUrl).toContain("KhronosGroup/glTF-Sample-Assets");
+  expect(scene.objects.find((object) => object.name === "Avocado")?.assetSource?.attribution).toBe("Microsoft for Everything");
+  expect(scene.objects.find((object) => object.name === "Medieval Barrel")?.assetSource?.providerLabel).toBe("OpenSource3DAssets / Polygonal Mind");
+  expect(scene.objects.find((object) => object.name === "Medieval Barrel")?.assetSource?.sourceUrl).toContain("ToxSam/cc0-models-Polygonal-Mind");
   expect(scene.rendering.shadowQuality).toBe("ultra");
   expect(scene.rendering.postProcessing.ssao).toBe(true);
   expect(scene.rendering.postProcessing.bloom).toBe(true);
@@ -117,6 +185,13 @@ function createMinimalGlb(): Buffer {
   binHeader.writeUInt32LE(binaryChunk.length, 0);
   binHeader.writeUInt32LE(0x004e4942, 4);
   return Buffer.concat([header, jsonHeader, jsonChunk, binHeader, binaryChunk]);
+}
+
+function createOnePixelPng(): Buffer {
+  return Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+    "base64"
+  );
 }
 
 function padToFourBytes(buffer: Buffer, fill: number): Buffer {

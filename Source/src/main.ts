@@ -31,7 +31,8 @@ import {
   type EditTimelineResult,
   type TimelineClipboard,
   type TimelineKeyframeEditPatch,
-  type TimelineKeyframeSource
+  type TimelineKeyframeSource,
+  type TimelineTrackEditTarget
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
 import { timelineInterpolationLabel } from "./animation/timelineInterpolation";
@@ -44,6 +45,10 @@ import {
 import { textureSourceFromValue, textureSourceIndex } from "./animation/textureSourceTrack";
 import {
   fitObjectLayerKeyframesToRange,
+  objectKeyframeIdsAtTime,
+  objectKeyframeIdsInRange,
+  objectKeyframeIdsRelativeToTime,
+  objectKeyframeTimes,
   objectLayerKeyframeIds,
   objectLayerRange,
   sequenceObjectLayerRanges,
@@ -77,7 +82,8 @@ import {
   roundTime,
   snapTimelineTime,
   sortTimelineKeyframes,
-  sortTimelineMarkers
+  sortTimelineMarkers,
+  upsertTimelineKeyframe
 } from "./animation/timelineSchema";
 import {
   cameraTrackForGroup,
@@ -147,9 +153,12 @@ import {
   type TimelineTransportButtonAction,
   type TimelineVisibleRowTarget
 } from "./ui/timelinePanel";
+import { AssetBrowser } from "./ui/assetBrowser";
+import { AssetSourcePanel } from "./ui/assetSourcePanel";
 import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
 import { bindUiDensityControl } from "./ui/density";
 import { QuickHelpOverlay } from "./ui/helpOverlay";
+import { installShortcutTooltips, type ShortcutTooltipBinding } from "./ui/shortcutTooltips";
 import { studioTemplate } from "./ui/template";
 import { renderTransformInspector, type TransformAxis, type TransformProperty } from "./ui/transformInspector";
 import { capitalize, clamp, downloadText, formatNumber, hasWebGL2, hydrateIcons, query, safeJsonParse } from "./utils/dom";
@@ -159,14 +168,27 @@ import { configureViewportNavigation, resetBlenderNavigationMouseButton, syncBle
 
 const app = document.querySelector<HTMLDivElement>("#app");
 const TRANSPORT_RESTART_GUARD_MS = 300;
-const REMOTE_ASSET_IMPORT_LIMIT_BYTES = 80 * 1024 * 1024;
-const ASSET_BROWSER_STORAGE_KEY = "geometry-studio-asset-browser-state";
+const REMOTE_ASSET_IMPORT_LIMIT_BYTES = 128 * 1024 * 1024;
+const REMOTE_ASSET_IMPORT_LIMIT_LABEL = "128 MB";
 
 interface TransformPoseClipboard {
   sourceName: string;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
+}
+
+interface CleanViewSnapshot {
+  gridVisible: boolean;
+  axesVisible: boolean;
+  statsVisible: boolean;
+  frustumVisible: boolean;
+  motionPathVisible: boolean;
+  onionSkinVisible: boolean;
+  lightHelpersVisible: boolean;
+  transformGizmoVisible: boolean;
+  transformControlsEnabled: boolean;
+  postProcessing: PostProcessingSettings;
 }
 
 if (!app) {
@@ -240,6 +262,7 @@ function boot(root: HTMLDivElement): void {
   let pathTraceControlsEnabled = true;
   let lastTransportStopAt = 0;
   let suppressPrimaryTransportClick = false;
+  let cleanViewSnapshot: CleanViewSnapshot | null = null;
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -260,6 +283,7 @@ function boot(root: HTMLDivElement): void {
     onAddKeyframe: addTimelineKeyframe,
     onSetTransformKeyframes: setTransformTimelineKeyframes,
     onSetObjectTransformKeyframes: setTransformTimelineKeyframes,
+    onClearTransformKeyframes: clearTransformTimelineTracks,
     onSetVisibleKeyframes: setVisibleTimelineKeyframes,
     onSetPinnedKeyframes: setPinnedTimelineKeyframes,
     onTrimLayerIn: trimSelectedLayerInPoint,
@@ -267,6 +291,7 @@ function boot(root: HTMLDivElement): void {
     onSplitLayer: splitSelectedLayerAtPlayhead,
     onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
     onSelectLayerKeyframes: selectSelectedLayerKeyframes,
+    onSelectLayerTimeKeyframes: selectSelectedLayerTimeKeyframes,
     onFitLayerKeyframes: fitSelectedLayerKeyframes,
     onSequenceLayers: sequenceTimelineObjectLayers,
     onEditLayerRange: editTimelineLayerRange,
@@ -288,6 +313,9 @@ function boot(root: HTMLDivElement): void {
     onInsertVisibleTimeGap: insertVisibleTimelineTimeGap,
     onLiftVisibleWorkArea: liftVisibleTimelineWorkArea,
     onExtractVisibleWorkArea: extractVisibleTimelineWorkArea,
+    onInsertSelectedLayerTimeGap: insertSelectedLayerTimelineTimeGap,
+    onLiftSelectedLayerWorkArea: liftSelectedLayerTimelineWorkArea,
+    onExtractSelectedLayerWorkArea: extractSelectedLayerTimelineWorkArea,
     onNudgeKeyframes: nudgeTimelineKeyframes,
     onMoveKeyframesToPlayhead: moveTimelineKeyframesToPlayhead,
     onCenterKeyframesOnPlayhead: centerTimelineKeyframesOnPlayhead,
@@ -335,12 +363,19 @@ function boot(root: HTMLDivElement): void {
   });
   const commandPalette = new CommandPalette();
   const quickHelp = new QuickHelpOverlay();
-  commandPalette.setCommands(createCommandPaletteCommands());
+  const assetSourcePanel = new AssetSourcePanel({
+    getSelectedEntry: selectedEntry,
+    copyText: (text) => navigator.clipboard.writeText(text),
+    onStatus: showToast
+  });
+  const commands = createCommandPaletteCommands();
+  commandPalette.setCommands(commands);
 
   seedDefaultScene();
   setSelected(firstEntryId());
   bindEvents();
   updateAllUI();
+  installShortcutTooltips(commands, shortcutTooltipBindings());
   showToast("Studio upgraded: JSON save/load, Undo/Redo, telemetry, drag-drop import, tours, and screenshots are ready.", "good");
   animate();
 
@@ -432,6 +467,7 @@ function boot(root: HTMLDivElement): void {
     opacity?: number;
     roughness?: number;
     metalness?: number;
+    assetSource?: SceneEntry["assetSource"];
   }): SceneEntry {
     const id = config.id ?? `object-${idCounter++}`;
     idCounter = Math.max(idCounter, numericObjectId(id) + 1);
@@ -462,6 +498,7 @@ function boot(root: HTMLDivElement): void {
       textureOffset: new THREE.Vector2(0, 0),
       textureRotation: 0,
       animation: config.animation ?? "none",
+      assetSource: config.assetSource,
       basePosition: root.position.clone(),
       baseScale: root.scale.clone(),
       phase: Math.random() * Math.PI * 2
@@ -560,8 +597,10 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#parent-to-null").addEventListener("click", parentSelectedToNewNull);
     query<HTMLButtonElement>("#clear-parent").addEventListener("click", () => setSelectedParent(null));
     const primaryTransportButton = query<HTMLButtonElement>("#play-toggle");
-    primaryTransportButton.addEventListener("pointerdown", () => {
+    primaryTransportButton.addEventListener("pointerdown", (event) => {
       if (!transport.playing) return;
+      event.preventDefault();
+      event.stopPropagation();
       suppressPrimaryTransportClick = true;
       pauseTimeline("Timeline stopped");
       const suppressionController = new AbortController();
@@ -618,10 +657,11 @@ function boot(root: HTMLDivElement): void {
       syncSelectedBases();
     });
     transformControls.addEventListener("objectChange", () => {
-      if (sceneTimeline.autoKey) {
-        const kind = trackKindForTransformMode();
-        const entry = selectedEntry();
-        if (entry) autoKeyTransformChange(entry, kind, pendingTransformAutoKeySeedValues);
+      const kind = trackKindForTransformMode();
+      const entry = selectedEntry();
+      if (entry) {
+        if (sceneTimeline.autoKey) autoKeyTransformChange(entry, kind, pendingTransformAutoKeySeedValues);
+        else maybeStopwatchKeyTransformChange(entry, kind);
       }
       syncTransformUI();
       syncSelectedBases();
@@ -643,7 +683,10 @@ function boot(root: HTMLDivElement): void {
       syncSelectedBases();
       updateAllUI();
     });
-    query<HTMLButtonElement>("#set-transform-pose-key").addEventListener("click", () => setTransformTimelineKeyframes());
+    query<HTMLButtonElement>("#set-transform-pose-key").addEventListener("click", (event) => {
+      if (event.altKey) clearTransformTimelineTracks();
+      else setTransformTimelineKeyframes();
+    });
     query<HTMLButtonElement>("#copy-transform-pose").addEventListener("click", copySelectedTransformPose);
     query<HTMLButtonElement>("#paste-transform-pose").addEventListener("click", pasteTransformPose);
 
@@ -766,11 +809,17 @@ function boot(root: HTMLDivElement): void {
 
     document.querySelectorAll<HTMLButtonElement>("[data-remote-asset-id]").forEach((button) => {
       button.addEventListener("click", () => {
-        void importRemoteAsset(button.dataset.remoteAssetId ?? "");
+        void importRemoteAsset(button.dataset.remoteAssetId ?? "", button);
       });
     });
 
-    bindAssetBrowser();
+    document.querySelectorAll<HTMLButtonElement>("[data-campus-scene-id]").forEach((button) => {
+      button.addEventListener("click", () => {
+        void loadCampusLandscape(button);
+      });
+    });
+
+    new AssetBrowser();
 
     query<HTMLInputElement>("#texture-input").addEventListener("change", handleTextureUpload);
     query<HTMLInputElement>("#model-input").addEventListener("change", handleModelImport);
@@ -958,6 +1007,7 @@ function boot(root: HTMLDivElement): void {
       updatePostProcessingSettings({ halftoneScatter: Number((event.target as HTMLInputElement).value) });
     });
     query<HTMLButtonElement>("#path-trace-button").addEventListener("click", () => void togglePathTracePreview());
+    query<HTMLButtonElement>("#clean-view-button").addEventListener("click", toggleCleanView);
     query<HTMLInputElement>("#grid-toggle").addEventListener("change", (event) => {
       recordHistory();
       stage.grid.visible = (event.target as HTMLInputElement).checked;
@@ -993,6 +1043,7 @@ function boot(root: HTMLDivElement): void {
     canvas.addEventListener("pointerup", handleCanvasPickEnd);
     canvas.addEventListener("pointerdown", handleBlenderNavigationPointerDown, { capture: true });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    window.addEventListener("keydown", handleCommandPaletteShortcut, { capture: true });
     window.addEventListener("keydown", handleKeyboard);
     window.addEventListener("pointerup", handlePointerEnd);
     window.addEventListener("pointercancel", handlePointerEnd);
@@ -1022,6 +1073,7 @@ function boot(root: HTMLDivElement): void {
     syncCameraUI();
     syncLightUI();
     syncSelectionSummary();
+    assetSourcePanel.sync(selectedEntry());
     syncSegmentedButtons();
     syncTextureUI();
     syncRenderUI();
@@ -1083,6 +1135,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["pin", "pinned", "favorite", "keying set", "work area", "range"],
         disabled: () => timelinePanel.pinnedRowKeyframeTimes().length === 0
       }),
+      command("timeline.preview-layer", "Preview Selected Layer Keyframe Range", "Playback", previewSelectedLayerTimelineKeyRange, {
+        keywords: ["selected object", "selected layer", "work area", "range", "preview", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.previous-pinned-key", "Previous Pinned Row Keyframe", "Playback", () => stepPinnedTimelineKeyframe(-1), {
         shortcut: "Ctrl+Alt+Shift+Left",
         keywords: ["pin", "pinned", "favorite", "keying set", "previous", "navigation"]
@@ -1090,6 +1146,14 @@ function boot(root: HTMLDivElement): void {
       command("timeline.next-pinned-key", "Next Pinned Row Keyframe", "Playback", () => stepPinnedTimelineKeyframe(1), {
         shortcut: "Ctrl+Alt+Shift+Right",
         keywords: ["pin", "pinned", "favorite", "keying set", "next", "navigation"]
+      }),
+      command("timeline.previous-layer-key", "Previous Selected Layer Keyframe", "Playback", () => stepSelectedLayerTimelineKeyframe(-1), {
+        shortcut: "Alt+Shift+Left",
+        keywords: ["selected object", "selected layer", "previous", "navigation", "after effects", "ae"]
+      }),
+      command("timeline.next-layer-key", "Next Selected Layer Keyframe", "Playback", () => stepSelectedLayerTimelineKeyframe(1), {
+        shortcut: "Alt+Shift+Right",
+        keywords: ["selected object", "selected layer", "next", "navigation", "after effects", "ae"]
       }),
 
       command("timeline.set-key", "Set Key On Active Track", "Keyframes", () => addTimelineKeyframe(timelinePanel.selectedTrackKind()), { keywords: ["diamond", "update"] }),
@@ -1143,6 +1207,34 @@ function boot(root: HTMLDivElement): void {
       command("timeline.delete-pinned-time", "Delete Pinned Row Keys At Playhead", "Keyframes", deletePinnedTimelineTimeKeyframes, {
         keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
       }),
+      command("timeline.copy-layer-time", "Copy Selected Layer Keys At Playhead", "Keyframes", copySelectedLayerTimelineTimeKeyframes, {
+        keywords: ["selected object", "selected layer", "pose", "time", "column", "copy", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.cut-layer-time", "Cut Selected Layer Keys At Playhead", "Keyframes", cutSelectedLayerTimelineTimeKeyframes, {
+        keywords: ["selected object", "selected layer", "pose", "time", "column", "cut", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.duplicate-layer-time", "Duplicate Selected Layer Keys At Playhead", "Keyframes", duplicateSelectedLayerTimelineTimeKeyframes, {
+        keywords: ["selected object", "selected layer", "pose", "time", "column", "duplicate", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.delete-layer-time", "Delete Selected Layer Keys At Playhead", "Keyframes", deleteSelectedLayerTimelineTimeKeyframes, {
+        keywords: ["selected object", "selected layer", "pose", "time", "column", "delete", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.copy-layer-work", "Copy Selected Layer Work Area Keyframes", "Keyframes", copySelectedLayerTimelineWorkAreaKeyframes, {
+        keywords: ["selected object", "selected layer", "work area", "copy", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.cut-layer-work", "Cut Selected Layer Work Area Keyframes", "Keyframes", cutSelectedLayerTimelineWorkAreaKeyframes, {
+        keywords: ["selected object", "selected layer", "work area", "cut", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.duplicate-layer-work", "Duplicate Selected Layer Work Area Keyframes", "Keyframes", duplicateSelectedLayerTimelineWorkAreaKeyframes, {
+        keywords: ["selected object", "selected layer", "work area", "duplicate", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.pin-selected-transform", "Pin Selected Transform Rows", "Keyframes", pinSelectedTransformRows, {
         keywords: ["pin", "pinned", "keying set", "position", "rotation", "scale", "trs"],
         disabled: () => !selectedEntry()
@@ -1163,6 +1255,18 @@ function boot(root: HTMLDivElement): void {
         shortcut: "Ctrl+Shift+V",
         keywords: ["insert edit", "shift"],
         disabled: () => !hasTimelineClipboard()
+      }),
+      command("timeline.insert-layer-gap", "Insert Gap On Selected Layer", "Keyframes", insertSelectedLayerTimelineTimeGap, {
+        keywords: ["selected object", "selected layer", "work area", "insert edit", "shift", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.lift-layer-work", "Lift Selected Layer Work Area", "Keyframes", liftSelectedLayerTimelineWorkArea, {
+        keywords: ["selected object", "selected layer", "work area", "delete range", "lift", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.extract-layer-work", "Extract Selected Layer Work Area", "Keyframes", extractSelectedLayerTimelineWorkArea, {
+        keywords: ["selected object", "selected layer", "work area", "close gap", "extract", "after effects", "ae"],
+        disabled: () => !selectedEntry()
       }),
       command("timeline.delete", "Delete Selected Keyframes", "Keyframes", () => deleteTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), {
         shortcut: "Delete",
@@ -1191,11 +1295,23 @@ function boot(root: HTMLDivElement): void {
       command("timeline.select-work", "Select Active Track Work Area Keyframes", "Selection", selectTimelineWorkAreaKeyframes, { shortcut: "Ctrl+Shift+A" }),
       command("timeline.select-visible", "Select Visible Row Keyframes", "Selection", () => selectVisibleTimelineKeyframes(false), { shortcut: "Ctrl+Alt+A" }),
       command("timeline.select-visible-work", "Select Visible Row Work Area Keyframes", "Selection", () => selectVisibleTimelineKeyframes(true), { shortcut: "Ctrl+Alt+Shift+A" }),
+      command("timeline.select-layer-work", "Select Selected Layer Work Area Keyframes", "Selection", selectSelectedLayerWorkAreaKeyframes, {
+        keywords: ["selected object", "selected layer", "work area", "work in", "work out", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.select-visible-before", "Select Visible Row Keys Before Playhead", "Selection", () => selectVisibleTimelineRelativeKeyframes("before"), {
         keywords: ["previous", "earlier", "tail edit", "retime", "rows"]
       }),
       command("timeline.select-visible-after", "Select Visible Row Keys After Playhead", "Selection", () => selectVisibleTimelineRelativeKeyframes("after"), {
         keywords: ["following", "later", "tail edit", "retime", "rows"]
+      }),
+      command("timeline.select-layer-before", "Select Selected Layer Keys Before Playhead", "Selection", () => selectSelectedLayerRelativeKeyframes("before"), {
+        keywords: ["selected object", "selected layer", "previous", "earlier", "tail edit", "retime", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.select-layer-after", "Select Selected Layer Keys After Playhead", "Selection", () => selectSelectedLayerRelativeKeyframes("after"), {
+        keywords: ["selected object", "selected layer", "following", "later", "tail edit", "retime", "after effects", "ae"],
+        disabled: () => !selectedEntry()
       }),
       command("timeline.select-pinned", "Select Pinned Row Keyframes", "Selection", () => selectPinnedTimelineKeyframes(false), {
         keywords: ["pin", "pinned", "favorite", "keying set", "rows", "channels"]
@@ -1207,6 +1323,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
       }),
       command("timeline.select-time", "Select Visible Row Keys At Playhead", "Selection", selectVisibleTimelineTimeKeyframes, { shortcut: "Ctrl+Alt+K" }),
+      command("timeline.select-layer-time", "Select Selected Layer Keys At Playhead", "Selection", selectSelectedLayerTimeKeyframes, {
+        keywords: ["selected object", "layer", "pose", "time", "column", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.deselect", "Deselect Timeline Keyframes", "Selection", deselectTimelineKeyframes, {
         shortcut: "Escape",
         keywords: ["clear selection", "unselect", "selected keys", "after effects", "ae"],
@@ -1291,31 +1411,39 @@ function boot(root: HTMLDivElement): void {
         keywords: ["pin", "pinned", "favorite", "keying set", "zoom", "range"],
         disabled: () => timelinePanel.pinnedRowKeyframeTimes().length === 0
       }),
+      command("timeline.fit-layer-key-range", "Fit Selected Layer Keyframe Range", "View", fitTimelineViewToSelectedLayerKeyRange, {
+        keywords: ["selected object", "selected layer", "zoom", "range", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.work-area-pinned", "Set Work Area To Pinned Row Keyframes", "View", setTimelineWorkAreaToPinnedKeys, {
         keywords: ["pin", "pinned", "favorite", "keying set", "work in", "work out", "range"],
         disabled: () => timelinePanel.pinnedRowKeyframeTimes().length === 0
       }),
+      command("timeline.work-area-layer-keys", "Set Work Area To Selected Layer Keyframes", "View", setTimelineWorkAreaToSelectedLayerKeys, {
+        keywords: ["selected object", "selected layer", "work in", "work out", "range", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.follow-playhead", "Toggle Follow Playhead", "View", toggleTimelineFollowPlayhead, {
         keywords: ["auto scroll", "current time indicator", "timeline view"]
       }),
-      command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
-      command("timeline.rows-focus", "Show Focus Timeline Rows", "View", () => setTimelineRowFilter("focus"), {
+      command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter({ clearSearch: true })}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
+      command("timeline.rows-focus", "Show Focus Timeline Rows", "View", () => setTimelineRowFilter("focus", { clearSearch: true }), {
         keywords: ["filter", "focused", "selected", "rows", "tracks", "timeline"]
       }),
-      command("timeline.rows-selected", "Show Selected Layer Timeline Rows", "View", () => setTimelineRowFilter("selected"), {
+      command("timeline.rows-selected", "Show Selected Layer Timeline Rows", "View", () => setTimelineRowFilter("selected", { clearSearch: true }), {
         keywords: ["filter", "selected", "layer", "object", "isolate", "rows", "tracks", "timeline"]
       }),
-      command("timeline.rows-selected-keyed", "Show Selected Keyed Timeline Rows", "View", () => setTimelineRowFilter("selectedKeyed"), {
+      command("timeline.rows-selected-keyed", "Show Selected Keyed Timeline Rows", "View", () => setTimelineRowFilter("selectedKeyed", { clearSearch: true }), {
         shortcut: "Shift+U",
         keywords: ["filter", "selected", "keyed", "animated properties", "layer", "after effects", "timeline"]
       }),
-      command("timeline.rows-keyed", "Show Keyed Timeline Rows", "View", () => setTimelineRowFilter("keyed"), {
+      command("timeline.rows-keyed", "Show Keyed Timeline Rows", "View", () => setTimelineRowFilter("keyed", { clearSearch: true }), {
         keywords: ["filter", "keyframed", "animated", "rows", "tracks", "timeline"]
       }),
-      command("timeline.rows-pinned", "Show Pinned Timeline Rows", "View", () => setTimelineRowFilter("pinned"), {
+      command("timeline.rows-pinned", "Show Pinned Timeline Rows", "View", () => setTimelineRowFilter("pinned", { clearSearch: true }), {
         keywords: ["filter", "pinned", "star", "rows", "tracks", "timeline"]
       }),
-      command("timeline.rows-all", "Show All Timeline Rows", "View", () => setTimelineRowFilter("all"), {
+      command("timeline.rows-all", "Show All Timeline Rows", "View", () => setTimelineRowFilter("all", { clearSearch: true }), {
         keywords: ["filter", "all", "rows", "tracks", "timeline"]
       }),
       command("timeline.pin-active-row", "Pin Active Timeline Row", "View", toggleActiveTimelineRowPin, {
@@ -1354,6 +1482,10 @@ function boot(root: HTMLDivElement): void {
       command("scene.screenshot", "Export Screenshot", "Scene", exportScreenshot),
       command("scene.cinematic", "Run Cinematic Demo", "Scene", startCinematicDemo),
       command("scene.showcase", "Run Coursework Showcase Demo", "Scene", startShowcaseDemo, { keywords: ["reference", "gif", "grid", "sphere", "shadow", "presentation"] }),
+      command("view.clean", "Toggle Clean View", "View", toggleCleanView, {
+        shortcut: "Alt+G",
+        keywords: ["hide grid", "hide axes", "screenshot", "sharp", "presentation", "clean", "no helper"]
+      }),
       command("scene.evaluation", "Run Evaluation Tour", "Scene", startEvaluationTour),
       command("scene.reset", "Reset Scene", "Scene", resetScene)
     ];
@@ -1367,6 +1499,80 @@ function boot(root: HTMLDivElement): void {
     options: Partial<Pick<CommandPaletteCommand, "keywords" | "shortcut" | "disabled">> = {}
   ): CommandPaletteCommand {
     return { id, title, category, run, ...options };
+  }
+
+  function shortcutTooltipBindings(): ShortcutTooltipBinding[] {
+    return [
+      { selector: "#command-palette-btn", label: "Open Command Palette", shortcut: "Ctrl+K / F3" },
+      { selector: "#quick-help-btn", commandId: "help.quick" },
+      { selector: "#play-toggle, #timeline-play-toggle", commandId: "timeline.play" },
+      { selector: "#timeline-preview-selection", commandId: "timeline.preview-selection" },
+      { selector: "#timeline-selected-start", label: "First Selected Keyframe", shortcut: "Shift+Home" },
+      { selector: "#timeline-selected-end", label: "Last Selected Keyframe", shortcut: "Shift+End" },
+      { selector: "#timeline-prev-visible-keyframe", label: "Previous Visible-Row Keyframe", shortcut: "Ctrl+Alt+Left" },
+      { selector: "#timeline-next-visible-keyframe", label: "Next Visible-Row Keyframe", shortcut: "Ctrl+Alt+Right" },
+      { selector: "#timeline-prev-keyframe", commandId: "timeline.previous-layer-key" },
+      { selector: "#timeline-next-keyframe", commandId: "timeline.next-layer-key" },
+      { selector: "#timeline-add-keyframe, #timeline-set-transform, #set-transform-pose-key", commandId: "timeline.set-transform" },
+      { selector: "#timeline-copy-keyframes", commandId: "timeline.copy" },
+      { selector: "#timeline-paste-keyframes", commandId: "timeline.paste" },
+      { selector: "#timeline-paste-insert-keyframes", commandId: "timeline.paste-insert" },
+      { selector: "#timeline-delete-keyframe", commandId: "timeline.delete" },
+      { selector: "#timeline-ripple-delete-keyframes", commandId: "timeline.ripple-delete" },
+      { selector: "#timeline-duplicate-keyframe", commandId: "timeline.duplicate" },
+      { selector: "#timeline-cycle-keyframes", commandId: "timeline.cycle-keys" },
+      { selector: "#timeline-select-workarea", commandId: "timeline.select-work" },
+      { selector: "#timeline-select-visible", commandId: "timeline.select-visible" },
+      { selector: "#timeline-select-time", commandId: "timeline.select-time" },
+      { selector: "#timeline-ease-linear", commandId: "timeline.ease-linear" },
+      { selector: "#timeline-ease-in", commandId: "timeline.ease-in" },
+      { selector: "#timeline-ease-out", commandId: "timeline.ease-out" },
+      { selector: "#timeline-ease-smooth", commandId: "timeline.ease-smooth" },
+      { selector: "#timeline-ease-hold", commandId: "timeline.ease-hold" },
+      { selector: "#timeline-move-to-playhead", commandId: "timeline.move-to-playhead" },
+      { selector: "#timeline-center-keyframes", commandId: "timeline.center-on-playhead" },
+      { selector: "#timeline-rove-keyframes", commandId: "timeline.rove" },
+      { selector: "#timeline-reverse-keyframes", commandId: "timeline.reverse-keys" },
+      { selector: "#timeline-snap-keyframes", commandId: "timeline.snap-frames" },
+      { selector: "#timeline-distribute-keyframes", commandId: "timeline.distribute" },
+      { selector: "#timeline-fit-keyframes", commandId: "timeline.fit-work" },
+      { selector: "#timeline-stagger-keyframes", commandId: "timeline.stagger" },
+      { selector: "#timeline-cascade-keyframes", commandId: "timeline.cascade" },
+      { selector: "#timeline-layer-in", label: "Trim Layer In At Playhead", shortcut: "Alt+[" },
+      { selector: "#timeline-layer-out", label: "Trim Layer Out At Playhead", shortcut: "Alt+]" },
+      { selector: "#timeline-split-layer", label: "Split Selected Layer", shortcut: "Ctrl+Shift+D" },
+      { selector: "#timeline-layer-work", label: "Set Work Area To Selected Layer", shortcut: "Alt+Shift+B" },
+      { selector: "#timeline-select-layer-keys", commandId: "timeline.select-layer-keys" },
+      { selector: "#timeline-fit-layer-keys", commandId: "timeline.fit-layer-keys" },
+      { selector: "#timeline-sequence-layers", commandId: "timeline.sequence-layers" },
+      { selector: "#timeline-selection-tool", commandId: "timeline.selection-tool" },
+      { selector: "#timeline-pan-tool", commandId: "timeline.pan-tool" },
+      { selector: "#timeline-zoom-in", commandId: "timeline.zoom-in" },
+      { selector: "#timeline-zoom-out", commandId: "timeline.zoom-out" },
+      { selector: "#timeline-zoom-fit", commandId: "timeline.fit" },
+      { selector: "#timeline-zoom-selection", commandId: "timeline.fit-selection" },
+      { selector: "#timeline-row-filter", commandId: "timeline.rows" },
+      { selector: "#timeline-pin-visible-rows", commandId: "timeline.pin-visible-rows" },
+      { selector: "#timeline-clear-pinned-rows", commandId: "timeline.clear-pinned-rows" },
+      { selector: "#timeline-graph-toggle", commandId: "timeline.graph" },
+      { selector: "#save-scene", commandId: "scene.save" },
+      { selector: ".file-action", commandId: "scene.load" },
+      { selector: "#screenshot-btn", commandId: "scene.screenshot" },
+      { selector: "#cinematic-btn", commandId: "scene.cinematic" },
+      { selector: "#showcase-btn", commandId: "scene.showcase" },
+      { selector: "#evaluation-btn", commandId: "scene.evaluation" },
+      { selector: "#reset-scene", commandId: "scene.reset" },
+      { selector: "#clean-view-button", commandId: "view.clean" },
+      { selector: "#frame-selected-view", commandId: "view.frame-selected" },
+      { selector: "#frame-all-view", commandId: "view.frame-all" },
+      { selector: '[data-mode="translate"]', commandId: "tool.move" },
+      { selector: '[data-mode="rotate"]', commandId: "tool.rotate" },
+      { selector: '[data-mode="scale"]', commandId: "tool.scale" },
+      { selector: "#copy-transform-pose", commandId: "transform.copy-pose" },
+      { selector: "#paste-transform-pose", commandId: "transform.paste-pose" },
+      { selector: "#parent-to-null", commandId: "transform.parent-to-null" },
+      { selector: "#clear-parent", commandId: "transform.clear-parent" }
+    ];
   }
 
   function hasTimelineClipboard(): boolean {
@@ -1430,6 +1636,10 @@ function boot(root: HTMLDivElement): void {
       onSetKey: (kind) => {
         query<HTMLSelectElement>("#timeline-track-kind").value = kind;
         setTimelineKeyframe(kind);
+      },
+      onClearTrack: (kind) => {
+        query<HTMLSelectElement>("#timeline-track-kind").value = kind;
+        clearTimelineTrack(kind);
       },
       onValueChanged: updateTransformValue
     });
@@ -1523,10 +1733,11 @@ function boot(root: HTMLDivElement): void {
     showToast(`${child.name} parented to new Null Controller`, "good");
   }
 
-  function transformKeyState(kind: TransformProperty): { locked: boolean; hasPlayheadKey: boolean } {
+  function transformKeyState(kind: TransformProperty): { locked: boolean; hasTrackKeyframes: boolean; hasPlayheadKey: boolean } {
     const track = activeTimelineTrack(kind);
     return {
       locked: Boolean(track?.locked),
+      hasTrackKeyframes: Boolean(track?.keyframes.length),
       hasPlayheadKey: Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - sceneTimeline.currentTime) < 0.001))
     };
   }
@@ -1634,6 +1845,8 @@ function boot(root: HTMLDivElement): void {
       const previousValues = captureTransformValues(current);
       previousValues[prop] = previousValue;
       autoKeyTransformChange(current, prop, previousValues);
+    } else {
+      maybeStopwatchKeyTransformChange(current, prop);
     }
     updateAllUI();
   }
@@ -1648,6 +1861,20 @@ function boot(root: HTMLDivElement): void {
 
   function seedInitialTransformAutoKey(entry: SceneEntry, kind: TransformProperty, value = timelineValueForEntry(entry, kind)): void {
     seedInitialObjectAutoKey(entry, kind, value);
+  }
+
+  function maybeStopwatchKeyTransformChange(entry: SceneEntry, kind: TransformProperty): boolean {
+    const track = sceneTimeline.objects
+      .find((objectTimeline) => objectTimeline.objectId === entry.id)
+      ?.tracks.find((candidate) => candidate.kind === kind);
+    if (!track || track.locked || track.keyframes.length === 0) return false;
+    setTimelineKeyframe(kind, {
+      notify: false,
+      record: false,
+      refresh: false,
+      select: false
+    });
+    return true;
   }
 
   function seedInitialObjectAutoKey(entry: SceneEntry, kind: TimelineTrackKind, value: [number, number, number]): void {
@@ -1829,6 +2056,91 @@ function boot(root: HTMLDivElement): void {
     });
   }
 
+  function toggleCleanView(): void {
+    if (cleanViewSnapshot) {
+      restoreCleanView();
+      return;
+    }
+    applyCleanView();
+  }
+
+  function applyCleanView(): void {
+    stopPathTracePreview(false);
+    recordHistory();
+    cleanViewSnapshot = {
+      gridVisible: stage.grid.visible,
+      axesVisible: stage.axes.visible,
+      statsVisible,
+      frustumVisible: frustumHelper.visible,
+      motionPathVisible,
+      onionSkinVisible,
+      lightHelpersVisible: lightRig.helpers,
+      transformGizmoVisible: transformControlsHelper.visible,
+      transformControlsEnabled: transformControls.enabled,
+      postProcessing: { ...renderSettings.postProcessing }
+    };
+    stage.grid.visible = false;
+    stage.axes.visible = false;
+    statsVisible = false;
+    motionPathVisible = false;
+    onionSkinVisible = false;
+    frustumHelper.visible = false;
+    lightRig.helpers = false;
+    transformControlsHelper.visible = false;
+    transformControls.enabled = false;
+    syncLightHelpers(lightRig);
+    renderSettings = normalizeRenderSettings({
+      ...renderSettings,
+      postProcessing: normalizePostProcessingSettings({
+        ...renderSettings.postProcessing,
+        dof: false,
+        ssao: false,
+        bloom: false,
+        halftone: false,
+        vignette: false
+      })
+    });
+    applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
+    frustumHelper.update();
+    updateAllUI();
+    showToast("Clean view enabled: grid, axes, transform gizmo, helpers, and blur effects hidden.", "good");
+  }
+
+  function restoreCleanView(): void {
+    if (!cleanViewSnapshot) return;
+    stopPathTracePreview(false);
+    recordHistory();
+    stage.grid.visible = cleanViewSnapshot.gridVisible;
+    stage.axes.visible = cleanViewSnapshot.axesVisible;
+    statsVisible = cleanViewSnapshot.statsVisible;
+    frustumHelper.visible = cleanViewSnapshot.frustumVisible;
+    motionPathVisible = cleanViewSnapshot.motionPathVisible;
+    onionSkinVisible = cleanViewSnapshot.onionSkinVisible;
+    lightRig.helpers = cleanViewSnapshot.lightHelpersVisible;
+    transformControlsHelper.visible = cleanViewSnapshot.transformGizmoVisible;
+    transformControls.enabled = cleanViewSnapshot.transformControlsEnabled;
+    renderSettings = normalizeRenderSettings({
+      ...renderSettings,
+      postProcessing: normalizePostProcessingSettings(cleanViewSnapshot.postProcessing)
+    });
+    cleanViewSnapshot = null;
+    syncLightHelpers(lightRig);
+    applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
+    frustumHelper.update();
+    updateAllUI();
+    showToast("Clean view restored.", "good");
+  }
+
+  function resetCleanViewState(): void {
+    cleanViewSnapshot = null;
+    transformControlsHelper.visible = true;
+    transformControls.enabled = true;
+  }
+
   async function togglePathTracePreview(): Promise<void> {
     if (pathTracePreview.isActive()) {
       stopPathTracePreview(true);
@@ -1911,7 +2223,7 @@ function boot(root: HTMLDivElement): void {
   function syncSelectionSummary(): void {
     const entry = selectedEntry();
     const summary = entry
-      ? `${entry.name} | ${capitalize(entry.renderMode)} | ${hasObjectTimelineTracks(sceneTimeline, entry.id) ? "Keyframed" : entry.animation === "none" ? "Static" : capitalize(entry.animation)}`
+      ? `${entry.name} | ${capitalize(entry.renderMode)} | ${hasObjectTimelineTracks(sceneTimeline, entry.id) ? "Keyframed" : entry.animation === "none" ? "Static" : capitalize(entry.animation)}${entry.assetSource ? ` | ${entry.assetSource.providerLabel}` : ""}`
       : "No object selected";
     query<HTMLParagraphElement>("#selection-summary").textContent = summary;
     query<HTMLInputElement>("#object-name").value = entry?.name ?? "";
@@ -1941,9 +2253,25 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#grid-toggle").checked = stage.grid.visible;
     query<HTMLInputElement>("#axes-toggle").checked = stage.axes.visible;
     query<HTMLInputElement>("#stats-toggle").checked = statsVisible;
+    query<HTMLDivElement>("#fps").classList.toggle("hidden", !statsVisible);
+    query<HTMLDivElement>("#telemetry-grid").classList.toggle("hidden", !statsVisible);
     query<HTMLInputElement>("#frustum-toggle").checked = frustumHelper.visible;
     query<HTMLInputElement>("#motion-path-toggle").checked = motionPathVisible;
     query<HTMLInputElement>("#onion-skin-toggle").checked = onionSkinVisible;
+    syncCleanViewButton();
+  }
+
+  function syncCleanViewButton(): void {
+    const active = cleanViewSnapshot !== null;
+    const button = query<HTMLButtonElement>("#clean-view-button");
+    const label = button.querySelector<HTMLSpanElement>("span:last-child");
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    button.dataset.shortcutTooltipTitle = active ? "Restore View" : "Clean View";
+    button.title = active
+      ? "Restore previous grid, axes, transform gizmo, helpers, overlays, and post effects\nShortcut: Alt+G"
+      : "Hide grid, axes, transform gizmo, helpers, overlays, and blur-prone post effects\nShortcut: Alt+G";
+    if (label) label.textContent = active ? "Restore View" : "Clean View";
   }
 
   function syncMotionPath(): void {
@@ -2043,106 +2371,6 @@ function boot(root: HTMLDivElement): void {
     });
   }
 
-  function bindAssetBrowser(): void {
-    const browser = query<HTMLElement>("#asset-browser");
-    const toggleButton = query<HTMLButtonElement>("#asset-browser-toggle");
-    const minimizeButton = query<HTMLButtonElement>("#asset-browser-minimize");
-    const closeButton = query<HTMLButtonElement>("#asset-browser-close");
-    const restoreButton = query<HTMLButtonElement>("#asset-browser-restore");
-    const searchInput = query<HTMLInputElement>("#asset-browser-search");
-    const emptyState = query<HTMLElement>("#asset-browser-empty");
-    const cards = Array.from(browser.querySelectorAll<HTMLElement>(".asset-card"));
-    const tabs = Array.from(browser.querySelectorAll<HTMLButtonElement>(".asset-tab"));
-    let activeTab = parseAssetBrowserTab(loadAssetBrowserState().tab);
-
-    const setState = (state: "open" | "minimized" | "closed", persist = true) => {
-      browser.classList.toggle("is-hidden", state === "closed");
-      browser.classList.toggle("is-minimized", state === "minimized");
-      browser.setAttribute("aria-hidden", String(state === "closed"));
-      toggleButton.classList.toggle("active", state !== "closed");
-      toggleButton.setAttribute("aria-pressed", String(state !== "closed"));
-      toggleButton.title = state === "closed" ? "Open asset browser" : "Close asset browser";
-      if (persist) storeAssetBrowserState({ state, tab: activeTab });
-    };
-
-    const applyFilter = () => {
-      const queryText = searchInput.value.trim().toLowerCase();
-      let visibleCount = 0;
-      cards.forEach((card) => {
-        const categories = (card.dataset.assetCategory ?? "").split(/\s+/);
-        const matchesTab =
-          activeTab === "online"
-            ? categories.includes("online")
-            : activeTab === "built-in"
-              ? categories.includes("built-in")
-              : activeTab === "materials"
-                ? categories.includes("materials")
-                : categories.includes("models");
-        const matchesSearch = !queryText || (card.dataset.assetSearch ?? "").toLowerCase().includes(queryText);
-        const visible = matchesTab && matchesSearch;
-        card.hidden = !visible;
-        if (visible) visibleCount += 1;
-      });
-      emptyState.hidden = visibleCount > 0;
-    };
-
-    tabs.forEach((tab) => {
-      const selected = tab.dataset.assetTab === activeTab;
-      tab.classList.toggle("active", selected);
-      tab.setAttribute("aria-pressed", String(selected));
-      tab.addEventListener("click", () => {
-        activeTab = parseAssetBrowserTab(tab.dataset.assetTab);
-        tabs.forEach((item) => {
-          const isActive = item === tab;
-          item.classList.toggle("active", isActive);
-          item.setAttribute("aria-pressed", String(isActive));
-        });
-        applyFilter();
-        storeAssetBrowserState({ state: browserState(browser), tab: activeTab });
-      });
-    });
-
-    toggleButton.addEventListener("click", () => {
-      setState(browser.classList.contains("is-hidden") ? "open" : "closed");
-    });
-    minimizeButton.addEventListener("click", () => setState("minimized"));
-    closeButton.addEventListener("click", () => setState("closed"));
-    restoreButton.addEventListener("click", () => setState("open"));
-    searchInput.addEventListener("input", applyFilter);
-
-    const storedState = loadAssetBrowserState();
-    setState(storedState.state ?? "closed", false);
-    applyFilter();
-  }
-
-  function browserState(browser: HTMLElement): "open" | "minimized" | "closed" {
-    if (browser.classList.contains("is-hidden")) return "closed";
-    if (browser.classList.contains("is-minimized")) return "minimized";
-    return "open";
-  }
-
-  function loadAssetBrowserState(): { state?: "open" | "minimized" | "closed"; tab?: string } {
-    try {
-      const raw = window.localStorage.getItem(ASSET_BROWSER_STORAGE_KEY);
-      const parsed = raw ? safeJsonParse<{ state?: "open" | "minimized" | "closed"; tab?: string }>(raw) : null;
-      return parsed ?? {};
-    } catch {
-      return {};
-    }
-  }
-
-  function parseAssetBrowserTab(tab: string | undefined): "online" | "built-in" | "materials" | "models" {
-    return tab === "built-in" || tab === "materials" || tab === "models" ? tab : "online";
-  }
-
-  function storeAssetBrowserState(state: { state: "open" | "minimized" | "closed"; tab: string }): void {
-    try {
-      window.localStorage.setItem(ASSET_BROWSER_STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // The asset browser still works when storage is unavailable.
-    }
-  }
-
   function applyAssetStoreItem(itemId: string): void {
     const item = assetStoreItemById(itemId);
     if (!item) return;
@@ -2194,28 +2422,168 @@ function boot(root: HTMLDivElement): void {
     }
   }
 
-  async function importRemoteAsset(assetId: string): Promise<void> {
+  async function importRemoteAsset(assetId: string, triggerButton?: HTMLButtonElement): Promise<void> {
     const asset = remoteAssetById(assetId);
     if (!asset) return;
+    const card = remoteAssetCard(asset.id, triggerButton);
+    const updateImportState = (state: RemoteAssetCardState, label: string, ratio: number) => {
+      updateRemoteAssetCard(card, state, label, ratio);
+      updateRemoteAssetTrigger(triggerButton, state);
+    };
 
     try {
       setProgress(`Downloading ${asset.label}`, 0.05);
-      const blob = await downloadRemoteAsset(asset);
+      updateImportState("downloading", "Connecting...", 0.05);
+      const blob = await downloadRemoteAsset(asset, (ratio, label) => {
+        updateImportState("downloading", label, ratio);
+      });
+      updateImportState("importing", "Importing into scene...", 0.95);
       const file = new File([blob], asset.fileName, { type: "model/gltf-binary" });
       const entry = await importModelFiles([file]);
-      if (!entry) return;
+      if (!entry) {
+        updateImportState("error", "Import did not create a model.", 1);
+        return;
+      }
       entry.name = asset.label;
       entry.root.name = asset.label;
+      entry.assetSource = {
+        provider: asset.provider,
+        providerId: asset.providerId,
+        providerLabel: asset.providerLabel,
+        assetId: asset.id,
+        title: asset.label,
+        license: asset.license,
+        attribution: asset.attribution,
+        sourceUrl: asset.sourceUrl,
+        previewUrl: asset.previewUrl
+      };
       setSelected(entry.id);
       updateAllUI();
+      updateImportState("success", "Imported into scene", 1);
       showToast(`${asset.label} imported from ${asset.provider}`, "good");
     } catch (error) {
       setProgress("Remote import failed", 0);
+      updateImportState("error", "Import failed. Try again.", 1);
       showToast(error instanceof Error ? error.message : "Remote asset import failed.", "bad");
     }
   }
 
-  async function downloadRemoteAsset(asset: RemoteAssetItem): Promise<Blob> {
+  async function loadCampusLandscape(triggerButton?: HTMLButtonElement): Promise<void> {
+    const asset = remoteAssetById("campus-e-hall");
+    if (!asset) {
+      showToast("Campus scene asset is missing.", "bad");
+      return;
+    }
+
+    try {
+      recordHistory();
+      updateCampusSceneButton(triggerButton, "downloading");
+      setProgress("Loading campus landscape", 0.03);
+      const blob = await downloadRemoteAsset(asset, (ratio, label) => {
+        setProgress(`Campus: ${label}`, ratio * 0.72);
+      });
+      updateCampusSceneButton(triggerButton, "importing");
+      clearSceneEntries();
+      sceneTimeline = createDefaultTimeline();
+      const file = new File([blob], asset.fileName, { type: "model/gltf-binary" });
+      const imported = await loadModelFromFiles([file], (progress) => {
+        setProgress(`Preparing campus: ${progress.label}`, 0.72 + progress.ratio * 0.2);
+      });
+      const entry = makeEntry({
+        kind: "model",
+        type: "model",
+        name: "Campus Landscape - E Hall",
+        sourceObject: imported.object,
+        color: new THREE.Color("#d8dadf"),
+        renderMode: "solid",
+        materialMode: "standard",
+        useSourceMaterials: imported.useSourceMaterials,
+        animation: "none",
+        textureName: "none",
+        assetSource: {
+          provider: asset.provider,
+          providerId: asset.providerId,
+          providerLabel: asset.providerLabel,
+          assetId: asset.id,
+          title: "Campus Landscape - E Hall",
+          license: asset.license,
+          attribution: asset.attribution,
+          sourceUrl: asset.sourceUrl,
+          previewUrl: asset.previewUrl
+        }
+      });
+      entry.root.position.set(0, 0, 0);
+      entry.basePosition.copy(entry.root.position);
+      rebuildEntryVisual(entry);
+      scene.add(entry.root);
+      entries.set(entry.id, entry);
+      selectedId = entry.id;
+      transformControls.attach(entry.root);
+      applyCampusLandscapeLook();
+      const box = boxForObjects([entry.root]);
+      if (box) fitCameraToBox(camera, controls, box);
+      frustumHelper.update();
+      syncCameraUI();
+      rebuildTimelineRuntime();
+      timelinePlayer.setTime(sceneTimeline.currentTime);
+      setProgress("Campus landscape ready", 1);
+      updateCampusSceneButton(triggerButton, "success");
+      updateAllUI();
+      showToast(imported.warnings[0] ?? "Campus landscape loaded", imported.warnings.length > 0 ? "bad" : "good");
+    } catch (error) {
+      setProgress("Campus load failed", 0);
+      updateCampusSceneButton(triggerButton, "error");
+      showToast(error instanceof Error ? error.message : "Campus landscape failed to load.", "bad");
+    }
+  }
+
+  function applyCampusLandscapeLook(): void {
+    stage.grid.visible = true;
+    stage.axes.visible = true;
+    lightRig.active = "directional";
+    lightRig.helpers = false;
+    lightRig.shadows = true;
+    lightRig.sweep = false;
+    lightRig.ambient.intensity = 0.62;
+    lightRig.directional.position.set(-6, 9, 7);
+    lightRig.directional.color.set("#fff1d1");
+    lightRig.directional.intensity = 2.8;
+    lightRig.point.position.set(4, 4, 5);
+    lightRig.point.intensity = 0.45;
+    lightRig.spot.position.set(-5, 6, 4);
+    lightRig.spot.intensity = 0.75;
+    syncLightHelpers(lightRig);
+    renderSettings = normalizeRenderSettings({
+      ...createDefaultRenderSettings(),
+      toneMapping: "aces",
+      exposure: 1.12,
+      shadowQuality: "ultra",
+      environment: "warm",
+      postProcessing: normalizePostProcessingSettings({
+        ...createDefaultRenderSettings().postProcessing,
+        fxaa: true,
+        ssao: false,
+        ssaoRadius: 8,
+        dof: false,
+        dofFocus: 18,
+        dofAperture: 0.00004,
+        dofMaxBlur: 0.002,
+        bloom: false,
+        bloomStrength: 0.1,
+        bloomRadius: 0.2,
+        bloomThreshold: 0.88,
+        vignette: true,
+        vignetteDarkness: 0.34
+      })
+    });
+    syncLights(lightRig, entries.values());
+    applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
+    setGroundShadowOpacity(0.16);
+  }
+
+  async function downloadRemoteAsset(asset: RemoteAssetItem, onProgress?: (ratio: number, label: string) => void): Promise<Blob> {
     const response = await fetch(asset.downloadUrl, { mode: "cors" });
     if (!response.ok) {
       throw new Error(`Could not download ${asset.label} (${response.status}).`);
@@ -2223,13 +2591,15 @@ function boot(root: HTMLDivElement): void {
 
     const contentLength = Number(response.headers.get("content-length") ?? "0");
     if (contentLength > REMOTE_ASSET_IMPORT_LIMIT_BYTES) {
-      throw new Error(`${asset.label} is larger than 80 MB.`);
+      throw new Error(`${asset.label} is larger than ${REMOTE_ASSET_IMPORT_LIMIT_LABEL}.`);
     }
 
     if (!response.body) {
+      onProgress?.(0.45, "Downloading...");
       const blob = await response.blob();
-      if (blob.size > REMOTE_ASSET_IMPORT_LIMIT_BYTES) throw new Error(`${asset.label} is larger than 80 MB.`);
+      if (blob.size > REMOTE_ASSET_IMPORT_LIMIT_BYTES) throw new Error(`${asset.label} is larger than ${REMOTE_ASSET_IMPORT_LIMIT_LABEL}.`);
       setProgress(`Downloaded ${asset.label}`, 0.9);
+      onProgress?.(0.9, "Download complete");
       return blob;
     }
 
@@ -2243,16 +2613,110 @@ function boot(root: HTMLDivElement): void {
       loaded += value.byteLength;
       if (loaded > REMOTE_ASSET_IMPORT_LIMIT_BYTES) {
         reader.cancel().catch(() => undefined);
-        throw new Error(`${asset.label} is larger than 80 MB.`);
+        throw new Error(`${asset.label} is larger than ${REMOTE_ASSET_IMPORT_LIMIT_LABEL}.`);
       }
       const chunk = new Uint8Array(value.byteLength);
       chunk.set(value);
       chunks.push(chunk.buffer);
       const downloadRatio = contentLength > 0 ? Math.min(0.85, loaded / contentLength) : 0.35;
       setProgress(`Downloading ${asset.label}`, 0.05 + downloadRatio * 0.85);
+      onProgress?.(0.05 + downloadRatio * 0.85, contentLength > 0 ? `${formatBytes(loaded)} / ${formatBytes(contentLength)}` : `${formatBytes(loaded)} downloaded`);
     }
     setProgress(`Downloaded ${asset.label}`, 0.9);
+    onProgress?.(0.9, "Download complete");
     return new Blob(chunks, { type: "model/gltf-binary" });
+  }
+
+  type RemoteAssetCardState = "idle" | "downloading" | "importing" | "success" | "error";
+
+  function remoteAssetCard(assetId: string, triggerButton?: HTMLButtonElement): HTMLElement | null {
+    return triggerButton?.closest<HTMLElement>(".remote-asset-card") ?? document.querySelector<HTMLElement>(`[data-remote-asset-card="${assetId}"]`);
+  }
+
+  function updateRemoteAssetCard(card: HTMLElement | null, state: RemoteAssetCardState, label: string, ratio: number): void {
+    if (!card) return;
+    card.dataset.remoteAssetState = state;
+    card.classList.toggle("is-downloading", state === "downloading");
+    card.classList.toggle("is-importing", state === "importing");
+    card.classList.toggle("is-error", state === "error");
+
+    const progress = card.querySelector<HTMLElement>(".asset-card-progress span");
+    if (progress) progress.style.width = `${Math.round(clamp(ratio, 0, 1) * 100)}%`;
+
+    const status = card.querySelector<HTMLElement>("[data-remote-asset-status]");
+    if (status) status.textContent = label;
+
+    const button = card.querySelector<HTMLButtonElement>("[data-remote-asset-id]");
+    if (button) {
+      const busy = state === "downloading" || state === "importing";
+      button.disabled = busy;
+      button.setAttribute("aria-busy", String(busy));
+      const buttonLabel = button.querySelector<HTMLElement>("[data-remote-asset-button-label]");
+      if (buttonLabel) buttonLabel.textContent = remoteAssetButtonLabel(state);
+    }
+
+    if (state === "success" || state === "error") {
+      window.setTimeout(() => {
+        if (card.dataset.remoteAssetState === state) updateRemoteAssetCard(card, "idle", "Ready to import", 0);
+      }, 2400);
+    }
+  }
+
+  function updateRemoteAssetTrigger(button: HTMLButtonElement | undefined, state: RemoteAssetCardState): void {
+    if (!button || button.closest(".remote-asset-card")) return;
+    button.dataset.remoteAssetState = state;
+    const busy = state === "downloading" || state === "importing";
+    button.disabled = busy;
+    button.setAttribute("aria-busy", String(busy));
+    const buttonLabel = button.querySelector<HTMLElement>("[data-remote-asset-button-label]");
+    if (buttonLabel) buttonLabel.textContent = state === "idle" ? "Load E Hall" : remoteAssetButtonLabel(state);
+    if (state === "success" || state === "error") {
+      window.setTimeout(() => {
+        if (button.dataset.remoteAssetState === state) updateRemoteAssetTrigger(button, "idle");
+      }, 2400);
+    }
+  }
+
+  function updateCampusSceneButton(button: HTMLButtonElement | undefined, state: RemoteAssetCardState): void {
+    if (!button) return;
+    button.dataset.campusSceneState = state;
+    const busy = state === "downloading" || state === "importing";
+    button.disabled = busy;
+    button.setAttribute("aria-busy", String(busy));
+    const label = button.querySelector<HTMLElement>("[data-campus-scene-button-label]");
+    if (label) {
+      if (state === "downloading") label.textContent = "Loading";
+      else if (state === "importing") label.textContent = "Building Scene";
+      else if (state === "success") label.textContent = "Loaded";
+      else if (state === "error") label.textContent = "Retry Campus";
+      else label.textContent = "Load Campus";
+    }
+    if (state === "success" || state === "error") {
+      window.setTimeout(() => {
+        if (button.dataset.campusSceneState === state) updateCampusSceneButton(button, "idle");
+      }, 2400);
+    }
+  }
+
+  function remoteAssetButtonLabel(state: RemoteAssetCardState): string {
+    if (state === "downloading") return "Downloading";
+    if (state === "importing") return "Importing";
+    if (state === "success") return "Imported";
+    if (state === "error") return "Retry";
+    return "Import";
+  }
+
+  function formatBytes(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+    if (bytes < 1024) return `${Math.round(bytes)} B`;
+    const units = ["KB", "MB", "GB"];
+    let value = bytes / 1024;
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex += 1;
+    }
+    return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex] ?? "GB"}`;
   }
 
   function applyAssetLookPreset(preset: AssetLookPreset): void {
@@ -2416,19 +2880,25 @@ function boot(root: HTMLDivElement): void {
     return undefined;
   }
 
-  function handleKeyboard(event: KeyboardEvent): void {
+  function handleCommandPaletteShortcut(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
     const code = event.code.toLowerCase();
     if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && key === "k") {
       event.preventDefault();
+      event.stopPropagation();
       commandPalette.open();
       return;
     }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && key === "f3") {
       event.preventDefault();
+      event.stopPropagation();
       commandPalette.open();
-      return;
     }
+  }
+
+  function handleKeyboard(event: KeyboardEvent): void {
+    const key = event.key.toLowerCase();
+    const code = event.code.toLowerCase();
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
     if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "escape" && hasSelectedTimelineKeyframes()) {
       event.preventDefault();
@@ -2473,6 +2943,11 @@ function boot(root: HTMLDivElement): void {
     if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "u") {
       event.preventDefault();
       revealTimelineRows("objectTextureSource", "texture", "Texture");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "g") {
+      event.preventDefault();
+      toggleCleanView();
       return;
     }
     if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && key === "p") {
@@ -2686,8 +3161,8 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "u") {
       event.preventDefault();
-      if (event.shiftKey) setTimelineRowFilter("selectedKeyed");
-      else showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good");
+      if (event.shiftKey) setTimelineRowFilter("selectedKeyed", { clearSearch: true });
+      else showToast(`Timeline rows: ${timelinePanel.cycleRowFilter({ clearSearch: true })}`, "good");
       return;
     }
     if (key === "=" || key === "+" || code === "equal" || code === "numpadadd") {
@@ -2751,6 +3226,7 @@ function boot(root: HTMLDivElement): void {
     if (key === "arrowleft" || key === "arrowright") {
       event.preventDefault();
       if (event.altKey && event.shiftKey && (event.ctrlKey || event.metaKey)) stepPinnedTimelineKeyframe(key === "arrowright" ? 1 : -1);
+      else if (event.altKey && event.shiftKey) stepSelectedLayerTimelineKeyframe(key === "arrowright" ? 1 : -1);
       else if (event.altKey && (event.ctrlKey || event.metaKey)) stepVisibleTimelineKeyframe(key === "arrowright" ? 1 : -1);
       else if (event.altKey) nudgeTimelineKeyframes(key === "arrowright" ? 1 : -1);
       else if (event.shiftKey) stepTimelineKeyframe(key === "arrowright" ? 1 : -1);
@@ -3099,6 +3575,7 @@ function boot(root: HTMLDivElement): void {
 
   function resetScene(): void {
     recordHistory();
+    resetCleanViewState();
     clearSceneEntries();
     sceneTimeline = createDefaultTimeline();
     renderSettings = createDefaultRenderSettings();
@@ -3262,6 +3739,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function restoreScene(document: SceneDocument, resetHistory = false): void {
+    resetCleanViewState();
     clearSceneEntries();
     camera.fov = document.camera.fov;
     camera.near = document.camera.near;
@@ -3329,6 +3807,7 @@ function boot(root: HTMLDivElement): void {
         renderMode: object.renderMode,
         materialMode: object.materialMode,
         useSourceMaterials: object.useSourceMaterials ?? false,
+        assetSource: object.assetSource,
         animation: object.animation,
         textureName: object.textureName,
         opacity: object.opacity ?? 1,
@@ -3528,6 +4007,17 @@ function boot(root: HTMLDivElement): void {
     return { start: roundTime(start), end: roundTime(end), count: times.length };
   }
 
+  function selectedLayerKeyTimeRange(action: string): { entry: SceneEntry; start: number; end: number; count: number } | null {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast(`Select an object before ${action}.`, "bad");
+      return null;
+    }
+
+    const range = timelineTimesRange(objectKeyframeTimes(sceneTimeline, entry.id), `${entry.name} has no keyframes to ${action}.`);
+    return range ? { entry, ...range } : null;
+  }
+
   function setTimelineWorkAreaToSelectedKeys(): void {
     const range = selectedTimelineKeyRange("Select timeline keyframes before fitting the work area.");
     if (!range) return;
@@ -3548,6 +4038,18 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.workEnd = range.end;
     updateAllUI();
     showToast(`Work area fit to ${range.count} pinned-row key time${range.count === 1 ? "" : "s"}`, "good");
+  }
+
+  function setTimelineWorkAreaToSelectedLayerKeys(): void {
+    const range = selectedLayerKeyTimeRange("fitting the work area to selected-layer keys");
+    if (!range) return;
+
+    recordHistory();
+    sceneTimeline.workStart = range.start;
+    sceneTimeline.workEnd = range.end;
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    updateAllUI();
+    showToast(`Work area fit to ${range.count} ${range.entry.name} key time${range.count === 1 ? "" : "s"}`, "good");
   }
 
   function previewSelectedTimelineKeyRange(): void {
@@ -3574,6 +4076,19 @@ function boot(root: HTMLDivElement): void {
     playTimeline(1, `Previewing ${range.count} pinned-row key time${range.count === 1 ? "" : "s"}`);
   }
 
+  function previewSelectedLayerTimelineKeyRange(): void {
+    const range = selectedLayerKeyTimeRange("previewing selected-layer keys");
+    if (!range) return;
+
+    recordHistory();
+    sceneTimeline.workStart = range.start;
+    sceneTimeline.workEnd = range.end;
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    setTimelineTime(range.start);
+    transport.pause();
+    playTimeline(1, `Previewing ${range.count} ${range.entry.name} key time${range.count === 1 ? "" : "s"}`);
+  }
+
   function fitTimelineViewToSelectedKeyRange(): void {
     const range = selectedTimelineKeyRange("Select timeline keyframes before fitting the timeline view.");
     if (!range) return;
@@ -3588,6 +4103,15 @@ function boot(root: HTMLDivElement): void {
 
     timelinePanel.fitTimelineToRange(range.start, range.end);
     showToast(`Timeline view fit to ${range.count} pinned-row key time${range.count === 1 ? "" : "s"}`, "good");
+  }
+
+  function fitTimelineViewToSelectedLayerKeyRange(): void {
+    const range = selectedLayerKeyTimeRange("fitting selected-layer keys in the timeline view");
+    if (!range) return;
+
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    timelinePanel.fitTimelineToRange(range.start, range.end);
+    showToast(`Timeline view fit to ${range.count} ${range.entry.name} key time${range.count === 1 ? "" : "s"}`, "good");
   }
 
   function toggleTimelineFollowPlayhead(): void {
@@ -3618,6 +4142,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object before pinning transform rows.", "bad");
       return;
     }
+    timelinePanel.setRowFilter("pinned", { clearSearch: true });
     showToast(result.changed
       ? `${result.targetName} Position, Rotation, and Scale pinned`
       : `${result.targetName} transform rows are already pinned.`,
@@ -3641,8 +4166,8 @@ function boot(root: HTMLDivElement): void {
     showToast(count ? `${count} pinned row${count === 1 ? "" : "s"} cleared` : "No pinned timeline rows to clear.", count ? "good" : "bad");
   }
 
-  function setTimelineRowFilter(filter: TimelineRowFilter): void {
-    showToast(`Timeline rows: ${timelinePanel.setRowFilter(filter)}`, "good");
+  function setTimelineRowFilter(filter: TimelineRowFilter, options: { clearSearch?: boolean } = {}): void {
+    showToast(`Timeline rows: ${timelinePanel.setRowFilter(filter, options)}`, "good");
   }
 
   function collapseTimelineGroups(): void {
@@ -3702,7 +4227,37 @@ function boot(root: HTMLDivElement): void {
       selectedCount ? "good" : "bad");
   }
 
+  function selectSelectedLayerWorkAreaKeyframes(): void {
+    const selection = selectedLayerWorkAreaKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerWorkAreaSelection(selection);
+    showToast(
+      selection.keyframeIds.length
+        ? `${selection.keyframeIds.length} ${selection.entry.name} work-area keyframe${selection.keyframeIds.length === 1 ? "" : "s"} selected`
+        : `No ${selection.entry.name} keyframes inside Work In/Out.`,
+      selection.keyframeIds.length ? "good" : "bad"
+    );
+  }
+
+  function selectedLayerWorkAreaKeyframeSelection(): { entry: SceneEntry; keyframeIds: string[] } | null {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before using selected-layer work-area keys.", "bad");
+      return null;
+    }
+    return {
+      entry,
+      keyframeIds: objectKeyframeIdsInRange(sceneTimeline, entry.id, sceneTimeline.workStart, sceneTimeline.workEnd)
+    };
+  }
+
+  function applySelectedLayerWorkAreaSelection(selection: { keyframeIds: string[] }): void {
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    timelinePanel.selectKeyframes(selection.keyframeIds);
+  }
+
   function selectPinnedTimelineKeyframes(workAreaOnly = false): void {
+    revealPinnedTimelineRows();
     const selectedCount = timelinePanel.selectPinnedRowKeyframes(workAreaOnly);
     const scope = workAreaOnly ? "pinned work-area" : "pinned-row";
     showToast(selectedCount
@@ -3722,11 +4277,30 @@ function boot(root: HTMLDivElement): void {
   }
 
   function selectPinnedTimelineTimeKeyframes(): void {
+    revealPinnedTimelineRows();
     const selectedCount = timelinePanel.selectPinnedRowKeyframesAtCurrentTime();
     showToast(selectedCount
       ? `${selectedCount} pinned-row keyframe${selectedCount === 1 ? "" : "s"} selected at ${formatNumber(sceneTimeline.currentTime)}s`
       : `No pinned-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s.`,
       selectedCount ? "good" : "bad");
+  }
+
+  function selectSelectedLayerRelativeKeyframes(direction: "before" | "after"): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast(`Select an object before selecting layer keys ${direction} the playhead.`, "bad");
+      return;
+    }
+
+    const keyframeIds = objectKeyframeIdsRelativeToTime(sceneTimeline, entry.id, direction);
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    timelinePanel.selectKeyframes(keyframeIds);
+    showToast(
+      keyframeIds.length
+        ? `${keyframeIds.length} ${entry.name} keyframe${keyframeIds.length === 1 ? "" : "s"} selected ${direction} playhead`
+        : `No ${entry.name} keyframes ${direction} the playhead.`,
+      keyframeIds.length ? "good" : "bad"
+    );
   }
 
   function deselectTimelineKeyframes(): void {
@@ -3754,15 +4328,6 @@ function boot(root: HTMLDivElement): void {
     return false;
   }
 
-  function upsertTimelineKeyframe(track: TimelineTrackDocument, time: number, value: [number, number, number]): TimelineKeyframeDocument {
-    const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-    const keyframe = existing ?? createTimelineKeyframe(time, value);
-    keyframe.value = [...value] as [number, number, number];
-    if (!existing) track.keyframes.push(keyframe);
-    sortTimelineKeyframes(track);
-    return keyframe;
-  }
-
   function setTransformTimelineKeyframes(
     targetId = selectedId,
     options: {
@@ -3770,6 +4335,7 @@ function boot(root: HTMLDivElement): void {
       record?: boolean;
       refresh?: boolean;
       select?: boolean;
+      revealRows?: boolean;
       seedValues?: Record<TransformProperty, [number, number, number]> | null;
     } = {}
   ): void {
@@ -3808,12 +4374,47 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyObjectPropertyTimeline();
     if (options.refresh !== false) updateAllUI();
+    if (options.revealRows !== false && options.refresh !== false && options.select !== false) {
+      timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    }
     if (options.select !== false) timelinePanel.selectKeyframes(keyframeIds);
     if (options.notify !== false) showToast(`${entry.name} pose keys set at ${formatNumber(time)}s`, "good");
   }
 
+  function clearTransformTimelineTracks(targetId = selectedId): void {
+    const entry = entries.get(targetId) ?? null;
+    if (!entry) {
+      showToast("Select an object before clearing transform tracks.", "bad");
+      return;
+    }
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id);
+    const transformTracks = objectTimeline?.tracks.filter((track) => isObjectTransformTrackKind(track.kind) && track.keyframes.length > 0) ?? [];
+    if (!objectTimeline || transformTracks.length === 0) {
+      showToast(`${entry.name} has no transform keyframes.`, "bad");
+      return;
+    }
+    const lockedTrack = transformTracks.find((track) => track.locked);
+    if (!assertTimelineTrackUnlocked(lockedTrack, "clearing transform tracks")) return;
+
+    recordHistory();
+    objectTimeline.tracks = objectTimeline.tracks.filter((track) => !isObjectTransformTrackKind(track.kind));
+    entry.animation = "none";
+    pruneEmptyTimelineTracks(sceneTimeline);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`${entry.name} transform tracks cleared`, "good");
+  }
+
   function setPinnedTimelineKeyframes(): void {
+    revealPinnedTimelineRows();
     setVisibleTimelineKeyframes(timelinePanel.pinnedRowTargetsList(), "pinned");
+  }
+
+  function revealPinnedTimelineRows(): void {
+    if (timelinePanel.pinnedRowTargetsList().length === 0) return;
+    timelinePanel.setRowFilter("pinned", { clearSearch: true });
   }
 
   function setVisibleTimelineKeyframes(rows: TimelineVisibleRowTarget[], rowScope = "visible"): void {
@@ -3967,6 +4568,34 @@ function boot(root: HTMLDivElement): void {
     );
   }
 
+  function selectedLayerTimeKeyframeSelection(): { entry: SceneEntry; keyframeIds: string[] } | null {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before selecting layer time keys.", "bad");
+      return null;
+    }
+    return { entry, keyframeIds: objectKeyframeIdsAtTime(sceneTimeline, entry.id) };
+  }
+
+  function applySelectedLayerTimeSelection(selection: { keyframeIds: string[] }): void {
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    timelinePanel.selectKeyframes(selection.keyframeIds);
+  }
+
+  function selectSelectedLayerTimeKeyframes(options: { notify?: boolean } = {}): number {
+    const selection = selectedLayerTimeKeyframeSelection();
+    if (!selection) return 0;
+    applySelectedLayerTimeSelection(selection);
+    if (options.notify === false) return selection.keyframeIds.length;
+    showToast(
+      selection.keyframeIds.length
+        ? `${selection.keyframeIds.length} ${selection.entry.name} keyframe${selection.keyframeIds.length === 1 ? "" : "s"} selected at ${formatNumber(sceneTimeline.currentTime)}s`
+        : `No ${selection.entry.name} keyframes at ${formatNumber(sceneTimeline.currentTime)}s.`,
+      selection.keyframeIds.length ? "good" : "bad"
+    );
+    return selection.keyframeIds.length;
+  }
+
   function fitSelectedLayerKeyframes(): void {
     const selection = selectedLayerRange();
     if (!selection) return;
@@ -4105,6 +4734,27 @@ function boot(root: HTMLDivElement): void {
 
   function resolveVisibleTimelineTrackTargets(rows: TimelineVisibleRowTarget[]) {
     return resolveTimelineRowTrackTargets(sceneTimeline, rows, new Set(entries.keys()));
+  }
+
+  function resolveSelectedLayerTimelineTrackTargets(action: string): { entry: SceneEntry; targets: TimelineTrackEditTarget[]; lockedCount: number } | null {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast(`Select an object before ${action}.`, "bad");
+      return null;
+    }
+
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id);
+    let lockedCount = 0;
+    const targets: TimelineTrackEditTarget[] = [];
+    objectTimeline?.tracks.forEach((track) => {
+      if (track.keyframes.length === 0) return;
+      if (track.locked) {
+        lockedCount += 1;
+        return;
+      }
+      targets.push({ scope: "object", objectId: entry.id, track });
+    });
+    return { entry, targets, lockedCount };
   }
 
   function applyTimelineMotionPreset(presetId: TimelineMotionPresetId): void {
@@ -4270,11 +4920,7 @@ function boot(root: HTMLDivElement): void {
       if (options.record !== false) recordHistory();
       const track = ensureTimelineTrack(cameraTimeline, kind);
       const value = timelineValueForCamera(kind);
-      const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-      const keyframe = existing ?? createTimelineKeyframe(time, value);
-      keyframe.value = value;
-      if (!existing) track.keyframes.push(keyframe);
-      sortTimelineKeyframes(track);
+      const keyframe = upsertTimelineKeyframe(track, time, value);
       sceneTimeline.currentTime = time;
       rebuildTimelineRuntime();
       timelinePlayer.setTime(sceneTimeline.currentTime);
@@ -4292,11 +4938,7 @@ function boot(root: HTMLDivElement): void {
       if (options.record !== false) recordHistory();
       const track = ensureTimelineTrack(lightTimeline, kind);
       const value = timelineValueForLight(kind);
-      const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-      const keyframe = existing ?? createTimelineKeyframe(time, value);
-      keyframe.value = value;
-      if (!existing) track.keyframes.push(keyframe);
-      sortTimelineKeyframes(track);
+      const keyframe = upsertTimelineKeyframe(track, time, value);
       sceneTimeline.currentTime = time;
       rebuildTimelineRuntime();
       timelinePlayer.setTime(sceneTimeline.currentTime);
@@ -4319,12 +4961,8 @@ function boot(root: HTMLDivElement): void {
     if (options.record !== false) recordHistory();
     const track = ensureTimelineTrack(objectTimeline, kind);
     const value = timelineValueForEntry(entry, kind);
-    const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
-    const keyframe = existing ?? createTimelineKeyframe(time, value);
-    keyframe.value = value;
+    const keyframe = upsertTimelineKeyframe(track, time, value);
     if (kind === "objectTextureSource") keyframe.interpolation = "hold";
-    if (!existing) track.keyframes.push(keyframe);
-    sortTimelineKeyframes(track);
     if (isObjectTransformTrackKind(kind)) entry.animation = "none";
     sceneTimeline.currentTime = time;
     rebuildTimelineRuntime();
@@ -4427,6 +5065,28 @@ function boot(root: HTMLDivElement): void {
     copyTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
   }
 
+  function copySelectedLayerTimelineTimeKeyframes(): void {
+    const selection = selectedLayerTimeKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerTimeSelection(selection);
+    if (selection.keyframeIds.length === 0) {
+      showToast(`No ${selection.entry.name} keyframes at ${formatNumber(sceneTimeline.currentTime)}s to copy.`, "bad");
+      return;
+    }
+    copyTimelineKeyframes(selection.keyframeIds, { preserveObjectTargets: true });
+  }
+
+  function copySelectedLayerTimelineWorkAreaKeyframes(): void {
+    const selection = selectedLayerWorkAreaKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerWorkAreaSelection(selection);
+    if (selection.keyframeIds.length === 0) {
+      showToast(`No ${selection.entry.name} keyframes inside Work In/Out to copy.`, "bad");
+      return;
+    }
+    copyTimelineKeyframes(selection.keyframeIds, { preserveObjectTargets: true });
+  }
+
   function cutTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList(), options: { preserveObjectTargets?: boolean } = {}): void {
     const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
     if (sources.length === 0) {
@@ -4456,6 +5116,28 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     cutTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
+  }
+
+  function cutSelectedLayerTimelineTimeKeyframes(): void {
+    const selection = selectedLayerTimeKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerTimeSelection(selection);
+    if (selection.keyframeIds.length === 0) {
+      showToast(`No ${selection.entry.name} keyframes at ${formatNumber(sceneTimeline.currentTime)}s to cut.`, "bad");
+      return;
+    }
+    cutTimelineKeyframes(selection.keyframeIds, { preserveObjectTargets: true });
+  }
+
+  function cutSelectedLayerTimelineWorkAreaKeyframes(): void {
+    const selection = selectedLayerWorkAreaKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerWorkAreaSelection(selection);
+    if (selection.keyframeIds.length === 0) {
+      showToast(`No ${selection.entry.name} keyframes inside Work In/Out to cut.`, "bad");
+      return;
+    }
+    cutTimelineKeyframes(selection.keyframeIds, { preserveObjectTargets: true });
   }
 
   function pasteTimelineKeyframes(options: { insert?: boolean } = {}): void {
@@ -4568,6 +5250,28 @@ function boot(root: HTMLDivElement): void {
     duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
   }
 
+  function duplicateSelectedLayerTimelineTimeKeyframes(): void {
+    const selection = selectedLayerTimeKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerTimeSelection(selection);
+    if (selection.keyframeIds.length === 0) {
+      showToast(`No ${selection.entry.name} keyframes at ${formatNumber(sceneTimeline.currentTime)}s to duplicate.`, "bad");
+      return;
+    }
+    duplicateTimelineKeyframes(selection.keyframeIds);
+  }
+
+  function duplicateSelectedLayerTimelineWorkAreaKeyframes(): void {
+    const selection = selectedLayerWorkAreaKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerWorkAreaSelection(selection);
+    if (selection.keyframeIds.length === 0) {
+      showToast(`No ${selection.entry.name} keyframes inside Work In/Out to duplicate.`, "bad");
+      return;
+    }
+    duplicateTimelineKeyframes(selection.keyframeIds);
+  }
+
   function deleteVisibleTimelineTimeKeyframes(): void {
     const selectedCount = timelinePanel.selectVisibleRowKeyframesAtCurrentTime();
     if (selectedCount === 0) {
@@ -4584,6 +5288,17 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     deleteTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+  }
+
+  function deleteSelectedLayerTimelineTimeKeyframes(): void {
+    const selection = selectedLayerTimeKeyframeSelection();
+    if (!selection) return;
+    applySelectedLayerTimeSelection(selection);
+    if (selection.keyframeIds.length === 0) {
+      showToast(`No ${selection.entry.name} keyframes at ${formatNumber(sceneTimeline.currentTime)}s to delete.`, "bad");
+      return;
+    }
+    deleteTimelineKeyframes(selection.keyframeIds);
   }
 
   function insertVisibleTimelineTimeGap(rows: TimelineVisibleRowTarget[]): void {
@@ -4605,6 +5320,29 @@ function boot(root: HTMLDivElement): void {
 
     const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
     showToast(`${formatNumber(gap)}s gap inserted on ${result.tracks} visible track${result.tracks === 1 ? "" : "s"}; ${result.shifted} keyframe${result.shifted === 1 ? "" : "s"} shifted${skipped}`, "good");
+  }
+
+  function insertSelectedLayerTimelineTimeGap(): void {
+    const resolved = resolveSelectedLayerTimelineTrackTargets("inserting a selected-layer gap");
+    if (!resolved) return;
+    if (resolved.targets.length === 0) {
+      showToast(resolved.lockedCount > 0 ? `${resolved.entry.name} keyed tracks are locked.` : `${resolved.entry.name} has no keyframes to shift.`, "bad");
+      return;
+    }
+
+    const gap = Math.max(sceneTimeline.workEnd - sceneTimeline.workStart, sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001);
+    recordHistory();
+    const result = insertTimelineGapOnTracks(sceneTimeline, resolved.targets, sceneTimeline.currentTime, gap);
+    finishTimelineGapEdit(result.changedTransformObjectIds, result.currentTime);
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+
+    if (result.shifted === 0) {
+      showToast(result.skipped ? `No room to insert ${resolved.entry.name} gap; ${result.skipped} keyframe${result.skipped === 1 ? "" : "s"} would exceed duration.` : `No later ${resolved.entry.name} keyframes to shift.`, "bad");
+      return;
+    }
+
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${formatNumber(gap)}s gap inserted on ${resolved.entry.name}; ${result.shifted} keyframe${result.shifted === 1 ? "" : "s"} shifted${skipped}`, "good");
   }
 
   function extractVisibleTimelineWorkArea(rows: TimelineVisibleRowTarget[]): void {
@@ -4650,6 +5388,55 @@ function boot(root: HTMLDivElement): void {
     }
 
     showToast(`${result.deleted} keyframe${result.deleted === 1 ? "" : "s"} lifted from Work In/Out`, "good");
+  }
+
+  function extractSelectedLayerTimelineWorkArea(): void {
+    const resolved = resolveSelectedLayerTimelineTrackTargets("extracting selected-layer Work In/Out");
+    if (!resolved) return;
+    if (resolved.targets.length === 0) {
+      showToast(resolved.lockedCount > 0 ? `${resolved.entry.name} keyed tracks are locked.` : `${resolved.entry.name} has no keyframes to extract.`, "bad");
+      return;
+    }
+
+    const start = Math.min(sceneTimeline.workStart, sceneTimeline.workEnd);
+    const end = Math.max(sceneTimeline.workStart, sceneTimeline.workEnd);
+    recordHistory();
+    const result = extractTimelineRangeOnTracks(sceneTimeline, resolved.targets, start, end);
+    pruneEmptyTimelineTracks(sceneTimeline);
+    finishTimelineGapEdit(result.changedTransformObjectIds, result.currentTime);
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+
+    if (result.deleted === 0 && result.shifted === 0) {
+      showToast(`No ${resolved.entry.name} keyframes inside or after Work In/Out.`, "bad");
+      return;
+    }
+
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${resolved.entry.name}: ${result.deleted} keyframe${result.deleted === 1 ? "" : "s"} extracted, ${result.shifted} shifted${skipped}`, "good");
+  }
+
+  function liftSelectedLayerTimelineWorkArea(): void {
+    const resolved = resolveSelectedLayerTimelineTrackTargets("lifting selected-layer Work In/Out");
+    if (!resolved) return;
+    if (resolved.targets.length === 0) {
+      showToast(resolved.lockedCount > 0 ? `${resolved.entry.name} keyed tracks are locked.` : `${resolved.entry.name} has no keyframes to lift.`, "bad");
+      return;
+    }
+
+    const start = Math.min(sceneTimeline.workStart, sceneTimeline.workEnd);
+    const end = Math.max(sceneTimeline.workStart, sceneTimeline.workEnd);
+    recordHistory();
+    const result = liftTimelineRangeOnTracks(sceneTimeline, resolved.targets, start, end);
+    pruneEmptyTimelineTracks(sceneTimeline);
+    finishTimelineGapEdit(result.changedTransformObjectIds, result.currentTime);
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+
+    if (result.deleted === 0) {
+      showToast(`No ${resolved.entry.name} keyframes inside Work In/Out.`, "bad");
+      return;
+    }
+
+    showToast(`${resolved.entry.name}: ${result.deleted} keyframe${result.deleted === 1 ? "" : "s"} lifted from Work In/Out`, "good");
   }
 
   function nudgeTimelineKeyframes(direction: -1 | 1, keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
@@ -5232,6 +6019,34 @@ function boot(root: HTMLDivElement): void {
     showToast(`Jumped to pinned-row keyframe at ${formatNumber(target)}s`, "good");
   }
 
+  function stepSelectedLayerTimelineKeyframe(direction: -1 | 1): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before navigating selected-layer keyframes.", "bad");
+      return;
+    }
+    const times = objectKeyframeTimes(sceneTimeline, entry.id);
+    if (times.length === 0) {
+      showToast(`${entry.name} has no keyframes to navigate.`, "bad");
+      return;
+    }
+
+    const current = sceneTimeline.currentTime;
+    const epsilon = 0.001;
+    const target = direction > 0
+      ? times.find((time) => time > current + epsilon)
+      : [...times].reverse().find((time) => time < current - epsilon);
+    if (target === undefined) {
+      showToast(direction > 0 ? `No later ${entry.name} keyframe.` : `No earlier ${entry.name} keyframe.`, "bad");
+      return;
+    }
+
+    setTimelineTime(target);
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    timelinePanel.selectKeyframes(objectKeyframeIdsAtTime(sceneTimeline, entry.id, target));
+    showToast(`Jumped to ${entry.name} keyframe at ${formatNumber(target)}s`, "good");
+  }
+
   function stepSelectedTimelineKeyBoundary(direction: -1 | 1): void {
     const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
     if (sources.length === 0) {
@@ -5741,6 +6556,7 @@ function boot(root: HTMLDivElement): void {
       textureOffset: [entry.textureOffset.x, entry.textureOffset.y],
       textureRotation: entry.textureRotation,
       animation: entry.animation,
+      assetSource: entry.assetSource,
       position: [entry.root.position.x, entry.root.position.y, entry.root.position.z],
       rotation: [entry.root.rotation.x, entry.root.rotation.y, entry.root.rotation.z],
       scale: [entry.root.scale.x, entry.root.scale.y, entry.root.scale.z]

@@ -74,6 +74,7 @@ Open `Asset browser` from the left tool rail.
 | Tab | Use It For |
 | --- | --- |
 | Online Models | Import curated `.glb` models from Khronos glTF Sample Assets |
+| Campus | Import copied GLB assets from the existing school campus project |
 | Built-in | Apply local looks, textures, materials, primitives, and the Sample Drone |
 | Materials | Filter built-in looks, procedural textures, and material presets |
 | Models | Filter built-in geometry/model cards |
@@ -82,6 +83,13 @@ The browser has search, `Import` / `Apply` buttons, source links for online
 models, a close button, and a minimize button. Imported online models are added
 to the outliner like normal GLB imports, then can be transformed, shaded,
 animated, saved, or exported.
+
+To load the complete campus example: open `Asset browser` and click
+`Load Campus`. This clears the current scene, loads the copied `E Hall` campus
+GLB as a ready-to-view landscape, applies sharp campus lighting/render settings
+with heavy blur-prone effects disabled, and frames the camera automatically. The
+individual campus GLB files remain in the `Campus` tab for manual inspection,
+but `Load Campus` is the intended one-click workflow.
 
 ## Inspector Sections
 
@@ -96,12 +104,18 @@ animated, saved, or exported.
 | Textures | Built-in texture presets, uploaded bitmap texture, repeat/offset/rotation |
 | Camera | Projection controls, view presets, frame selected/all, frustum helper |
 | Lighting | Sun, point, spot, ambient, shadows, helpers, lighting presets |
-| Display | Grid, axes, FPS/telemetry, motion paths, UI density, UI scale |
+| Display | Clean View, grid, axes, FPS/telemetry, motion paths, UI density, UI scale |
 | Rendering Lab | Tone mapping, exposure, shadow quality, SSAO, bloom, vignette, FXAA, depth of field, path-traced preview |
 
 Use `Blender` UI density when the inspector feels too large. Use `Scale` at
 `75%` when you want the whole editor to look like Chrome zoom 0.75 while keeping
 the setting inside the app.
+
+Use `Scene Controls > Display > Clean View` or `Alt+G` before screenshots when
+the grid, axes, transform gizmo, helpers, motion overlays, or blur-style post
+effects make the scene look too busy. Press `Alt+G` again or click `Restore
+View` to restore the previous editor guides. Use the individual `Grid` and
+`Axes` toggles when you only want to hide those two guides.
 
 ## Transform Tools
 
@@ -132,7 +146,9 @@ Position, Rotation, and Scale recorded together.
 | Speed | Playback rate |
 | Snap | Snap keyframes/playhead to frame or marker landmarks |
 | Loop | Repeat Work In/Out during playback |
-| Auto-Key | Automatically records changed values when time is not at the first pose |
+| Stopwatch keying | After Position, Rotation, or Scale has keys, editing that transform at another time updates/creates the playhead key even when global Auto-Key is off |
+| Alt-click keyed diamond / Set Pose | Clear all keys from that transform, timeline-row property, or full Position/Rotation/Scale pose track group |
+| Auto-Key | Automatically records changed values even before a track exists |
 | Pose Keys | With Auto-Key on, transform edits record Position, Rotation, and Scale together |
 | Track dropdown | Chooses the active row; for Position/Rotation/Scale the main key button records a full pose |
 | Row filter | `Focus`, `Selected Layer`, `Selected Keyed`, `Keyed`, `Pinned`, or `All` timeline rows; command palette can jump directly to any mode |
@@ -149,10 +165,14 @@ Position, Rotation, and Scale recorded together.
 | Previous/Next frame | Step one frame |
 | Previous/Next key | Jump between keys on the active track |
 | Previous/Next visible-row key | Jump between keys in visible rows |
+| Previous/Next selected-layer key | Command Palette or `Alt+Shift+Left/Right`; also selects that layer's keys at the destination time |
 | Previous/Next pinned-row key | Command Palette or `Ctrl+Alt+Shift+Left/Right` |
 | Fit Pinned Row Keyframes | Command Palette action to zoom around pinned-row key times |
 | Set Work Area To Pinned Row Keyframes | Command Palette action to make Work In/Out match pinned-row key times |
 | Preview Pinned Row Keyframe Range | Command Palette action to play only the pinned-row key range |
+| Fit Selected Layer Keyframe Range | Command Palette action to zoom around the selected object's key times |
+| Set Work Area To Selected Layer Keyframes | Command Palette action to make Work In/Out match the selected object's key times |
+| Preview Selected Layer Keyframe Range | Command Palette action to play only the selected object's keyed range |
 | Motion Presets | Command Palette actions that bake Turntable, Float Loop, Pop Intro, or Product Reveal into editable keys |
 | Set Key | Add or update one key on the selected non-transform track dropdown |
 | Set Pose / Set Pose Key | Record Position, Rotation, and Scale together for the selected object |
@@ -163,6 +183,7 @@ Position, Rotation, and Scale recorded together.
 | Split | Split selected object layer at the playhead |
 | Layer Work | Set Work In/Out to selected layer range |
 | Layer Keys | Select keys inside selected layer range |
+| Layer Time | Select only the selected object's keys at the current playhead time and reveal its keyed rows |
 | Fit Layer | Fit selected object keys into its layer range |
 | Sequence | Sequence object layer ranges from the playhead |
 | Linear / Ease In / Ease Out / Ease / Back In / Back Out / Hold | Change selected key interpolation |
@@ -178,11 +199,14 @@ Position, Rotation, and Scale recorded together.
 | Select Pinned | Select keys on pinned rows |
 | Select Time | Select keys at current playhead time |
 | Select Visible Before / After | Command Palette actions for visible-row tail edits around the playhead |
+| Selected Layer Time Commands | Command Palette actions to copy, cut, duplicate, or delete only the selected object's keys at the playhead |
 | Pinned Time Commands | Command Palette actions for select/copy/cut/duplicate/delete pinned-row keys at the playhead |
 | Dup Time / Del Time | Duplicate or delete visible-row keys at the playhead |
 | Insert Gap | Push later visible-row keys by Work In/Out length |
 | Lift Work | Delete visible-row keys inside Work In/Out without closing gap |
 | Extract Work | Delete visible-row keys inside Work In/Out and close gap |
+| Layer Gap / Layer Lift / Layer Extract | Toolbar buttons and Command Palette actions to insert, lift, or extract only the selected object's Work In/Out keys |
+| Selected Layer Work Clipboard | Command Palette actions to copy, cut, or duplicate only the selected object's Work In/Out keys |
 | Preview Sel | Play only the selected keyframe range |
 | To Playhead | Move selected key block so it begins at playhead |
 | Center | Center selected key block around playhead |
@@ -213,15 +237,17 @@ Position, Rotation, and Scale recorded together.
 | `Left`, `Right` | Step one frame |
 | `Shift+Left`, `Shift+Right` | Previous / next keyframe on active track |
 | `Ctrl+Alt+Left`, `Ctrl+Alt+Right` | Previous / next visible-row keyframe |
+| `Alt+Shift+Left`, `Alt+Shift+Right` | Previous / next keyframe on the selected layer/object, selecting the destination key column |
 | `Ctrl+Alt+Shift+Left`, `Ctrl+Alt+Shift+Right` | Previous / next pinned-row keyframe |
 | `Home`, `End` | Work In / Work Out |
 | `B`, `N` or `I`, `O` | Set Work In / Work Out to playhead |
-| `Shift+U` | Show keyed rows for the selected layer/object |
-| `U` | Cycle Focus, Selected Layer, Selected Keyed, Keyed, Pinned, All Rows |
+| `Shift+U` | Show keyed rows for the selected layer/object and clear stale row search |
+| `U` | Cycle Focus, Selected Layer, Selected Keyed, Keyed, Pinned, All Rows and clear stale row search |
 | `V`, `H` | Timeline selection tool, timeline pan tool |
 | `Alt+P`, `Alt+R`, `Alt+S` | Reveal Position, Rotation, Scale rows |
 | `Shift+P` | Pin or unpin the active timeline row |
 | `Shift+K` | Set Pose Key for Position, Rotation, and Scale |
+| `Alt+Click` keyed transform/timeline diamond or Set Pose | Clear that animated property track, or clear Position/Rotation/Scale together from Set Pose |
 | `Alt+C`, `Alt+T`, `Alt+M`, `Alt+U` | Reveal Color, Opacity, Material, Texture rows |
 | `F9` | Easy Ease |
 | `Shift+F9` | Linear |
@@ -233,6 +259,10 @@ Position, Rotation, and Scale recorded together.
 | `Ctrl+Shift+A` | Select active-track keys inside Work In/Out |
 | `Ctrl+Alt+A` | Select visible-row keyframes |
 | `Ctrl+Alt+K` | Select visible-row keys at playhead |
+| Command Palette: `selected layer work area keyframes` | Select only the selected object's keys inside Work In/Out |
+| Command Palette: `selected layer keys at playhead` | Select the selected object's keyframe column at the playhead |
+| Command Palette: `selected layer keys before/after playhead` | Select only the selected object's earlier/later keyframes for tail edits |
+| Command Palette: `copy/cut/duplicate/delete selected layer keys at playhead` | Edit only the selected object's keyframe column at the playhead |
 | Command Palette: `select visible before` / `select visible after` | Select visible-row keys before or after playhead |
 | `Escape` | Deselect selected timeline keyframes |
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | Copy, cut, paste keyframes |
@@ -270,9 +300,10 @@ Position, Rotation, and Scale recorded together.
 2. Set `Time` to `0`.
 3. Place the object at its first pose.
 4. Press `Shift+K`, click the main timeline `Set Pose` button, or click `Set Pose Key` in the Transform inspector.
+   Explicit pose keying reveals `Selected Keyed Rows` and clears stale row search so Position, Rotation, and Scale are visible immediately.
 5. Set `Time` to the next moment, for example `2`.
 6. Move, rotate, and scale the object to the second pose.
-7. Press `Shift+K` or click `Set Pose` / `Set Pose Key` again.
+7. Existing Position, Rotation, and Scale tracks behave like AE stopwatches: changing those values updates/creates playhead keys. Press `Shift+K` or click `Set Pose` again when you want to force all three transform tracks at once.
 8. Scrub the playhead or press `Play`.
 
 ### Auto-Key Full Transform Poses
@@ -335,10 +366,14 @@ animation.
 2. Click the toolbar pin button, or search `Pin Visible Timeline Rows` in the
    command palette.
 3. For object transforms, search `Pin Selected Transform Rows` to pin Position,
-   Rotation, and Scale in one step.
-4. Switch the row filter to `Pinned Rows`, or search `Show Pinned Timeline Rows`.
+   Rotation, and Scale in one step. This switches to `Pinned Rows` and clears
+   stale row search so the keying set is visible immediately.
+4. Switch the row filter to `Pinned Rows`, or search `Show Pinned Timeline Rows`
+   when you need to reveal an existing pinned set. Keyboard and command-palette
+   row-filter reveals clear stale row search first.
 5. Click `Set Pinned` when you want the pinned rows to act like a reusable
-   keying set.
+   keying set. Pinned-row key/select commands reveal `Pinned Rows` and clear
+   stale row search so the result is visible immediately.
 6. Click `Select Pinned` when you want to retime, copy, ease, or delete keys
    only on that pinned keying set.
 7. Search `Select`, `Copy`, `Cut`, `Duplicate`, or `Delete Pinned Row Keys At

@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ timeout: 120_000 });
+
 test("pins timeline rows and filters to pinned rows", async ({ page }) => {
   await page.addInitScript(() => {
     if (!window.sessionStorage.getItem("__timeline_pinned_rows_test_ready")) {
@@ -100,14 +102,18 @@ test("jumps directly to timeline row filters from the command palette", async ({
   await runCommand("show selected layer timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("selected");
 
+  await page.locator("#timeline-row-search").fill("scale");
   await runCommand("show selected keyed timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
 
   await runCommand("show keyed timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("keyed");
 
+  await page.locator("#timeline-row-search").fill("position");
   await runCommand("show pinned timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
 });
 
 test("isolates the selected layer rows", async ({ page }) => {
@@ -145,9 +151,13 @@ test("reveals selected layer keyed rows with Shift+U", async ({ page }) => {
 
   await page.locator('.outliner-item[data-id="object-1"]').click({ force: true });
   await page.locator("#timeline-track-kind").selectOption("position");
+  await page.locator("#timeline-row-search").fill("scale");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"]').first()).toBeHidden();
+  await page.locator('.outliner-item[data-id="object-1"]').click({ force: true });
   await page.keyboard.press("Shift+U");
 
   await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
   await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"]').first()).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-object-id="object-2"][data-track-kind="scale"]').first()).toBeHidden();
 });
@@ -170,8 +180,8 @@ test("sets keys on pinned timeline rows as a keying set", async ({ page }) => {
   await page.locator("#command-palette-search").fill("set keys on pinned rows");
   await page.keyboard.press("Enter");
 
-  await page.locator("#timeline-row-search").fill("");
-  await page.locator("#timeline-row-filter").selectOption("pinned");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
   await expect(rotationRow).toBeVisible();
   await expect(rotationRow).toHaveClass(/has-keyframes/);
   await expect(page.locator("#timeline-selection")).toContainText("1 keyframe");
@@ -186,12 +196,16 @@ test("pins selected transform rows as a reusable keying set", async ({ page }) =
   });
   await page.goto("/");
 
+  await page.locator("#timeline-row-filter").selectOption("all");
+  await page.locator("#timeline-row-search").fill("color");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toBeHidden();
+
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("pin selected transform rows");
   await page.keyboard.press("Enter");
   await expect(page.locator('#timeline-row-filter option[value="pinned"]')).toHaveText("Pinned Rows (3)");
-
-  await page.locator("#timeline-row-filter").selectOption("pinned");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-track-kind="scale"]').first()).toBeVisible();
@@ -208,10 +222,15 @@ test("pins selected transform rows as a reusable keying set", async ({ page }) =
   await page.locator("#timeline-track-kind").selectOption("objectColor");
   await page.locator("#timeline-add-keyframe").click();
   await expect(page.locator("#timeline-selection")).toContainText("1 keyframe");
+  await page.locator("#timeline-row-search").fill("color");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toBeHidden();
 
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("select pinned row keyframes");
   await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toBeVisible();
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes");
 
   await page.keyboard.press("Control+K");

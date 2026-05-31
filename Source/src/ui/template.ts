@@ -130,6 +130,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-split-layer" type="button" title="Split selected layer at the playhead (Ctrl+Shift+D)"><span data-icon="Scissors"></span><span>Split</span></button>
               <button class="mini-button" id="timeline-layer-work" type="button" title="Set work area to selected layer range (Alt+Shift+B)"><span data-icon="StretchHorizontal"></span><span>Layer Work</span></button>
               <button class="mini-button" id="timeline-select-layer-keys" type="button" title="Select keyframes inside the selected layer range (Alt+Shift+K)"><span data-icon="KeyRound"></span><span>Layer Keys</span></button>
+              <button class="mini-button" id="timeline-select-layer-time" type="button" title="Select selected-layer keyframes at the current playhead time"><span data-icon="Crosshair"></span><span>Layer Time</span></button>
               <button class="mini-button" id="timeline-fit-layer-keys" type="button" title="Retiming-fit selected object keyframes into its layer range (Alt+Shift+F)"><span data-icon="MoveHorizontal"></span><span>Fit Layer</span></button>
               <button class="mini-button" id="timeline-sequence-layers" type="button" title="Sequence all object layer ranges from the playhead (Alt+Shift+L)"><span data-icon="ListOrdered"></span><span>Sequence</span></button>
               <select id="timeline-interpolation" class="timeline-ease-select" aria-label="Keyframe interpolation" title="Select keyframes or park the playhead on an active-track keyframe, then choose interpolation">
@@ -167,6 +168,9 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-insert-gap" type="button" title="Insert a visible-row timing gap at the playhead using the Work In/Out duration (,)"><span data-icon="ListPlus"></span><span>Insert Gap</span></button>
               <button class="mini-button danger" id="timeline-lift-work" type="button" title="Delete visible-row keyframes inside Work In/Out without closing the gap (;)"><span data-icon="Scissors"></span><span>Lift Work</span></button>
               <button class="mini-button danger" id="timeline-extract-work" type="button" title="Delete visible-row keyframes inside Work In/Out and close the gap (')"><span data-icon="ListX"></span><span>Extract Work</span></button>
+              <button class="mini-button" id="timeline-insert-layer-gap" type="button" title="Insert a timing gap only on the selected layer using the Work In/Out duration"><span data-icon="ListPlus"></span><span>Layer Gap</span></button>
+              <button class="mini-button danger" id="timeline-lift-layer-work" type="button" title="Delete selected-layer keyframes inside Work In/Out without closing the gap"><span data-icon="Scissors"></span><span>Layer Lift</span></button>
+              <button class="mini-button danger" id="timeline-extract-layer-work" type="button" title="Delete selected-layer keyframes inside Work In/Out and close the gap on that layer"><span data-icon="ListX"></span><span>Layer Extract</span></button>
               <button class="mini-button" id="timeline-preview-selection" type="button" title="Preview selected keyframe range (Shift+Space)"><span data-icon="Play"></span><span>Preview Sel</span></button>
               <button class="mini-button icon-mini" id="timeline-nudge-left" type="button" aria-label="Nudge keyframe left" title="Nudge keyframe left"><span data-icon="MoveLeft"></span></button>
               <button class="mini-button icon-mini" id="timeline-nudge-right" type="button" aria-label="Nudge keyframe right" title="Nudge keyframe right"><span data-icon="MoveRight"></span></button>
@@ -322,6 +326,7 @@ export function studioTemplate(): string {
         <div class="asset-browser-body">
           <div class="asset-browser-tabs" role="tablist" aria-label="Asset browser filters">
             <button class="asset-tab active" type="button" data-asset-tab="online" aria-pressed="true">Online Models</button>
+            <button class="asset-tab" type="button" data-asset-tab="campus" aria-pressed="false">Campus</button>
             <button class="asset-tab" type="button" data-asset-tab="built-in" aria-pressed="false">Built-in</button>
             <button class="asset-tab" type="button" data-asset-tab="materials" aria-pressed="false">Materials</button>
             <button class="asset-tab" type="button" data-asset-tab="models" aria-pressed="false">Models</button>
@@ -330,6 +335,13 @@ export function studioTemplate(): string {
             <span data-icon="Search"></span>
             <input id="asset-browser-search" type="search" placeholder="Search assets, e.g. teacup, PBR, drone" autocomplete="off" />
           </label>
+          <div class="asset-browser-feature">
+            <div>
+              <strong>Campus Landscape</strong>
+              <small>Open the copied E Hall campus scene as a ready-to-view project.</small>
+            </div>
+            <button class="mini-button strong-mini" id="load-campus-landscape" type="button" data-campus-scene-id="e-hall"><span data-icon="School"></span><span data-campus-scene-button-label>Load Campus</span></button>
+          </div>
           <div class="asset-store asset-browser-grid" id="asset-store" aria-label="Asset browser catalog">
             ${remoteAssetCards}
             ${assetStoreCards}
@@ -398,6 +410,28 @@ export function studioTemplate(): string {
             <span>Name</span>
             <input id="object-name" type="text" value="Cube" />
           </label>
+        </section>
+
+        <section class="panel-section asset-source-section" id="asset-source-section" hidden>
+          <div class="section-title">
+            <span data-icon="BadgeInfo"></span>
+            <h3>Asset Source</h3>
+          </div>
+          <figure class="asset-source-preview">
+            <img id="asset-source-preview" alt="Selected asset preview" />
+          </figure>
+          <dl class="asset-source-grid">
+            <dt>Provider</dt>
+            <dd id="asset-source-provider">-</dd>
+            <dt>License</dt>
+            <dd id="asset-source-license">-</dd>
+            <dt>Credit</dt>
+            <dd id="asset-source-title">-</dd>
+          </dl>
+          <div class="compact-row">
+            <a class="wide-button asset-source-open" id="asset-source-link" href="#" target="_blank" rel="noreferrer"><span data-icon="ExternalLink"></span><span>Source</span></a>
+            <button class="wide-button" id="copy-asset-citation" type="button"><span data-icon="ClipboardCopy"></span><span>Citation</span></button>
+          </div>
         </section>
 
         <section class="panel-section">
@@ -724,6 +758,7 @@ export function studioTemplate(): string {
             <h3>Display</h3>
           </div>
           <div class="form-grid">
+            <button class="mini-button strong-mini" id="clean-view-button" type="button" title="Hide grid, axes, transform gizmo, helpers, motion overlays, and blur-prone effects for a clean screenshot"><span data-icon="EyeOff"></span><span>Clean View</span></button>
             <label class="toggle-line"><input id="grid-toggle" type="checkbox" checked /><span>Grid</span></label>
             <label class="toggle-line"><input id="axes-toggle" type="checkbox" checked /><span>Axes</span></label>
             <label class="toggle-line"><input id="stats-toggle" type="checkbox" checked /><span>Stats</span></label>
@@ -769,6 +804,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Zoom</strong><span>Wheel / Ctrl+MMB</span><p>Dolly toward the cursor.</p></div>
               <div class="quick-help-item"><strong>Frame Selected</strong><span>F / Numpad .</span><p>Recover the view around the selected object.</p></div>
               <div class="quick-help-item"><strong>Frame All</strong><span>Camera panel</span><p>Fit all visible scene objects.</p></div>
+              <div class="quick-help-item"><strong>Clean View</strong><span>Alt+G</span><p>Toggle a presentation view that hides grid, axes, transform gizmo, helpers, motion overlays, and blur-style effects.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="viewport timeline shortcuts">
               <h3>Transform</h3>
@@ -784,6 +820,8 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set Pose</strong><span>Shift+K / toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Deselect Keys</strong><span>Escape</span><p>Clear selected timeline keyframes without changing object selection or playback time.</p></div>
               <div class="quick-help-item"><strong>Offset Values</strong><span>+= / -=</span><p>Type +=1 or -=1 in a key value field to offset selected keys without flattening them.</p></div>
+              <div class="quick-help-item"><strong>Stopwatch Keying</strong><span>Existing transform keys</span><p>After Position, Rotation, or Scale has keys, edits at another time update or create the playhead key even with Auto-Key off.</p></div>
+              <div class="quick-help-item"><strong>Clear Track</strong><span>Alt-click diamond / Set Pose</span><p>Alt-click a keyed transform diamond, timeline-row diamond, or Set Pose button to remove animated transform keys.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
               <div class="quick-help-item"><strong>Pose Keys</strong><span>Auto-Key option</span><p>With Auto-Key enabled, record Position, Rotation, and Scale together whenever transform values change.</p></div>
               <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast transform setup, then key, select, fit, or preview the pinned set.</p></div>
@@ -791,7 +829,9 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Motion Presets</strong><span>Command Palette</span><p>Apply Turntable, Float Loop, Pop Intro, or Product Reveal as editable timeline keys.</p></div>
               <div class="quick-help-item"><strong>Showcase Demo</strong><span>Bottom bar / commands</span><p>Stage a polished grid, wire/glass sphere, contact-shadow scene inspired by the reference coursework GIF.</p></div>
               <div class="quick-help-item"><strong>Auto-Orient Along Path</strong><span>Command Palette</span><p>Create Rotation keys from the selected object's Position path direction.</p></div>
-              <div class="quick-help-item"><strong>Selected Keyed Rows</strong><span>Shift+U</span><p>Show only the selected layer's keyed rows, plus the active row, like an AE animated-property reveal.</p></div>
+              <div class="quick-help-item"><strong>Selected Keyed Rows</strong><span>Shift+U</span><p>Show only the selected layer's keyed rows, plus the active row, like an AE animated-property reveal. Reveal shortcuts clear row search first.</p></div>
+              <div class="quick-help-item"><strong>Layer Time Keys</strong><span>Layer Time / commands</span><p>Select, copy, cut, duplicate, or delete only the selected object's key column at the playhead.</p></div>
+              <div class="quick-help-item"><strong>Layer Work Keys</strong><span>Command Palette</span><p>Select, copy, cut, or duplicate only the selected object's keys inside Work In/Out.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
               <div class="quick-help-item"><strong>Onion Skin</strong><span>Display panel</span><p>Show evaluated selected-object poses before and after the playhead.</p></div>
@@ -811,6 +851,8 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
               <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>
               <div class="quick-help-item"><strong>Cycle Keys</strong><span>Shift+Y</span><p>Repeat a selected keyframe block forward until Work Out.</p></div>
+              <div class="quick-help-item"><strong>Layer Gap Edit</strong><span>Layer Gap / Lift / Extract</span><p>Insert, lift, or extract Work In/Out timing only on the selected object's tracks.</p></div>
+              <div class="quick-help-item"><strong>Layer Key Navigation</strong><span>Alt+Shift+Left/Right</span><p>Jump to the selected object's previous or next key time and select that destination key column.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="rendering">
               <h3>Scene And Output</h3>
@@ -855,15 +897,22 @@ function renderAssetStoreCard(item: typeof ASSET_STORE_ITEMS[number]): string {
 }
 
 function renderRemoteAssetCard(item: typeof REMOTE_3D_ASSETS[number]): string {
-  const searchText = [item.label, item.provider, item.license, item.description, item.tags.join(" ")].join(" ");
+  const capabilities = Object.entries(item.capabilities).filter(([, enabled]) => enabled).map(([key]) => key).join(" ");
+  const searchText = [item.label, item.provider, item.providerLabel, item.providerId, item.license, item.attribution, item.description, item.tags.join(" "), capabilities].join(" ");
   return `
-    <article class="asset-card remote-asset-card" data-asset-category="online models" data-asset-search="${escapeHtml(searchText)}">
+    <article class="asset-card remote-asset-card" data-remote-asset-card="${escapeHtml(item.id)}" data-asset-provider="${escapeHtml(item.providerId)}" data-asset-category="online models" data-asset-search="${escapeHtml(searchText)}">
+      <figure class="asset-card-preview">
+        <img src="${escapeHtml(item.previewUrl)}" alt="${escapeHtml(item.label)} preview" loading="lazy" referrerpolicy="no-referrer" />
+      </figure>
       <span>${escapeHtml(item.badge)}</span>
       <strong>${escapeHtml(item.label)}</strong>
       <small>${escapeHtml(item.description)}</small>
-      <em>${escapeHtml(item.provider)} | ${escapeHtml(item.sizeLabel)} | ${escapeHtml(item.license)}</em>
+      <em>${escapeHtml(item.providerLabel)} | ${escapeHtml(item.sizeLabel)} | ${escapeHtml(item.license)}</em>
+      <small class="asset-card-credit">Credit: ${escapeHtml(item.attribution)}</small>
+      <div class="asset-card-progress" aria-hidden="true"><span></span></div>
+      <small class="asset-card-status" data-remote-asset-status>Ready to import</small>
       <div class="asset-card-actions">
-        <button class="mini-button" type="button" data-remote-asset-id="${escapeHtml(item.id)}"><span data-icon="CloudDownload"></span><span>Import</span></button>
+        <button class="mini-button" type="button" data-remote-asset-id="${escapeHtml(item.id)}"><span data-icon="CloudDownload"></span><span data-remote-asset-button-label>Import</span></button>
         <a class="asset-source-link" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">Source</a>
       </div>
     </article>

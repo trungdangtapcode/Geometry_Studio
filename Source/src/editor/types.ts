@@ -104,9 +104,22 @@ export interface SceneEntry {
   textureOffset: THREE.Vector2;
   textureRotation: number;
   animation: AnimationMode;
+  assetSource?: AssetSourceMetadata;
   basePosition: THREE.Vector3;
   baseScale: THREE.Vector3;
   phase: number;
+}
+
+export interface AssetSourceMetadata {
+  provider: string;
+  providerId?: string;
+  providerLabel: string;
+  assetId: string;
+  title: string;
+  license: string;
+  attribution?: string;
+  sourceUrl: string;
+  previewUrl?: string;
 }
 
 export interface LightRig {
@@ -250,6 +263,7 @@ export interface SerializedObject {
   textureOffset?: [number, number];
   textureRotation?: number;
   animation: AnimationMode;
+  assetSource?: AssetSourceMetadata;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];

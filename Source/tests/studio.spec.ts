@@ -2033,20 +2033,24 @@ test("sets transform keys from inspector diamonds", async ({ page }) => {
   await positionKey.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("position");
   await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
-  await expect(positionKey).toHaveAttribute("title", "Update key at playhead");
+  await expect(positionKey).toHaveAttribute("title", /Update key at playhead.*Alt-click/);
+  await expect(positionKey).toHaveClass(/keyed-track/);
 
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await expect(positionKey).toHaveAttribute("title", "Set key at playhead");
+  await expect(positionKey).toHaveAttribute("title", /Set key at playhead \(track already keyed\).*Alt-click/);
   await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
     (input as HTMLInputElement).value = "2";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await positionKey.click();
-  await expect(positionKey).toHaveAttribute("title", "Update key at playhead");
+  await expect(positionKey).toHaveAttribute("title", /Update key at playhead.*Alt-click/);
   await expect(page.locator("#motion-path-toggle")).toBeChecked();
+  await positionKey.click({ modifiers: ["Alt"] });
+  await expect(positionKey).toHaveAttribute("title", "Set key at playhead");
+  await expect(positionKey).not.toHaveClass(/keyed-track/);
 
   await page.locator('.transform-input[data-prop="rotation"][data-axis="y"]').evaluate((input) => {
     (input as HTMLInputElement).value = "45";
@@ -2055,7 +2059,8 @@ test("sets transform keys from inspector diamonds", async ({ page }) => {
   await rotationKey.click();
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
   await expect(page.locator("#timeline-key-label")).toContainText("Cube | Rotation");
-  await expect(rotationKey).toHaveAttribute("title", "Update key at playhead");
+  await expect(rotationKey).toHaveAttribute("title", /Update key at playhead.*Alt-click/);
+  await expect(rotationKey).toHaveClass(/keyed-track/);
   expect(errors).toEqual([]);
 });
 
@@ -2724,8 +2729,17 @@ test("main transform key button records full position rotation and scale poses",
 
   await expect(page.locator("#timeline-track-kind")).toHaveValue("position");
   await expect(page.locator("#timeline-add-keyframe")).toContainText("Set Pose");
+  await page.locator("#timeline-row-search").fill("texture");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"]').first()).toBeHidden();
   await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="rotation"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="scale"]').first()).toBeVisible();
   await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Pose");
+  await expect(page.locator("#timeline-add-keyframe")).toHaveClass(/keyed-track/);
+  await expect(page.locator("#timeline-set-transform")).toHaveClass(/keyed-track/);
 
   await setTime(2);
   await setTransformInput("position", "x", 4);
@@ -2761,6 +2775,21 @@ test("main transform key button records full position rotation and scale poses",
   expect(track("scale").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[0]])).toEqual([[0, 1], [2, 2]]);
   expect(track("scale").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[1]])).toEqual([[0, 1], [2, 1.5]]);
   expect(track("scale").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[2]])).toEqual([[0, 1], [2, 0.5]]);
+
+  const previousDownloadCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
+  await page.locator("#timeline-add-keyframe").click({ modifiers: ["Alt"] });
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Set Pose");
+  await expect(page.locator("#timeline-add-keyframe")).not.toHaveClass(/keyed-track/);
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const clearedSceneText = await page.waitForFunction((count) => {
+    const downloads = (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads;
+    return downloads && downloads.length > count ? downloads.at(-1) : null;
+  }, previousDownloadCount);
+  const clearedSceneDocument = JSON.parse((await clearedSceneText.jsonValue()) as string);
+  const clearedObjectTimeline = clearedSceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  expect(clearedObjectTimeline?.tracks.some((candidate: { kind: string }) => ["position", "rotation", "scale"].includes(candidate.kind))).toBeFalsy();
   expect(errors).toEqual([]);
 });
 

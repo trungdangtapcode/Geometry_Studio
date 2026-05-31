@@ -66,6 +66,7 @@ export interface KeyframeTimelineCallbacks {
   onAddKeyframe(kind: TimelineTrackKind): void;
   onSetTransformKeyframes(): void;
   onSetObjectTransformKeyframes(targetId: string): void;
+  onClearTransformKeyframes(targetId?: string): void;
   onSetVisibleKeyframes(rows: TimelineVisibleRowTarget[]): void;
   onSetPinnedKeyframes(rows: TimelineVisibleRowTarget[]): void;
   onTrimLayerIn(): void;
@@ -73,6 +74,7 @@ export interface KeyframeTimelineCallbacks {
   onSplitLayer(): void;
   onSetWorkAreaToLayer(): void;
   onSelectLayerKeyframes(): void;
+  onSelectLayerTimeKeyframes(): void;
   onFitLayerKeyframes(): void;
   onSequenceLayers(): void;
   onEditLayerRange(objectId: string, start: number, end: number, keyframeEditMode: TimelineLayerKeyframeEditMode): void;
@@ -95,6 +97,9 @@ export interface KeyframeTimelineCallbacks {
   onInsertVisibleTimeGap(rows: TimelineVisibleRowTarget[]): void;
   onLiftVisibleWorkArea(rows: TimelineVisibleRowTarget[]): void;
   onExtractVisibleWorkArea(rows: TimelineVisibleRowTarget[]): void;
+  onInsertSelectedLayerTimeGap(): void;
+  onLiftSelectedLayerWorkArea(): void;
+  onExtractSelectedLayerWorkArea(): void;
   onNudgeKeyframes(direction: -1 | 1, keyframeIds: string[]): void;
   onMoveKeyframesToPlayhead(keyframeIds: string[]): void;
   onCenterKeyframesOnPlayhead(keyframeIds: string[]): void;
@@ -272,6 +277,9 @@ export class KeyframeTimelinePanel {
   private readonly insertGapButton = query<HTMLButtonElement>("#timeline-insert-gap");
   private readonly liftWorkButton = query<HTMLButtonElement>("#timeline-lift-work");
   private readonly extractWorkButton = query<HTMLButtonElement>("#timeline-extract-work");
+  private readonly insertLayerGapButton = query<HTMLButtonElement>("#timeline-insert-layer-gap");
+  private readonly liftLayerWorkButton = query<HTMLButtonElement>("#timeline-lift-layer-work");
+  private readonly extractLayerWorkButton = query<HTMLButtonElement>("#timeline-extract-layer-work");
   private readonly keyframeTargetButtons = [
     query<HTMLButtonElement>("#timeline-delete-keyframe"),
     query<HTMLButtonElement>("#timeline-ripple-delete-keyframes"),
@@ -707,15 +715,15 @@ export class KeyframeTimelinePanel {
     return this.pinnedRowTargets();
   }
 
-  cycleRowFilter(): string {
+  cycleRowFilter(options: { clearSearch?: boolean } = {}): string {
     const currentIndex = ROW_FILTER_SEQUENCE.indexOf(this.rowFilter);
     const next = ROW_FILTER_SEQUENCE[(currentIndex + 1) % ROW_FILTER_SEQUENCE.length] ?? "focus";
-    this.applyRowFilter(next);
+    this.applyRowFilter(next, options);
     return rowFilterLabel(next);
   }
 
-  setRowFilter(filter: TimelineRowFilter): string {
-    this.applyRowFilter(filter);
+  setRowFilter(filter: TimelineRowFilter, options: { clearSearch?: boolean } = {}): string {
+    this.applyRowFilter(filter, options);
     return rowFilterLabel(this.rowFilter);
   }
 
@@ -1048,13 +1056,17 @@ export class KeyframeTimelinePanel {
       button.title = collapsed ? "Expand timeline" : "Collapse timeline";
       window.setTimeout(() => this.refreshCanvas(), 0);
     });
-    this.addKeyframeButton.addEventListener("click", () => {
+    this.addKeyframeButton.addEventListener("click", (event) => {
       const kind = this.selectedTrackKind();
-      if (isTransformKeyingTrack(kind)) this.callbacks.onSetTransformKeyframes();
+      if (isTransformKeyingTrack(kind)) {
+        if (event.altKey && this.addKeyframeButton.classList.contains("keyed-track")) this.callbacks.onClearTransformKeyframes();
+        else this.callbacks.onSetTransformKeyframes();
+      }
       else this.callbacks.onAddKeyframe(kind);
     });
-    this.setTransformButton.addEventListener("click", () => {
-      this.callbacks.onSetTransformKeyframes();
+    this.setTransformButton.addEventListener("click", (event) => {
+      if (event.altKey && this.setTransformButton.classList.contains("keyed-track")) this.callbacks.onClearTransformKeyframes();
+      else this.callbacks.onSetTransformKeyframes();
     });
     this.setVisibleButton.addEventListener("click", () => {
       this.callbacks.onSetVisibleKeyframes(this.visibleRowTargets());
@@ -1067,6 +1079,7 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-split-layer").addEventListener("click", () => this.callbacks.onSplitLayer());
     query<HTMLButtonElement>("#timeline-layer-work").addEventListener("click", () => this.callbacks.onSetWorkAreaToLayer());
     query<HTMLButtonElement>("#timeline-select-layer-keys").addEventListener("click", () => this.callbacks.onSelectLayerKeyframes());
+    query<HTMLButtonElement>("#timeline-select-layer-time").addEventListener("click", () => this.callbacks.onSelectLayerTimeKeyframes());
     query<HTMLButtonElement>("#timeline-fit-layer-keys").addEventListener("click", () => this.callbacks.onFitLayerKeyframes());
     query<HTMLButtonElement>("#timeline-sequence-layers").addEventListener("click", () => this.callbacks.onSequenceLayers());
     this.layerStripToggleButton.addEventListener("click", () => {
@@ -1235,6 +1248,15 @@ export class KeyframeTimelinePanel {
     this.extractWorkButton.addEventListener("click", () => {
       this.callbacks.onExtractVisibleWorkArea(this.visibleRowTargets());
     });
+    this.insertLayerGapButton.addEventListener("click", () => {
+      this.callbacks.onInsertSelectedLayerTimeGap();
+    });
+    this.liftLayerWorkButton.addEventListener("click", () => {
+      this.callbacks.onLiftSelectedLayerWorkArea();
+    });
+    this.extractLayerWorkButton.addEventListener("click", () => {
+      this.callbacks.onExtractSelectedLayerWorkArea();
+    });
     this.clearTrackButton.addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());
     });
@@ -1252,7 +1274,8 @@ export class KeyframeTimelinePanel {
             if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
             else this.toggleTimelineGroup(targetId);
           } else if (groupPoseKey) {
-            this.callbacks.onSetObjectTransformKeyframes(targetId);
+            if (event.altKey && groupPoseKey.classList.contains("keyed-track")) this.callbacks.onClearTransformKeyframes(targetId);
+            else this.callbacks.onSetObjectTransformKeyframes(targetId);
           } else if (event.detail >= 2) {
             this.startTimelineGroupRename(group);
           } else {
@@ -1280,7 +1303,10 @@ export class KeyframeTimelinePanel {
         if (action === "lock") this.callbacks.onToggleTrackLock(kind, targetId);
         return;
       }
-      if (keyButton) this.callbacks.onAddKeyframe(kind);
+      if (keyButton) {
+        if (event.altKey && keyButton.classList.contains("keyed-track")) this.callbacks.onClearTrack(kind);
+        else this.callbacks.onAddKeyframe(kind);
+      }
     });
     this.labels.addEventListener("dblclick", (event) => {
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
@@ -1335,8 +1361,10 @@ export class KeyframeTimelinePanel {
     this.followPlayheadButton.addEventListener("click", () => this.toggleFollowPlayhead());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workStartInput, this.lastTimelineDocument?.workStart ?? 0)));
     query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workEndInput, this.lastTimelineDocument?.workEnd ?? 0)));
-    this.playButton.addEventListener("pointerdown", () => {
+    this.playButton.addEventListener("pointerdown", (event) => {
       if (parseTimelineTransportButtonAction(this.playButton.dataset.transportAction) !== "stop") return;
+      event.preventDefault();
+      event.stopPropagation();
       this.suppressTransportClick = true;
       this.callbacks.onTogglePlayback("stop");
       const suppressionController = new AbortController();
@@ -1626,10 +1654,15 @@ export class KeyframeTimelinePanel {
     this.syncToolbarOverflow();
   }
 
-  private applyRowFilter(filter: TimelineRowFilter): void {
+  private applyRowFilter(filter: TimelineRowFilter, options: { clearSearch?: boolean } = {}): void {
     this.rowFilter = filter;
     this.syncRowFilterSelect();
     storeTimelineRowFilter(filter);
+    if (options.clearSearch) {
+      this.rowSearchText = "";
+      this.rowSearchInput.value = "";
+      storeTimelineRowSearch("");
+    }
     if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
   }
 
@@ -2376,7 +2409,8 @@ export class KeyframeTimelinePanel {
           collapsed,
           rowCount: visibleRows.length,
           keyframeCount: countTrackKeyframes(objectTimeline?.tracks),
-          poseKey: true
+          poseKey: true,
+          poseKeyed: hasTransformPoseTracks(objectTimeline?.tracks)
         });
         if (collapsed) return [groupLabel];
         return [
@@ -2486,6 +2520,7 @@ export class KeyframeTimelinePanel {
     rowCount: number;
     keyframeCount: number;
     poseKey?: boolean;
+    poseKeyed?: boolean;
     extraClass?: string;
   }): string {
     const rowText = options.rowCount === 1 ? "1 row" : `${options.rowCount} rows`;
@@ -2502,7 +2537,7 @@ export class KeyframeTimelinePanel {
           <small>${options.targetType} | ${rowText} | ${keyText}</small>
         </span>
         ${options.poseKey
-          ? `<button class="timeline-group-pose-key" type="button" aria-label="Set Position, Rotation, and Scale keys for ${escapeHtml(options.targetName)}" title="Set Position, Rotation, and Scale keys at the playhead"><span data-icon="Box"></span></button>`
+          ? `<button class="timeline-group-pose-key${options.poseKeyed ? " keyed-track" : ""}" type="button" aria-label="Set Position, Rotation, and Scale keys for ${escapeHtml(options.targetName)}" title="${options.poseKeyed ? "Set pose keys at the playhead. Alt-click to clear Position, Rotation, and Scale tracks." : "Set Position, Rotation, and Scale keys at the playhead"}"><span data-icon="Box"></span></button>`
           : ""}
       </div>
     `;
@@ -2530,7 +2565,13 @@ export class KeyframeTimelinePanel {
       ? "Track locked"
       : options.hasPlayheadKey
         ? "Update key at playhead"
-        : "Set key at playhead";
+        : options.hasKeyframes
+          ? "Set key at playhead (track already keyed)"
+          : "Set key at playhead";
+    const keyTitle = options.hasKeyframes && !options.locked
+      ? `${keyText}. Alt-click to clear this animated track.`
+      : keyText;
+    const keyClass = options.hasKeyframes ? " keyed-track" : "";
     return `
       <div class="${this.labelClass(options.active, options.enabled, options.locked, options.solo, options.muted, options.hasKeyframes, options.pinned, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
         <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
@@ -2552,7 +2593,7 @@ export class KeyframeTimelinePanel {
             <span data-icon="${options.locked ? "Lock" : "Unlock"}"></span>
           </button>
         </span>
-        <button class="timeline-row-key" type="button" aria-label="${keyText}: ${options.targetName} ${label}" title="${keyText}" ${options.locked ? "disabled" : ""}>
+        <button class="timeline-row-key${keyClass}" type="button" aria-label="${keyTitle}: ${options.targetName} ${label}" title="${keyTitle}" ${options.locked ? "disabled" : ""}>
           <span data-icon="${options.locked ? "Lock" : options.hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span>
         </button>
       </div>
@@ -2840,18 +2881,32 @@ export class KeyframeTimelinePanel {
 
   private syncAddKeyframeButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
     const selectedTrack = this.selectedTrackKind();
+    const hasPlayheadPoseKey = this.hasTransformPoseKeyframeAtPlayhead(timelineDocument, selectedId);
+    const hasPoseTracks = this.hasTransformPoseKeyframes(timelineDocument, selectedId);
+    this.setTransformButton.innerHTML = `<span data-icon="${hasPlayheadPoseKey ? "Diamond" : "Box"}"></span><span>${hasPlayheadPoseKey ? "Update Pose" : "Set Pose"}</span>`;
+    this.setTransformButton.classList.toggle("keyed-track", hasPoseTracks);
+    this.setTransformButton.title = hasPoseTracks
+      ? "Set or update Position, Rotation, and Scale keys at the playhead. Alt-click to clear transform tracks."
+      : "Record Position, Rotation, and Scale at the playhead";
+    hydrateIcons(this.setTransformButton);
+
     if (isTransformKeyingTrack(selectedTrack)) {
-      const hasPlayheadPoseKey = this.hasTransformPoseKeyframeAtPlayhead(timelineDocument, selectedId);
       this.addKeyframeButton.innerHTML = `<span data-icon="${hasPlayheadPoseKey ? "Diamond" : "DiamondPlus"}"></span><span>${hasPlayheadPoseKey ? "Update Pose" : "Set Pose"}</span>`;
-      this.addKeyframeButton.title = hasPlayheadPoseKey
-        ? "Update Position, Rotation, and Scale together at the current playhead time. Use row diamonds for one property only."
-        : "Create Position, Rotation, and Scale keyframes together at the current playhead time. Use row diamonds for one property only.";
+      this.addKeyframeButton.classList.toggle("keyed-track", hasPoseTracks);
+      this.addKeyframeButton.title = [
+        hasPlayheadPoseKey
+          ? "Update Position, Rotation, and Scale together at the current playhead time."
+          : "Create Position, Rotation, and Scale keyframes together at the current playhead time.",
+        "Use row diamonds for one property only.",
+        hasPoseTracks ? "Alt-click to clear Position, Rotation, and Scale tracks." : ""
+      ].filter(Boolean).join(" ");
       hydrateIcons(this.addKeyframeButton);
       return;
     }
 
     const hasPlayheadKey = Boolean(this.playheadKeyframe(timelineDocument, selectedId));
     this.addKeyframeButton.innerHTML = `<span data-icon="${hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span><span>${hasPlayheadKey ? "Update Key" : "Set Key"}</span>`;
+    this.addKeyframeButton.classList.remove("keyed-track");
     this.addKeyframeButton.title = hasPlayheadKey
       ? "Update the active property keyframe at the current playhead time."
       : "Create an active property keyframe at the current playhead time.";
@@ -2867,6 +2922,11 @@ export class KeyframeTimelinePanel {
     });
   }
 
+  private hasTransformPoseKeyframes(timelineDocument: SceneTimelineDocument, selectedId: string): boolean {
+    const objectTimeline = timelineDocument.objects.find((object) => object.objectId === selectedId);
+    return hasTransformPoseTracks(objectTimeline?.tracks);
+  }
+
   private syncRowKeyButtons(timelineDocument: SceneTimelineDocument): void {
     this.labels.querySelectorAll<HTMLElement>(".timeline-track-label").forEach((row) => {
       const button = row.querySelector<HTMLButtonElement>(".timeline-row-key");
@@ -2876,15 +2936,26 @@ export class KeyframeTimelinePanel {
 
       const track = this.trackForTarget(timelineDocument, targetId, kind);
       const locked = Boolean(track?.locked);
+      const hasKeyframes = Boolean(track?.keyframes.length);
       const playheadKey = hasPlayheadKey(track, timelineDocument.currentTime);
-      const stateKey = `${locked}-${playheadKey}`;
+      const stateKey = `${locked}-${hasKeyframes}-${playheadKey}`;
       if (button.dataset.keyState === stateKey) return;
 
-      const keyText = locked ? "Track locked" : playheadKey ? "Update key at playhead" : "Set key at playhead";
+      const keyText = locked
+        ? "Track locked"
+        : playheadKey
+          ? "Update key at playhead"
+          : hasKeyframes
+            ? "Set key at playhead (track already keyed)"
+            : "Set key at playhead";
+      const keyTitle = hasKeyframes && !locked
+        ? `${keyText}. Alt-click to clear this animated track.`
+        : keyText;
       const rowLabel = row.getAttribute("aria-label") ?? trackLabel(kind, parseTimelineAxis(row.dataset.trackAxis) ?? undefined);
       button.dataset.keyState = stateKey;
-      button.title = keyText;
-      button.setAttribute("aria-label", `${keyText}: ${rowLabel}`);
+      button.classList.toggle("keyed-track", hasKeyframes);
+      button.title = keyTitle;
+      button.setAttribute("aria-label", `${keyTitle}: ${rowLabel}`);
       button.innerHTML = `<span data-icon="${locked ? "Lock" : playheadKey ? "Diamond" : "DiamondPlus"}"></span>`;
       hydrateIcons(button);
     });
@@ -3542,6 +3613,10 @@ function hasPlayheadKey(track: TimelineTrackDocument | undefined, currentTime: n
 
 function isTransformKeyingTrack(kind: TimelineTrackKind): boolean {
   return TRANSFORM_KEYING_SET.includes(kind);
+}
+
+function hasTransformPoseTracks(tracks: TimelineTrackDocument[] | undefined): boolean {
+  return Boolean(tracks?.some((track) => TRANSFORM_KEYING_SET.includes(track.kind) && track.keyframes.length > 0));
 }
 
 function roundTimelineTime(time: number): number {

@@ -19,6 +19,9 @@ PDF.
 - [Beginner Tutorial](beginner-tutorial.md) walks through navigation, object
   editing, keyframing, camera/light animation, import, rendering, and report
   evidence screenshots.
+- [Seminar Demo Script](seminar-demo-script.md) provides a timed presenter
+  script with exact clicks, shortcuts, spoken lines, and fallback paths for the
+  final school seminar demo.
 - [Coursework Showcase Demo](showcase-demo.md) documents the reference-GIF
   inspired presentation preset and how it remains editable in the main timeline.
 - [AE-Style Parent And Link](ae-parent-link.md) documents parent layers, Null

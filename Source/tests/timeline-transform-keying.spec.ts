@@ -55,6 +55,44 @@ test("preserves live rotation and scale while setting transform row keys one by 
   expect(errors).toEqual([]);
 });
 
+test("stopwatch-keys existing position rotation and scale tracks while Auto-Key is off", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  await installSceneDownloadCapture(page);
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-auto-key")).not.toBeChecked();
+
+  await setTimelineTime(page, 0);
+  await setTransformValue(page, "position", "x", 0);
+  await setTransformValue(page, "rotation", "y", 0);
+  await setTransformValue(page, "scale", "x", 1);
+  await setPoseShortcut(page);
+
+  await setTimelineTime(page, 2);
+  await setTransformValue(page, "position", "x", 4);
+  await setTransformValue(page, "rotation", "y", 120);
+  await setTransformValue(page, "scale", "x", 2.5);
+  await expectTransformValue(page, "position", "x", 4);
+  await expectTransformValue(page, "rotation", "y", 120);
+  await expectTransformValue(page, "scale", "x", 2.5);
+
+  await setTimelineTime(page, 1);
+  await expectTransformValue(page, "position", "x", 2);
+  await expectTransformValue(page, "rotation", "y", 60);
+  await expectTransformValue(page, "scale", "x", 1.75);
+
+  const scene = await saveScene(page);
+  const cubeTimeline = scene.timeline.objects.find((object) => object.objectId === "object-1");
+  expect(cubeTimeline?.tracks.find((track) => track.kind === "position")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([[0, 0], [2, 4]]);
+  expect(cubeTimeline?.tracks.find((track) => track.kind === "rotation")?.keyframes.map((keyframe) => [keyframe.time, Math.round(keyframe.value[1])])).toEqual([[0, 0], [2, 120]]);
+  expect(cubeTimeline?.tracks.find((track) => track.kind === "scale")?.keyframes.map((keyframe) => [keyframe.time, keyframe.value[0]])).toEqual([[0, 1], [2, 2.5]]);
+  expect(errors).toEqual([]);
+});
+
 async function installSceneDownloadCapture(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const downloads: string[] = [];

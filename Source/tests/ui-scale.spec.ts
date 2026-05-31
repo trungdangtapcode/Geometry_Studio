@@ -13,13 +13,16 @@ test("scales the editor UI like browser zoom and persists the value", async ({ p
   await expect(page.locator("#ui-scale")).toHaveValue("0.75");
   await expect(shell).toHaveAttribute("data-scale", "0.75");
   await expect(shell).toHaveAttribute("style", /--ui-scale:\s*0\.75/);
+  await expect(page.locator(".inspector")).toBeVisible();
+  const inspectorBounds = await page.locator(".inspector").evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, right: rect.right, viewportWidth: window.innerWidth };
+  });
+  expect(inspectorBounds.left).toBeGreaterThanOrEqual(0);
+  expect(inspectorBounds.right).toBeLessThanOrEqual(inspectorBounds.viewportWidth + 1);
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem("geometry-studio-ui-scale"))).toBe("0.75");
 
-  const context = page.context();
-  await page.close();
-  const secondPage = await context.newPage();
-  await secondPage.goto("/");
-  await expect(secondPage.locator("#ui-scale")).toHaveValue("0.75");
-  await expect(secondPage.locator(".studio-shell")).toHaveAttribute("data-scale", "0.75");
-  await secondPage.close();
+  await page.reload();
+  await expect(page.locator("#ui-scale")).toHaveValue("0.75");
+  await expect(page.locator(".studio-shell")).toHaveAttribute("data-scale", "0.75");
 });

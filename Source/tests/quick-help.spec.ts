@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("opens and searches the in-app quick help", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await page.goto("/");
 
   const help = page.locator("#quick-help");
@@ -24,6 +24,8 @@ test("opens and searches the in-app quick help", async ({ page }) => {
   await page.locator('[data-help-filter="timeline"]').click();
   await expect(helpItem("Set Pose")).toBeVisible();
   await expect(helpItem("Deselect Keys")).toBeVisible();
+  await expect(helpItem("Layer Time Keys")).toBeVisible();
+  await expect(helpItem("Layer Gap Edit")).toBeVisible();
   await expect(helpItem("Rendering Lab")).toBeHidden();
 
   await page.locator('[data-help-filter="rendering"]').click();
@@ -34,6 +36,10 @@ test("opens and searches the in-app quick help", async ({ page }) => {
   await page.locator("#quick-help-search").fill("Set Pose");
   await expect(helpItem("Set Pose")).toBeVisible();
   await expect(helpItem("Orbit")).toBeHidden();
+
+  await page.locator("#quick-help-search").fill("Work In/Out");
+  await expect(helpItem("Layer Work Keys")).toBeVisible();
+  await expect(helpItem("Layer Gap Edit")).toBeVisible();
 
   await page.locator("#quick-help-search").fill("not-a-real-command");
   await expect(page.locator("#quick-help-empty")).toBeVisible();

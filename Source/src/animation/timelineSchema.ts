@@ -211,6 +211,19 @@ export function createTimelineKeyframe(time: number, value: [number, number, num
   };
 }
 
+export function upsertTimelineKeyframe(
+  track: TimelineTrackDocument,
+  time: number,
+  value: [number, number, number]
+): TimelineKeyframeDocument {
+  const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
+  const keyframe = existing ?? createTimelineKeyframe(time, value);
+  keyframe.value = [...value] as [number, number, number];
+  if (!existing) track.keyframes.push(keyframe);
+  sortTimelineKeyframes(track);
+  return keyframe;
+}
+
 export function createTimelineMarker(time: number, label: string, color = "#f4ad2f"): TimelineMarkerDocument {
   return {
     id: createTimelineId("marker"),

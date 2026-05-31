@@ -7,12 +7,14 @@ export type TransformAxis = "x" | "y" | "z";
 
 export interface TransformKeyState {
   locked: boolean;
+  hasTrackKeyframes: boolean;
   hasPlayheadKey: boolean;
 }
 
 export interface TransformInspectorCallbacks {
   keyState(kind: TransformProperty): TransformKeyState;
   onSetKey(kind: TransformProperty): void;
+  onClearTrack(kind: TransformProperty): void;
   onValueChanged(kind: TransformProperty, axis: TransformAxis, value: number): void;
 }
 
@@ -35,8 +37,13 @@ export function renderTransformInspector(
   hydrateIcons(grid);
 
   grid.querySelectorAll<HTMLButtonElement>(".transform-key-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      callbacks.onSetKey(button.dataset.prop as TransformProperty);
+    button.addEventListener("click", (event) => {
+      const prop = button.dataset.prop as TransformProperty;
+      if (event.altKey && button.classList.contains("keyed-track")) {
+        callbacks.onClearTrack(prop);
+        return;
+      }
+      callbacks.onSetKey(prop);
     });
   });
 
@@ -68,11 +75,17 @@ function renderTransformRow(
     ? "Track locked"
     : keyState.hasPlayheadKey
       ? "Update key at playhead"
-      : "Set key at playhead";
+      : keyState.hasTrackKeyframes
+        ? "Set key at playhead (track already keyed)"
+        : "Set key at playhead";
+  const keyTitle = keyState.hasTrackKeyframes && !keyState.locked
+    ? `${keyText}. Alt-click to clear this animated track.`
+    : keyText;
+  const keyClass = keyState.hasTrackKeyframes ? " keyed-track" : "";
   return `
     <div class="grid-label transform-row-label">
       <span>${label}</span>
-      <button class="transform-key-button" type="button" data-prop="${key}" aria-label="${keyText}: ${label}" title="${keyText}" ${keyState.locked ? "disabled" : ""}>
+      <button class="transform-key-button${keyClass}" type="button" data-prop="${key}" aria-label="${keyTitle}: ${label}" title="${keyTitle}" ${keyState.locked ? "disabled" : ""}>
         <span data-icon="${keyState.locked ? "Lock" : keyState.hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span>
       </button>
     </div>

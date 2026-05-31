@@ -89,6 +89,7 @@ function serializeEntry(entry: SceneEntry): SerializedObject {
     textureOffset: [entry.textureOffset.x, entry.textureOffset.y],
     textureRotation: entry.textureRotation,
     animation: entry.animation,
+    assetSource: entry.assetSource,
     position: vectorToArray(entry.root.position),
     rotation: [entry.root.rotation.x, entry.root.rotation.y, entry.root.rotation.z],
     scale: vectorToArray(entry.root.scale)

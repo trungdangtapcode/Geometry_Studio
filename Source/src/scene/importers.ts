@@ -30,8 +30,8 @@ export async function loadModelFromFiles(files: File[], onProgress: (progress: I
   if (!extension || !["glb", "gltf", "obj", "stl"].includes(extension)) {
     throw new Error("Unsupported model type. Please use GLB, GLTF, OBJ, or STL.");
   }
-  if (file.size > 80 * 1024 * 1024) {
-    throw new Error("Model is larger than 80 MB. Use a smaller or optimized model for the browser demo.");
+  if (file.size > 128 * 1024 * 1024) {
+    throw new Error("Model is larger than 128 MB. Use a smaller or optimized model for the browser demo.");
   }
   const totalSize = files.reduce((sum, item) => sum + item.size, 0);
   if (totalSize > 160 * 1024 * 1024) {

@@ -117,6 +117,72 @@ export function objectLayerKeyframeIds(timeline: SceneTimelineDocument, objectId
   );
 }
 
+export function objectKeyframeIdsAtTime(
+  timeline: SceneTimelineDocument,
+  objectId: string,
+  time = timeline.currentTime
+): string[] {
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  if (!objectTimeline) return [];
+
+  const tolerance = Math.max(0.001, timeline.snapEnabled ? timeline.snapStep * 0.5 : 0.001);
+  return objectTimeline.tracks.flatMap((track) =>
+    track.keyframes
+      .filter((keyframe) => Math.abs(keyframe.time - time) <= tolerance)
+      .map((keyframe) => keyframe.id)
+  );
+}
+
+export function objectKeyframeIdsRelativeToTime(
+  timeline: SceneTimelineDocument,
+  objectId: string,
+  direction: "before" | "after",
+  time = timeline.currentTime
+): string[] {
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  if (!objectTimeline) return [];
+
+  const tolerance = Math.max(0.001, timeline.snapEnabled ? timeline.snapStep * 0.5 : 0.001);
+  return objectTimeline.tracks.flatMap((track) =>
+    track.keyframes
+      .filter((keyframe) =>
+        direction === "before"
+          ? keyframe.time < time - tolerance
+          : keyframe.time > time + tolerance
+      )
+      .map((keyframe) => keyframe.id)
+  );
+}
+
+export function objectKeyframeIdsInRange(
+  timeline: SceneTimelineDocument,
+  objectId: string,
+  startTime: number,
+  endTime: number
+): string[] {
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  if (!objectTimeline) return [];
+
+  const start = Math.min(startTime, endTime);
+  const end = Math.max(startTime, endTime);
+  return objectTimeline.tracks.flatMap((track) =>
+    track.keyframes
+      .filter((keyframe) => keyframe.time >= start - 0.001 && keyframe.time <= end + 0.001)
+      .map((keyframe) => keyframe.id)
+  );
+}
+
+export function objectKeyframeTimes(timeline: SceneTimelineDocument, objectId: string): number[] {
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  if (!objectTimeline) return [];
+
+  const times = new Set<number>();
+  objectTimeline.tracks.forEach((track) => {
+    track.keyframes.forEach((keyframe) => times.add(roundTime(keyframe.time)));
+  });
+  return [...times].sort((left, right) => left - right);
+}
+
 export function fitObjectLayerKeyframesToRange(
   timeline: SceneTimelineDocument,
   objectId: string

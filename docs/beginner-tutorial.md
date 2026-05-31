@@ -1,11 +1,12 @@
-# Geometry Studio Beginner Tutorial
+# Geometry Studio Beginner Tutorial And Cheat Sheet
 
-This tutorial is for using the project like a small Blender plus After Effects
-studio. It avoids internal implementation details and focuses on what to click.
+This guide is for using Geometry Studio like a compact Blender plus After
+Effects workspace. It explains what to click, what shortcuts matter, and how to
+produce report-ready evidence.
 
 ## 1. Start The App
 
-From the project root:
+Source development:
 
 ```bash
 cd Source
@@ -13,7 +14,7 @@ npm install
 npm run dev
 ```
 
-For the built release:
+Release build:
 
 ```bash
 cd Release
@@ -22,213 +23,337 @@ python3 -m http.server 8080
 
 Open `http://127.0.0.1:8080`.
 
-## 2. Understand The Screen
+Use the release through a local server. Do not rely on double-clicking
+`index.html`, because model and texture loading is more reliable through HTTP.
 
-- Left rail: add geometry or import models.
-- Center viewport: orbit, select, transform, and inspect the 3D scene.
-- Right inspector: edit selected object, camera, lighting, materials, rendering.
-- Bottom bar: play, command palette, demo, screenshots, WebM export.
-- Bottom timeline: record and edit keyframes.
+## 2. Main Screen Map
 
-When unsure, press `Ctrl+K` or click `Commands`, then search by action name.
-Star a command to pin it above the normal list. Recently used commands appear
-first below pinned commands the next time the palette opens.
-Press `?` or click `Help` for the in-app cheatsheet.
+| Area | Purpose |
+| --- | --- |
+| Left rail | Add primitives, open Asset Browser, import models |
+| Center viewport | Select, orbit, pan, zoom, transform, screenshot |
+| Right inspector | Edit object, material, camera, lighting, rendering, display |
+| Bottom buttons | Play, demo scenes, commands, help, screenshot, WebM recording |
+| Bottom timeline | Add, select, retime, ease, and preview keyframes |
 
-## 3. Navigate Like A 3D Editor
+When lost, use `Ctrl+K` or `F3` to open Commands. Search the action name.
+Use `?` or the `Help` button for the in-app quick help.
 
-1. Drag with the left mouse or middle mouse to orbit.
-2. Hold `Shift` and drag middle mouse to pan.
-3. Use the mouse wheel to zoom.
-4. Click an object to select it.
-5. Press `F` to frame the selected object.
-6. Use `Frame All` in the Camera panel if the view gets lost.
+Hovering most controls shows a tiny shortcut chip. It is intentionally small:
+label plus key only.
 
-## 4. Add And Edit Objects
+## 3. Essential Shortcuts
 
-1. Click a primitive icon on the left rail, for example Cube, Sphere, or Teapot.
-2. Select the new object in the outliner or viewport.
-3. Use `T`, `R`, or `S` for Move, Rotate, or Scale.
-4. Use the right inspector numeric fields for exact values.
-5. Switch between `World Space` and `Local Space` when needed.
+| Action | Shortcut |
+| --- | --- |
+| Open Commands | `Ctrl+K` or `F3` |
+| Open Help | `?` |
+| Play / Stop | `Space` |
+| Stop playback | `K` |
+| Play backward / forward | `J` / `L` |
+| Move / Rotate / Scale tool | `T` / `R` / `S` |
+| Frame selected | `F` or `Numpad .` |
+| Clean View | `Alt+G` |
+| Set full transform pose key | `Shift+K` |
+| Reveal Position / Rotation / Scale rows | `Alt+P` / `Alt+R` / `Alt+S` |
+| Show selected keyed rows | `Shift+U` |
+| Selection / Pan timeline tool | `V` / `H` |
+| Fit timeline / fit selected keys | `0` / `Shift+0` |
+| Copy / cut / paste timeline keys | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` |
+| Delete selected keys | `Delete` |
+| Easy Ease / Linear / Hold | `F9` / `Shift+F9` / `Alt+F9` |
+| Work In / Work Out | `B` or `I` / `N` or `O` |
 
-Use `Duplicate` in the outliner to create a copy. Use `Delete` to remove the
-selected object.
+## 4. Hide Grid, Axis, And Visual Helpers
 
-## 5. Change Materials And Render Mode
+Use this when the grid or axes make screenshots look messy.
 
-1. Select an object.
-2. In Material, choose a preset such as Ceramic, Metal, Plastic, Clay, or Anime
-   Toon.
-3. Adjust color, opacity, roughness, and metalness.
-4. In Geometry / Render Mode, switch between Solid, Lines, and Points.
-5. In Textures, choose Checker, UV, Grid, or upload an image.
+| Need | Use |
+| --- | --- |
+| Hide only grid | `Scene Controls > Display > Grid` checkbox |
+| Hide only axes | `Scene Controls > Display > Axes` checkbox |
+| Hide grid, axes, transform gizmo, helpers, overlays, and blur effects | `Scene Controls > Display > Clean View` |
+| Toggle Clean View by keyboard | `Alt+G` |
 
-For hard-to-read models, use Clay or Anime Toon, turn on shadows, and try SSAO
-in Rendering Lab.
+Clean View disables the grid, axes, transform gizmo, FPS/telemetry, camera
+frustum helper, light helpers, motion path, onion skin, and blur-heavy post
+effects such as DOF, SSAO, bloom, vignette, and halftone. Press `Alt+G` again
+or click `Restore View` to bring the previous editor guides and post effects
+back.
 
-## 6. Import A Model
+## 5. Navigate The Camera
 
-1. Click the Import button on the left rail, or drag files onto the viewport.
-2. For GLB or GLTF, select the model file.
-3. For OBJ with materials, select the `.obj`, `.mtl`, and texture images
-   together.
-4. The model is centered, scaled, added to the outliner, and can be transformed
-   like any primitive.
+| Camera Move | Mouse / Shortcut |
+| --- | --- |
+| Orbit around target | Left drag or middle mouse drag |
+| Pan target | `Shift` + middle mouse drag or right drag |
+| Zoom / dolly | Mouse wheel |
+| Frame selected object | `F` |
+| Frame all visible objects | Camera panel `Frame All` |
 
-GLB is the easiest format because geometry, materials, and textures can be
-packaged in one file.
+If the camera feels lost, click an object and press `F`. If everything is lost,
+use `Camera > Frame All` or `Camera > Reset`.
 
-## 7. Make A Simple Object Animation
+## 6. Add And Select Objects
 
-This records Position, Rotation, and Scale together.
+1. Click a primitive icon on the left rail: Cube, Sphere, Cone, Cylinder, Torus,
+   Teapot, Torus Knot, Tube Curve, Platonic solids, Parametric Surface, or
+   Extruded Shape.
+2. Select the object in the viewport or Outliner.
+3. Rename, duplicate, or delete it from the Outliner.
+4. Use `T`, `R`, or `S` for transform tools.
+5. Use the numeric Transform inspector for exact Position, Rotation, and Scale.
 
-1. Select an object.
+## 7. Materials, Textures, And Render Modes
+
+| Feature | Where |
+| --- | --- |
+| Solid / Points / Lines | `Geometry / Render Mode` |
+| PBR material presets | `Material` section |
+| Anime / toon look | `Material > Anime Toon` |
+| Color, opacity, roughness, metalness | `Material` section |
+| Checker, UV, Grid, Bricks, Wood, Carbon, Blueprint, Dots | `Textures` section |
+| Bitmap texture upload | `Textures > Upload` |
+| Shadow and light readability | `Lighting` and `Rendering Lab` |
+
+For dark or hard-to-read imported objects, try `Clay`, `Anime Toon`, stronger
+lighting, shadows, and a clean camera angle.
+
+## 8. Import Models
+
+Supported formats:
+
+| Format | Notes |
+| --- | --- |
+| `.glb` | Best option. One file can include geometry, materials, textures |
+| `.gltf` | Usually needs external `.bin` and texture files |
+| `.obj` | Geometry; select `.obj`, `.mtl`, and textures together for materials |
+| `.stl` | Geometry only, usually no material |
+
+Ways to import:
+
+1. Click the left rail import button.
+2. Drag model files onto the viewport.
+3. Use the Asset Browser for built-in, campus, or online sample assets.
+
+Imported models are centered, normalized, added to the Outliner, and can be
+transformed and keyframed like primitives.
+
+## 9. Load The Campus Scene
+
+For the complete E Hall campus landscape:
+
+1. Open the Asset Browser from the left rail package icon.
+2. Go to the `Campus` tab.
+3. Click `Load Campus`.
+4. Wait for progress to finish.
+5. Use `Clean View` or `Alt+G` if the grid/axes distract from the campus.
+
+The campus scene is copied into this project as local release assets. It is not
+loaded by hardcoded external paths.
+
+## 10. Save And Load Existing Work
+
+| Action | Button |
+| --- | --- |
+| Save project scene | `Document > Save JSON` |
+| Load saved project scene | `Document > Load JSON` |
+
+Scene JSON stores objects, materials, camera, lights, rendering settings,
+display settings, and timeline keyframes. Use it for project persistence.
+
+## 11. Basic Transform Animation
+
+Use this when you want object A at pose `A_t0`, then pose `A_t1`, and the app
+interpolates motion between them.
+
+1. Select object A.
 2. Set timeline `Time` to `0`.
-3. Move the object to the starting pose.
-4. Click `Set Pose` in the timeline or `Set Pose Key` in the Transform inspector.
+3. Move, rotate, and scale object A to the starting pose.
+4. Click `Set Pose` in the timeline or `Set Pose Key` in the Transform panel.
 5. Set timeline `Time` to `2`.
-6. Move, rotate, or scale the object to the ending pose.
+6. Move, rotate, and scale object A to the ending pose.
 7. Click `Set Pose` / `Set Pose Key` again.
-8. Drag the playhead between `0` and `2`, or press `Play`.
+8. Scrub between `0` and `2`, or press `Play`.
 
-Time fields also accept frame and timecode entry. For example, at 30 FPS,
-`60f`, `2s`, and `00:00:02:00` all mean 2 seconds. `+10f` moves relative to
-the current field value.
+`Set Pose` records Position, Rotation, and Scale together. This is the safest
+workflow for full object motion.
 
-If the object does not move, check that:
+## 12. Animate Only One Transform Channel
 
-- The same object is selected.
-- The timeline row filter is not hiding the keyed rows.
-- Track On is enabled.
-- The track is not locked.
-- The playhead is between the two keyframes.
-
-## 8. Start From A Motion Preset
-
-1. Select an object.
-2. Set Work In and Work Out to the range you want.
-3. Press `Ctrl+K` or `F3`.
-4. Search `motion preset`.
-5. Choose Turntable, Float Loop, Pop Intro, or Product Reveal.
-6. Edit the generated keyframes normally.
-
-Motion presets are only shortcuts for creating keys. The final animation remains
-visible in the timeline.
-
-## 9. Animate Only Rotation
+Use row diamonds when you want only Position, only Rotation, or only Scale.
 
 1. Select the object.
-2. Set `Time` to `0`.
-3. Rotate the object to the first angle.
-4. Choose `Rotation` in the timeline track dropdown.
-5. Click the diamond on the Rotation row.
-6. Set `Time` to `2`.
-7. Rotate the object to the second angle.
-8. Click the Rotation row diamond again.
+2. Reveal rows with `Alt+P`, `Alt+R`, or `Alt+S`.
+3. Set the playhead to the first time.
+4. Change the object value.
+5. Click the diamond on that specific Position, Rotation, or Scale row.
+6. Move the playhead to the second time.
+7. Change the value again.
+8. Click the same row diamond again.
 9. Scrub or play.
 
-The main timeline key button becomes `Set Pose` on Position, Rotation, and Scale
-tracks because it records all three transform channels together. For single-row
-transform animation, use the row diamond. For Color, Opacity, Roughness,
-Metalness, Texture controls, Camera, and Lights, the same main button uses
-`Set Key`.
+If there is already a key at the playhead, the diamond updates it. If there is
+no key at the playhead, the diamond adds one.
 
-## 10. Use Auto-Key
+## 13. Auto-Key And Stopwatch-Style Keying
 
-Auto-Key is useful after the first pose exists.
+| Mode | Behavior |
+| --- | --- |
+| Manual keying | You click `Set Pose`, `Set Key`, or a row diamond |
+| Auto-Key | Changes create keys automatically after initial keys exist |
+| Pose Keys | Auto-Key records Position, Rotation, and Scale together |
+| Stopwatch-style transform keying | Existing transform tracks can receive new keys when edited at another time |
 
-1. Set the first key manually with `Set Pose` / `Set Pose Key` or a row diamond.
-2. Enable `Auto-Key`.
-3. Move the playhead to another time.
-4. Change the object, camera, light, or material value.
-5. The app records the changed value automatically.
+Recommended beginner workflow:
 
-Enable `Pose Keys` next to `Auto-Key` when transform edits should record
-Position, Rotation, and Scale together. This is the closest mode to setting a
-complete transform pose in After Effects.
+1. Create the first key manually.
+2. Enable Auto-Key only after that first key exists.
+3. Enable Pose Keys if you want full transform poses.
+4. Turn Auto-Key off when finished.
 
-Use Auto-Key carefully. It is faster, but it can create many keys if you forget
-it is enabled.
+## 14. Timeline Rows And Filters
 
-## 11. Edit Keyframes
+| Control | Meaning |
+| --- | --- |
+| Focus Rows | Show the currently relevant rows |
+| Selected Layer | Show rows for the selected object |
+| Selected Keyed | Show keyed rows for selected object |
+| Keyed | Show every keyed row |
+| Pinned | Show only pinned rows |
+| All | Show all available rows |
 
-1. Click a keyframe diamond in the timeline.
-2. Drag it left or right to retime it.
-3. Use `Delete` to remove it.
-4. Use `Copy`, `Paste`, and `Duplicate` for repetition.
-5. Use `Linear`, `Ease In`, `Ease Out`, `Ease`, `Back In`, `Back Out`, or
-   `Hold` to change motion interpolation.
-6. Enable `Graph` to inspect the selected value curve.
+Useful row shortcuts:
 
-Useful retiming tools:
+| Action | Shortcut |
+| --- | --- |
+| Cycle row filter | `U` |
+| Show selected keyed rows | `Shift+U` |
+| Pin active row | `Shift+P` |
+| Reveal Position | `Alt+P` |
+| Reveal Rotation | `Alt+R` |
+| Reveal Scale | `Alt+S` |
+| Reveal Color | `Alt+C` |
+| Reveal Opacity | `Alt+T` |
+| Reveal Material | `Alt+M` |
+| Reveal Texture | `Alt+U` |
 
-- `To Playhead`: move selected keys so the block starts at the playhead.
-- `Center`: center selected key timing around the playhead.
-- `Reverse`: reverse selected key timing.
-- `Distribute`: evenly space keys across Work In/Out.
-- `Fit Keys`: stretch selected key timing into Work In/Out.
-- `Cycle`: repeat a selected keyframe pattern forward until Work Out.
+If you cannot see your keys, switch the row filter to `Keyed`, `Selected Keyed`,
+or `All`.
 
-## 12. Animate The Camera
+## 15. Edit Keyframes
 
-1. Use viewport navigation to set the first camera view.
+| Task | Control / Shortcut |
+| --- | --- |
+| Select a key | Click diamond |
+| Move a key in time | Drag it |
+| Delete selected keys | `Delete` |
+| Copy / cut / paste | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` |
+| Duplicate selected keys | `Ctrl+D` |
+| Move selected keys to playhead | `Shift+Enter` |
+| Center selected keys on playhead | `Shift+C` |
+| Reverse timing | `Shift+R` |
+| Snap to frame | `Shift+S` |
+| Distribute across Work In/Out | `Shift+D` |
+| Fit into Work In/Out | `Shift+F` |
+| Stagger from playhead | `Shift+G` |
+| Cascade target keys | `Alt+Shift+G` |
+| Repeat key block | `Shift+Y` |
+
+Interpolation options:
+
+| Option | Use |
+| --- | --- |
+| Linear | Constant speed |
+| Ease In | Slow start |
+| Ease Out | Slow end |
+| Easy Ease | Smooth start and end |
+| Back In / Back Out | Overshoot style |
+| Hold | No interpolation; value jumps |
+
+## 16. Work Area And Playback
+
+Work In and Work Out define the preview/export range.
+
+1. Move playhead to start.
+2. Press `B` or `I`.
+3. Move playhead to end.
+4. Press `N` or `O`.
+5. Press `Space` to play or stop.
+6. Enable `Loop` to repeat.
+
+`Record WebM` exports the active Work In/Out range.
+
+## 17. Camera Animation
+
+1. Navigate to the first camera view.
 2. Choose `Camera Position` in the timeline dropdown.
 3. Click `Set Key`.
 4. Choose `Camera Target`.
 5. Click `Set Key`.
-6. Move the playhead to the next time.
-7. Navigate to the second camera view.
+6. Move to another time.
+7. Navigate to the second view.
 8. Key `Camera Position` and `Camera Target` again.
 9. Press `Play`.
 
-Use `Camera Lens` when you also want FOV, Near, or Far to change over time.
+Use `Camera Lens` to animate FOV, Near, or Far values.
 
-## 13. Animate Lights
+## 18. Light Animation
 
-1. Select Sun, Point, or Spot in the Lighting section.
-2. Set the first color, intensity, or position.
-3. Select the matching timeline track, for example `Point Intensity`.
+1. Choose Sun, Point, or Spot in Lighting.
+2. Set the first intensity, color, or position.
+3. Choose the matching timeline track.
 4. Click `Set Key`.
 5. Move the playhead.
 6. Change the light value.
 7. Click `Set Key` again.
 
-This is useful for showing shadows, highlights, and evaluation tour effects.
+This is useful for showing shadows, highlights, and light-sweep demos.
 
-## 14. Use The Work Area
-
-Work In and Work Out define the important preview/export range.
-
-1. Move the playhead to the start.
-2. Press `B` or `I`.
-3. Move the playhead to the end.
-4. Press `N` or `O`.
-5. Press `Play`.
-6. Enable `Loop` to repeat that range.
-
-`Record WebM` records the active Work In/Out range.
-
-## 15. Prepare Report Evidence
+## 19. Demo And Report Workflow
 
 Recommended report sequence:
 
 1. Run `Evaluation Tour`.
-2. Take a screenshot showing primitives, grid, shadows, and timeline callouts.
-3. Show Solid, Lines, and Points render modes.
-4. Show transform keyframes in Position / Rotation / Scale rows.
-5. Show camera FOV/Near/Far or frustum helper.
-6. Show material/texture mapping.
-7. Show imported OBJ/GLB model.
-8. Show Rendering Lab effects or path-traced still preview.
-9. Export a viewport screenshot.
+2. Run `Showcase Demo` for a clean visual reference scene.
+3. Load the Campus scene if you need the E Hall landscape.
+4. Use `Clean View` / `Alt+G` for screenshots without grid/axis clutter.
+5. Show Solid, Lines, and Points render modes.
+6. Show Position, Rotation, and Scale keyframes in the timeline.
+7. Show a camera/frustum or FOV/Near/Far panel.
+8. Show material, texture, lighting, shadow, and rendering effects.
+9. Show imported GLB/OBJ/STL support.
+10. Export screenshots or WebM.
 
-## 16. Save And Load
+## 20. Troubleshooting
 
-1. Click `Save JSON` in Document.
-2. Reload the page if desired.
-3. Click `Load JSON`.
-4. Choose the saved file.
-5. Confirm objects, materials, camera, lights, and timeline keys return.
+| Problem | Fix |
+| --- | --- |
+| Grid, axes, or transform arrows look weird | Use `Display > Grid`, `Display > Axes`, or `Alt+G` Clean View |
+| Tooltip is distracting while typing | Focus the input/search box; shortcut hover tips are suppressed while typing |
+| Cannot see keyframes | Change row filter to `Keyed`, `Selected Keyed`, or `All` |
+| Rotation/scale does not animate | Use `Set Pose` for full transform, or key the Rotation/Scale row diamond twice |
+| Playback will not stop | Press `K`; `Space` and the Play button also toggle stop |
+| Model looks too dark | Try Clay/Anime Toon material, stronger light, shadows, or Clean View |
+| Imported OBJ has no texture | Import `.obj`, `.mtl`, and texture images together |
+| Scene is blurry after campus/effects | Turn off DOF/SSAO/Bloom or use Clean View |
+| Camera is lost | Select object and press `F`, or use `Frame All` |
 
-Use scene JSON for project persistence. Use screenshot/WebM for report media.
+## 21. Minimum Feature Checklist
+
+Before submission or demo, verify:
+
+- App opens from `Release` through local HTTP.
+- Canvas renders within a few seconds.
+- Grid and axes can be hidden.
+- At least three primitives are visible.
+- Solid, Lines, and Points render modes work.
+- Transform controls and numeric fields work.
+- Position, Rotation, and Scale can be keyframed.
+- Timeline play/stop works.
+- Camera controls and FOV/Near/Far are visible.
+- At least one texture is applied.
+- At least one imported model or campus asset loads.
+- Lighting and shadows are visible.
+- Save JSON and Load JSON restore the scene.
+- Screenshot export works.
