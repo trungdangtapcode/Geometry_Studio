@@ -6,6 +6,8 @@ PDF.
 
 ## User Docs
 
+- [In-App Quick Help](in-app-quick-help.md) documents the searchable Help
+  overlay, `?` shortcut, command-palette entry, and browser validation.
 - [User Cheatsheet](user-cheatsheet.md) is the practical button and shortcut map
   for operating the finished app.
 - [Beginner Tutorial](beginner-tutorial.md) walks through navigation, object

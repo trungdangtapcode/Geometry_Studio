@@ -122,6 +122,7 @@ import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normaliz
 import { KeyframeTimelinePanel, type TimelineDopeSheetTool, type TimelineLayerKeyframeEditMode, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
 import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
 import { bindUiDensityControl } from "./ui/density";
+import { QuickHelpOverlay } from "./ui/helpOverlay";
 import { studioTemplate } from "./ui/template";
 import { renderTransformInspector, type TransformAxis, type TransformProperty } from "./ui/transformInspector";
 import { capitalize, clamp, downloadText, formatNumber, hasWebGL2, hydrateIcons, query, safeJsonParse } from "./utils/dom";
@@ -294,6 +295,7 @@ function boot(root: HTMLDivElement): void {
     updatePlayButton();
   });
   const commandPalette = new CommandPalette();
+  const quickHelp = new QuickHelpOverlay();
   commandPalette.setCommands(createCommandPaletteCommands());
 
   seedDefaultScene();
@@ -518,6 +520,7 @@ function boot(root: HTMLDivElement): void {
     });
     query<HTMLButtonElement>("#cinematic-btn").addEventListener("click", startCinematicDemo);
     query<HTMLButtonElement>("#command-palette-btn").addEventListener("click", () => commandPalette.open());
+    query<HTMLButtonElement>("#quick-help-btn").addEventListener("click", () => quickHelp.open());
     query<HTMLButtonElement>("#evaluation-btn").addEventListener("click", startEvaluationTour);
     query<HTMLButtonElement>("#screenshot-btn").addEventListener("click", exportScreenshot);
     query<HTMLButtonElement>("#record-video-btn").addEventListener("click", togglePreviewRecording);
@@ -958,6 +961,10 @@ function boot(root: HTMLDivElement): void {
 
   function createCommandPaletteCommands(): CommandPaletteCommand[] {
     return [
+      command("help.quick", "Open Quick Help", "Help", () => quickHelp.open(), {
+        shortcut: "?",
+        keywords: ["cheatsheet", "shortcut", "buttons", "tutorial", "controls"]
+      }),
       command("timeline.play", "Play / Pause Timeline", "Playback", togglePlay, { shortcut: "Space", keywords: ["transport", "preview"] }),
       command("timeline.reverse", "Play Backward", "Playback", () => playTimeline(-1), { shortcut: "J", keywords: ["transport"] }),
       command("timeline.pause", "Pause Timeline", "Playback", () => pauseTimeline(), { shortcut: "K", keywords: ["transport"] }),
@@ -1822,6 +1829,11 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && (key === "?" || (event.shiftKey && code === "slash"))) {
+      event.preventDefault();
+      quickHelp.open();
+      return;
+    }
     if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "p") {
       event.preventDefault();
       revealTimelineRows("position", "position", "Position");

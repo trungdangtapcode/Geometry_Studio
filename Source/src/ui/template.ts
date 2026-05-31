@@ -24,6 +24,9 @@ export function studioTemplate(): string {
           <button class="timeline-btn" id="command-palette-btn" type="button" aria-label="Command palette">
             <span data-icon="Search"></span><span>Commands</span>
           </button>
+          <button class="timeline-btn" id="quick-help-btn" type="button" aria-label="Quick help">
+            <span data-icon="CircleHelp"></span><span>Help</span>
+          </button>
           <button class="timeline-btn" id="evaluation-btn" type="button" aria-label="Evaluation tour">
             <span data-icon="ListChecks"></span><span>Evaluation Tour</span>
           </button>
@@ -631,6 +634,76 @@ export function studioTemplate(): string {
       </aside>
 
       <div class="toast-stack" id="toast-stack"></div>
+      <section class="quick-help-overlay" id="quick-help" aria-hidden="true">
+        <div class="quick-help-dialog" role="dialog" aria-modal="true" aria-label="Geometry Studio quick help">
+          <header class="quick-help-header">
+            <div>
+              <strong>Geometry Studio Cheatsheet</strong>
+              <span>Search buttons, shortcuts, and workflows</span>
+            </div>
+            <button class="icon-command" id="quick-help-close" type="button" aria-label="Close quick help" title="Close quick help"><span data-icon="X"></span></button>
+          </header>
+          <label class="quick-help-search">
+            <span data-icon="Search"></span>
+            <input id="quick-help-search" type="search" placeholder="Search help, e.g. Set TRS, camera, render, ease" autocomplete="off" />
+          </label>
+          <div class="quick-help-body">
+            <section class="quick-help-section">
+              <h3>Start Here</h3>
+              <div class="quick-help-item"><strong>Commands</strong><span>Ctrl+K / F3</span><p>Search every major app action without finding the exact button.</p></div>
+              <div class="quick-help-item"><strong>Help</strong><span>?</span><p>Open this cheatsheet.</p></div>
+              <div class="quick-help-item"><strong>Blender Density</strong><span>Inspector header</span><p>Use the smaller professional layout when controls feel too large.</p></div>
+            </section>
+            <section class="quick-help-section">
+              <h3>Viewport</h3>
+              <div class="quick-help-item"><strong>Orbit</strong><span>Left drag / MMB</span><p>Rotate the camera around the current target.</p></div>
+              <div class="quick-help-item"><strong>Pan</strong><span>Shift+MMB / right drag</span><p>Move the camera target without rotating.</p></div>
+              <div class="quick-help-item"><strong>Zoom</strong><span>Wheel / Ctrl+MMB</span><p>Dolly toward the cursor.</p></div>
+              <div class="quick-help-item"><strong>Frame Selected</strong><span>F / Numpad .</span><p>Recover the view around the selected object.</p></div>
+              <div class="quick-help-item"><strong>Frame All</strong><span>Camera panel</span><p>Fit all visible scene objects.</p></div>
+            </section>
+            <section class="quick-help-section">
+              <h3>Transform</h3>
+              <div class="quick-help-item"><strong>Move</strong><span>T</span><p>Use translate gizmo.</p></div>
+              <div class="quick-help-item"><strong>Rotate</strong><span>R</span><p>Use rotation gizmo.</p></div>
+              <div class="quick-help-item"><strong>Scale</strong><span>S</span><p>Use scale gizmo.</p></div>
+              <div class="quick-help-item"><strong>Copy / Paste Pose</strong><span>Transform panel</span><p>Copy selected Position, Rotation, and Scale, then paste onto another time or object.</p></div>
+            </section>
+            <section class="quick-help-section">
+              <h3>Keyframing</h3>
+              <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
+              <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
+              <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
+              <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
+              <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
+            </section>
+            <section class="quick-help-section">
+              <h3>Playback</h3>
+              <div class="quick-help-item"><strong>Play / Pause</strong><span>Space</span><p>Preview the active Work In/Out range.</p></div>
+              <div class="quick-help-item"><strong>Shuttle</strong><span>J / K / L</span><p>Play backward, pause, or play forward.</p></div>
+              <div class="quick-help-item"><strong>Step Frames</strong><span>Left / Right</span><p>Move the playhead one frame.</p></div>
+              <div class="quick-help-item"><strong>Work In / Work Out</strong><span>B / N or I / O</span><p>Set the preview and WebM export range.</p></div>
+              <div class="quick-help-item"><strong>Preview Selected</strong><span>Shift+Space</span><p>Play only the selected keyframe span.</p></div>
+            </section>
+            <section class="quick-help-section">
+              <h3>Retiming</h3>
+              <div class="quick-help-item"><strong>Easy Ease / Linear / Hold</strong><span>F9 / Shift+F9 / Alt+F9</span><p>Change interpolation for selected keys.</p></div>
+              <div class="quick-help-item"><strong>Move To Playhead</strong><span>Shift+Enter</span><p>Move selected key timing so the block starts at the playhead.</p></div>
+              <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
+              <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>
+            </section>
+            <section class="quick-help-section">
+              <h3>Scene And Output</h3>
+              <div class="quick-help-item"><strong>Save / Load JSON</strong><span>Document panel</span><p>Persist scene objects, camera, lights, materials, and timeline.</p></div>
+              <div class="quick-help-item"><strong>Screenshot</strong><span>Bottom bar</span><p>Export the current viewport as PNG for the report.</p></div>
+              <div class="quick-help-item"><strong>Record WebM</strong><span>Bottom bar</span><p>Capture the Work In/Out animation range.</p></div>
+              <div class="quick-help-item"><strong>Rendering Lab</strong><span>Inspector</span><p>Use tone mapping, shadows, SSAO, bloom, depth of field, halftone, and path-traced still preview.</p></div>
+              <div class="quick-help-item"><strong>Import</strong><span>Left rail / drag-drop</span><p>Load GLB, GLTF, OBJ, MTL, STL, and texture files.</p></div>
+            </section>
+            <div class="quick-help-empty" id="quick-help-empty" hidden>No matching help items</div>
+          </div>
+        </div>
+      </section>
       <section class="command-palette-overlay" id="command-palette" aria-hidden="true">
         <div class="command-palette-dialog" role="dialog" aria-modal="true" aria-label="Command palette">
           <label class="command-palette-search">

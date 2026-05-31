@@ -63,6 +63,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - WebM Preview Export: records the active Work In/Out range with progress shown in the status line and record button.
 - Telemetry: displays FPS, draw calls, triangles, lines, points, geometry count, texture count, and object count.
 - UI Density: choose Blender, Compact, or Comfortable sizing from the inspector header. Blender density is the default for a smaller professional editing layout.
+- In-App Quick Help: use the Help button, `?`, or command palette search to open a searchable controls and shortcuts overlay.
 
 7. Keyboard Shortcuts
 For a cleaner tutorial and full button map, open:
@@ -72,6 +73,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - T: Move / Translate.
 - R: Rotate.
 - S: Scale.
+- ?: open Quick Help.
 - Space: Play or pause animation.
 - Shift+Space: preview the currently selected keyframe range.
 - J / K / L: play backward, pause, or play forward inside the work area. Press J or L repeatedly for 2x and 4x shuttle speed.
@@ -117,6 +119,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 8. Quick Grading Checklist
 - Run Release with python3 -m http.server.
 - Confirm the 3D canvas shows the default cube, torus, and sphere.
+- Open Help, search for Set TRS, then open it again with ?.
 - Add Cube, Sphere, Cone, Cylinder, Torus, and Teapot objects.
 - Switch objects between Solid, Points, and Lines.
 - Adjust FOV, Near, Far, camera presets, Frame Selected, and Frame All.
@@ -151,7 +154,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - utils/: DOM helpers and ResourceTracker for disposing geometries, materials, textures, and object URLs.
 
 10. Engineering Docs
-Technical engineering plans are in:
+Technical engineering and user docs are in:
 Geometry_Studio/docs/README.md
 
 The lowercase docs/ folder contains the user cheatsheet, beginner tutorial, design notes for advanced features, the keyframe timeline architecture, and the longer-term expansion plan. The Doc/ folder remains the formal LaTeX report folder.

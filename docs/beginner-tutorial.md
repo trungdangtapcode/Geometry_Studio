@@ -31,6 +31,7 @@ Open `http://127.0.0.1:8080`.
 - Bottom timeline: record and edit keyframes.
 
 When unsure, press `Ctrl+K` or click `Commands`, then search by action name.
+Press `?` or click `Help` for the in-app cheatsheet.
 
 ## 3. Navigate Like A 3D Editor
 

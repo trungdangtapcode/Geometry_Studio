@@ -12,10 +12,18 @@ Use the command palette when you cannot remember a button.
 - Search examples: `frame`, `set trs`, `ease`, `render`, `timeline`, `camera`,
   `clear track`, `preview`, `record`.
 
+Use in-app Quick Help when you need a compact control map without leaving the
+editor.
+
+- Button: `Help` in the bottom viewport bar.
+- Shortcut: `?`.
+- Command palette: search `Quick Help`.
+
 ## Viewport And Camera
 
 | Action | Button / Control | Shortcut / Mouse |
 | --- | --- | --- |
+| Open quick help | Bottom `Help` button | `?` |
 | Orbit camera | Drag in viewport | Left drag or middle mouse drag |
 | Pan camera | Viewport | `Shift` + middle mouse drag or right drag |
 | Zoom camera | Viewport | Mouse wheel or `Ctrl` + middle mouse drag |
