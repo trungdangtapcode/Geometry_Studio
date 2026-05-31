@@ -102,6 +102,7 @@ export interface KeyframeTimelineCallbacks {
   onToggleTrack(kind: TimelineTrackKind, targetId?: string): void;
   onToggleTrackLock(kind: TimelineTrackKind, targetId?: string): void;
   onToggleTrackSolo(kind: TimelineTrackKind, targetId?: string): void;
+  onRenameObject(targetId: string, name: string): void;
   onFitSelectedRange(): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
@@ -883,6 +884,8 @@ export class KeyframeTimelinePanel {
           if (groupToggle) {
             if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
             else this.toggleTimelineGroup(targetId);
+          } else if (event.detail >= 2) {
+            this.startTimelineGroupRename(group);
           } else {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
           }
@@ -909,9 +912,20 @@ export class KeyframeTimelinePanel {
       }
       if (keyButton) this.callbacks.onAddKeyframe(kind);
     });
+    this.labels.addEventListener("dblclick", (event) => {
+      const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
+      if (!group || (event.target as HTMLElement).closest(".timeline-group-toggle")) return;
+      event.preventDefault();
+      this.startTimelineGroupRename(group);
+    });
     this.labels.addEventListener("keydown", (event) => {
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
+        if (event.key === "F2") {
+          event.preventDefault();
+          this.startTimelineGroupRename(group);
+          return;
+        }
         if (event.key !== "Enter" && event.key !== " " && event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
         const targetId = group.dataset.groupTargetId;
         if (targetId) {
@@ -1150,6 +1164,50 @@ export class KeyframeTimelinePanel {
 
   private isTimelineGroupCollapsed(targetId: string): boolean {
     return !this.hasRowSearch() && this.collapsedTimelineGroups.has(targetId);
+  }
+
+  private startTimelineGroupRename(group: HTMLElement): void {
+    const targetId = group.dataset.groupTargetId;
+    if (!targetId || !this.lastEntryNames.has(targetId) || group.querySelector(".timeline-group-rename")) return;
+    const nameLabel = group.querySelector<HTMLElement>(".track-label-text strong");
+    if (!nameLabel) return;
+    const originalName = this.lastEntryNames.get(targetId) ?? nameLabel.textContent ?? "";
+    const input = document.createElement("input");
+    input.className = "timeline-group-rename";
+    input.type = "text";
+    input.value = originalName;
+    input.maxLength = 64;
+    input.setAttribute("aria-label", `Rename ${originalName}`);
+
+    let committed = false;
+    const finish = (commit: boolean) => {
+      if (!input.isConnected) return;
+      const nextName = input.value.trim();
+      input.replaceWith(nameLabel);
+      if (commit && nextName && nextName !== originalName) {
+        committed = true;
+        this.callbacks.onRenameObject(targetId, nextName);
+      } else {
+        group.focus();
+      }
+    };
+
+    input.addEventListener("keydown", (event) => {
+      event.stopPropagation();
+      if (event.key === "Enter") {
+        event.preventDefault();
+        finish(true);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        finish(false);
+      }
+    });
+    input.addEventListener("blur", () => {
+      if (!committed) finish(true);
+    });
+    nameLabel.replaceWith(input);
+    input.focus();
+    input.select();
   }
 
   private setAllTimelineGroupsCollapsed(collapsed: boolean): number {

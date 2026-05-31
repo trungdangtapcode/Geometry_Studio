@@ -126,6 +126,7 @@ import { studioTemplate } from "./ui/template";
 import { renderTransformInspector, type TransformAxis, type TransformProperty } from "./ui/transformInspector";
 import { capitalize, clamp, downloadText, formatNumber, hasWebGL2, hydrateIcons, query, safeJsonParse } from "./utils/dom";
 import { ResourceTracker } from "./utils/resourceTracker";
+import { configureViewportNavigation, resetBlenderNavigationMouseButton, syncBlenderNavigationMouseButton } from "./viewport/navigation";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -161,18 +162,8 @@ function boot(root: HTMLDivElement): void {
   const { renderer, composer, outlinePass, resize: resizePipeline } = renderPipeline;
   const environmentController = createEnvironmentController(renderer, scene);
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.mouseButtons = {
-    LEFT: THREE.MOUSE.ROTATE,
-    MIDDLE: THREE.MOUSE.ROTATE,
-    RIGHT: THREE.MOUSE.PAN
-  };
-  controls.screenSpacePanning = true;
+  configureViewportNavigation(controls);
   controls.target.set(0, 1.2, 0);
-  controls.maxPolarAngle = Math.PI * 0.49;
-  controls.minDistance = 2.5;
-  controls.maxDistance = 48;
   controls.update();
 
   const transformControls = new TransformControls(camera, renderer.domElement);
@@ -272,6 +263,7 @@ function boot(root: HTMLDivElement): void {
     onToggleTrack: toggleTimelineTrack,
     onToggleTrackLock: toggleTimelineTrackLock,
     onToggleTrackSolo: toggleTimelineTrackSolo,
+    onRenameObject: renameTimelineObject,
     onFitSelectedRange: fitTimelineViewToSelectedKeyRange,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
@@ -897,7 +889,7 @@ function boot(root: HTMLDivElement): void {
 
     canvas.addEventListener("pointerdown", handleCanvasPickStart);
     canvas.addEventListener("pointerup", handleCanvasPickEnd);
-    canvas.addEventListener("pointerdown", syncBlenderNavigationMouseButton, { capture: true });
+    canvas.addEventListener("pointerdown", handleBlenderNavigationPointerDown, { capture: true });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     window.addEventListener("keydown", handleKeyboard);
     window.addEventListener("pointerup", handlePointerEnd);
@@ -1696,16 +1688,11 @@ function boot(root: HTMLDivElement): void {
 
   function handlePointerEnd(): void {
     pendingCanvasPick = null;
-    resetBlenderNavigationMouseButton();
+    resetBlenderNavigationMouseButton(controls);
   }
 
-  function syncBlenderNavigationMouseButton(event: PointerEvent): void {
-    if (event.button !== 1) return;
-    controls.mouseButtons.MIDDLE = event.ctrlKey ? THREE.MOUSE.DOLLY : THREE.MOUSE.ROTATE;
-  }
-
-  function resetBlenderNavigationMouseButton(): void {
-    controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE;
+  function handleBlenderNavigationPointerDown(event: PointerEvent): void {
+    syncBlenderNavigationMouseButton(controls, event);
   }
 
   function lookupSceneId(object: THREE.Object3D): string | undefined {
@@ -2341,12 +2328,23 @@ function boot(root: HTMLDivElement): void {
   function renameSelected(): void {
     const entry = selectedEntry();
     if (!entry) return;
-    const name = query<HTMLInputElement>("#object-name").value.trim();
-    if (!name || name === entry.name) return;
+    renameEntry(entry, query<HTMLInputElement>("#object-name").value);
+  }
+
+  function renameTimelineObject(targetId: string, name: string): void {
+    const entry = entries.get(targetId);
+    if (!entry) return;
+    renameEntry(entry, name);
+  }
+
+  function renameEntry(entry: SceneEntry, name: string): void {
+    const nextName = name.trim().slice(0, 64);
+    if (!nextName || nextName === entry.name) return;
     recordHistory();
-    entry.name = name;
-    entry.root.name = name;
+    entry.name = nextName;
+    entry.root.name = nextName;
     updateAllUI();
+    showToast(`Renamed ${nextName}`, "good");
   }
 
   function saveScene(): void {

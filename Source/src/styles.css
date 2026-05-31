@@ -1080,6 +1080,21 @@ svg {
   font-size: var(--ui-small-font);
 }
 
+.timeline-group-rename {
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--timeline-track-row-height) - 8px);
+  border: 1px solid rgba(32, 191, 169, 0.48);
+  border-radius: calc(var(--control-radius) - 3px);
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--ui-small-font);
+  font-weight: 800;
+  outline: 0;
+  padding: 0 6px;
+}
+
 .track-label-text small {
   color: var(--muted);
   font-size: var(--ui-tiny-font);

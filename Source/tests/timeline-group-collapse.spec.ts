@@ -24,6 +24,15 @@ test("collapses timeline layer groups while preserving search reveal", async ({ 
   await expect(page.locator("#selection-summary")).toContainText("Sphere");
   await expect(sphereGroup.locator(".timeline-group-toggle")).toHaveAttribute("aria-expanded", "true");
 
+  await cubeGroup.dblclick();
+  const renameInput = cubeGroup.locator(".timeline-group-rename");
+  await expect(renameInput).toBeVisible();
+  await renameInput.fill("Hero Cube");
+  await renameInput.press("Enter");
+  await expect(page.locator("#selection-summary")).toContainText("Hero Cube");
+  await expect(page.locator("#object-name")).toHaveValue("Hero Cube");
+  await expect(page.locator('.timeline-track-group[data-group-target-id="object-1"]')).toContainText("Hero Cube");
+
   await cubeToggle.click({ modifiers: ["Alt"] });
   await expect(page.locator('.timeline-group-toggle[aria-expanded="true"]')).toHaveCount(0);
   await expect(cubeRows).toHaveCount(0);

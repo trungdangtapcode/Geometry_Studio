@@ -14,11 +14,13 @@ camera controls:
 Three.js `OrbitControls` defaults are different: left mouse rotates, middle
 mouse dollies, and right mouse pans. Geometry Studio keeps the familiar
 left-drag orbit fallback for web and trackpad users, then overrides middle
-mouse so Blender-style navigation also works.
+mouse so Blender-style navigation also works. The studio also removes the old
+horizon lock so users can orbit above, below, and around objects like a normal
+3D editor viewport.
 
 ## Implementation
 
-`Source/src/main.ts` configures `OrbitControls` as:
+`Source/src/viewport/navigation.ts` configures `OrbitControls` as:
 
 ```ts
 controls.mouseButtons = {
@@ -32,6 +34,11 @@ OrbitControls already maps modifier + rotate to panning, so
 `Shift + MMB` pans. A capture-phase pointer handler temporarily maps
 `Ctrl + MMB` to `THREE.MOUSE.DOLLY`, then resets middle mouse to rotate after
 the pointer ends.
+
+The navigation module keeps `zoomToCursor` enabled, reduces the minimum camera
+distance for close inspection, and sets the polar range to almost the full
+sphere. A tiny pole margin is kept to avoid the singularity at exactly straight
+up or straight down.
 
 Left-button object picking is deferred until pointer-up and ignored when the
 pointer moved more than a few pixels. That keeps normal left-drag orbit usable
@@ -50,7 +57,7 @@ The camera panel also exposes viewport framing commands:
 ## User Behavior
 
 - Left drag: orbit fallback for normal web viewport use.
-- `MMB` drag: orbit around the current target.
+- `MMB` drag: orbit around the current target, including below the ground plane.
 - `Shift + MMB` drag: pan.
 - `Ctrl + MMB` drag: dolly zoom.
 - Mouse wheel: zoom.
@@ -64,7 +71,8 @@ The camera panel also exposes viewport framing commands:
 Automated browser coverage lives in
 `Source/tests/viewport-navigation.spec.ts`. The test verifies that middle mouse
 drag changes saved camera position without changing selected object, left-drag
-orbit remains available, Shift + middle mouse changes the saved camera target,
-and Ctrl + middle mouse changes the camera distance to the target. It also
-verifies that Frame Selected changes the saved camera target and distance,
-supports Undo, and that Frame All expands the view to the full scene.
+orbit remains available, unrestricted vertical orbit can move the camera below
+the target, Shift + middle mouse changes the saved camera target, and Ctrl +
+middle mouse changes the camera distance to the target. It also verifies that
+Frame Selected changes the saved camera target and distance, supports Undo, and
+that Frame All expands the view to the full scene.

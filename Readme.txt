@@ -50,7 +50,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, OBJ+MTL, and STL import with centering, normalization, source-material preservation, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
-- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with AE-style selectable object/camera/light layer groups, disclosure collapse/expand, Alt-click bulk collapse/expand, X/Y/Z transform rows, inspector Position/Rotation/Scale key diamonds, Auto-Key initial-pose seeding, Focus/Keyed/All row filtering, Ctrl+F row search, Alt+P/R/S/C/T/M/U property reveal shortcuts, named timeline markers, minimizable overview/layer range strip, clickable track rows, per-row eye/solo/lock/diamond switches, Set TRS grouped transform keying, layer In/Out bars with move, trim, split, sequencing, and Alt-drag key time-stretch, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, cursor-anchored wheel zoom, horizontal wheel/trackpad panning, playhead scrubbing, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview with key time labels and pose ghosts, and JSON save/load.
+- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with AE-style selectable and renamable object/camera/light layer groups, disclosure collapse/expand, Alt-click bulk collapse/expand, X/Y/Z transform rows, inspector Position/Rotation/Scale key diamonds, Auto-Key initial-pose seeding, Focus/Keyed/All row filtering, Ctrl+F row search, Alt+P/R/S/C/T/M/U property reveal shortcuts, named timeline markers, minimizable overview/layer range strip, clickable track rows, per-row eye/solo/lock/diamond switches, Set TRS grouped transform keying, layer In/Out bars with move, trim, split, sequencing, and Alt-drag key time-stretch, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, cursor-anchored wheel zoom, horizontal wheel/trackpad panning, playhead scrubbing, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview with key time labels and pose ghosts, and JSON save/load.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, position motion paths, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, rendering settings, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
@@ -106,8 +106,9 @@ Using a local static server is recommended instead of double-clicking index.html
 - Ctrl+Z: Undo.
 - Ctrl+Y or Ctrl+Shift+Z: Redo.
 - Ctrl+S: export the scene JSON.
+- F2 on an object timeline group row: rename that object from the timeline.
 - Left click an object: select it.
-- Viewport navigation: left mouse drag orbits for normal web/trackpad use; middle mouse drag orbits like Blender; Shift + middle mouse pans; Ctrl + middle mouse or mouse wheel zooms; right drag also pans; left click without dragging selects objects; F / Numpad . frames the selected object.
+- Viewport navigation: left mouse drag orbits for normal web/trackpad use; middle mouse drag orbits like Blender with unrestricted vertical orbit; Shift + middle mouse pans; Ctrl + middle mouse or mouse wheel zooms toward the cursor; right drag also pans; left click without dragging selects objects; F / Numpad . frames the selected object.
 
 8. Quick Grading Checklist
 - Run Release with python3 -m http.server.
@@ -127,7 +128,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Add two Position keys for the selected object and confirm the viewport draws a motion path between them.
 - Nudge a keyframe left or right by one frame from the toolbar.
 - Click timeline row labels to switch active object, camera, and light tracks.
-- Select objects from timeline layer group rows, collapse and expand groups from their disclosure controls, Alt-click a disclosure control to collapse or expand all groups, then use row search to reveal a hidden property row.
+- Select and rename objects from timeline layer group rows, collapse and expand groups from their disclosure controls, Alt-click a disclosure control to collapse or expand all groups, then use row search to reveal a hidden property row.
 - Minimize the timeline overview/layer range strip and confirm only that section collapses; the keyframe rows and playhead remain usable.
 - Alt-drag a layer range edge and confirm in-range object keyframes stretch proportionally into the new layer duration.
 - Run Cinematic Demo and Play/Pause the baked keyframe animation.

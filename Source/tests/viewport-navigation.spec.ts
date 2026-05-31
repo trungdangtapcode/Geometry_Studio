@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 test("uses Blender-style middle mouse viewport navigation", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await installSceneExportCapture(page);
   await page.goto("/");
 
@@ -18,9 +18,13 @@ test("uses Blender-style middle mouse viewport navigation", async ({ page }) => 
   expect(distance(initial.camera.target, orbited.camera.target)).toBeLessThan(0.001);
   expect(orbited.selectedId).toBe(initial.selectedId);
 
+  await dragViewport(page, "middle", 0, -520);
+  const fullVerticalOrbit = await exportedScene(page);
+  expect(fullVerticalOrbit.camera.position[1]).toBeLessThan(fullVerticalOrbit.camera.target[1] - 0.05);
+
   await dragViewport(page, "middle", 90, 45, ["Shift"]);
   const panned = await exportedScene(page);
-  expect(distance(orbited.camera.target, panned.camera.target)).toBeGreaterThan(0.05);
+  expect(distance(fullVerticalOrbit.camera.target, panned.camera.target)).toBeGreaterThan(0.05);
 
   const beforeZoomDistance = cameraTargetDistance(panned);
   await dragViewport(page, "middle", 0, -120, ["Control"]);

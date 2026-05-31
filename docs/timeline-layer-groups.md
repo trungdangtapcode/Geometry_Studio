@@ -10,6 +10,8 @@ their editable property tracks.
 ## Behavior
 
 - Click an object, camera, or light group row to select that timeline target.
+- Double-click an object group row, or focus it and press `F2`, to rename the
+  object directly from the timeline. `Enter` commits and `Escape` cancels.
 - Click the disclosure control on a group row to collapse or expand its tracks.
 - `Alt`-click a disclosure control to collapse all groups or expand all groups,
   matching the clicked group's next state.
@@ -34,6 +36,10 @@ The public `collapseAllTimelineGroups()` and `expandAllTimelineGroups()` panel
 methods are exposed through the app command palette. Disclosure `Alt` clicks
 call the same shared state path, so bulk disclosure behavior stays consistent.
 
+Timeline group rename uses the same object rename callback as the inspector, so
+the object root, outliner, inspector, timeline labels, scene JSON, and undo
+history all stay on one naming path.
+
 The implementation does not replace `animation-timeline-js`; it uses the
 existing row model and adds a lightweight grouping layer around it.
 
@@ -43,5 +49,6 @@ Automated browser coverage lives in
 `Source/tests/timeline-group-collapse.spec.ts`. The test verifies that an object
 group can be collapsed, its property rows disappear, row search reveals matching
 properties, clearing search restores the collapse state, row clicks select the
-target without collapsing it, `Alt`-click collapses all groups, the Command
-Palette expands all groups, and the state persists after reload.
+target without collapsing it, object groups can be renamed in place, `Alt`-click
+collapses all groups, the Command Palette expands all groups, and the state
+persists after reload.
