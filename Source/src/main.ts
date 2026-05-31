@@ -1051,7 +1051,10 @@ function boot(root: HTMLDivElement): void {
       command("timeline.reveal-position", "Reveal Position Rows", "View", () => revealTimelineRows("position", "position", "Position"), { shortcut: "Alt+P", keywords: ["show position", "property shortcut", "ae"] }),
       command("timeline.reveal-rotation", "Reveal Rotation Rows", "View", () => revealTimelineRows("rotation", "rotation", "Rotation"), { shortcut: "Alt+R", keywords: ["show rotation", "property shortcut", "ae"] }),
       command("timeline.reveal-scale", "Reveal Scale Rows", "View", () => revealTimelineRows("scale", "scale", "Scale"), { shortcut: "Alt+S", keywords: ["show scale", "property shortcut", "ae"] }),
+      command("timeline.reveal-color", "Reveal Color Rows", "View", () => revealTimelineRows("objectColor", "color", "Color"), { shortcut: "Alt+C", keywords: ["show color", "property shortcut", "ae"] }),
       command("timeline.reveal-opacity", "Reveal Opacity Rows", "View", () => revealTimelineRows("objectOpacity", "opacity", "Opacity"), { shortcut: "Alt+T", keywords: ["show opacity", "transparency", "property shortcut", "ae"] }),
+      command("timeline.reveal-material", "Reveal Material Rows", "View", () => revealTimelineRows("objectColor", "material", "Material"), { shortcut: "Alt+M", keywords: ["show material", "appearance", "shader", "pbr", "ae"] }),
+      command("timeline.reveal-texture", "Reveal Texture Rows", "View", () => revealTimelineRows("objectTextureSource", "texture", "Texture"), { shortcut: "Alt+U", keywords: ["show texture", "uv", "mapping", "material", "ae"] }),
       command("timeline.zoom-in", "Zoom Timeline In", "View", () => timelinePanel.zoomTimeline(1), { shortcut: "=" }),
       command("timeline.zoom-out", "Zoom Timeline Out", "View", () => timelinePanel.zoomTimeline(-1), { shortcut: "-" }),
       command("timeline.fit", "Fit Timeline To Duration", "View", () => timelinePanel.fitTimelineToDuration(), { shortcut: "0" }),
@@ -1688,9 +1691,24 @@ function boot(root: HTMLDivElement): void {
       revealTimelineRows("scale", "scale", "Scale");
       return;
     }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "c") {
+      event.preventDefault();
+      revealTimelineRows("objectColor", "color", "Color");
+      return;
+    }
     if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "t") {
       event.preventDefault();
       revealTimelineRows("objectOpacity", "opacity", "Opacity");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "m") {
+      event.preventDefault();
+      revealTimelineRows("objectColor", "material", "Material");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "u") {
+      event.preventDefault();
+      revealTimelineRows("objectTextureSource", "texture", "Texture");
       return;
     }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "v") {

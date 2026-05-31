@@ -476,10 +476,35 @@ test("reveals common timeline property rows with AE-style shortcuts", async ({ p
   await expect(page.locator("#timeline-row-search")).toHaveValue("opacity");
   await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectOpacity"]')).toBeVisible();
 
+  await pressAltShortcut("c");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("objectColor");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("color");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectColor"][data-track-axis="x"]')).toBeVisible();
+
+  await pressAltShortcut("m");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("objectColor");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("material");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectColor"][data-track-axis="x"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectRoughness"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureSource"]')).toBeVisible();
+
+  await pressAltShortcut("u");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("objectTextureSource");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("texture");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureSource"]')).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectTextureRepeat"][data-track-axis="x"]')).toBeVisible();
+
   await pressAltShortcut("r");
   await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
   await expect(page.locator("#timeline-row-search")).toHaveValue("rotation");
   await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="rotation"][data-track-axis="y"]')).toBeVisible();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("reveal material");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("objectColor");
+  await expect(page.locator("#timeline-row-search")).toHaveValue("material");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="objectMetalness"]')).toBeVisible();
 
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("reveal scale");

@@ -33,6 +33,7 @@ import {
 } from "./timelineValueGraph";
 import { appendLayerPlayhead, TimelinePlayheadController } from "./timelinePlayhead";
 import { snapTimelineEditorTime, type TimelineSnapOptions } from "./timelineSnapping";
+import { timelineRowMatchesSearch } from "./timelineRowSearch";
 import { TimelineWorkAreaController } from "./timelineWorkArea";
 import {
   CAMERA_TRACKS,
@@ -1494,16 +1495,7 @@ export class KeyframeTimelinePanel {
   }
 
   private matchesRowSearch(targetName: string, kind: TimelineTrackKind, axis?: TimelineAxis): boolean {
-    if (!this.hasRowSearch()) return true;
-    const search = this.rowSearchText.toLowerCase();
-    const label = trackLabel(kind, axis);
-    const tokens = [
-      targetName,
-      label,
-      kind,
-      axis ?? ""
-    ].join(" ").toLowerCase();
-    return tokens.includes(search);
+    return timelineRowMatchesSearch(targetName, kind, axis, this.rowSearchText);
   }
 
   private hasRowSearch(): boolean {
