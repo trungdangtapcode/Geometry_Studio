@@ -9,7 +9,8 @@ copied, pasted, nudged, reversed, snapped, distributed, or fit to the work area.
 
 ## Behavior
 
-- The command respects the current Focus, Keyed, or All row filter.
+- The command respects the current timeline row filter, including Focus,
+  Selected Layer, Selected Keyed, Keyed, Pinned, and All.
 - The command respects row search. Searching for `texture`, for example, limits
   selection to visible texture tracks.
 - X/Y/Z rows are deduplicated because transform tracks are stored as vector

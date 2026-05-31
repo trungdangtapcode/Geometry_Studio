@@ -8,7 +8,8 @@ navigation by making row search and row filters behave like an editing scope.
 
 ## Behavior
 
-- The command respects the current Focus, Keyed, or All row filter.
+- The command respects the current timeline row filter, including Focus,
+  Selected Layer, Selected Keyed, Keyed, Pinned, and All.
 - The command respects row search. Searching for `texture`, for example, jumps
   only between visible texture key columns.
 - X/Y/Z transform rows are deduplicated because transform tracks are stored as

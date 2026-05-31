@@ -238,8 +238,9 @@ PDF.
   graph preview that samples the same runtime evaluator as playback.
 - [Timeline Graph Marquee Selection](timeline-graph-marquee-selection.md)
   documents drag-box selection for graph keys.
-- [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
-  Pinned, and All row visibility modes for dense scenes.
+- [Timeline Row Filtering](timeline-row-filtering.md) documents Focus,
+  Selected Layer, Selected Keyed, Keyed, Pinned, and All row visibility modes
+  for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
   position path rendering for visible spatial keyframe feedback.
 - [Preview Export](preview-export.md) documents WebM work-area recording and
@@ -366,8 +367,9 @@ animation runtime where it fits:
   channel values with snap-aware time movement, Ctrl/Cmd toggle selection,
   Shift range selection, selected-key group dragging, Alt-drag proportional time
   stretching, Shift drag constraints, and one undo step per drag.
-- Row filtering keeps dense scenes manageable through Focus, Keyed, and All
-  timeline views, with `U` cycling row visibility from the keyboard.
+- Row filtering keeps dense scenes manageable through Focus, Selected Layer,
+  Selected Keyed, Keyed, Pinned, and All timeline views, with `U` cycling row
+  visibility from the keyboard.
 - Timeline zoom supports toolbar controls plus `+`, `-`, and `0` shortcuts for
   timeline scale changes without leaving the keyboard.
 - Selected objects with two or more Position keys show a viewport motion path,

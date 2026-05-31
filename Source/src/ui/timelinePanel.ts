@@ -157,7 +157,7 @@ type TimelineUiRow = TimelineRow & {
   group?: boolean;
 };
 
-export type TimelineRowFilter = "focus" | "selectedKeyed" | "keyed" | "pinned" | "all";
+export type TimelineRowFilter = "focus" | "selected" | "selectedKeyed" | "keyed" | "pinned" | "all";
 type TimelineLayerDragMode = "move" | "trimStart" | "trimEnd";
 type TimelineRowDescriptor = {
   kind: TimelineTrackKind;
@@ -218,7 +218,7 @@ const LABEL_WIDTH_STORAGE_KEY = "geometry-studio-timeline-label-width";
 const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
 const LAYER_STRIP_COLLAPSED_STORAGE_KEY = "geometry-studio-timeline-layer-strip-collapsed";
 const COLLAPSED_GROUPS_STORAGE_KEY = "geometry-studio-timeline-collapsed-groups";
-const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "selectedKeyed", "keyed", "pinned", "all"];
+const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "selected", "selectedKeyed", "keyed", "pinned", "all"];
 const TRANSFORM_KEYING_SET: TimelineTrackKind[] = ["position", "rotation", "scale"];
 const MIN_DOCK_HEIGHT = 190;
 const MIN_LABEL_WIDTH = 112;
@@ -1738,6 +1738,9 @@ export class KeyframeTimelinePanel {
     const keyedIds = new Set(timelineDocument.objects.map((object) => object.objectId));
     const pinnedIds = this.pinnedObjectIds();
     const selected = entryList.find((entry) => entry.id === selectedId);
+    if (this.rowFilter === "selected") {
+      return selected ? [selected] : [];
+    }
     if (this.rowFilter === "selectedKeyed") {
       return selected ? [selected] : [];
     }
@@ -2163,6 +2166,10 @@ export class KeyframeTimelinePanel {
 
     if (this.rowFilter === "pinned") {
       return kinds.filter((kind) => isPinned(kind) || isActive(kind));
+    }
+
+    if (this.rowFilter === "selected") {
+      return targetId === selectedId ? kinds : [];
     }
 
     if (this.rowFilter === "selectedKeyed") {
@@ -3281,10 +3288,11 @@ function isTimelineTrackKind(value: string): value is TimelineTrackKind {
 }
 
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
-  return value === "selectedKeyed" || value === "keyed" || value === "pinned" || value === "all" || value === "focus" ? value : "focus";
+  return value === "selected" || value === "selectedKeyed" || value === "keyed" || value === "pinned" || value === "all" || value === "focus" ? value : "focus";
 }
 
 function rowFilterLabel(filter: TimelineRowFilter): string {
+  if (filter === "selected") return "Selected Layer Rows";
   if (filter === "selectedKeyed") return "Selected Keyed Rows";
   if (filter === "keyed") return "Keyed Rows";
   if (filter === "pinned") return "Pinned Rows";

@@ -101,6 +101,7 @@ export function studioTemplate(): string {
               </select>
               <select id="timeline-row-filter" aria-label="Timeline row filter">
                 <option value="focus">Focus Rows</option>
+                <option value="selected">Selected Layer Rows</option>
                 <option value="selectedKeyed">Selected Keyed Rows</option>
                 <option value="keyed">Keyed Rows</option>
                 <option value="pinned">Pinned Rows</option>

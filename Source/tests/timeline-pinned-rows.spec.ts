@@ -97,6 +97,9 @@ test("jumps directly to timeline row filters from the command palette", async ({
   await runCommand("show focus timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
 
+  await runCommand("show selected layer timeline rows");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selected");
+
   await runCommand("show selected keyed timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
 
@@ -105,6 +108,25 @@ test("jumps directly to timeline row filters from the command palette", async ({
 
   await runCommand("show pinned timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+});
+
+test("isolates the selected layer rows", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  await page.locator('.outliner-item[data-id="object-2"]').click({ force: true });
+  await page.locator("#timeline-row-filter").selectOption("selected");
+
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selected");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-2"][data-track-kind="position"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-2"][data-track-kind="rotation"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"]').first()).toBeHidden();
+
+  await page.keyboard.press("U");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
 });
 
 test("reveals selected layer keyed rows with Shift+U", async ({ page }) => {

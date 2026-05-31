@@ -1203,6 +1203,9 @@ function boot(root: HTMLDivElement): void {
       command("timeline.rows-focus", "Show Focus Timeline Rows", "View", () => setTimelineRowFilter("focus"), {
         keywords: ["filter", "focused", "selected", "rows", "tracks", "timeline"]
       }),
+      command("timeline.rows-selected", "Show Selected Layer Timeline Rows", "View", () => setTimelineRowFilter("selected"), {
+        keywords: ["filter", "selected", "layer", "object", "isolate", "rows", "tracks", "timeline"]
+      }),
       command("timeline.rows-selected-keyed", "Show Selected Keyed Timeline Rows", "View", () => setTimelineRowFilter("selectedKeyed"), {
         shortcut: "Shift+U",
         keywords: ["filter", "selected", "keyed", "animated properties", "layer", "after effects", "timeline"]
