@@ -463,6 +463,37 @@ test("accepts frame, timecode, and relative timeline time entry", async ({ page 
   expect(errors).toEqual([]);
 });
 
+test("switches timeline time display modes", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.removeItem("geometry-studio-timeline-time-display"));
+  await page.reload();
+  await page.locator("#timeline-current-time").evaluate((element) => {
+    const input = element as HTMLInputElement;
+    input.value = "45f";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await expect(page.locator("#timeline-time-display")).toHaveValue("timecode");
+  await expect(page.locator("#timeline-timecode")).toContainText("00:01:15 | F0045");
+
+  await page.locator("#timeline-time-display").selectOption("frames");
+  await expect(page.locator("#timeline-timecode")).toContainText("F0045 | 1.5s");
+
+  await page.locator("#timeline-time-display").selectOption("seconds");
+  await expect(page.locator("#timeline-timecode")).toContainText("1.5s | F0045");
+
+  await page.reload();
+  await expect(page.locator("#timeline-time-display")).toHaveValue("seconds");
+
+  expect(errors).toEqual([]);
+});
+
 test("sequences object layer ranges from the command palette", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

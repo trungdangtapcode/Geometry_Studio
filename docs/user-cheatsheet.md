@@ -106,6 +106,7 @@ Scale recorded together.
 | Duration | Full timeline length; accepts the same seconds/frame/timecode formats |
 | Work In / Work Out | Preview/export range; accepts the same seconds/frame/timecode formats |
 | FPS | Frame grid for stepping and snapping |
+| Display | Switch the timeline readout and ruler between Timecode, Frames, and Seconds |
 | Speed | Playback rate |
 | Snap | Snap keyframes/playhead to frame or marker landmarks |
 | Loop | Repeat Work In/Out during playback |

@@ -38,6 +38,13 @@ import { timelineRowMatchesSearch } from "./timelineRowSearch";
 import { parseTimelineTimeInput, timelineTimeInputHelp } from "./timelineTimeInput";
 import { TimelineWorkAreaController } from "./timelineWorkArea";
 import {
+  formatTimelineReadout,
+  formatTimelineRulerTick,
+  parseTimelineTimeDisplayMode,
+  timelineTimeDisplayLabel,
+  type TimelineTimeDisplayMode
+} from "./timelineTimeDisplay";
+import {
   CAMERA_TRACKS,
   CHANNEL_EXPANDED_TRACKS,
   isCameraTrack,
@@ -205,6 +212,7 @@ const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
 const PINNED_ROWS_STORAGE_KEY = "geometry-studio-timeline-pinned-rows";
 const ROW_SEARCH_STORAGE_KEY = "geometry-studio-timeline-row-search";
+const TIME_DISPLAY_STORAGE_KEY = "geometry-studio-timeline-time-display";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
 const LABEL_WIDTH_STORAGE_KEY = "geometry-studio-timeline-label-width";
 const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
@@ -287,6 +295,7 @@ export class KeyframeTimelinePanel {
   private readonly workStartInput = query<HTMLInputElement>("#timeline-work-start");
   private readonly workEndInput = query<HTMLInputElement>("#timeline-work-end");
   private readonly fpsInput = query<HTMLInputElement>("#timeline-fps");
+  private readonly timeDisplaySelect = query<HTMLSelectElement>("#timeline-time-display");
   private readonly snapInput = query<HTMLInputElement>("#timeline-snap");
   private readonly autoKeyInput = query<HTMLInputElement>("#timeline-auto-key");
   private readonly loopInput = query<HTMLInputElement>("#timeline-loop");
@@ -324,6 +333,7 @@ export class KeyframeTimelinePanel {
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
   private pinnedRows = loadPinnedTimelineRows();
   private rowSearchText = loadTimelineRowSearch();
+  private timeDisplayMode = loadTimelineTimeDisplayMode();
   private followPlayhead = loadTimelineFollowPlayhead();
   private layerStripCollapsed = loadLayerStripCollapsed();
   private collapsedTimelineGroups = loadCollapsedTimelineGroups();
@@ -432,7 +442,7 @@ export class KeyframeTimelinePanel {
       }
     }, { rows: [] });
 
-    this.timeline._formatUnitsText = (value: number) => `${formatNumber(value)}s`;
+    this.timeline._formatUnitsText = (value: number) => this.formatRulerTick(value);
     this.setDopeSheetTool("selection");
     this.bindEvents();
     this.syncZoomState();
@@ -457,6 +467,7 @@ export class KeyframeTimelinePanel {
     this.workStartInput.value = formatNumber(timelineDocument.workStart);
     this.workEndInput.value = formatNumber(timelineDocument.workEnd);
     this.fpsInput.value = String(timelineDocument.fps);
+    this.timeDisplaySelect.value = this.timeDisplayMode;
     this.loopInput.checked = timelineDocument.loop;
     this.snapInput.checked = timelineDocument.snapEnabled;
     this.autoKeyInput.checked = timelineDocument.autoKey;
@@ -865,6 +876,18 @@ export class KeyframeTimelinePanel {
     });
   }
 
+  private setTimeDisplayMode(mode: TimelineTimeDisplayMode): void {
+    this.timeDisplayMode = mode;
+    this.timeDisplaySelect.value = mode;
+    storeTimelineTimeDisplayMode(mode);
+    this.timeline.redraw();
+    if (this.lastTimelineDocument) this.syncTimecode(this.lastTimelineDocument);
+  }
+
+  private formatRulerTick(value: number): string {
+    return formatTimelineRulerTick(value, this.lastTimelineDocument?.fps ?? Number(this.fpsInput.value), this.timeDisplayMode);
+  }
+
   private commitTimeInput(input: HTMLInputElement, baseTime: number, commit: (time: number) => void): void {
     const time = this.parseTimeInput(input, baseTime);
     if (time === null) {
@@ -1194,6 +1217,7 @@ export class KeyframeTimelinePanel {
     this.workStartInput.addEventListener("change", () => this.commitTimeInput(this.workStartInput, this.lastTimelineDocument?.workStart ?? 0, (workStart) => this.callbacks.onSettingsChanged({ workStart })));
     this.workEndInput.addEventListener("change", () => this.commitTimeInput(this.workEndInput, this.lastTimelineDocument?.workEnd ?? 8, (workEnd) => this.callbacks.onSettingsChanged({ workEnd })));
     this.fpsInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ fps: Number(this.fpsInput.value) }));
+    this.timeDisplaySelect.addEventListener("change", () => this.setTimeDisplayMode(parseTimelineTimeDisplayMode(this.timeDisplaySelect.value)));
     this.snapStepInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapStep: Number(this.snapStepInput.value) }));
     this.loopInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ loop: this.loopInput.checked }));
     this.snapInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapEnabled: this.snapInput.checked }));
@@ -2760,8 +2784,8 @@ export class KeyframeTimelinePanel {
   private syncTimecode(timelineDocument: SceneTimelineDocument): void {
     const visibleKeys = this.visiblePlayheadKeyframeCount(timelineDocument);
     const visibleText = `${visibleKeys} visible ${visibleKeys === 1 ? "key" : "keys"}`;
-    this.timecodeLabel.textContent = `${formatTimecode(timelineDocument.currentTime, timelineDocument.fps)} | ${visibleText}`;
-    this.timecodeLabel.title = `${visibleText} at the current playhead time under the active row filter and search.`;
+    this.timecodeLabel.textContent = `${formatTimelineReadout(timelineDocument.currentTime, timelineDocument.fps, this.timeDisplayMode)} | ${visibleText}`;
+    this.timecodeLabel.title = `${timelineTimeDisplayLabel(this.timeDisplayMode)} display. ${visibleText} at the current playhead time under the active row filter and search.`;
     this.syncVisibleTimeActionButtons(visibleKeys);
   }
 
@@ -3074,6 +3098,22 @@ function storeTimelineRowFilter(filter: TimelineRowFilter): void {
   }
 }
 
+function loadTimelineTimeDisplayMode(): TimelineTimeDisplayMode {
+  try {
+    return parseTimelineTimeDisplayMode(window.localStorage.getItem(TIME_DISPLAY_STORAGE_KEY));
+  } catch {
+    return "timecode";
+  }
+}
+
+function storeTimelineTimeDisplayMode(mode: TimelineTimeDisplayMode): void {
+  try {
+    window.localStorage.setItem(TIME_DISPLAY_STORAGE_KEY, mode);
+  } catch {
+    // Time display is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
 function loadTimelineRowSearch(): string {
   try {
     return normalizeRowSearch(window.localStorage.getItem(ROW_SEARCH_STORAGE_KEY) ?? "");
@@ -3349,18 +3389,4 @@ function escapeHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-function formatTimecode(time: number, fps: number): string {
-  const safeFps = Math.max(1, Math.round(fps));
-  const absoluteFrame = Math.max(0, Math.round(time * safeFps));
-  const totalSeconds = Math.floor(absoluteFrame / safeFps);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const frame = absoluteFrame % safeFps;
-  return `${pad2(minutes)}:${pad2(seconds)}:${pad2(frame)} | F${String(absoluteFrame).padStart(4, "0")}`;
-}
-
-function pad2(value: number): string {
-  return String(value).padStart(2, "0");
 }

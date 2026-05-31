@@ -128,6 +128,9 @@ PDF.
   `0.25x` to `4x` preview speed controls and command palette integration.
 - [Timeline Time Entry](timeline-time-entry.md) documents seconds, frame,
   timecode, and relative-offset input for Time, Duration, Work In, and Work Out.
+- [Timeline Time Display](timeline-time-display.md) documents the persisted
+  Timecode, Frames, and Seconds display modes for the playhead readout and
+  ruler.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Paste Insert](timeline-paste-insert.md) documents insert-style
@@ -382,6 +385,8 @@ animation runtime where it fits:
 - Timeline Time, Duration, Work In, and Work Out fields accept seconds, frames,
   timecode, and relative offsets, then feed the existing clamped timeline
   callbacks so saved scene data remains simple seconds.
+- The timeline display mode can switch between Timecode, Frames, and Seconds
+  without changing the underlying seconds-based scene document.
 - The red Current Time Indicator in the timeline ruler can be dragged directly
   to scrub the scene, and the ruler scrub lane supports direct click-to-seek,
   with the matching playhead line shown across layer ranges.
@@ -437,6 +442,8 @@ object appearance, camera, and light tracks:
   header.
 - `ui/timelineTimeInput.ts` owns editor-style seconds, frame, timecode, and
   relative-offset parsing for timeline time fields.
+- `ui/timelineTimeDisplay.ts` owns Timecode, Frames, and Seconds readout/ruler
+  formatting.
 - `ui/density.ts` owns UI-density persistence and root layout mode application.
 - `main.ts` evaluates camera, light, color, opacity, and visibility tracks
   against the same keyframe schema so non-transform properties remain

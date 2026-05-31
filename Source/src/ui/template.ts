@@ -191,6 +191,14 @@ export function studioTemplate(): string {
             <label><span>Work Out</span><input id="timeline-work-end" type="text" inputmode="decimal" value="8" title="Seconds, frames like 240f, timecode like 00:00:08:00, or relative offsets like +10f" /></label>
             <label><span>FPS</span><input id="timeline-fps" type="number" min="1" max="120" step="1" value="30" /></label>
             <label>
+              <span>Display</span>
+              <select id="timeline-time-display" aria-label="Timeline time display">
+                <option value="timecode" selected>Timecode</option>
+                <option value="frames">Frames</option>
+                <option value="seconds">Seconds</option>
+              </select>
+            </label>
+            <label>
               <span>Speed</span>
               <select id="timeline-playback-rate" aria-label="Timeline playback speed">
                 <option value="0.25">0.25x</option>
