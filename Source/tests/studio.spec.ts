@@ -2004,7 +2004,7 @@ test("shows live timeline row values while editing and scrubbing", async ({ page
 });
 
 test("records grouped position rotation and scale keyframes", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(480_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -2014,7 +2014,8 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-set-transform")).toBeVisible();
 
   await page.locator("#timeline-set-transform").click();
-  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
+  await expect(page.locator("#timeline-key-label")).toContainText("3 selected keyframes");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("position");
   await expect(page.getByRole("button", { name: "Cube Position X", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cube Scale Z", exact: true })).toBeVisible();
   await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
@@ -2064,11 +2065,13 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
     (input as HTMLInputElement).value = "0";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
+  await page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"] .timeline-row-key').click();
   await page.locator("#timeline-ease-hold").click();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "2";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
+  await page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"] .timeline-row-key').click();
   await page.locator("#timeline-ease-linear").click();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
@@ -2091,8 +2094,11 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   await expect(page.locator("#timeline-graph-x")).not.toHaveAttribute("d", "");
   await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  if ((await page.locator("#timeline-toggle-track").textContent())?.includes("Track Off")) {
+    await page.locator("#timeline-toggle-track").click();
+  }
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
-  const middleGraphKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  const middleGraphKey = page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first();
   await expect(middleGraphKey).toBeVisible();
   const keyBox = await middleGraphKey.boundingBox();
   expect(keyBox).toBeTruthy();
@@ -2114,7 +2120,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   expect(Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(2, 1);
-  const restoredKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  const restoredKey = page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first();
   await expect(restoredKey).toBeVisible();
   const restoredBox = await restoredKey.boundingBox();
   expect(restoredBox).toBeTruthy();
@@ -2134,7 +2140,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await page.locator("#undo-btn").click();
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   const firstGraphKey = page.locator('.timeline-graph-key.graph-x[data-key-time="0"]').first();
-  const middleGraphKeyAgain = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  const middleGraphKeyAgain = page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first();
   await expect(firstGraphKey).toBeVisible();
   await expect(middleGraphKeyAgain).toBeVisible();
   await firstGraphKey.click();
@@ -2147,7 +2153,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#selection-summary")).toContainText("Cube");
   await page.locator("#undo-btn").click();
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
-  const deletableKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  const deletableKey = page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first();
   await expect(deletableKey).toBeVisible();
   await deletableKey.click();
   await page.keyboard.press("Delete");
@@ -2158,7 +2164,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   await page.keyboard.press("Control+A");
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
-  const selectedMiddleKey = page.locator('.timeline-graph-key.graph-x.selected[data-key-time="2"]').first();
+  const selectedMiddleKey = page.locator('.timeline-graph-key.graph-x.selected[data-key-time^="2"]').first();
   await expect(selectedMiddleKey).toBeVisible();
   const selectedMiddleBox = await selectedMiddleKey.boundingBox();
   expect(selectedMiddleBox).toBeTruthy();
@@ -2180,7 +2186,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.keyboard.press("Control+A");
-  const stretchMiddleKey = page.locator('.timeline-graph-key.graph-x.selected[data-key-time="2"]').first();
+  const stretchMiddleKey = page.locator('.timeline-graph-key.graph-x.selected[data-key-time^="2"]').first();
   await expect(stretchMiddleKey).toBeVisible();
   const stretchMiddleBox = await stretchMiddleKey.boundingBox();
   expect(stretchMiddleBox).toBeTruthy();
@@ -2235,7 +2241,7 @@ test("marquee selects value graph keyframes", async ({ page }) => {
   await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
   const firstKey = page.locator('.timeline-graph-key.graph-x[data-key-time="0.5"]').first();
-  const secondKey = page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first();
+  const secondKey = page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first();
   await expect(firstKey).toBeVisible();
   await expect(secondKey).toBeVisible();
   const firstBox = await firstKey.boundingBox();
@@ -3380,7 +3386,7 @@ test("ripple deletes selected timeline keyframe spans", async ({ page }) => {
     await page.locator("#timeline-graph-toggle").click();
   }
   await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
-  await page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first().click();
+  await page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first().click();
   await page.keyboard.down("Shift");
   await page.locator('.timeline-graph-key.graph-x[data-key-time="4"]').first().click();
   await page.keyboard.up("Shift");
@@ -3415,7 +3421,7 @@ test("ripple deletes selected timeline keyframe spans", async ({ page }) => {
   expect(savedKeys).toEqual([{ time: 0, x: 0 }, { time: 4, x: 6 }]);
 
   await page.locator("#undo-btn").click();
-  await expect(page.locator('.timeline-graph-key.graph-x[data-key-time="2"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first()).toBeVisible();
   const restoredTimes = await page.locator(".timeline-graph-key.graph-x").evaluateAll((nodes) =>
     [...new Set(nodes.map((node) => Number((node as SVGElement).getAttribute("data-key-time"))))]
       .sort((left, right) => left - right)

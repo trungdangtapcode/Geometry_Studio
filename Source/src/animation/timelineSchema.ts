@@ -8,6 +8,7 @@ import type {
   TimelineTrackDocument,
   TimelineTrackKind
 } from "../editor/types";
+import { isTimelineInterpolation } from "./timelineInterpolation";
 
 const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   position: "Position",
@@ -369,10 +370,6 @@ function normalizeKeyframe(value: unknown): TimelineKeyframeDocument | null {
     ],
     interpolation: isTimelineInterpolation(keyframe.interpolation) ? keyframe.interpolation : "linear"
   };
-}
-
-function isTimelineInterpolation(value: unknown): value is TimelineKeyframeDocument["interpolation"] {
-  return value === "hold" || value === "linear" || value === "easeIn" || value === "easeOut" || value === "smooth";
 }
 
 function createTimelineId(prefix: string): string {

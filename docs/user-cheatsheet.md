@@ -136,7 +136,7 @@ Scale recorded together.
 | Layer Keys | Select keys inside selected layer range |
 | Fit Layer | Fit selected object keys into its layer range |
 | Sequence | Sequence object layer ranges from the playhead |
-| Linear / Ease In / Ease Out / Ease / Hold | Change selected key interpolation |
+| Linear / Ease In / Ease Out / Ease / Back In / Back Out / Hold | Change selected key interpolation |
 | Graph | Show/hide value graph for the active track |
 | Marker | Add/update or delete timeline marker |
 | Delete | Delete selected keyframes |
@@ -194,6 +194,7 @@ Scale recorded together.
 | `Ctrl+F9` | Ease In |
 | `Ctrl+Shift+F9` | Ease Out |
 | `Alt+F9` | Hold |
+| Command Palette: `back in`, `back out`, or `overshoot` | Apply anticipation or overshoot interpolation |
 | `Ctrl+A` | Select active-track keyframes |
 | `Ctrl+Shift+A` | Select active-track keys inside Work In/Out |
 | `Ctrl+Alt+A` | Select visible-row keyframes |

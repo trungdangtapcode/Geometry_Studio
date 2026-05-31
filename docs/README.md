@@ -223,8 +223,8 @@ PDF.
   `Alt+Shift+K` / `Alt+Shift+L` workflows for layer retiming, selected layer
   keyframes, and sequenced layer ranges.
 - [Timeline Interpolation Controls](timeline-interpolation-controls.md)
-  documents direct Linear, Ease In, Ease Out, Easy Ease, and Hold timing
-  controls.
+  documents direct Linear, Ease In, Ease Out, Easy Ease, Back In, Back Out, and
+  Hold timing controls.
 - [Timeline Runtime Interpolation](timeline-runtime-interpolation.md) documents
   per-keyframe transform/runtime interpolation semantics.
 - [Timeline Value Graph](timeline-value-graph.md) documents the active-track
@@ -406,6 +406,8 @@ object appearance, camera, and light tracks:
   track resolution for visible-row timeline commands.
 - `animation/interpolation.ts` owns the shared per-keyframe interpolation
   evaluator.
+- `animation/timelineInterpolation.ts` owns interpolation labels, validation,
+  preview paths, and easing weights including Back In and Back Out.
 - `animation/timelinePlayer.ts` evaluates Position, Rotation, and Scale tracks
   directly from the timeline document.
 - `animation/timelineTransport.ts` owns J/K/L playback direction, explicit

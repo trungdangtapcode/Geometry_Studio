@@ -17,6 +17,10 @@ light, material, texture, visibility, and motion-path sampling.
 - `Ease Out` starts quickly and decelerates toward the right keyframe.
 - `Easy Ease` uses smoothstep interpolation for the segment after the left
   keyframe.
+- `Back In` creates anticipation by evaluating slightly below the left keyframe
+  direction before accelerating.
+- `Back Out` overshoots the right keyframe value before settling back at the
+  exact authored value.
 - Scrubbing exactly onto a keyframe always returns that keyframe's authored
   value, even when the previous segment uses Hold interpolation.
 - Mixed tracks are supported. For example, a Position track can hold from
@@ -24,8 +28,9 @@ light, material, texture, visibility, and motion-path sampling.
 
 ## Architecture
 
-`animation/interpolation.ts` owns `evaluateTimelineTrack`. The same function is
-used by:
+`animation/timelineInterpolation.ts` owns the interpolation value set, labels,
+preview paths, and easing weights. `animation/interpolation.ts` owns
+`evaluateTimelineTrack`. The same function is used by:
 
 - `animation/timelinePlayer.ts` for object Position, Rotation, and Scale
   playback,
@@ -51,3 +56,5 @@ The grouped transform Playwright workflow verifies mixed interpolation by:
    second and third keys.
 6. Creating a two-key Position track, applying Ease In and Ease Out to the left
    key, and verifying different midpoint values from the shared evaluator.
+7. Applying Back Out and verifying that midpoint playback overshoots the target
+   value while exact keyframe time still lands on the authored endpoint.

@@ -1,4 +1,5 @@
 import type { TimelineTrackDocument } from "../editor/types";
+import { timelineInterpolationWeight } from "./timelineInterpolation";
 
 export function evaluateTimelineTrack(track: TimelineTrackDocument, time: number): [number, number, number] | null {
   if (!track.enabled) return null;
@@ -16,23 +17,12 @@ export function evaluateTimelineTrack(track: TimelineTrackDocument, time: number
   if (left.interpolation === "hold") return [...left.value] as [number, number, number];
   const span = Math.max(right.time - left.time, 0.001);
   const rawT = clamp((time - left.time) / span, 0, 1);
-  const t = interpolationWeight(left.interpolation, rawT);
+  const t = timelineInterpolationWeight(left.interpolation, rawT);
   return [
     left.value[0] + (right.value[0] - left.value[0]) * t,
     left.value[1] + (right.value[1] - left.value[1]) * t,
     left.value[2] + (right.value[2] - left.value[2]) * t
   ];
-}
-
-function interpolationWeight(interpolation: string, value: number): number {
-  if (interpolation === "easeIn") return value * value;
-  if (interpolation === "easeOut") return 1 - (1 - value) * (1 - value);
-  if (interpolation === "smooth") return smoothstep(value);
-  return value;
-}
-
-function smoothstep(value: number): number {
-  return value * value * (3 - 2 * value);
 }
 
 function clamp(value: number, min: number, max: number): number {

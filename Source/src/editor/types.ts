@@ -48,7 +48,7 @@ export type TimelineTrackKind =
   | "spotColor"
   | "spotIntensity"
   | "ambientIntensity";
-export type TimelineInterpolation = "hold" | "linear" | "easeIn" | "easeOut" | "smooth";
+export type TimelineInterpolation = "hold" | "linear" | "easeIn" | "easeOut" | "smooth" | "backIn" | "backOut";
 export type RenderToneMappingMode = "aces" | "linear" | "reinhard" | "none";
 export type ShadowQuality = "low" | "medium" | "high" | "ultra";
 export type EnvironmentPresetId = "off" | "studio" | "gallery" | "warm" | "cool";

@@ -24,7 +24,7 @@ The overlay intentionally focuses on high-frequency workflows:
 - Command Palette motion presets that bake Turntable, Float Loop, Pop Intro,
   and Product Reveal into editable keys;
 - playback, work area, and selected-range preview;
-- interpolation and retiming commands;
+- interpolation, overshoot easing, and retiming commands;
 - save/load, screenshot, WebM recording, Rendering Lab, and import.
 
 The complete long-form tutorial remains in `docs/beginner-tutorial.md`, and the

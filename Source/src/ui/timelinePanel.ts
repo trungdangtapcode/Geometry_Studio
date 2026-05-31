@@ -7,6 +7,7 @@ import {
   type TimelineRow
 } from "animation-timeline-js";
 import { evaluateTimelineTrack } from "../animation/interpolation";
+import { isTimelineInterpolation, timelineInterpolationLabel, timelineInterpolationPath } from "../animation/timelineInterpolation";
 import { textureSourceLabelFromValue } from "../animation/textureSourceTrack";
 import { objectLayerRange } from "../animation/timelineLayers";
 import type {
@@ -2819,6 +2820,18 @@ export class KeyframeTimelinePanel {
         strokeThickness: 2
       };
     }
+    if (interpolation === "backIn" || interpolation === "backOut") {
+      return {
+        shape: TimelineKeyframeShape.Rhomb,
+        width: interpolation === "backIn" ? 16 : 18,
+        height: interpolation === "backIn" ? 18 : 16,
+        fillColor: baseColor,
+        selectedFillColor: "#ffffff",
+        strokeColor: "#f59e0b",
+        selectedStrokeColor: "#f59e0b",
+        strokeThickness: 2
+      };
+    }
     return {
       shape: TimelineKeyframeShape.Rhomb,
       width: 14,
@@ -2951,8 +2964,8 @@ export class KeyframeTimelinePanel {
     this.interpolationButtons.forEach((button) => {
       button.classList.toggle("active", button.dataset.interpolation === value);
     });
-    this.easePath.setAttribute("d", interpolationPath(value));
-    this.easeLabel.textContent = interpolationLabel(value);
+    this.easePath.setAttribute("d", timelineInterpolationPath(value));
+    this.easeLabel.textContent = timelineInterpolationLabel(value);
   }
 }
 
@@ -3155,26 +3168,6 @@ function parseTimelineAxis(value: string | undefined): TimelineAxis | null {
 
 function countTrackKeyframes(tracks: TimelineTrackDocument[] | undefined): number {
   return tracks?.reduce((count, track) => count + track.keyframes.length, 0) ?? 0;
-}
-
-function isTimelineInterpolation(value: string): value is TimelineInterpolation {
-  return value === "linear" || value === "easeIn" || value === "easeOut" || value === "smooth" || value === "hold";
-}
-
-function interpolationPath(interpolation: TimelineInterpolation): string {
-  if (interpolation === "hold") return "M4 28 H40 V6 H68";
-  if (interpolation === "easeIn") return "M4 28 C30 28 46 18 68 6";
-  if (interpolation === "easeOut") return "M4 28 C26 16 42 6 68 6";
-  if (interpolation === "smooth") return "M4 28 C20 28 22 6 36 17 C50 28 52 6 68 6";
-  return "M4 28 L68 6";
-}
-
-function interpolationLabel(interpolation: TimelineInterpolation): string {
-  if (interpolation === "hold") return "Hold";
-  if (interpolation === "easeIn") return "Ease In";
-  if (interpolation === "easeOut") return "Ease Out";
-  if (interpolation === "smooth") return "Easy Ease";
-  return "Linear";
 }
 
 function commonSelectedAxis(keyframes: TimelineUiKeyframe[]): TimelineAxis | null {

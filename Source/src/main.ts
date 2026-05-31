@@ -31,6 +31,7 @@ import {
   type TimelineKeyframeSource
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
+import { timelineInterpolationLabel } from "./animation/timelineInterpolation";
 import {
   buildTimelineMotionPreset,
   timelineMotionPresetIds,
@@ -1109,6 +1110,14 @@ function boot(root: HTMLDivElement): void {
       }),
       command("timeline.ease-smooth", "Apply Easy Ease Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "smooth"), {
         shortcut: "F9",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ease-back-in", "Apply Back In Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "backIn"), {
+        keywords: ["overshoot", "anticipation", "motion design"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ease-back-out", "Apply Back Out Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "backOut"), {
+        keywords: ["overshoot", "settle", "motion design"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
       command("timeline.ease-hold", "Apply Hold Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "hold"), {
@@ -4231,13 +4240,6 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey) return "linear";
     if (event.altKey) return "hold";
     return "smooth";
-  }
-
-  function timelineInterpolationLabel(interpolation: TimelineInterpolation): string {
-    if (interpolation === "easeIn") return "Ease In";
-    if (interpolation === "easeOut") return "Ease Out";
-    if (interpolation === "smooth") return "Easy Ease";
-    return capitalize(interpolation);
   }
 
   function resolveInterpolationTimelineKeyframeSources(keyframeIds: string[]) {

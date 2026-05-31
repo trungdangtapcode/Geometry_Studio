@@ -146,8 +146,8 @@ it is enabled.
 2. Drag it left or right to retime it.
 3. Use `Delete` to remove it.
 4. Use `Copy`, `Paste`, and `Duplicate` for repetition.
-5. Use `Linear`, `Ease In`, `Ease Out`, `Ease`, or `Hold` to change motion
-   interpolation.
+5. Use `Linear`, `Ease In`, `Ease Out`, `Ease`, `Back In`, `Back Out`, or
+   `Hold` to change motion interpolation.
 6. Enable `Graph` to inspect the selected value curve.
 
 Useful retiming tools:

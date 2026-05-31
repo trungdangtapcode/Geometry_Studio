@@ -22,6 +22,7 @@ motion direction, distance, and timing.
   - `easeIn` starts slowly and accelerates toward the next key.
   - `easeOut` starts quickly and decelerates toward the next key.
   - `smooth` samples smoothstep interpolation.
+  - `backIn` and `backOut` show anticipation or overshoot in the sampled path.
 - Draws a teal curve for the sampled path.
 - Draws amber points at the authored key positions.
 - Draws compact viewport time labels at authored key positions, capped for

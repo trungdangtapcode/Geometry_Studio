@@ -196,6 +196,8 @@ export function studioTemplate(): string {
                 <option value="easeIn">Ease In</option>
                 <option value="easeOut">Ease Out</option>
                 <option value="smooth">Smooth</option>
+                <option value="backIn">Back In</option>
+                <option value="backOut">Back Out</option>
                 <option value="hold">Hold</option>
               </select>
             </label>
@@ -694,7 +696,7 @@ export function studioTemplate(): string {
             </section>
             <section class="quick-help-section">
               <h3>Retiming</h3>
-              <div class="quick-help-item"><strong>Easy Ease / Linear / Hold</strong><span>F9 / Shift+F9 / Alt+F9</span><p>Change interpolation for selected keys.</p></div>
+              <div class="quick-help-item"><strong>Interpolation</strong><span>F9 / Commands</span><p>Apply Easy Ease, Linear, Hold, Back In, or Back Out timing to selected keys.</p></div>
               <div class="quick-help-item"><strong>Move To Playhead</strong><span>Shift+Enter</span><p>Move selected key timing so the block starts at the playhead.</p></div>
               <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
               <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>

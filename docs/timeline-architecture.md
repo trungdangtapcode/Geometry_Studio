@@ -119,7 +119,7 @@ interface TimelineKeyframeDocument {
   id: string;
   time: number;
   value: [number, number, number];
-  interpolation: "hold" | "linear" | "easeIn" | "easeOut" | "smooth";
+  interpolation: "hold" | "linear" | "easeIn" | "easeOut" | "smooth" | "backIn" | "backOut";
 }
 
 interface TimelineMarkerDocument {
