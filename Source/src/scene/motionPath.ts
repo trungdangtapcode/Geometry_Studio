@@ -9,12 +9,14 @@ export interface MotionPathRig {
   keyPoints: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
   labels: THREE.Group;
   ghosts: THREE.Group;
+  onionSkins: THREE.Group;
 }
 
 const SAMPLE_RATE = 12;
 const MIN_SEGMENT_SAMPLES = 2;
 const MAX_SEGMENT_SAMPLES = 28;
 const MAX_LABELS = 16;
+const ONION_SKIN_OFFSETS = [-8, -4, 4, 8] as const;
 
 export function createMotionPathRig(): MotionPathRig {
   const group = new THREE.Group();
@@ -53,8 +55,12 @@ export function createMotionPathRig(): MotionPathRig {
   ghosts.name = "Motion Path Pose Ghosts";
   ghosts.renderOrder = 49;
 
-  group.add(ghosts, line, keyPoints, labels);
-  return { group, line, keyPoints, labels, ghosts };
+  const onionSkins = new THREE.Group();
+  onionSkins.name = "Motion Path Onion Skins";
+  onionSkins.renderOrder = 48;
+
+  group.add(onionSkins, ghosts, line, keyPoints, labels);
+  return { group, line, keyPoints, labels, ghosts, onionSkins };
 }
 
 export function updateMotionPath(
@@ -91,6 +97,61 @@ export function updateMotionPath(
   updateKeyLabels(rig.labels, keyframes);
   updatePoseGhosts(rig.ghosts, selectedEntry, objectTimeline.tracks, keyframes, soloActive);
   rig.group.visible = true;
+}
+
+export function updateObjectOnionSkins(
+  rig: MotionPathRig,
+  timeline: SceneTimelineDocument,
+  selectedEntry: SceneEntry | null,
+  visible: boolean
+): void {
+  clearOnionSkins(rig.onionSkins);
+  if (!visible || !selectedEntry) return;
+
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === selectedEntry.id);
+  if (!objectTimeline) return;
+
+  const soloActive = hasSoloTimelineTracks(timeline);
+  const positionTrack = activeTrackByKind(objectTimeline.tracks, "position", soloActive);
+  const rotationTrack = activeTrackByKind(objectTimeline.tracks, "rotation", soloActive);
+  const scaleTrack = activeTrackByKind(objectTimeline.tracks, "scale", soloActive);
+  if (!positionTrack && !rotationTrack && !scaleTrack) return;
+
+  const basis = objectBoxBasis(selectedEntry);
+  if (!basis) return;
+
+  const currentTime = timeline.currentTime;
+  const frameDuration = 1 / Math.max(timeline.fps, 1);
+  const seen = new Set<string>();
+  ONION_SKIN_OFFSETS.forEach((frameOffset) => {
+    const time = clamp(currentTime + frameOffset * frameDuration, 0, timeline.duration);
+    const timeKey = formatTime(time);
+    if (Math.abs(time - currentTime) < 0.001 || seen.has(timeKey)) return;
+    seen.add(timeKey);
+
+    const position = evaluatedTrackVector(positionTrack, time, [
+      selectedEntry.root.position.x,
+      selectedEntry.root.position.y,
+      selectedEntry.root.position.z
+    ]);
+    const ghost = createPoseGhost(
+      basis,
+      { id: `onion-${timeKey}`, time, value: position, interpolation: "linear" },
+      rotationTrack,
+      scaleTrack,
+      selectedEntry,
+      {
+        color: frameOffset < 0 ? 0x4f8cff : 0xf4ad2f,
+        opacity: Math.abs(frameOffset) <= 4 ? 0.34 : 0.18
+      }
+    );
+    if (ghost) {
+      ghost.name = `Onion Skin Pose ${timeKey}s`;
+      ghost.renderOrder = 48;
+      rig.onionSkins.add(ghost);
+    }
+  });
+  if (rig.onionSkins.children.length > 0) rig.group.visible = true;
 }
 
 export function updateCameraMotionPath(
@@ -133,12 +194,14 @@ export function clearMotionPath(rig: MotionPathRig): void {
   replaceGeometryPositions(rig.keyPoints, []);
   clearKeyLabels(rig.labels);
   clearPoseGhosts(rig.ghosts);
+  clearOnionSkins(rig.onionSkins);
   rig.group.visible = false;
 }
 
 export function disposeMotionPathRig(rig: MotionPathRig): void {
   clearKeyLabels(rig.labels);
   clearPoseGhosts(rig.ghosts);
+  clearOnionSkins(rig.onionSkins);
   rig.line.geometry.dispose();
   rig.line.material.dispose();
   rig.keyPoints.geometry.dispose();
@@ -269,7 +332,8 @@ function createPoseGhost(
   keyframe: TimelineKeyframeDocument,
   rotationTrack: TimelineTrackDocument | undefined,
   scaleTrack: TimelineTrackDocument | undefined,
-  entry: SceneEntry
+  entry: SceneEntry,
+  style: { color?: number; opacity?: number } = {}
 ): THREE.LineSegments | null {
   const scale = evaluatedTrackVector(scaleTrack, keyframe.time, [entry.root.scale.x, entry.root.scale.y, entry.root.scale.z]);
   const size = new THREE.Vector3(
@@ -283,9 +347,9 @@ function createPoseGhost(
   const geometry = new THREE.EdgesGeometry(boxGeometry);
   boxGeometry.dispose();
   const material = new THREE.LineBasicMaterial({
-    color: 0x12b8a6,
+    color: style.color ?? 0x12b8a6,
     transparent: true,
-    opacity: 0.36,
+    opacity: style.opacity ?? 0.36,
     depthTest: false
   });
   const ghost = new THREE.LineSegments(geometry, material);
@@ -411,6 +475,10 @@ function clearPoseGhosts(group: THREE.Group): void {
     }
   });
   group.clear();
+}
+
+function clearOnionSkins(group: THREE.Group): void {
+  clearPoseGhosts(group);
 }
 
 function replaceGeometryPositions(

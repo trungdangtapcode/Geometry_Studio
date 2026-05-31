@@ -124,7 +124,7 @@ import { createLights, createStage, currentLight, setActiveLight, syncLightHelpe
 import { applyLightingPreset, lightingPresetById, lightRigMatchesPreset } from "./scene/lightingPresets";
 import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetById } from "./scene/materialPresets";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
-import { clearMotionPath, createMotionPathRig, updateCameraMotionPath, updateMotionPath } from "./scene/motionPath";
+import { clearMotionPath, createMotionPathRig, updateCameraMotionPath, updateMotionPath, updateObjectOnionSkins } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
 import {
   KeyframeTimelinePanel,
@@ -210,6 +210,7 @@ function boot(root: HTMLDivElement): void {
   let frameCount = 0;
   let statsVisible = true;
   let motionPathVisible = true;
+  let onionSkinVisible = false;
   let recordingPreview = false;
   let previewRecorder: MediaRecorder | null = null;
   let previewChunks: Blob[] = [];
@@ -925,6 +926,11 @@ function boot(root: HTMLDivElement): void {
       motionPathVisible = (event.target as HTMLInputElement).checked;
       syncMotionPath();
       syncSegmentedButtons();
+    });
+    query<HTMLInputElement>("#onion-skin-toggle").addEventListener("change", (event) => {
+      recordHistory();
+      onionSkinVisible = (event.target as HTMLInputElement).checked;
+      syncMotionPath();
     });
 
     canvas.addEventListener("pointerdown", handleCanvasPickStart);
@@ -1740,14 +1746,17 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#stats-toggle").checked = statsVisible;
     query<HTMLInputElement>("#frustum-toggle").checked = frustumHelper.visible;
     query<HTMLInputElement>("#motion-path-toggle").checked = motionPathVisible;
+    query<HTMLInputElement>("#onion-skin-toggle").checked = onionSkinVisible;
   }
 
   function syncMotionPath(): void {
     if (timelinePanel.selectedTrackKind() === "cameraPosition") {
       updateCameraMotionPath(motionPathRig, sceneTimeline, camera, controls.target, motionPathVisible);
+      updateObjectOnionSkins(motionPathRig, sceneTimeline, null, false);
       return;
     }
     updateMotionPath(motionPathRig, sceneTimeline, selectedEntry(), motionPathVisible);
+    updateObjectOnionSkins(motionPathRig, sceneTimeline, selectedEntry(), onionSkinVisible);
   }
 
   function syncTextureUI(): void {
@@ -2629,6 +2638,7 @@ function boot(root: HTMLDivElement): void {
       statsVisible,
       frustumVisible: frustumHelper.visible,
       motionPathVisible,
+      onionSkinVisible,
       lightRig,
       renderSettings,
       timeline: sceneTimeline
@@ -2668,6 +2678,7 @@ function boot(root: HTMLDivElement): void {
     statsVisible = document.display?.stats ?? true;
     frustumHelper.visible = document.display?.frustum ?? false;
     motionPathVisible = document.display?.motionPath ?? true;
+    onionSkinVisible = document.display?.onionSkin ?? false;
     applyLightDocument(document);
     renderSettings = normalizeRenderSettings(document.rendering);
     applyRenderSettings(renderer, lightRig, renderSettings);

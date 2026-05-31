@@ -1523,6 +1523,53 @@ test("renders camera motion-path overlay when camera position is keyed", async (
   expect(errors).toEqual([]);
 });
 
+test("persists onion-skin display setting with timeline keys", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#onion-skin-toggle")).toBeVisible();
+  await expect(page.locator("#onion-skin-toggle")).not.toBeChecked();
+  await page.locator("#onion-skin-toggle").check();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+
+  const previousCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
+  await page.locator("#save-scene").click();
+  await page.waitForFunction((count) => ((window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0) > count, previousCount);
+  const sceneText = await page.evaluate(() => (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads.at(-1)!);
+  const sceneDocument = JSON.parse(sceneText);
+  expect(sceneDocument.display.onionSkin).toBe(true);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const positionTrack = objectTimeline.tracks.find((track: { kind: string }) => track.kind === "position");
+  expect(positionTrack.keyframes.map((keyframe: { time: number }) => keyframe.time)).toEqual([0, 1]);
+
+  expect(errors).toEqual([]);
+});
+
 test("trims and splits selected object layers", async ({ page }) => {
   test.setTimeout(180_000);
   const errors: string[] = [];

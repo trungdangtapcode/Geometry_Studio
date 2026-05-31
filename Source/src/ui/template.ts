@@ -645,6 +645,7 @@ export function studioTemplate(): string {
             <label class="toggle-line"><input id="axes-toggle" type="checkbox" checked /><span>Axes</span></label>
             <label class="toggle-line"><input id="stats-toggle" type="checkbox" checked /><span>Stats</span></label>
             <label class="toggle-line"><input id="motion-path-toggle" type="checkbox" checked /><span>Motion Path</span></label>
+            <label class="toggle-line"><input id="onion-skin-toggle" type="checkbox" /><span>Onion Skin</span></label>
           </div>
         </section>
       </aside>
@@ -702,6 +703,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Selected Keyed Rows</strong><span>Shift+U</span><p>Show only the selected layer's keyed rows, plus the active row, like an AE animated-property reveal.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
+              <div class="quick-help-item"><strong>Onion Skin</strong><span>Display panel</span><p>Show evaluated selected-object poses before and after the playhead.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Playback</h3>

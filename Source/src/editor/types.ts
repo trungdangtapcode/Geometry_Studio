@@ -152,6 +152,7 @@ export interface SceneDocument {
     stats: boolean;
     frustum: boolean;
     motionPath: boolean;
+    onionSkin?: boolean;
   };
   lights: {
     active: LightKind;

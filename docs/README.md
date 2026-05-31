@@ -245,6 +245,8 @@ PDF.
   position path rendering for visible spatial keyframe feedback.
 - [Camera Motion Paths](camera-motion-paths.md) documents viewport path and
   frustum ghost feedback for camera-position keyframes.
+- [Onion Skinning](onion-skinning.md) documents selected-object before/after
+  pose ghosts around the playhead.
 - [Preview Export](preview-export.md) documents WebM work-area recording and
   recording progress UI.
 - [UI Density Control](ui-density.md) documents the Blender-style compact
@@ -377,6 +379,8 @@ animation runtime where it fits:
 - Selected objects with two or more Position keys show a viewport motion path,
   and active Camera Position tracks show camera paths with frustum ghosts,
   turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
+- Onion skinning samples nearby selected-object poses before and after the
+  playhead, making timing and spacing easier to inspect while scrubbing.
 - Timeline markers add named cue points for animation beats and demo segments,
   with direct marker dragging plus `M`, `Shift+M`, `Alt+M`, and `Shift+Alt+M`
   shortcuts for authoring, navigation, and cleanup.

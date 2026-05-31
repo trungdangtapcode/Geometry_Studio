@@ -13,6 +13,7 @@ export interface DocumentContext {
   statsVisible: boolean;
   frustumVisible: boolean;
   motionPathVisible: boolean;
+  onionSkinVisible: boolean;
   lightRig: LightRig;
   renderSettings: RenderSettings;
   timeline?: SceneDocument["timeline"];
@@ -36,7 +37,8 @@ export function createSceneDocument(context: DocumentContext): SceneDocument {
       axes: context.stage.axes.visible,
       stats: context.statsVisible,
       frustum: context.frustumVisible,
-      motionPath: context.motionPathVisible
+      motionPath: context.motionPathVisible,
+      onionSkin: context.onionSkinVisible
     },
     lights: {
       active: context.lightRig.active,
