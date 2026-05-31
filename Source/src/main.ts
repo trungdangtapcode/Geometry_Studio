@@ -31,6 +31,12 @@ import {
   type TimelineKeyframeSource
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
+import {
+  buildTimelineMotionPreset,
+  timelineMotionPresetIds,
+  timelineMotionPresetLabel,
+  type TimelineMotionPresetId
+} from "./animation/motionPresets";
 import { textureSourceFromValue, textureSourceIndex } from "./animation/textureSourceTrack";
 import {
   fitObjectLayerKeyframesToRange,
@@ -665,20 +671,23 @@ function boot(root: HTMLDivElement): void {
         const entry = selectedEntry();
         if (!entry) return;
         const mode = button.dataset.animation as AnimationMode;
+        let selectedPresetKeyframeIds: string[] = [];
         recordHistory();
         if (mode === "none") {
           entry.animation = "none";
           showToast("Procedural animation disabled", "good");
         } else {
-          bakeObjectAnimationPreset(entry, mode, true);
-          query<HTMLSelectElement>("#timeline-track-kind").value = primaryTrackForAnimationMode(mode);
+          const result = bakeObjectAnimationPreset(entry, mode, true);
+          selectedPresetKeyframeIds = result?.keyframeIds ?? [];
+          query<HTMLSelectElement>("#timeline-track-kind").value = result?.primaryTrack ?? primaryTrackForAnimationMode(mode);
           sceneTimeline.currentTime = sceneTimeline.workStart;
           rebuildTimelineRuntime();
           timelinePlayer.setTime(sceneTimeline.currentTime);
           applyObjectPropertyTimeline();
-          showToast(`${capitalize(mode)} baked as visible timeline keyframes`, "good");
+          showToast(`${result?.label ?? capitalize(mode)} baked as visible timeline keyframes`, "good");
         }
         updateAllUI();
+        if (selectedPresetKeyframeIds.length > 0) timelinePanel.selectKeyframes(selectedPresetKeyframeIds);
       });
     });
 
@@ -1006,6 +1015,16 @@ function boot(root: HTMLDivElement): void {
         keywords: ["pose", "position", "rotation", "scale", "clipboard", "auto-key"],
         disabled: () => !selectedEntry() || !hasTransformPoseClipboard()
       }),
+      ...timelineMotionPresetIds.map((presetId) => command(
+        `timeline.motion-preset-${presetId}`,
+        `Apply ${timelineMotionPresetLabel(presetId)} Motion Preset`,
+        "Keyframes",
+        () => applyTimelineMotionPreset(presetId),
+        {
+          keywords: ["animation preset", "motion preset", "keyframe generator", "ae", "after effects", "template"],
+          disabled: () => !selectedEntry()
+        }
+      )),
       command("timeline.set-visible", "Set Keys On Visible Rows", "Keyframes", () => setVisibleTimelineKeyframes(timelinePanel.visibleRowTargetsList()), { keywords: ["rows", "channels"] }),
       command("timeline.set-pinned", "Set Keys On Pinned Rows", "Keyframes", setPinnedTimelineKeyframes, {
         keywords: ["pin", "pinned", "favorite", "keying set", "rows", "channels"]
@@ -3368,12 +3387,46 @@ function boot(root: HTMLDivElement): void {
     return resolveTimelineRowTrackTargets(sceneTimeline, rows, new Set(entries.keys()));
   }
 
-  function bakeObjectAnimationPreset(entry: SceneEntry, mode: AnimationMode, clearExisting = true): void {
-    if (mode === "none") {
-      entry.animation = "none";
+  function applyTimelineMotionPreset(presetId: TimelineMotionPresetId): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before applying a motion preset.", "bad");
       return;
     }
 
+    recordHistory();
+    const result = bakeTimelineMotionPreset(entry, presetId, true);
+    sceneTimeline.currentTime = sceneTimeline.workStart;
+    query<HTMLSelectElement>("#timeline-track-kind").value = result.primaryTrack;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+    showToast(result.keyframeIds.length
+      ? `${result.label} preset baked as editable timeline keys`
+      : `${result.label} preset skipped because its tracks are locked.`,
+      result.keyframeIds.length ? "good" : "bad");
+  }
+
+  function bakeObjectAnimationPreset(
+    entry: SceneEntry,
+    mode: AnimationMode,
+    clearExisting = true
+  ): { label: string; primaryTrack: TimelineTrackKind; keyframeIds: string[] } | null {
+    if (mode === "none") {
+      entry.animation = "none";
+      return null;
+    }
+
+    return bakeTimelineMotionPreset(entry, mode, clearExisting);
+  }
+
+  function bakeTimelineMotionPreset(
+    entry: SceneEntry,
+    presetId: TimelineMotionPresetId,
+    clearExisting = true
+  ): { label: string; primaryTrack: TimelineTrackKind; keyframeIds: string[] } {
     entry.animation = "none";
     entry.basePosition.copy(entry.root.position);
     entry.baseScale.copy(entry.root.scale);
@@ -3391,37 +3444,19 @@ function boot(root: HTMLDivElement): void {
       THREE.MathUtils.radToDeg(entry.root.rotation.z)
     ] as [number, number, number];
 
-    if (mode === "spin") {
-      replaceTimelineTrack(objectTimeline, "rotation", [
-        { time: range.start, value: rotation },
-        { time: range.end, value: [rotation[0] + 45, rotation[1] + 360, rotation[2]] }
-      ]);
-    } else if (mode === "bounce") {
-      replaceTimelineTrack(objectTimeline, "position", [
-        { time: range.start, value: [position.x, position.y, position.z], interpolation: "smooth" },
-        { time: range.mid, value: [position.x, position.y + 1.25, position.z], interpolation: "smooth" },
-        { time: range.end, value: [position.x, position.y, position.z], interpolation: "smooth" }
-      ]);
-    } else if (mode === "pulse") {
-      replaceTimelineTrack(objectTimeline, "scale", [
-        { time: range.start, value: [scale.x, scale.y, scale.z], interpolation: "smooth" },
-        { time: range.mid, value: [scale.x * 1.28, scale.y * 1.28, scale.z * 1.28], interpolation: "smooth" },
-        { time: range.end, value: [scale.x, scale.y, scale.z], interpolation: "smooth" }
-      ]);
-    } else if (mode === "orbit") {
-      const radius = 1.35 + (entry.phase % 1.2);
-      replaceTimelineTrack(objectTimeline, "position", [
-        { time: range.start, value: [position.x, position.y, position.z], interpolation: "smooth" },
-        { time: range.quarter, value: [position.x + radius, position.y, position.z + radius], interpolation: "smooth" },
-        { time: range.mid, value: [position.x, position.y, position.z + radius * 2], interpolation: "smooth" },
-        { time: range.threeQuarter, value: [position.x - radius, position.y, position.z + radius], interpolation: "smooth" },
-        { time: range.end, value: [position.x, position.y, position.z], interpolation: "smooth" }
-      ]);
-      replaceTimelineTrack(objectTimeline, "rotation", [
-        { time: range.start, value: rotation },
-        { time: range.end, value: [rotation[0], rotation[1] + 360, rotation[2]] }
-      ]);
-    }
+    const preset = buildTimelineMotionPreset(
+      presetId,
+      {
+        position: [position.x, position.y, position.z],
+        rotation,
+        scale: [scale.x, scale.y, scale.z],
+        phase: entry.phase,
+        opacity: entry.opacity
+      },
+      range
+    );
+    const keyframeIds = preset.tracks.flatMap((track) => replaceTimelineTrack(objectTimeline, track.kind, track.keyframes));
+    return { label: preset.label, primaryTrack: preset.primaryTrack, keyframeIds };
   }
 
   function bakeActiveLightSweepTimeline(): void {
@@ -3441,9 +3476,9 @@ function boot(root: HTMLDivElement): void {
     collection: { tracks: TimelineTrackDocument[] },
     kind: TimelineTrackKind,
     keyframes: Array<{ time: number; value: [number, number, number]; interpolation?: TimelineInterpolation }>
-  ): void {
+  ): string[] {
     const track = ensureTimelineTrack(collection, kind);
-    if (track.locked) return;
+    if (track.locked) return [];
     track.enabled = true;
     track.keyframes = keyframes.map((item) => {
       const keyframe = createTimelineKeyframe(item.time, item.value);
@@ -3451,6 +3486,7 @@ function boot(root: HTMLDivElement): void {
       return keyframe;
     });
     sortTimelineKeyframes(track);
+    return track.keyframes.map((keyframe) => keyframe.id);
   }
 
   function timelineBakeRange(): { start: number; quarter: number; mid: number; threeQuarter: number; end: number } {

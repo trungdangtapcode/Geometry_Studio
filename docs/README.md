@@ -83,6 +83,9 @@ PDF.
 - [Timeline Preset Baking](timeline-preset-baking.md) documents why preset
   animation buttons now generate visible keyframes instead of hidden procedural
   motion.
+- [Timeline Motion Presets](timeline-motion-presets.md) documents Command
+  Palette animation presets such as Turntable, Float Loop, Pop Intro, and
+  Product Reveal, all baked into editable timeline tracks.
 - [Timeline Resizable Dock](timeline-resizable-dock.md) documents the persistent
   dock height handle, row alignment, and scroll synchronization.
 - [Timeline Frame Navigation](timeline-frame-navigation.md) documents

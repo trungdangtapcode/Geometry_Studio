@@ -51,6 +51,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Model loading: GLB, GLTF, OBJ, OBJ+MTL, and STL import with centering, normalization, source-material preservation, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
 - Keyframe Timeline: resizable bottom timeline dock and label column for object, camera, light, material, visibility, and texture tracks with AE-style selectable and renamable object/camera/light layer groups, object group pose-key buttons, transform pose copy/paste, disclosure collapse/expand, Alt-click bulk collapse/expand, X/Y/Z transform rows, inspector Position/Rotation/Scale key diamonds, Auto-Key initial-pose seeding, Focus/Keyed/Pinned/All row filtering with pinned-row count, bulk visible-row pinning and clearing, pinned-row keying sets, Ctrl+F row search, Alt+P/R/S/C/T/M/U property reveal shortcuts, named timeline markers, minimizable overview/layer range strip, clickable track rows, per-row pin/eye/solo/lock/diamond switches, Set TRS grouped transform keying, layer In/Out bars with move, trim, split, sequencing, and Alt-drag key time-stretch, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, cursor-anchored wheel zoom, horizontal wheel/trackpad panning, playhead scrubbing, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview with key time labels and pose ghosts, and JSON save/load.
+- Motion Presets: Command Palette can bake Turntable, Float Loop, Pop Intro, and Product Reveal into editable Position/Rotation/Scale/Opacity timeline keys.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, position motion paths, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, rendering settings, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
@@ -86,6 +87,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - Shift+Home / Shift+End: jump to the first or last selected timeline keyframe.
 - Ctrl+Alt+Shift+Left / Ctrl+Alt+Shift+Right: jump to the previous or next pinned-row keyframe.
 - Command Palette: search Fit Pinned Row Keyframes, Set Work Area To Pinned Row Keyframes, or Preview Pinned Row Keyframe Range for focused pinned-row playback.
+- Command Palette: search motion preset to apply editable Turntable, Float Loop, Pop Intro, or Product Reveal animation.
 - Alt+Left / Alt+Right: nudge selected or playhead keyframes by one frame.
 - Shift+Enter: move selected keyframes so the first selected key lands at the playhead.
 - Shift+C: center selected keyframe timing around the playhead.

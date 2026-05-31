@@ -125,6 +125,7 @@ Scale recorded together.
 | Fit Pinned Row Keyframes | Command Palette action to zoom around pinned-row key times |
 | Set Work Area To Pinned Row Keyframes | Command Palette action to make Work In/Out match pinned-row key times |
 | Preview Pinned Row Keyframe Range | Command Palette action to play only the pinned-row key range |
+| Motion Presets | Command Palette actions that bake Turntable, Float Loop, Pop Intro, or Product Reveal into editable keys |
 | Set Key | Add or update one key on the selected track dropdown |
 | Set TRS | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
@@ -244,6 +245,19 @@ Scale recorded together.
 5. Click `Set Key` or the diamond on that property row.
 
 If a key already exists at that time, `Set Key` updates it.
+
+### Apply A Motion Preset
+
+1. Select the object.
+2. Set Work In / Work Out to the desired animation span.
+3. Press `Ctrl+K` or `F3`.
+4. Search `motion preset`.
+5. Run `Apply Turntable Motion Preset`, `Apply Float Loop Motion Preset`,
+   `Apply Pop Intro Motion Preset`, or `Apply Product Reveal Motion Preset`.
+6. Edit the generated Position, Rotation, Scale, or Opacity keys normally.
+
+These presets are keyframe generators. They do not create hidden procedural
+animation.
 
 ### Keep Important Tracks Visible
 

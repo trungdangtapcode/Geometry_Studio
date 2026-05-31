@@ -21,6 +21,8 @@ The overlay intentionally focuses on high-frequency workflows:
 - transform tools;
 - `Set Key`, `Set TRS`, Auto-Key, row reveal, row filtering, row pinning, and
   Graph;
+- Command Palette motion presets that bake Turntable, Float Loop, Pop Intro,
+  and Product Reveal into editable keys;
 - playback, work area, and selected-range preview;
 - interpolation and retiming commands;
 - save/load, screenshot, WebM recording, Rendering Lab, and import.

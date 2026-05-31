@@ -100,7 +100,19 @@ If the object does not move, check that:
 - The track is not locked.
 - The playhead is between the two keyframes.
 
-## 8. Animate Only Rotation
+## 8. Start From A Motion Preset
+
+1. Select an object.
+2. Set Work In and Work Out to the range you want.
+3. Press `Ctrl+K` or `F3`.
+4. Search `motion preset`.
+5. Choose Turntable, Float Loop, Pop Intro, or Product Reveal.
+6. Edit the generated keyframes normally.
+
+Motion presets are only shortcuts for creating keys. The final animation remains
+visible in the timeline.
+
+## 9. Animate Only Rotation
 
 1. Select the object.
 2. Set `Time` to `0`.
@@ -115,7 +127,7 @@ If the object does not move, check that:
 The same pattern works for Position, Scale, Color, Opacity, Roughness,
 Metalness, Texture controls, Camera, and Lights.
 
-## 9. Use Auto-Key
+## 10. Use Auto-Key
 
 Auto-Key is useful after the first pose exists.
 
@@ -128,7 +140,7 @@ Auto-Key is useful after the first pose exists.
 Use Auto-Key carefully. It is faster, but it can create many keys if you forget
 it is enabled.
 
-## 10. Edit Keyframes
+## 11. Edit Keyframes
 
 1. Click a keyframe diamond in the timeline.
 2. Drag it left or right to retime it.
@@ -146,7 +158,7 @@ Useful retiming tools:
 - `Distribute`: evenly space keys across Work In/Out.
 - `Fit Keys`: stretch selected key timing into Work In/Out.
 
-## 11. Animate The Camera
+## 12. Animate The Camera
 
 1. Use viewport navigation to set the first camera view.
 2. Choose `Camera Position` in the timeline dropdown.
@@ -160,7 +172,7 @@ Useful retiming tools:
 
 Use `Camera Lens` when you also want FOV, Near, or Far to change over time.
 
-## 12. Animate Lights
+## 13. Animate Lights
 
 1. Select Sun, Point, or Spot in the Lighting section.
 2. Set the first color, intensity, or position.
@@ -172,7 +184,7 @@ Use `Camera Lens` when you also want FOV, Near, or Far to change over time.
 
 This is useful for showing shadows, highlights, and evaluation tour effects.
 
-## 13. Use The Work Area
+## 14. Use The Work Area
 
 Work In and Work Out define the important preview/export range.
 
@@ -185,7 +197,7 @@ Work In and Work Out define the important preview/export range.
 
 `Record WebM` records the active Work In/Out range.
 
-## 14. Prepare Report Evidence
+## 15. Prepare Report Evidence
 
 Recommended report sequence:
 
@@ -199,7 +211,7 @@ Recommended report sequence:
 8. Show Rendering Lab effects or path-traced still preview.
 9. Export a viewport screenshot.
 
-## 15. Save And Load
+## 16. Save And Load
 
 1. Click `Save JSON` in Document.
 2. Reload the page if desired.

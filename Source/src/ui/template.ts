@@ -680,6 +680,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
               <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast TRS setup, then key, select, fit, or preview the pinned set.</p></div>
+              <div class="quick-help-item"><strong>Motion Presets</strong><span>Command Palette</span><p>Apply Turntable, Float Loop, Pop Intro, or Product Reveal as editable timeline keys.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
             </section>
