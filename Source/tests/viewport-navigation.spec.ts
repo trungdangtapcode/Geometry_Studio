@@ -6,9 +6,15 @@ test("uses Blender-style middle mouse viewport navigation", async ({ page }) => 
   await page.goto("/");
 
   const initial = await exportedScene(page);
+  await dragViewport(page, "left", 130, -45);
+  const leftOrbited = await exportedScene(page);
+  expect(distance(initial.camera.position, leftOrbited.camera.position)).toBeGreaterThan(0.25);
+  expect(distance(initial.camera.target, leftOrbited.camera.target)).toBeLessThan(0.001);
+  expect(leftOrbited.selectedId).toBe(initial.selectedId);
+
   await dragViewport(page, "middle", 160, -70);
   const orbited = await exportedScene(page);
-  expect(distance(initial.camera.position, orbited.camera.position)).toBeGreaterThan(0.25);
+  expect(distance(leftOrbited.camera.position, orbited.camera.position)).toBeGreaterThan(0.25);
   expect(distance(initial.camera.target, orbited.camera.target)).toBeLessThan(0.001);
   expect(orbited.selectedId).toBe(initial.selectedId);
 
@@ -20,6 +26,34 @@ test("uses Blender-style middle mouse viewport navigation", async ({ page }) => 
   await dragViewport(page, "middle", 0, -120, ["Control"]);
   const zoomed = await exportedScene(page);
   expect(Math.abs(cameraTargetDistance(zoomed) - beforeZoomDistance)).toBeGreaterThan(0.05);
+});
+
+test("frames selected object and full scene like a 3D editor viewport", async ({ page }) => {
+  test.setTimeout(120_000);
+  await installSceneExportCapture(page);
+  await page.goto("/");
+
+  const initial = await exportedScene(page);
+  await page.locator("#frame-selected-view").click();
+  const framedSelected = await exportedScene(page);
+  expect(framedSelected.selectedId).toBe(initial.selectedId);
+  expect(distance(initial.camera.position, framedSelected.camera.position)).toBeGreaterThan(0.05);
+  expect(cameraTargetDistance(framedSelected)).toBeLessThan(cameraTargetDistance(initial));
+  expect(Math.abs(framedSelected.camera.target[0])).toBeLessThan(0.4);
+  expect(Math.abs(framedSelected.camera.target[2])).toBeLessThan(0.4);
+
+  await page.keyboard.press("Control+Z");
+  const undone = await exportedScene(page);
+  expect(distance(undone.camera.target, initial.camera.target)).toBeLessThan(0.001);
+
+  await page.keyboard.press("F");
+  const shortcutFramed = await exportedScene(page);
+  expect(distance(shortcutFramed.camera.target, framedSelected.camera.target)).toBeLessThan(0.001);
+
+  await page.locator("#frame-all-view").click();
+  const framedAll = await exportedScene(page);
+  expect(cameraTargetDistance(framedAll)).toBeGreaterThan(cameraTargetDistance(shortcutFramed));
+  expect(Math.abs(framedAll.camera.target[0])).toBeLessThan(1.5);
 });
 
 async function installSceneExportCapture(page: Page): Promise<void> {

@@ -164,7 +164,7 @@ function boot(root: HTMLDivElement): void {
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.mouseButtons = {
-    LEFT: null,
+    LEFT: THREE.MOUSE.ROTATE,
     MIDDLE: THREE.MOUSE.ROTATE,
     RIGHT: THREE.MOUSE.PAN
   };
@@ -201,6 +201,7 @@ function boot(root: HTMLDivElement): void {
   let previewRecordingRange: { start: number; end: number } | null = null;
   let timelineClipboard: TimelineClipboard | null = null;
   let pendingDragSnapshot: SceneDocument | null = null;
+  let pendingCanvasPick: { pointerId: number; x: number; y: number } | null = null;
   let pendingTransformAutoKeySeedValues: Record<TransformProperty, [number, number, number]> | null = null;
   let pendingTimelineDragSnapshot: SceneDocument | null = null;
   let evaluationTourTimers: number[] = [];
@@ -733,6 +734,8 @@ function boot(root: HTMLDivElement): void {
         setCameraPreset(button.dataset.view ?? "reset");
       });
     });
+    query<HTMLButtonElement>("#frame-selected-view").addEventListener("click", frameSelectedView);
+    query<HTMLButtonElement>("#frame-all-view").addEventListener("click", frameAllView);
 
     document.querySelectorAll<HTMLButtonElement>("[data-light]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -892,12 +895,13 @@ function boot(root: HTMLDivElement): void {
       syncSegmentedButtons();
     });
 
-    canvas.addEventListener("pointerdown", handleCanvasPick);
+    canvas.addEventListener("pointerdown", handleCanvasPickStart);
+    canvas.addEventListener("pointerup", handleCanvasPickEnd);
     canvas.addEventListener("pointerdown", syncBlenderNavigationMouseButton, { capture: true });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     window.addEventListener("keydown", handleKeyboard);
-    window.addEventListener("pointerup", resetBlenderNavigationMouseButton);
-    window.addEventListener("pointercancel", resetBlenderNavigationMouseButton);
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
     window.addEventListener("resize", resize);
     window.addEventListener("dragover", handleDragOver);
     window.addEventListener("dragleave", handleDragLeave);
@@ -1078,6 +1082,14 @@ function boot(root: HTMLDivElement): void {
         keywords: ["auto scroll", "current time indicator", "timeline view"]
       }),
       command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
+      command("view.frame-selected", "Frame Selected Object", "View", frameSelectedView, {
+        shortcut: "F",
+        keywords: ["focus selected", "zoom selected", "viewport", "blender"],
+        disabled: () => !selectedEntry()
+      }),
+      command("view.frame-all", "Frame All Objects", "View", frameAllView, {
+        keywords: ["focus all", "zoom all", "viewport", "blender"]
+      }),
 
       command("tool.move", "Move Tool", "Tools", () => setTransformMode("translate"), { shortcut: "T" }),
       command("tool.rotate", "Rotate Tool", "Tools", () => setTransformMode("rotate"), { shortcut: "R" }),
@@ -1650,8 +1662,19 @@ function boot(root: HTMLDivElement): void {
     }
   }
 
-  function handleCanvasPick(event: PointerEvent): void {
-    if (event.button !== 0) return;
+  function handleCanvasPickStart(event: PointerEvent): void {
+    if (event.button !== 0) {
+      pendingCanvasPick = null;
+      return;
+    }
+    pendingCanvasPick = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+  }
+
+  function handleCanvasPickEnd(event: PointerEvent): void {
+    if (!pendingCanvasPick || pendingCanvasPick.pointerId !== event.pointerId) return;
+    const distance = Math.hypot(event.clientX - pendingCanvasPick.x, event.clientY - pendingCanvasPick.y);
+    pendingCanvasPick = null;
+    if (distance > 5) return;
     const rect = canvas.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1663,6 +1686,11 @@ function boot(root: HTMLDivElement): void {
       const id = lookupSceneId(sceneId);
       if (id) setSelected(id);
     }
+  }
+
+  function handlePointerEnd(): void {
+    pendingCanvasPick = null;
+    resetBlenderNavigationMouseButton();
   }
 
   function syncBlenderNavigationMouseButton(event: PointerEvent): void {
@@ -1755,6 +1783,11 @@ function boot(root: HTMLDivElement): void {
     if ((event.ctrlKey || event.metaKey) && key === "f") {
       event.preventDefault();
       timelinePanel.focusRowSearch();
+      return;
+    }
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (key === "f" || code === "numpaddecimal")) {
+      event.preventDefault();
+      frameSelectedView();
       return;
     }
     if ((event.ctrlKey || event.metaKey) && key === "a") {
@@ -2040,6 +2073,73 @@ function boot(root: HTMLDivElement): void {
     controls.update();
     frustumHelper.update();
     syncCameraUI();
+  }
+
+  function frameSelectedView(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before framing.", "bad");
+      return;
+    }
+    const box = boxForObjects([entry.root]);
+    if (!box) {
+      showToast("Selected object has no frameable bounds.", "bad");
+      return;
+    }
+    recordHistory();
+    frameCameraToBox(box, `${entry.name} framed`);
+  }
+
+  function frameAllView(): void {
+    const visibleRoots = Array.from(entries.values())
+      .filter((entry) => entry.root.visible)
+      .map((entry) => entry.root);
+    const allRoots = Array.from(entries.values()).map((entry) => entry.root);
+    const box = boxForObjects(visibleRoots) ?? boxForObjects(allRoots);
+    if (!box) {
+      showToast("No objects to frame.", "bad");
+      return;
+    }
+    recordHistory();
+    frameCameraToBox(box, "Scene framed");
+  }
+
+  function boxForObjects(objects: THREE.Object3D[]): THREE.Box3 | null {
+    const box = new THREE.Box3();
+    let hasBounds = false;
+    objects.forEach((object) => {
+      const objectBox = new THREE.Box3().setFromObject(object);
+      if (objectBox.isEmpty()) return;
+      box.union(objectBox);
+      hasBounds = true;
+    });
+    return hasBounds ? box : null;
+  }
+
+  function frameCameraToBox(box: THREE.Box3, message: string): void {
+    stopPathTracePreview(false);
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    const radius = Math.max(sphere.radius, 0.5);
+    const direction = new THREE.Vector3().subVectors(camera.position, controls.target);
+    if (direction.lengthSq() < 0.0001) direction.set(0.65, 0.45, 0.62);
+    direction.normalize();
+
+    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(camera.aspect, 0.001));
+    const fitDistance = Math.max(
+      radius / Math.sin(verticalFov / 2),
+      radius / Math.sin(horizontalFov / 2)
+    ) * 1.18;
+    const distanceToTarget = Math.max(controls.minDistance, fitDistance);
+    if (distanceToTarget > controls.maxDistance) controls.maxDistance = distanceToTarget * 1.5;
+
+    controls.target.copy(sphere.center);
+    camera.position.copy(sphere.center).addScaledVector(direction, distanceToTarget);
+    camera.lookAt(controls.target);
+    controls.update();
+    frustumHelper.update();
+    syncCameraUI();
+    showToast(message, "good");
   }
 
   function togglePlay(): void {

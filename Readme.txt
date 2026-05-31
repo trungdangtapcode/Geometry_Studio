@@ -43,7 +43,7 @@ Using a local static server is recommended instead of double-clicking index.html
 6. Main Features
 - Geometry creation: Cube, Sphere, Cone, Cylinder, Wheel/Torus, Teapot, Torus Knot, Parametric Surface, Extruded Star, and additional Platonic solids.
 - Rendering modes: Solid, Points, and Lines. The Lines mode uses WireframeGeometry + LineSegments so object edges render correctly.
-- Perspective projection: editable camera position, FOV, Near, and Far values with Front, Top, Iso, and Reset presets.
+- Perspective projection: editable camera position, FOV, Near, and Far values with Front, Top, Iso, Reset, Frame Selected, and Frame All viewport controls.
 - Affine transformations: Move, Rotate, and Scale with TransformControls, numeric X/Y/Z inputs, and World/Local space modes.
 - Lighting: Ambient, Directional, Point, and Spot lights with color, intensity, position, helper, and shadow controls.
 - Rendering Lab: Tone mapping, exposure, shadow quality, PBR/Anime Toon material presets, generated environment lighting, SSAO, Bloom, Vignette, Comic Halftone, optional path-traced still preview, and renderer telemetry controls.
@@ -105,14 +105,14 @@ Using a local static server is recommended instead of double-clicking index.html
 - Ctrl+Y or Ctrl+Shift+Z: Redo.
 - Ctrl+S: export the scene JSON.
 - Left click an object: select it.
-- Blender-style viewport navigation: middle mouse drag orbits, Shift + middle mouse pans, Ctrl + middle mouse or mouse wheel zooms, right drag also pans, and left click selects objects.
+- Viewport navigation: left mouse drag orbits for normal web/trackpad use; middle mouse drag orbits like Blender; Shift + middle mouse pans; Ctrl + middle mouse or mouse wheel zooms; right drag also pans; left click without dragging selects objects; F / Numpad . frames the selected object.
 
 8. Quick Grading Checklist
 - Run Release with python3 -m http.server.
 - Confirm the 3D canvas shows the default cube, torus, and sphere.
 - Add Cube, Sphere, Cone, Cylinder, Torus, and Teapot objects.
 - Switch objects between Solid, Points, and Lines.
-- Adjust FOV, Near, Far, and camera presets.
+- Adjust FOV, Near, Far, camera presets, Frame Selected, and Frame All.
 - Use Move, Rotate, and Scale with the gizmo or T/R/S shortcuts.
 - Toggle shadows and edit light color, intensity, and position.
 - Upload a bitmap texture and adjust Repeat X/Y.

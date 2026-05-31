@@ -442,6 +442,8 @@ export function studioTemplate(): string {
             <button class="mini-button" type="button" data-view="top">Top</button>
             <button class="mini-button" type="button" data-view="iso">Iso</button>
             <button class="mini-button" type="button" data-view="reset">Reset</button>
+            <button class="mini-button" id="frame-selected-view" type="button" title="Frame selected object (F)"><span data-icon="ScanSearch"></span><span>Frame Sel</span></button>
+            <button class="mini-button" id="frame-all-view" type="button" title="Frame all visible objects"><span data-icon="Maximize2"></span><span>Frame All</span></button>
           </div>
           <label class="toggle-line single-toggle">
             <input id="frustum-toggle" type="checkbox" />
