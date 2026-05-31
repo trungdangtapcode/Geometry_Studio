@@ -86,6 +86,8 @@ PDF.
 - [Timeline Overview Navigator](timeline-overview-navigator.md) documents the
   compact dope-sheet mini-map for key density, work area, playhead, and visible
   range navigation.
+- [Timeline Range Strip Minimize](timeline-range-strip-minimize.md) documents
+  the section-only overview/layer-range collapse and scrollable dense toolbar.
 - [Timeline Fit Selected Keyframes](timeline-fit-selection.md) documents the
   AE-style command for zooming the timeline view around selected or playhead
   keyframes.

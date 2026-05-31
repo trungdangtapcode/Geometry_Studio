@@ -214,6 +214,7 @@ export class KeyframeTimelinePanel {
   private readonly overviewWork = query<HTMLSpanElement>("#timeline-overview-work");
   private readonly overviewViewport = query<HTMLSpanElement>("#timeline-overview-viewport");
   private readonly overviewPlayhead = query<HTMLSpanElement>("#timeline-overview-playhead");
+  private readonly toolbar = query<HTMLDivElement>("#timeline-toolbar");
   private readonly trackSelect = query<HTMLSelectElement>("#timeline-track-kind");
   private readonly rowFilterSelect = query<HTMLSelectElement>("#timeline-row-filter");
   private readonly rowSearchInput = query<HTMLInputElement>("#timeline-row-search");
@@ -222,6 +223,8 @@ export class KeyframeTimelinePanel {
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
   private readonly setVisibleButton = query<HTMLButtonElement>("#timeline-set-visible");
   private readonly layerStripToggleButton = query<HTMLButtonElement>("#timeline-layer-strip-toggle");
+  private readonly layerStripInlineToggleButton = query<HTMLButtonElement>("#timeline-layer-strip-inline-toggle");
+  private readonly layerStripRestoreButton = query<HTMLButtonElement>("#timeline-layer-strip-restore");
   private readonly copyTimeButton = query<HTMLButtonElement>("#timeline-copy-time");
   private readonly cutTimeButton = query<HTMLButtonElement>("#timeline-cut-time");
   private readonly pasteButton = query<HTMLButtonElement>("#timeline-paste-keyframes");
@@ -320,6 +323,7 @@ export class KeyframeTimelinePanel {
   private readonly handleLayerDragMove = (event: PointerEvent) => this.dragLayerRange(event);
   private readonly handleLayerDragEnd = (event: PointerEvent) => this.finishLayerRangeDrag(event);
   private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
+  private readonly handleWindowResize = () => this.syncToolbarOverflow();
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
     this.applyStoredDockHeight();
@@ -396,6 +400,7 @@ export class KeyframeTimelinePanel {
     this.setDopeSheetTool("selection");
     this.bindEvents();
     this.syncZoomState();
+    this.syncToolbarOverflow();
   }
 
   update(timelineDocument: SceneTimelineDocument, entries: Iterable<SceneEntry>, selectedId: string, playing: boolean): void {
@@ -458,6 +463,7 @@ export class KeyframeTimelinePanel {
     this.syncSelectionWidgets(timelineDocument, selectedId);
     this.renderGraph(timelineDocument, selectedId);
     this.lockDockScroll();
+    this.syncToolbarOverflow();
     this.updating = false;
   }
 
@@ -673,6 +679,10 @@ export class KeyframeTimelinePanel {
     this.resizeHandle.addEventListener("pointerdown", (event) => this.startResize(event));
     this.resizeHandle.addEventListener("dblclick", () => this.resetDockHeight());
     this.labels.addEventListener("scroll", () => this.syncCanvasScrollFromLabels());
+    this.toolbar.addEventListener("scroll", () => this.syncToolbarOverflow());
+    this.toolbar.addEventListener("wheel", (event) => this.scrollToolbarWithWheel(event), { passive: false });
+    this.toolbar.addEventListener("keydown", (event) => this.scrollToolbarWithKeyboard(event));
+    window.addEventListener("resize", this.handleWindowResize);
     query<HTMLButtonElement>("#timeline-collapse").addEventListener("click", (event) => {
       const collapsed = this.root.classList.toggle("collapsed");
       const button = event.currentTarget as HTMLButtonElement;
@@ -698,6 +708,12 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-sequence-layers").addEventListener("click", () => this.callbacks.onSequenceLayers());
     this.layerStripToggleButton.addEventListener("click", () => {
       this.applyLayerStripCollapsed(!this.layerStripCollapsed, true);
+    });
+    this.layerStripInlineToggleButton.addEventListener("click", () => {
+      this.applyLayerStripCollapsed(true, true);
+    });
+    this.layerStripRestoreButton.addEventListener("click", () => {
+      this.applyLayerStripCollapsed(false, true);
     });
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
@@ -993,13 +1009,21 @@ export class KeyframeTimelinePanel {
   private applyLayerStripCollapsed(collapsed: boolean, persist: boolean): void {
     this.layerStripCollapsed = collapsed;
     this.root.classList.toggle("layer-strip-collapsed", collapsed);
-    this.layerStripToggleButton.setAttribute("aria-pressed", String(!collapsed));
-    this.layerStripToggleButton.setAttribute("aria-label", collapsed ? "Show overview and object layer ranges" : "Hide overview and object layer ranges");
-    this.layerStripToggleButton.title = collapsed
+    const label = collapsed ? "Show overview and object layer ranges" : "Minimize overview and object layer ranges";
+    const title = collapsed
       ? "Show overview and object layer ranges"
-      : "Hide overview and object layer ranges";
+      : "Minimize overview and object layer ranges";
+    [this.layerStripToggleButton, this.layerStripInlineToggleButton, this.layerStripRestoreButton].forEach((button) => {
+      button.setAttribute("aria-expanded", String(!collapsed));
+      button.setAttribute("aria-label", label);
+      button.title = title;
+    });
     this.layerStripToggleButton.innerHTML = `<span data-icon="${collapsed ? "PanelTopOpen" : "PanelTopClose"}"></span>`;
+    this.layerStripInlineToggleButton.innerHTML = `<span data-icon="${collapsed ? "PanelTopOpen" : "PanelTopClose"}"></span>`;
+    this.layerStripRestoreButton.innerHTML = `<span data-icon="PanelTopOpen"></span><span>Show Ranges</span>`;
     hydrateIcons(this.layerStripToggleButton);
+    hydrateIcons(this.layerStripInlineToggleButton);
+    hydrateIcons(this.layerStripRestoreButton);
     if (persist) storeLayerStripCollapsed(collapsed);
     if (this.lastTimelineDocument) this.renderLayerStrip(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId);
     window.setTimeout(() => this.refreshCanvas(), 0);
@@ -1018,6 +1042,39 @@ export class KeyframeTimelinePanel {
     this.timeline.redraw();
     this.bindTimelineScroller();
     this.syncOverviewViewport();
+    this.syncToolbarOverflow();
+  }
+
+  private syncToolbarOverflow(): void {
+    const hasLeftOverflow = this.toolbar.scrollLeft > 1;
+    const hasRightOverflow = this.toolbar.scrollLeft + this.toolbar.clientWidth < this.toolbar.scrollWidth - 1;
+    toggleDatasetFlag(this.toolbar, "overflowLeft", hasLeftOverflow);
+    toggleDatasetFlag(this.toolbar, "overflowRight", hasRightOverflow);
+  }
+
+  private scrollToolbarWithWheel(event: WheelEvent): void {
+    const canScroll = this.toolbar.scrollWidth > this.toolbar.clientWidth + 1;
+    if (!canScroll || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    this.toolbar.scrollBy({ left: event.deltaY, behavior: "auto" });
+    this.syncToolbarOverflow();
+  }
+
+  private scrollToolbarWithKeyboard(event: KeyboardEvent): void {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") return;
+    const canScroll = this.toolbar.scrollWidth > this.toolbar.clientWidth + 1;
+    if (!canScroll) return;
+
+    event.preventDefault();
+    if (event.key === "Home") {
+      this.toolbar.scrollTo({ left: 0, behavior: "auto" });
+    } else if (event.key === "End") {
+      this.toolbar.scrollTo({ left: this.toolbar.scrollWidth, behavior: "auto" });
+    } else {
+      const direction = event.key === "ArrowLeft" ? -1 : 1;
+      this.toolbar.scrollBy({ left: direction * 160, behavior: "auto" });
+    }
+    this.syncToolbarOverflow();
   }
 
   private applyRowFilter(filter: TimelineRowFilter): void {
@@ -2462,6 +2519,11 @@ function markerPaletteColor(index: number): string {
 function cssNumber(element: HTMLElement, property: string, fallback: number): number {
   const value = Number.parseFloat(getComputedStyle(element).getPropertyValue(property));
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function toggleDatasetFlag(element: HTMLElement, key: string, enabled: boolean): void {
+  if (enabled) element.dataset[key] = "true";
+  else delete element.dataset[key];
 }
 
 function commonValue(values: number[]): string {

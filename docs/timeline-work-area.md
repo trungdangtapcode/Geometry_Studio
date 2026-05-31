@@ -26,7 +26,8 @@ After Effects and Premiere style work area around the existing timeline:
   length.
 - The timeline header has a dedicated range-strip toggle that hides only the
   overview navigator and object layer bars. The main keyframe rows stay visible,
-  which keeps the timeline usable on short screens.
+  and a compact restore bar stays visible, which keeps the timeline usable on
+  short screens without hiding the whole dock.
 
 ## Data Model
 

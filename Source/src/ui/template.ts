@@ -42,14 +42,14 @@ export function studioTemplate(): string {
           <header class="timeline-header">
             <div class="timeline-header-actions">
               <button class="icon-command" id="timeline-collapse" type="button" aria-label="Collapse timeline" title="Collapse timeline"><span data-icon="PanelBottomClose"></span></button>
-              <button class="icon-command" id="timeline-layer-strip-toggle" type="button" aria-label="Hide overview and object layer ranges" aria-pressed="true" title="Hide overview and object layer ranges"><span data-icon="PanelTopClose"></span></button>
+              <button class="icon-command" id="timeline-layer-strip-toggle" type="button" aria-label="Minimize overview and object layer ranges" aria-controls="timeline-overview timeline-layer-strip timeline-range-minibar" aria-expanded="true" title="Minimize overview and object layer ranges"><span data-icon="PanelTopClose"></span></button>
             </div>
             <div class="timeline-title">
               <strong>Keyframe Timeline</strong>
               <span id="timeline-selection">No keyframe selected</span>
               <span class="timeline-timecode" id="timeline-timecode">00:00:00 | F0000</span>
             </div>
-            <div class="timeline-toolbar">
+            <div class="timeline-toolbar" id="timeline-toolbar" tabindex="0" aria-label="Scrollable timeline command toolbar">
               <button class="mini-button" id="timeline-start" type="button"><span data-icon="StepBack"></span><span>Start</span></button>
               <button class="mini-button" id="timeline-end" type="button"><span data-icon="StepForward"></span><span>Out</span></button>
               <button class="mini-button icon-mini" id="timeline-prev-frame" type="button" aria-label="Previous frame" title="Previous frame"><span data-icon="SkipBack"></span></button>
@@ -212,13 +212,20 @@ export function studioTemplate(): string {
             </div>
           </div>
           <div class="timeline-overview" id="timeline-overview" aria-label="Timeline overview navigator">
-            <div class="timeline-overview-label">Overview</div>
+            <div class="timeline-overview-label">
+              <span>Overview</span>
+              <button class="timeline-overview-toggle" id="timeline-layer-strip-inline-toggle" type="button" aria-label="Minimize overview and object layer ranges" aria-controls="timeline-overview timeline-layer-strip timeline-range-minibar" aria-expanded="true" title="Minimize overview and object layer ranges"><span data-icon="PanelTopClose"></span></button>
+            </div>
             <button class="timeline-overview-track" id="timeline-overview-track" type="button" aria-label="Timeline overview navigator" title="Click to move the playhead. Drag the highlighted window to pan the timeline.">
               <span class="timeline-overview-work" id="timeline-overview-work"></span>
               <span class="timeline-overview-keys" id="timeline-overview-keys"></span>
               <span class="timeline-overview-viewport" id="timeline-overview-viewport"></span>
               <span class="timeline-overview-playhead" id="timeline-overview-playhead"></span>
             </button>
+          </div>
+          <div class="timeline-range-minibar" id="timeline-range-minibar" aria-label="Timeline range strip minimized">
+            <span class="timeline-range-minibar-label"><span data-icon="PanelTopOpen"></span><strong>Overview and layer ranges hidden</strong></span>
+            <button class="mini-button" id="timeline-layer-strip-restore" type="button" aria-label="Show overview and object layer ranges" aria-controls="timeline-overview timeline-layer-strip timeline-range-minibar" aria-expanded="false" title="Show overview and object layer ranges"><span data-icon="PanelTopOpen"></span><span>Show Ranges</span></button>
           </div>
           <div class="timeline-graph-panel" id="timeline-graph-panel" aria-label="Selected track value graph">
             <div class="timeline-graph-header">
