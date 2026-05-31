@@ -87,6 +87,8 @@ PDF.
 - [Timeline Motion Presets](timeline-motion-presets.md) documents Command
   Palette animation presets such as Turntable, Float Loop, Pop Intro, and
   Product Reveal, all baked into editable timeline tracks.
+- [Auto-Orient Along Path](auto-orient-along-path.md) documents the keyframe
+  assistant that generates Rotation keys from Position path direction.
 - [Timeline Resizable Dock](timeline-resizable-dock.md) documents the persistent
   dock height handle, row alignment, and scroll synchronization.
 - [Timeline Frame Navigation](timeline-frame-navigation.md) documents
@@ -381,6 +383,8 @@ animation runtime where it fits:
   turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
 - Onion skinning samples nearby selected-object poses before and after the
   playhead, making timing and spacing easier to inspect while scrubbing.
+- Auto-Orient Along Path turns Position motion into editable Rotation keys,
+  giving moving objects a one-command path-facing setup.
 - Timeline markers add named cue points for animation beats and demo segments,
   with direct marker dragging plus `M`, `Shift+M`, `Alt+M`, and `Shift+Alt+M`
   shortcuts for authoring, navigation, and cleanup.

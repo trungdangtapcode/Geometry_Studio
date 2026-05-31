@@ -1570,6 +1570,66 @@ test("persists onion-skin display setting with timeline keys", async ({ page }) 
   expect(errors).toEqual([]);
 });
 
+test("auto-orients selected object rotation keys along a position path", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-current-time")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("auto orient path");
+  await expect(page.locator('[data-command-id="timeline.auto-orient-path"]')).toBeEnabled();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("rotation");
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+
+  const previousCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
+  await page.locator("#save-scene").click();
+  await page.waitForFunction((count) => ((window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0) > count, previousCount);
+  const sceneText = await page.evaluate(() => (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads.at(-1)!);
+  const sceneDocument = JSON.parse(sceneText);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const rotationTrack = objectTimeline.tracks.find((track: { kind: string }) => track.kind === "rotation");
+  expect(rotationTrack.keyframes.map((keyframe: { time: number }) => keyframe.time)).toEqual([0, 1]);
+  rotationTrack.keyframes.forEach((keyframe: { value: [number, number, number] }) => {
+    expect(keyframe.value[0]).toBeCloseTo(0, 2);
+    expect(keyframe.value[1]).toBeCloseTo(90, 2);
+    expect(keyframe.value[2]).toBeCloseTo(0, 2);
+  });
+
+  expect(errors).toEqual([]);
+});
+
 test("trims and splits selected object layers", async ({ page }) => {
   test.setTimeout(180_000);
   const errors: string[] = [];

@@ -3,6 +3,7 @@ import "./styles.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
+import { autoOrientObjectAlongPath } from "./animation/autoOrient";
 import { updateEntryAnimation } from "./animation/timeline";
 import {
   cascadeResolvedKeyframesByTargetFromTime,
@@ -1045,6 +1046,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["pose", "position", "rotation", "scale", "clipboard", "auto-key"],
         disabled: () => !selectedEntry() || !hasTransformPoseClipboard()
       }),
+      command("timeline.auto-orient-path", "Auto-Orient Along Path", "Keyframes", autoOrientSelectedAlongPath, {
+        keywords: ["rotation", "path", "orient", "direction", "motion path", "after effects", "ae"],
+        disabled: () => !hasAutoOrientPathTarget()
+      }),
       ...timelineMotionPresetIds.map((presetId) => command(
         `timeline.motion-preset-${presetId}`,
         `Apply ${timelineMotionPresetLabel(presetId)} Motion Preset`,
@@ -1301,6 +1306,13 @@ function boot(root: HTMLDivElement): void {
   function hasClearableTimelineTrack(): boolean {
     const track = activeTimelineTrack(timelinePanel.selectedTrackKind());
     return Boolean(track && track.keyframes.length > 0 && !track.locked);
+  }
+
+  function hasAutoOrientPathTarget(): boolean {
+    const entry = selectedEntry();
+    const positionTrack = entry ? activeTimelineTrack("position", entry.id) : null;
+    const rotationTrack = entry ? activeTimelineTrack("rotation", entry.id) : null;
+    return Boolean(entry && positionTrack && positionTrack.keyframes.length >= 2 && !rotationTrack?.locked);
   }
 
   function hasSequenceLayerTargets(): boolean {
@@ -3499,6 +3511,40 @@ function boot(root: HTMLDivElement): void {
       ? `${result.label} preset baked as editable timeline keys`
       : `${result.label} preset skipped because its tracks are locked.`,
       result.keyframeIds.length ? "good" : "bad");
+  }
+
+  function autoOrientSelectedAlongPath(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before auto-orienting along a path.", "bad");
+      return;
+    }
+
+    const positionTrack = activeTimelineTrack("position", entry.id);
+    if (!positionTrack || positionTrack.keyframes.length < 2) {
+      showToast("Add at least two Position keyframes before auto-orienting.", "bad");
+      return;
+    }
+
+    const rotationTrack = activeTimelineTrack("rotation", entry.id);
+    if (!assertTimelineTrackUnlocked(rotationTrack, "auto-orienting along a path")) return;
+
+    recordHistory();
+    const result = autoOrientObjectAlongPath(sceneTimeline, entry.id);
+    if (result.oriented === 0) {
+      updateAllUI();
+      showToast("Position keys do not contain enough movement to auto-orient.", "bad");
+      return;
+    }
+
+    entry.animation = "none";
+    query<HTMLSelectElement>("#timeline-track-kind").value = "rotation";
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+    showToast(`${entry.name} auto-oriented along Position path${result.skipped ? `, ${result.skipped} static key${result.skipped === 1 ? "" : "s"} skipped` : ""}`, "good");
   }
 
   function bakeObjectAnimationPreset(
