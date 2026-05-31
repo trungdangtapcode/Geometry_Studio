@@ -7,16 +7,17 @@ pose. A user should be able to park the playhead at \(t_0\), set an object pose,
 record it, then park the playhead at \(t_1\), set a second pose, and record it
 without manually keying three separate tracks.
 
-Geometry Studio now provides a `Set TRS` timeline command for this workflow.
+Geometry Studio now provides `Set Pose` in the timeline and `Set Pose Key` in
+the Transform inspector for this workflow.
 
 ## Behavior
 
-- `Set TRS` records the selected object's current Position, Rotation, and Scale
-  values at the current playhead time.
+- `Set Pose` / `Set Pose Key` records the selected object's current Position,
+  Rotation, and Scale values at the current playhead time.
 - If a key already exists on any of those tracks at that time, the command
   updates that key instead of creating a duplicate.
 - The command uses one undo history entry for the whole pose record operation.
-- The active track dropdown does not matter. `Set TRS` always writes transform
+- The active track dropdown does not matter. `Set Pose` always writes transform
   tracks only.
 - A single-property `Set Key` remains available for focused editing, and row
   diamonds remain available for direct row-level keying.
@@ -28,10 +29,10 @@ Geometry Studio now provides a `Set TRS` timeline command for this workflow.
 1. Select an object.
 2. Move the playhead to \(t_0\).
 3. Set Position, Rotation, and Scale in the viewport or inspector.
-4. Press `Set TRS`.
+4. Press `Set Pose` or `Set Pose Key`.
 5. Move the playhead to \(t_1\).
 6. Set the second Position, Rotation, and Scale pose.
-7. Press `Set TRS` again.
+7. Press `Set Pose` or `Set Pose Key` again.
 8. Scrub or play the timeline to preview interpolation between the two poses.
 
 This matches the expected motion-graphics pattern: key a complete pose, change
@@ -58,7 +59,7 @@ creation semantics:
 
 The Playwright smoke workflow verifies that:
 
-- the `Set TRS` control is visible,
+- the `Set Pose Key` inspector control is visible,
 - pressing it creates Position, Rotation, and Scale keys at the playhead,
 - pressing it at a later time records a second pose,
 - scrubbing between poses interpolates Position, Rotation, and Scale together,

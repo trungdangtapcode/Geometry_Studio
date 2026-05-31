@@ -78,6 +78,12 @@ export interface DuplicateTimelineResult extends TimelineEditResult {
   keyframeIds: string[];
 }
 
+export interface CycleTimelineResult extends TimelineEditResult {
+  created: number;
+  cycles: number;
+  keyframeIds: string[];
+}
+
 export interface NudgeTimelineResult extends TimelineEditResult {
   nudged: number;
   currentTime: number;
@@ -261,6 +267,81 @@ export function duplicateResolvedKeyframes(
   });
 
   return { created, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
+}
+
+export function cycleResolvedKeyframesAcrossWorkArea(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): CycleTimelineResult {
+  if (sources.length < 2) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const selectedTimes = uniqueSortedSourceTimes(sources);
+  if (selectedTimes.length < 2) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const start = selectedTimes[0];
+  const end = selectedTimes[selectedTimes.length - 1];
+  const span = roundTime(end - start);
+  if (span <= 0) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const repeatGap = selectedKeyframeRepeatGap(timeline, selectedTimes);
+  const period = roundTime(span + repeatGap);
+  const repeatEnd = Math.min(timeline.workEnd, timeline.duration);
+  const cycles = Math.max(0, Math.floor((repeatEnd - end + 0.001) / period));
+  if (cycles <= 0) {
+    return { created: 0, cycles: 0, skipped: 0, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  let created = 0;
+  let skipped = 0;
+  const keyframeIds: string[] = [];
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+
+  sources.forEach((source) => {
+    if (occupiedTimes.has(source.track)) return;
+    occupiedTimes.set(source.track, new Set(source.track.keyframes.map((keyframe) => timelineTimeKey(keyframe.time))));
+  });
+
+  for (let cycle = 1; cycle <= cycles; cycle += 1) {
+    const offset = period * cycle;
+    sources
+      .slice()
+      .sort((left, right) => left.keyframe.time - right.keyframe.time)
+      .forEach(({ scope, objectId, track, keyframe }) => {
+        if (track.locked) {
+          skipped += 1;
+          return;
+        }
+
+        const time = snapTimelineTime(timeline, keyframe.time + offset);
+        const trackOccupancy = occupiedTimes.get(track)!;
+        const timeKey = timelineTimeKey(time);
+        if (time > repeatEnd + 0.001 || trackOccupancy.has(timeKey)) {
+          skipped += 1;
+          return;
+        }
+
+        const cycled = createTimelineKeyframe(time, [...keyframe.value] as [number, number, number]);
+        cycled.interpolation = keyframe.interpolation;
+        track.enabled = true;
+        track.keyframes.push(cycled);
+        trackOccupancy.add(timeKey);
+        keyframeIds.push(cycled.id);
+        changedTracks.add(track);
+        if (scope === "object" && isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+        created += 1;
+      });
+  }
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return { created, cycles, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
 export function nudgeResolvedKeyframes(
@@ -963,6 +1044,27 @@ function groupSourcesByTarget(sources: TimelineKeyframeSource[]): TimelineSource
 
 function timelineTimeKey(time: number): number {
   return Math.round(time * 1000);
+}
+
+function uniqueSortedSourceTimes(sources: TimelineKeyframeSource[]): number[] {
+  return sources
+    .map((source) => source.keyframe.time)
+    .sort((left, right) => left - right)
+    .reduce<number[]>((times, time) => {
+      const previous = times.at(-1);
+      if (previous === undefined || Math.abs(previous - time) >= 0.001) times.push(time);
+      return times;
+    }, []);
+}
+
+function selectedKeyframeRepeatGap(timeline: SceneTimelineDocument, selectedTimes: number[]): number {
+  const fallback = Math.max(timeline.snapEnabled ? timeline.snapStep : 1 / Math.max(timeline.fps, 1), 0.001);
+  const positiveGaps = selectedTimes
+    .slice(1)
+    .map((time, index) => time - selectedTimes[index])
+    .filter((gap) => gap > 0.001);
+  if (positiveGaps.length === 0) return fallback;
+  return roundTime(Math.max(Math.min(...positiveGaps), 0.001));
 }
 
 function timelineGapDuration(timeline: SceneTimelineDocument, duration: number): number {

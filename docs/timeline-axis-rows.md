@@ -53,5 +53,5 @@ The Playwright smoke suite verifies that:
 
 - keyed Position and Rotation tracks expand into three axis rows,
 - Position X and Rotation Y rows are visible,
-- grouped `Set TRS` keying creates visible Position and Scale axis rows,
+- grouped `Set Pose` keying creates visible Position and Scale axis rows,
 - existing row-level keying and long timeline save/load workflows still pass.

@@ -9,6 +9,7 @@ import {
   cascadeResolvedKeyframesByTargetFromTime,
   centerResolvedKeyframesOnTime,
   createTimelineClipboard,
+  cycleResolvedKeyframesAcrossWorkArea,
   distributeResolvedKeyframesAcrossRange,
   duplicateResolvedKeyframes,
   editResolvedKeyframes,
@@ -284,6 +285,7 @@ function boot(root: HTMLDivElement): void {
     onFitKeyframesToWorkArea: fitTimelineKeyframesToWorkArea,
     onStaggerKeyframesFromPlayhead: staggerTimelineKeyframesFromPlayhead,
     onCascadeKeyframesFromPlayhead: cascadeTimelineKeyframesFromPlayhead,
+    onCycleKeyframesAcrossWorkArea: cycleTimelineKeyframesAcrossWorkArea,
     onEditKeyframes: editTimelineKeyframes,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
@@ -621,6 +623,7 @@ function boot(root: HTMLDivElement): void {
       syncSelectedBases();
       updateAllUI();
     });
+    query<HTMLButtonElement>("#set-transform-pose-key").addEventListener("click", () => setTransformTimelineKeyframes());
     query<HTMLButtonElement>("#copy-transform-pose").addEventListener("click", copySelectedTransformPose);
     query<HTMLButtonElement>("#paste-transform-pose").addEventListener("click", pasteTransformPose);
 
@@ -1057,7 +1060,7 @@ function boot(root: HTMLDivElement): void {
       }),
 
       command("timeline.set-key", "Set Key On Active Track", "Keyframes", () => addTimelineKeyframe(timelinePanel.selectedTrackKind()), { keywords: ["diamond", "update"] }),
-      command("timeline.set-transform", "Set Transform Keys", "Keyframes", setTransformTimelineKeyframes, { keywords: ["trs", "position", "rotation", "scale"] }),
+      command("timeline.set-transform", "Set Pose Key (Position Rotation Scale)", "Keyframes", setTransformTimelineKeyframes, { keywords: ["trs", "position", "rotation", "scale", "pose"] }),
       command("transform.copy-pose", "Copy Transform Pose", "Keyframes", copySelectedTransformPose, {
         keywords: ["pose", "position", "rotation", "scale", "clipboard"],
         disabled: () => !selectedEntry()
@@ -1132,6 +1135,11 @@ function boot(root: HTMLDivElement): void {
       }),
       command("timeline.duplicate", "Duplicate Selected Keyframes", "Keyframes", () => duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), {
         shortcut: "Ctrl+D",
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.cycle-keys", "Cycle Selected Keyframes To Work Out", "Keyframes", () => cycleTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList()), {
+        shortcut: "Shift+Y",
+        keywords: ["repeat", "loop", "cycle", "keyframe assistant", "after effects", "ae"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
 
@@ -2130,6 +2138,11 @@ function boot(root: HTMLDivElement): void {
     if ((event.ctrlKey || event.metaKey) && key === "d") {
       event.preventDefault();
       duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+      return;
+    }
+    if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && key === "y") {
+      event.preventDefault();
+      cycleTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList());
       return;
     }
     if ((event.ctrlKey || event.metaKey) && key === "s") {
@@ -3923,6 +3936,35 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes(result.keyframeIds);
     showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} duplicated`, "good");
+  }
+
+  function cycleTimelineKeyframesAcrossWorkArea(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before cycling a timing block.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "cycling keyframes")) return;
+
+    recordHistory();
+    const result = cycleResolvedKeyframesAcrossWorkArea(sceneTimeline, sources);
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+
+    if (result.created === 0) {
+      updateAllUI();
+      showToast("Move Work Out after the selected block before cycling keyframes.", "bad");
+      return;
+    }
+
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} cycled across ${result.cycles} repeat${result.cycles === 1 ? "" : "s"}${skipped}`, "good");
   }
 
   function duplicateVisibleTimelineTimeKeyframes(): void {

@@ -29,7 +29,7 @@ one operation.
 5. Scrub or play the timeline to inspect the interpolation.
 
 This gives the project a broader dope-sheet keying operation than `Set Key`
-for the active track and `Set TRS` for object transforms only.
+for the active track and `Set Pose` for object transforms only.
 
 ## Implementation Notes
 

@@ -150,6 +150,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-fit-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-stagger-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-cascade-keyframes")).toBeVisible();
+  await expect(page.locator("#timeline-cycle-keyframes")).toBeVisible();
   await expect(page.locator("#timeline-toggle-track")).toBeVisible();
   await expect(page.locator("#timeline-solo-track")).toBeVisible();
   await expect(page.locator("#timeline-lock-track")).toBeVisible();
@@ -166,7 +167,13 @@ test("renders the studio and core controls", async ({ page }) => {
   await page.locator("#timeline-row-filter").selectOption("focus");
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("u");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selected");
+  await page.keyboard.press("u");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
+  await page.keyboard.press("u");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("keyed");
+  await page.keyboard.press("u");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
   await page.keyboard.press("u");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("all");
   await page.keyboard.press("u");
@@ -1626,6 +1633,134 @@ test("auto-orients selected object rotation keys along a position path", async (
     expect(keyframe.value[1]).toBeCloseTo(90, 2);
     expect(keyframe.value[2]).toBeCloseTo(0, 2);
   });
+
+  expect(errors).toEqual([]);
+});
+
+test("cycles selected keyframe blocks forward to Work Out", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-cycle-keyframes")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("position");
+  const positionX = page.locator('.transform-input[data-prop="position"][data-axis="x"]');
+
+  for (const [time, value] of [[0, 0], [1, 2]] as const) {
+    await page.locator("#timeline-current-time").evaluate((input, nextTime) => {
+      (input as HTMLInputElement).value = String(nextTime);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await positionX.evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+    await page.locator("#timeline-add-keyframe").click();
+  }
+
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  await page.locator("#timeline-cycle-keyframes").click();
+  await expect(page.locator("#timeline-selection")).toContainText("6 keyframes selected");
+
+  const previousCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
+  await page.locator("#save-scene").click();
+  await page.waitForFunction((count) => ((window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0) > count, previousCount);
+  const sceneText = await page.evaluate(() => (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads.at(-1)!);
+  const sceneDocument = JSON.parse(sceneText);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const positionTrack = objectTimeline.tracks.find((track: { kind: string }) => track.kind === "position");
+  expect(positionTrack.keyframes.map((keyframe: { time: number }) => keyframe.time)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+  expect(positionTrack.keyframes.map((keyframe: { value: number[] }) => keyframe.value[0])).toEqual([0, 2, 0, 2, 0, 2, 0, 2]);
+
+  expect(errors).toEqual([]);
+});
+
+test("records and plays full position rotation scale pose keys", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#set-transform-pose-key")).toBeVisible();
+  const setTime = async (time: number) => {
+    await page.locator("#timeline-current-time").evaluate((input, value) => {
+      (input as HTMLInputElement).value = String(value);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+  };
+  const setTransformInput = async (prop: "position" | "rotation" | "scale", axis: "x" | "y" | "z", value: number) => {
+    await page.locator(`.transform-input[data-prop="${prop}"][data-axis="${axis}"]`).evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+  };
+  const transformValue = async (prop: "position" | "rotation" | "scale", axis: "x" | "y" | "z") =>
+    Number(await page.locator(`.transform-input[data-prop="${prop}"][data-axis="${axis}"]`).inputValue());
+
+  await setTime(0);
+  await setTransformInput("position", "x", 0);
+  await setTransformInput("rotation", "y", 0);
+  await setTransformInput("scale", "x", 1);
+  await setTransformInput("scale", "y", 1);
+  await setTransformInput("scale", "z", 1);
+  await page.locator("#set-transform-pose-key").click();
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+
+  await setTime(1);
+  await setTransformInput("position", "x", 4);
+  await setTransformInput("rotation", "y", 90);
+  await setTransformInput("scale", "x", 2);
+  await setTransformInput("scale", "y", 2);
+  await setTransformInput("scale", "z", 2);
+  await page.locator("#set-transform-pose-key").click();
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+
+  await setTime(0.5);
+  expect(await transformValue("position", "x")).toBeCloseTo(2, 1);
+  expect(await transformValue("rotation", "y")).toBeCloseTo(45, 1);
+  expect(await transformValue("scale", "x")).toBeCloseTo(1.5, 1);
+  expect(await transformValue("scale", "y")).toBeCloseTo(1.5, 1);
+  expect(await transformValue("scale", "z")).toBeCloseTo(1.5, 1);
+
+  const previousCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
+  await page.locator("#save-scene").click();
+  await page.waitForFunction((count) => ((window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0) > count, previousCount);
+  const sceneText = await page.evaluate(() => (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads.at(-1)!);
+  const sceneDocument = JSON.parse(sceneText);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const track = (kind: string) => objectTimeline.tracks.find((candidate: { kind: string }) => candidate.kind === kind);
+  expect(track("position").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[0]])).toEqual([[0, 0], [1, 4]]);
+  expect(track("rotation").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[1]])).toEqual([[0, 0], [1, 90]]);
+  expect(track("scale").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[0]])).toEqual([[0, 1], [1, 2]]);
 
   expect(errors).toEqual([]);
 });

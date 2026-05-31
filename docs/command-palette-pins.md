@@ -3,7 +3,7 @@
 ## Purpose
 
 Pinned commands make the command palette useful as a lightweight professional
-workspace. A user can keep high-frequency actions such as `Set Key`, `Set TRS`,
+workspace. A user can keep high-frequency actions such as `Set Key`, `Set Pose`,
 `Frame Selected`, `Graph`, or `Record WebM` above the normal command list.
 
 ## Behavior

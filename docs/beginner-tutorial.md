@@ -86,10 +86,10 @@ This records Position, Rotation, and Scale together.
 1. Select an object.
 2. Set timeline `Time` to `0`.
 3. Move the object to the starting pose.
-4. Click `Set TRS`.
+4. Click `Set Pose` in the timeline or `Set Pose Key` in the Transform inspector.
 5. Set timeline `Time` to `2`.
 6. Move, rotate, or scale the object to the ending pose.
-7. Click `Set TRS` again.
+7. Click `Set Pose` / `Set Pose Key` again.
 8. Drag the playhead between `0` and `2`, or press `Play`.
 
 Time fields also accept frame and timecode entry. For example, at 30 FPS,
@@ -135,7 +135,7 @@ Metalness, Texture controls, Camera, and Lights.
 
 Auto-Key is useful after the first pose exists.
 
-1. Set the first key manually with `Set TRS` or `Set Key`.
+1. Set the first key manually with `Set Pose` / `Set Pose Key` or `Set Key`.
 2. Enable `Auto-Key`.
 3. Move the playhead to another time.
 4. Change the object, camera, light, or material value.
@@ -161,6 +161,7 @@ Useful retiming tools:
 - `Reverse`: reverse selected key timing.
 - `Distribute`: evenly space keys across Work In/Out.
 - `Fit Keys`: stretch selected key timing into Work In/Out.
+- `Cycle`: repeat a selected keyframe pattern forward until Work Out.
 
 ## 12. Animate The Camera
 

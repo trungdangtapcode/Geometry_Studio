@@ -43,7 +43,7 @@ the object root, outliner, inspector, timeline labels, scene JSON, and undo
 history all stay on one naming path.
 
 Timeline group pose keying uses the same transform-key command as the toolbar
-`Set TRS` action. The panel passes the object id to the editor shell, and
+`Set Pose` action. The panel passes the object id to the editor shell, and
 `main.ts` selects that object, captures its current Position, Rotation, and
 Scale values, writes or updates the three transform tracks at the playhead, and
 selects the created keyframes for immediate retiming.

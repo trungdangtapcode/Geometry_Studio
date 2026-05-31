@@ -89,6 +89,7 @@ export interface KeyframeTimelineCallbacks {
   onSelectVisibleTimeKeyframes(): void;
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
+  onCycleKeyframesAcrossWorkArea(keyframeIds: string[]): void;
   onDuplicateVisibleTimeKeyframes(): void;
   onDeleteVisibleTimeKeyframes(): void;
   onInsertVisibleTimeGap(rows: TimelineVisibleRowTarget[]): void;
@@ -285,6 +286,7 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-fit-keyframes"),
     query<HTMLButtonElement>("#timeline-stagger-keyframes"),
     query<HTMLButtonElement>("#timeline-cascade-keyframes"),
+    query<HTMLButtonElement>("#timeline-cycle-keyframes"),
     query<HTMLButtonElement>("#timeline-duplicate-keyframe"),
     query<HTMLButtonElement>("#timeline-zoom-selection")
   ];
@@ -1071,6 +1073,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-cascade-keyframes").addEventListener("click", () => {
       this.callbacks.onCascadeKeyframesFromPlayhead([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-cycle-keyframes").addEventListener("click", () => {
+      this.callbacks.onCycleKeyframesAcrossWorkArea([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-add-marker").addEventListener("click", () => {
       this.callbacks.onAddMarker(this.markerLabelInput.value.trim(), this.markerColorInput.value);
@@ -2745,8 +2750,8 @@ export class KeyframeTimelinePanel {
     const hasPlayheadKey = Boolean(this.playheadKeyframe(timelineDocument, selectedId));
     this.addKeyframeButton.innerHTML = `<span data-icon="${hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span><span>${hasPlayheadKey ? "Update Key" : "Set Key"}</span>`;
     this.addKeyframeButton.title = hasPlayheadKey
-      ? "Update the keyframe at the current playhead time"
-      : "Create a keyframe at the current playhead time";
+      ? "Update the active property keyframe at the current playhead time. Use Set Pose for Position + Rotation + Scale together."
+      : "Create an active property keyframe at the current playhead time. Use Set Pose for Position + Rotation + Scale together.";
     hydrateIcons(this.addKeyframeButton);
   }
 

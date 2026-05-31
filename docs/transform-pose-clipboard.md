@@ -31,7 +31,7 @@ stores readable transform values:
 
 `Paste Pose` reuses existing editor operations: it records one undo snapshot,
 updates the selected object root, synchronizes transform base values, and, when
-Auto-Key is active, uses the same timeline track helpers as `Set TRS`.
+Auto-Key is active, uses the same timeline track helpers as `Set Pose`.
 
 ## Validation
 

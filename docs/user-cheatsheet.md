@@ -95,8 +95,8 @@ Use `Blender` UI density when the inspector feels too large.
 | Copy pose | Timeline / command palette | `Alt+C` in keyframe context is property reveal; use command palette for pose |
 | Paste pose | Timeline / command palette | Command palette search `paste pose` |
 
-For animation authoring, prefer `Set TRS` when you want Position, Rotation, and
-Scale recorded together.
+For animation authoring, prefer `Set Pose` or `Set Pose Key` when you want
+Position, Rotation, and Scale recorded together.
 
 ## Timeline Basics
 
@@ -132,7 +132,7 @@ Scale recorded together.
 | Preview Pinned Row Keyframe Range | Command Palette action to play only the pinned-row key range |
 | Motion Presets | Command Palette actions that bake Turntable, Float Loop, Pop Intro, or Product Reveal into editable keys |
 | Set Key | Add or update one key on the selected track dropdown |
-| Set TRS | Record Position, Rotation, and Scale together for the selected object |
+| Set Pose / Set Pose Key | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
 | Set Pinned | Record every pinned timeline row at the playhead |
 | Layer In / Layer Out | Trim selected object layer range |
@@ -169,6 +169,7 @@ Scale recorded together.
 | Fit Keys | Stretch selected keys into Work In/Out |
 | Stagger | Offset selected timing columns by snap step |
 | Cascade | Sequence selected object/camera/light target key blocks |
+| Cycle | Repeat selected keyframe blocks forward until Work Out |
 | Duplicate | Duplicate selected keyframes |
 | Track On / Solo / Lock | Enable, isolate, or lock active track |
 | Clear Track | Delete every key on active track |
@@ -221,6 +222,7 @@ Scale recorded together.
 | `Shift+F` | Fit selected keys into Work In/Out |
 | `Shift+G` | Stagger selected keys |
 | `Alt+Shift+G` | Cascade selected target key blocks |
+| `Shift+Y` | Cycle selected keyframe blocks to Work Out |
 | `M` | Add/update marker |
 | `Alt+M`, `Shift+M` | Previous / next marker |
 | `Alt+Shift+M` | Delete marker at playhead |
@@ -240,10 +242,10 @@ Scale recorded together.
 1. Select the object.
 2. Set `Time` to `0`.
 3. Place the object at its first pose.
-4. Click `Set TRS`.
+4. Click `Set Pose` in the timeline or `Set Pose Key` in the Transform inspector.
 5. Set `Time` to the next moment, for example `2`.
 6. Move, rotate, and scale the object to the second pose.
-7. Click `Set TRS` again.
+7. Click `Set Pose` / `Set Pose Key` again.
 8. Scrub the playhead or press `Play`.
 
 ### Record One Property Only

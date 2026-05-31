@@ -40,7 +40,7 @@ runtime rebuilds.
 5. Move to another time, edit the property again, and press the same diamond.
 6. Scrub or play the timeline to preview interpolation.
 
-Use `Set TRS` when a complete pose should be recorded across Position,
+Use `Set Pose` when a complete pose should be recorded across Position,
 Rotation, and Scale together.
 
 ## Validation

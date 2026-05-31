@@ -113,8 +113,8 @@ export function studioTemplate(): string {
               </label>
               <button class="mini-button icon-mini" id="timeline-pin-visible-rows" type="button" title="Pin every currently visible timeline row" aria-label="Pin visible timeline rows"><span data-icon="Pin"></span></button>
               <button class="mini-button icon-mini" id="timeline-clear-pinned-rows" type="button" title="Clear all pinned timeline rows" aria-label="Clear pinned timeline rows"><span data-icon="PinOff"></span></button>
-              <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
-              <button class="mini-button" id="timeline-set-transform" type="button"><span data-icon="Box"></span><span>Set TRS</span></button>
+              <button class="mini-button" id="timeline-add-keyframe" type="button" title="Record the active property only. Use Set Pose for Position + Rotation + Scale together."><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
+              <button class="mini-button" id="timeline-set-transform" type="button" title="Record Position, Rotation, and Scale at the playhead"><span data-icon="Box"></span><span>Set Pose</span></button>
               <button class="mini-button" id="timeline-set-visible" type="button" title="Set keys on every currently visible timeline row"><span data-icon="ListChecks"></span><span>Set Visible</span></button>
               <button class="mini-button" id="timeline-set-pinned" type="button" title="Set keys on every pinned timeline row"><span data-icon="Pin"></span><span>Set Pinned</span></button>
               <button class="mini-button" id="timeline-layer-in" type="button" title="Trim selected layer in at the playhead (Alt+[)"><span data-icon="LogIn"></span><span>Layer In</span></button>
@@ -171,6 +171,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-fit-keyframes" type="button"><span data-icon="StretchHorizontal"></span><span>Fit Keys</span></button>
               <button class="mini-button" id="timeline-stagger-keyframes" type="button" title="Stagger selected keyframe columns from the playhead by the snap step"><span data-icon="ListOrdered"></span><span>Stagger</span></button>
               <button class="mini-button" id="timeline-cascade-keyframes" type="button" title="Cascade selected target keyframes from the playhead by the snap step"><span data-icon="Layers3"></span><span>Cascade</span></button>
+              <button class="mini-button" id="timeline-cycle-keyframes" type="button" title="Repeat the selected keyframe block until Work Out (Shift+Y)"><span data-icon="Repeat2"></span><span>Cycle</span></button>
               <button class="mini-button" id="timeline-duplicate-keyframe" type="button"><span data-icon="Copy"></span><span>Duplicate</span></button>
               <button class="mini-button" id="timeline-toggle-track" type="button"><span data-icon="Eye"></span><span>Track On</span></button>
               <button class="mini-button" id="timeline-solo-track" type="button"><span data-icon="Circle"></span><span>Solo Off</span></button>
@@ -355,6 +356,9 @@ export function studioTemplate(): string {
           <div class="compact-row">
             <button class="wide-button" id="toggle-space" type="button"><span data-icon="Globe2"></span><span>World Space</span></button>
             <button class="wide-button" id="reset-transform" type="button"><span data-icon="Undo2"></span><span>Reset</span></button>
+          </div>
+          <div class="compact-row">
+            <button class="wide-button" id="set-transform-pose-key" type="button" title="Record Position, Rotation, and Scale at the playhead"><span data-icon="DiamondPlus"></span><span>Set Pose Key</span></button>
           </div>
           <div class="compact-row">
             <button class="wide-button" id="copy-transform-pose" type="button"><span data-icon="ClipboardCopy"></span><span>Copy Pose</span></button>
@@ -662,7 +666,7 @@ export function studioTemplate(): string {
           </header>
           <label class="quick-help-search">
             <span data-icon="Search"></span>
-            <input id="quick-help-search" type="search" placeholder="Search help, e.g. Set TRS, camera, render, ease" autocomplete="off" />
+            <input id="quick-help-search" type="search" placeholder="Search help, e.g. Set Pose, camera, render, ease" autocomplete="off" />
           </label>
           <div class="quick-help-filters" role="toolbar" aria-label="Help categories">
             <button class="quick-help-filter active" type="button" data-help-filter="all" aria-pressed="true">All</button>
@@ -696,9 +700,10 @@ export function studioTemplate(): string {
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Keyframing</h3>
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
-              <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
+              <div class="quick-help-item"><strong>Set Pose</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
-              <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast TRS setup, then key, select, fit, or preview the pinned set.</p></div>
+              <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast transform setup, then key, select, fit, or preview the pinned set.</p></div>
+              <div class="quick-help-item"><strong>Set Pose Key</strong><span>Inspector / timeline</span><p>Record Position, Rotation, and Scale together at the playhead for full transform animation.</p></div>
               <div class="quick-help-item"><strong>Motion Presets</strong><span>Command Palette</span><p>Apply Turntable, Float Loop, Pop Intro, or Product Reveal as editable timeline keys.</p></div>
               <div class="quick-help-item"><strong>Auto-Orient Along Path</strong><span>Command Palette</span><p>Create Rotation keys from the selected object's Position path direction.</p></div>
               <div class="quick-help-item"><strong>Selected Keyed Rows</strong><span>Shift+U</span><p>Show only the selected layer's keyed rows, plus the active row, like an AE animated-property reveal.</p></div>
@@ -720,6 +725,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Move To Playhead</strong><span>Shift+Enter</span><p>Move selected key timing so the block starts at the playhead.</p></div>
               <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
               <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>
+              <div class="quick-help-item"><strong>Cycle Keys</strong><span>Shift+Y</span><p>Repeat a selected keyframe block forward until Work Out.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="rendering">
               <h3>Scene And Output</h3>

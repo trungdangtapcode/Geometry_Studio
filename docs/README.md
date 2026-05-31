@@ -160,6 +160,8 @@ PDF.
   step.
 - [Timeline Keyframe Cascade](timeline-keyframe-cascade.md) documents
   sequencing selected target keyframe blocks from the playhead by the snap step.
+- [Timeline Keyframe Cycle](timeline-keyframe-cycle.md) documents repeating a
+  selected keyframe block forward until Work Out.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track
@@ -210,7 +212,7 @@ PDF.
 - [Timeline Target Resolution](timeline-target-resolution.md) documents the
   UI-row-to-track mapping used by visible-row keying and gap-edit commands.
 - [Timeline Transform Keying](timeline-transform-keying.md) documents the
-  `Set TRS` command for recording Position, Rotation, and Scale as one object
+  `Set Pose` command for recording Position, Rotation, and Scale as one object
   pose.
 - [Transform Inspector Keying](transform-inspector-keying.md) documents the
   AE-style diamond buttons beside Position, Rotation, and Scale in the inspector.
@@ -352,7 +354,7 @@ animation runtime where it fits:
 - Timeline row labels show live property values, so scrubbed Position, Rotation,
   Scale, material, texture, camera, and light values can be inspected directly
   from the dope sheet.
-- The `Set TRS` command records the selected object's Position, Rotation, and
+- The `Set Pose` command records the selected object's Position, Rotation, and
   Scale together at the playhead for pose-to-pose motion authoring.
 - Object transform tracks expand into X/Y/Z rows in the timeline panel while
   preserving vector-based JSON persistence and Three.js playback.

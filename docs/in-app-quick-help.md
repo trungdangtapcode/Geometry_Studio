@@ -21,7 +21,7 @@ The overlay intentionally focuses on high-frequency workflows:
 - command palette and density controls;
 - viewport navigation and camera recovery;
 - transform tools;
-- `Set Key`, `Set TRS`, Auto-Key, row reveal, row filtering, row pinning, and
+- `Set Key`, `Set Pose`, Auto-Key, row reveal, row filtering, row pinning, and
   Graph;
 - Command Palette motion presets that bake Turntable, Float Loop, Pop Intro,
   and Product Reveal into editable keys;

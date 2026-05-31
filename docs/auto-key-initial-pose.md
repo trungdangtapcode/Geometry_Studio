@@ -27,7 +27,7 @@ existing keys.
   playhead key as before.
 - When Auto-Key is enabled, the timeline dock shows an active recording state so
   the user can see that edits will write keys.
-- Manual `Set Key`, row diamonds, and `Set TRS` keep their explicit behavior.
+- Manual `Set Key`, row diamonds, and `Set Pose` keep their explicit behavior.
 - The operation uses the same Undo snapshot as the transform edit.
 
 ## Architecture

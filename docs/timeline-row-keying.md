@@ -14,7 +14,7 @@ not need to switch to a global track dropdown before adding a key.
 - The global key button uses `Set Key` when no key exists at the current
   playhead time and `Update Key` when pressing it will overwrite the existing
   key at that time.
-- The separate `Set TRS` command records Position, Rotation, and Scale together
+- The separate `Set Pose` command records Position, Rotation, and Scale together
   for the selected object when the user wants to key a complete pose.
 - Object group rows expose the same pose-key command, so a user can key a
   complete object pose directly from the layer stack without first selecting a
