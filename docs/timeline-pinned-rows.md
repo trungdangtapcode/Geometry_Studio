@@ -22,15 +22,16 @@ timeline rows and switch the row filter to `Pinned Rows`.
   keying set for Position/Rotation/Scale, camera, light, or material channels.
 - `Select Pinned` selects keyframes on pinned rows, which makes pinned rows a
   reusable retiming/easing/copy-delete selection set as well as a keying set.
-- `Select Pinned Row Keys At Playhead` and `Copy Pinned Row Keys At Playhead`
-  work with only the pinned pose column at the current time, regardless of row
-  search or row filter state.
+- `Select/Copy/Cut/Duplicate/Delete Pinned Row Keys At Playhead` work with only
+  the pinned pose column at the current time, regardless of row search or row
+  filter state.
 - The command palette includes `Pin Active Timeline Row`, `Pin Visible Timeline
   Rows`, `Unpin Visible Timeline Rows`, `Clear Pinned Timeline Rows`, `Show
   Pinned Timeline Rows`, `Pin Selected Transform Rows`, and `Set Keys On Pinned
   Rows`, `Select Pinned Row Keyframes`, and `Select Pinned Row Work Area
-  Keyframes`, `Select Pinned Row Keys At Playhead`, and `Copy Pinned Row Keys
-  At Playhead`.
+  Keyframes`, `Select Pinned Row Keys At Playhead`, `Copy Pinned Row Keys At
+  Playhead`, `Cut Pinned Row Keys At Playhead`, `Duplicate Pinned Row Keys At
+  Playhead`, and `Delete Pinned Row Keys At Playhead`.
 - `Pinned Rows` in the timeline row filter shows pinned rows plus the active
   row. The filter label shows the current pinned-row count.
 - Pinned rows also remain visible in `Focus Rows` and `Keyed Rows`, so important

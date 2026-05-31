@@ -35,4 +35,7 @@ test("prioritizes exact title matches over broad keyword matches", async ({ page
 
   await page.locator("#command-palette-search").fill("select pinned row keys at playhead");
   await expect(page.locator(".command-palette-item").first()).toHaveAttribute("data-command-id", "timeline.select-pinned-time");
+
+  await page.locator("#command-palette-search").fill("delete pinned row keys at playhead");
+  await expect(page.locator(".command-palette-item").first()).toHaveAttribute("data-command-id", "timeline.delete-pinned-time");
 });

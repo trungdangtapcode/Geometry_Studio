@@ -1001,6 +1001,15 @@ function boot(root: HTMLDivElement): void {
       command("timeline.copy-pinned-time", "Copy Pinned Row Keys At Playhead", "Keyframes", copyPinnedTimelineTimeKeyframes, {
         keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
       }),
+      command("timeline.cut-pinned-time", "Cut Pinned Row Keys At Playhead", "Keyframes", cutPinnedTimelineTimeKeyframes, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
+      }),
+      command("timeline.duplicate-pinned-time", "Duplicate Pinned Row Keys At Playhead", "Keyframes", duplicatePinnedTimelineTimeKeyframes, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
+      }),
+      command("timeline.delete-pinned-time", "Delete Pinned Row Keys At Playhead", "Keyframes", deletePinnedTimelineTimeKeyframes, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
+      }),
       command("timeline.pin-selected-transform", "Pin Selected Transform Rows", "Keyframes", pinSelectedTransformRows, {
         keywords: ["pin", "pinned", "keying set", "position", "rotation", "scale", "trs"],
         disabled: () => !selectedEntry()
@@ -3584,6 +3593,15 @@ function boot(root: HTMLDivElement): void {
     cutTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
   }
 
+  function cutPinnedTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectPinnedRowKeyframesAtCurrentTime();
+    if (selectedCount === 0) {
+      showToast(`No pinned-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to cut.`, "bad");
+      return;
+    }
+    cutTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
+  }
+
   function pasteTimelineKeyframes(options: { insert?: boolean } = {}): void {
     if (!timelineClipboard || timelineClipboard.keyframes.length === 0) {
       showToast("Copy timeline keyframes before pasting.", "bad");
@@ -3656,10 +3674,28 @@ function boot(root: HTMLDivElement): void {
     duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
   }
 
+  function duplicatePinnedTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectPinnedRowKeyframesAtCurrentTime();
+    if (selectedCount === 0) {
+      showToast(`No pinned-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to duplicate.`, "bad");
+      return;
+    }
+    duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+  }
+
   function deleteVisibleTimelineTimeKeyframes(): void {
     const selectedCount = timelinePanel.selectVisibleRowKeyframesAtCurrentTime();
     if (selectedCount === 0) {
       showToast(`No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to delete.`, "bad");
+      return;
+    }
+    deleteTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
+  }
+
+  function deletePinnedTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectPinnedRowKeyframesAtCurrentTime();
+    if (selectedCount === 0) {
+      showToast(`No pinned-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to delete.`, "bad");
       return;
     }
     deleteTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
