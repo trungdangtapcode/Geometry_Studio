@@ -93,6 +93,41 @@ export function updateMotionPath(
   rig.group.visible = true;
 }
 
+export function updateCameraMotionPath(
+  rig: MotionPathRig,
+  timeline: SceneTimelineDocument,
+  camera: THREE.PerspectiveCamera,
+  fallbackTarget: THREE.Vector3,
+  visible: boolean
+): void {
+  if (!visible) {
+    clearMotionPath(rig);
+    return;
+  }
+
+  const soloActive = hasSoloTimelineTracks(timeline);
+  const track = activeTrackByKind(timeline.camera.tracks, "cameraPosition", soloActive);
+  if (!track || track.keyframes.length < 2) {
+    clearMotionPath(rig);
+    return;
+  }
+
+  const keyframes = [...track.keyframes].sort((left, right) => left.time - right.time);
+  const linePositions = sampleTrackPositions(track, keyframes);
+  const keyPositions = keyframes.flatMap((keyframe) => keyframe.value);
+
+  if (linePositions.length < 6) {
+    clearMotionPath(rig);
+    return;
+  }
+
+  replaceGeometryPositions(rig.line, linePositions);
+  replaceGeometryPositions(rig.keyPoints, keyPositions);
+  updateKeyLabels(rig.labels, keyframes);
+  updateCameraGhosts(rig.ghosts, keyframes, timeline.camera.tracks, soloActive, camera, fallbackTarget);
+  rig.group.visible = true;
+}
+
 export function clearMotionPath(rig: MotionPathRig): void {
   replaceGeometryPositions(rig.line, []);
   replaceGeometryPositions(rig.keyPoints, []);
@@ -143,6 +178,90 @@ function updatePoseGhosts(
     const ghost = createPoseGhost(basis, keyframe, rotationTrack, scaleTrack, entry);
     if (ghost) group.add(ghost);
   });
+}
+
+function updateCameraGhosts(
+  group: THREE.Group,
+  keyframes: TimelineKeyframeDocument[],
+  tracks: TimelineTrackDocument[],
+  soloActive: boolean,
+  camera: THREE.PerspectiveCamera,
+  fallbackTarget: THREE.Vector3
+): void {
+  clearPoseGhosts(group);
+  const targetTrack = activeTrackByKind(tracks, "cameraTarget", soloActive);
+  const lensTrack = activeTrackByKind(tracks, "cameraLens", soloActive);
+  visibleLabelKeyframes(keyframes).forEach((keyframe) => {
+    group.add(createCameraGhost(keyframe, targetTrack, lensTrack, camera, fallbackTarget));
+  });
+}
+
+function createCameraGhost(
+  keyframe: TimelineKeyframeDocument,
+  targetTrack: TimelineTrackDocument | undefined,
+  lensTrack: TimelineTrackDocument | undefined,
+  camera: THREE.PerspectiveCamera,
+  fallbackTarget: THREE.Vector3
+): THREE.LineSegments {
+  const position = new THREE.Vector3().fromArray(keyframe.value);
+  const targetValue = evaluatedTrackVector(targetTrack, keyframe.time, [fallbackTarget.x, fallbackTarget.y, fallbackTarget.z]);
+  const target = new THREE.Vector3().fromArray(targetValue);
+  if (position.distanceToSquared(target) < 0.0001) target.set(position.x, position.y, position.z - 1);
+
+  const lens = evaluatedTrackVector(lensTrack, keyframe.time, [camera.fov, camera.near, camera.far]);
+  const fov = clamp(lens[0], 5, 140);
+  const depth = 1.2;
+  const halfHeight = Math.tan(THREE.MathUtils.degToRad(fov) * 0.5) * depth;
+  const halfWidth = halfHeight * Math.max(camera.aspect, 0.2);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(cameraGhostVertices(halfWidth, halfHeight, depth), 3));
+  geometry.computeBoundingSphere();
+
+  const material = new THREE.LineBasicMaterial({
+    color: 0xf4ad2f,
+    transparent: true,
+    opacity: 0.58,
+    depthTest: false
+  });
+  const ghost = new THREE.LineSegments(geometry, material);
+  ghost.name = `Camera Motion Path Frustum ${formatTime(keyframe.time)}s`;
+  ghost.renderOrder = 49;
+  ghost.position.copy(position);
+  ghost.lookAt(target);
+  return ghost;
+}
+
+function cameraGhostVertices(halfWidth: number, halfHeight: number, depth: number): number[] {
+  const body = 0.16;
+  const nearZ = -depth;
+  const corners = [
+    [-halfWidth, halfHeight, nearZ],
+    [halfWidth, halfHeight, nearZ],
+    [halfWidth, -halfHeight, nearZ],
+    [-halfWidth, -halfHeight, nearZ]
+  ] as const;
+  const bodyCorners = [
+    [-body, body, 0],
+    [body, body, 0],
+    [body, -body, 0],
+    [-body, -body, 0]
+  ] as const;
+  const pairs = [
+    [bodyCorners[0], bodyCorners[1]],
+    [bodyCorners[1], bodyCorners[2]],
+    [bodyCorners[2], bodyCorners[3]],
+    [bodyCorners[3], bodyCorners[0]],
+    [[0, 0, 0], corners[0]],
+    [[0, 0, 0], corners[1]],
+    [[0, 0, 0], corners[2]],
+    [[0, 0, 0], corners[3]],
+    [corners[0], corners[1]],
+    [corners[1], corners[2]],
+    [corners[2], corners[3]],
+    [corners[3], corners[0]]
+  ] as const;
+  return pairs.flatMap(([start, end]) => [...start, ...end]);
 }
 
 function createPoseGhost(
@@ -206,6 +325,10 @@ function objectBoxBasis(entry: SceneEntry): { size: THREE.Vector3; centerOffset:
 }
 
 function activeTrack(tracks: TimelineTrackDocument[], kind: "rotation" | "scale", soloActive: boolean): TimelineTrackDocument | undefined {
+  return activeTrackByKind(tracks, kind, soloActive);
+}
+
+function activeTrackByKind(tracks: TimelineTrackDocument[], kind: TimelineTrackDocument["kind"], soloActive: boolean): TimelineTrackDocument | undefined {
   const track = tracks.find((candidate) => candidate.kind === kind);
   return track && isTimelineTrackRuntimeActive(track, soloActive) ? track : undefined;
 }

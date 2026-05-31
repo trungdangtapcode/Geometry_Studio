@@ -1491,6 +1491,38 @@ test("expands vector timeline tracks into channel rows", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("renders camera motion-path overlay when camera position is keyed", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-current-time")).toBeVisible();
+  await page.locator("#timeline-track-kind").selectOption("cameraPosition");
+  await page.locator("#timeline-add-keyframe").click();
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.camera-input[data-group="position"][data-prop="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "3.25";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+
+  await expect(page.locator("#motion-path-toggle")).toBeChecked();
+  if (!(await page.locator("#timeline-graph-panel").isVisible())) {
+    await page.locator("#timeline-graph-toggle").click();
+  }
+  await expect(page.locator("#timeline-graph-title")).toContainText("Camera | Camera Position");
+  await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
+
+  expect(errors).toEqual([]);
+});
+
 test("trims and splits selected object layers", async ({ page }) => {
   test.setTimeout(180_000);
   const errors: string[] = [];

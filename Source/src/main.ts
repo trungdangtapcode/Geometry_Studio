@@ -124,7 +124,7 @@ import { createLights, createStage, currentLight, setActiveLight, syncLightHelpe
 import { applyLightingPreset, lightingPresetById, lightRigMatchesPreset } from "./scene/lightingPresets";
 import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetById } from "./scene/materialPresets";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
-import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
+import { clearMotionPath, createMotionPathRig, updateCameraMotionPath, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
 import {
   KeyframeTimelinePanel,
@@ -1743,6 +1743,10 @@ function boot(root: HTMLDivElement): void {
   }
 
   function syncMotionPath(): void {
+    if (timelinePanel.selectedTrackKind() === "cameraPosition") {
+      updateCameraMotionPath(motionPathRig, sceneTimeline, camera, controls.target, motionPathVisible);
+      return;
+    }
     updateMotionPath(motionPathRig, sceneTimeline, selectedEntry(), motionPathVisible);
   }
 

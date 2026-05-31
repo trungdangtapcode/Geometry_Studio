@@ -243,6 +243,8 @@ PDF.
   for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
   position path rendering for visible spatial keyframe feedback.
+- [Camera Motion Paths](camera-motion-paths.md) documents viewport path and
+  frustum ghost feedback for camera-position keyframes.
 - [Preview Export](preview-export.md) documents WebM work-area recording and
   recording progress UI.
 - [UI Density Control](ui-density.md) documents the Blender-style compact
@@ -373,6 +375,7 @@ animation runtime where it fits:
 - Timeline zoom supports toolbar controls plus `+`, `-`, and `0` shortcuts for
   timeline scale changes without leaving the keyboard.
 - Selected objects with two or more Position keys show a viewport motion path,
+  and active Camera Position tracks show camera paths with frustum ghosts,
   turning hidden `A_t0 -> A_t1` data into visible spatial feedback.
 - Timeline markers add named cue points for animation beats and demo segments,
   with direct marker dragging plus `M`, `Shift+M`, `Alt+M`, and `Shift+Alt+M`
