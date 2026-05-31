@@ -105,6 +105,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - U: cycle timeline row visibility through Focus, Keyed, Pinned, and All Rows.
 - Command Palette: search Show Focus/Keyed/Pinned/All Timeline Rows to jump directly to a row filter.
 - Shift+P: pin or unpin the active timeline row.
+- Command Palette: search Pin Selected Transform Rows to pin Position, Rotation, and Scale for the selected object.
 - Toolbar pin button: pin every currently visible timeline row.
 - Toolbar pin-off button: clear all pinned timeline rows.
 - Set Pinned: key every pinned row at the playhead.

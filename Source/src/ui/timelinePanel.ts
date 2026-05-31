@@ -208,6 +208,7 @@ const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
 const LAYER_STRIP_COLLAPSED_STORAGE_KEY = "geometry-studio-timeline-layer-strip-collapsed";
 const COLLAPSED_GROUPS_STORAGE_KEY = "geometry-studio-timeline-collapsed-groups";
 const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "pinned", "all"];
+const TRANSFORM_KEYING_SET: TimelineTrackKind[] = ["position", "rotation", "scale"];
 const MIN_DOCK_HEIGHT = 190;
 const MIN_LABEL_WIDTH = 112;
 const MAX_LABEL_WIDTH = 340;
@@ -635,6 +636,20 @@ export class KeyframeTimelinePanel {
     });
     if (changed > 0) this.persistPinnedRows();
     return { changed, visible: rows.length, total: this.pinnedRows.size };
+  }
+
+  pinSelectedTransformRows(): { changed: number; total: number; targetName: string } | null {
+    const selected = this.lastEntries.find((entry) => entry.id === this.lastSelectedId);
+    if (!selected) return null;
+    let changed = 0;
+    TRANSFORM_KEYING_SET.forEach((kind) => {
+      const key = timelineRowKey(selected.id, kind);
+      if (this.pinnedRows.has(key)) return;
+      this.pinnedRows.add(key);
+      changed += 1;
+    });
+    if (changed > 0) this.persistPinnedRows();
+    return { changed, total: TRANSFORM_KEYING_SET.length, targetName: selected.name };
   }
 
   unpinVisibleRows(): { changed: number; visible: number; total: number } {

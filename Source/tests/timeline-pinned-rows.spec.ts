@@ -128,3 +128,31 @@ test("sets keys on pinned timeline rows as a keying set", async ({ page }) => {
   await expect(rotationRow).toHaveClass(/has-keyframes/);
   await expect(page.locator("#timeline-selection")).toContainText("1 keyframe");
 });
+
+test("pins selected transform rows as a reusable keying set", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("pin selected transform rows");
+  await page.keyboard.press("Enter");
+  await expect(page.locator('#timeline-row-filter option[value="pinned"]')).toHaveText("Pinned Rows (3)");
+
+  await page.locator("#timeline-row-filter").selectOption("pinned");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-track-kind="scale"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-track-kind="objectColor"]').first()).toBeHidden();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("set keys on pinned rows");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes");
+  await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/has-keyframes/);
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toHaveClass(/has-keyframes/);
+  await expect(page.locator('.timeline-track-label[data-track-kind="scale"]').first()).toHaveClass(/has-keyframes/);
+});

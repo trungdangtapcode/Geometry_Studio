@@ -244,10 +244,12 @@ If a key already exists at that time, `Set Key` updates it.
    about.
 2. Click the toolbar pin button, or search `Pin Visible Timeline Rows` in the
    command palette.
-3. Switch the row filter to `Pinned Rows`, or search `Show Pinned Timeline Rows`.
-4. Click `Set Pinned` when you want the pinned rows to act like a reusable
+3. For object transforms, search `Pin Selected Transform Rows` to pin Position,
+   Rotation, and Scale in one step.
+4. Switch the row filter to `Pinned Rows`, or search `Show Pinned Timeline Rows`.
+5. Click `Set Pinned` when you want the pinned rows to act like a reusable
    keying set.
-5. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
+6. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
    pinned set is no longer useful.
 
 ### Animate Camera

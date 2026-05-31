@@ -997,6 +997,10 @@ function boot(root: HTMLDivElement): void {
       command("timeline.set-pinned", "Set Keys On Pinned Rows", "Keyframes", setPinnedTimelineKeyframes, {
         keywords: ["pin", "pinned", "favorite", "keying set", "rows", "channels"]
       }),
+      command("timeline.pin-selected-transform", "Pin Selected Transform Rows", "Keyframes", pinSelectedTransformRows, {
+        keywords: ["pin", "pinned", "keying set", "position", "rotation", "scale", "trs"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.copy", "Copy Selected Keyframes", "Keyframes", () => copyTimelineKeyframes(), {
         shortcut: "Ctrl+C",
         disabled: () => !hasTimelineKeyframeTarget()
@@ -2808,6 +2812,18 @@ function boot(root: HTMLDivElement): void {
     showToast(result.changed
       ? `${result.changed} visible row${result.changed === 1 ? "" : "s"} pinned`
       : "Visible timeline rows are already pinned.",
+      "good");
+  }
+
+  function pinSelectedTransformRows(): void {
+    const result = timelinePanel.pinSelectedTransformRows();
+    if (!result) {
+      showToast("Select an object before pinning transform rows.", "bad");
+      return;
+    }
+    showToast(result.changed
+      ? `${result.targetName} Position, Rotation, and Scale pinned`
+      : `${result.targetName} transform rows are already pinned.`,
       "good");
   }
 
