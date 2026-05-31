@@ -83,6 +83,9 @@ PDF.
   documents one-command preview playback for selected keyframe spans.
 - [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and
   keyboard timeline zoom behavior.
+- [Timeline Wheel Navigation](timeline-wheel-navigation.md) documents
+  cursor-anchored wheel zoom and horizontal wheel/trackpad panning for dense
+  timeline editing.
 - [Timeline Selection And Pan Tools](timeline-selection-pan-tools.md) documents
   the explicit dope-sheet Selection and Hand/Pan tools backed by
   `animation-timeline-js` interaction modes.

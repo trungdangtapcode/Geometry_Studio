@@ -326,6 +326,7 @@ export class KeyframeTimelinePanel {
   private readonly handleLayerDragMove = (event: PointerEvent) => this.dragLayerRange(event);
   private readonly handleLayerDragEnd = (event: PointerEvent) => this.finishLayerRangeDrag(event);
   private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
+  private readonly handleTimelineWheel = (event: WheelEvent) => this.handleTimelineWheelNavigation(event);
   private readonly handleWindowResize = () => this.syncToolbarOverflow();
   private readonly handleLayerStretchModifierKey = (event: KeyboardEvent) => this.trackLayerStretchModifier(event);
   private readonly handleWindowBlur = () => { this.layerStretchModifierActive = false; };
@@ -1108,8 +1109,10 @@ export class KeyframeTimelinePanel {
     const scroller = this.canvasHost.querySelector<HTMLElement>(".scroll-container");
     if (!scroller || scroller === this.timelineScroller) return;
     this.timelineScroller?.removeEventListener("scroll", this.handleTimelineScroll);
+    this.timelineScroller?.removeEventListener("wheel", this.handleTimelineWheel, true);
     this.timelineScroller = scroller;
     this.timelineScroller.addEventListener("scroll", this.handleTimelineScroll);
+    this.timelineScroller.addEventListener("wheel", this.handleTimelineWheel, { capture: true, passive: false });
   }
 
   private syncLabelsFromCanvasScroll(): void {
@@ -1125,6 +1128,41 @@ export class KeyframeTimelinePanel {
     this.syncingScroll = true;
     this.timelineScroller.scrollTop = this.labels.scrollTop;
     this.syncingScroll = false;
+    this.syncOverviewViewport();
+  }
+
+  private handleTimelineWheelNavigation(event: WheelEvent): void {
+    const scroller = this.timelineScroller;
+    if (!scroller || this.root.classList.contains("collapsed")) return;
+    const horizontalDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const zoomGesture = event.altKey || event.ctrlKey || event.metaKey;
+    const horizontalPanGesture = event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY);
+    if (!zoomGesture && !horizontalPanGesture) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (zoomGesture) {
+      this.zoomTimelineAtClientX(event.deltaY <= 0 ? 1 : -1, event.clientX);
+      return;
+    }
+
+    this.timeline.scrollLeft = Math.max(0, this.timeline.scrollLeft + horizontalDelta);
+    this.timeline.redraw();
+    this.syncOverviewViewport();
+  }
+
+  private zoomTimelineAtClientX(direction: -1 | 1, clientX: number): void {
+    const scroller = this.timelineScroller;
+    if (!scroller) return;
+    const rect = scroller.getBoundingClientRect();
+    const anchorX = clamp(clientX - rect.left, 0, Math.max(scroller.clientWidth, 1));
+    const anchorTime = this.timeline.pxToVal(this.timeline.scrollLeft + anchorX);
+    const zoomFactor = direction > 0 ? 1 / 1.18 : 1.18;
+    const nextZoom = clamp(this.timeline.getZoom() * zoomFactor, 0.05, 8);
+    this.timeline.setZoom(nextZoom);
+    this.timeline.scrollLeft = Math.max(0, this.timeline.valToPx(anchorTime) - anchorX);
+    this.syncZoomState();
+    this.timeline.redraw();
     this.syncOverviewViewport();
   }
 

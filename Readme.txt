@@ -50,7 +50,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, OBJ+MTL, and STL import with centering, normalization, source-material preservation, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
-- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with X/Y/Z transform rows, inspector Position/Rotation/Scale key diamonds, Auto-Key initial-pose seeding, Focus/Keyed/All row filtering, Ctrl+F row search, Alt+P/R/S/C/T/M/U property reveal shortcuts, named timeline markers, minimizable overview/layer range strip, clickable track rows, per-row eye/solo/lock/diamond switches, Set TRS grouped transform keying, layer In/Out bars with move, trim, split, sequencing, and Alt-drag key time-stretch, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, playhead scrubbing, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview with key time labels and pose ghosts, and JSON save/load.
+- Keyframe Timeline: resizable bottom timeline dock for object, camera, light, material, visibility, and texture tracks with X/Y/Z transform rows, inspector Position/Rotation/Scale key diamonds, Auto-Key initial-pose seeding, Focus/Keyed/All row filtering, Ctrl+F row search, Alt+P/R/S/C/T/M/U property reveal shortcuts, named timeline markers, minimizable overview/layer range strip, clickable track rows, per-row eye/solo/lock/diamond switches, Set TRS grouped transform keying, layer In/Out bars with move, trim, split, sequencing, and Alt-drag key time-stretch, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Hold controls with curve preview, active-track value graph preview with draggable value key points, cursor-anchored wheel zoom, horizontal wheel/trackpad panning, playhead scrubbing, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview with key time labels and pose ghosts, and JSON save/load.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, position motion paths, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, rendering settings, display settings, materials, baked preset motion, and keyframe timelines.
 - Undo/Redo: restore changes after adding, deleting, editing, transforming, or changing render modes.
@@ -94,6 +94,8 @@ Using a local static server is recommended instead of double-clicking index.html
 - Ctrl+Shift+A: select active-track keyframes inside Work In/Out.
 - U: cycle timeline row visibility through Focus, Keyed, and All Rows.
 - Plus / Minus / 0: zoom the timeline in, zoom out, or fit the duration.
+- Alt+Mouse Wheel or Ctrl/Cmd+Mouse Wheel over the timeline: zoom around the cursor.
+- Shift+Mouse Wheel or horizontal trackpad wheel over the timeline: pan horizontally.
 - M: add or update a timeline marker at the current playhead time.
 - Shift+M / Alt+M: jump to the next or previous timeline marker.
 - Shift+Alt+M: delete the timeline marker at the current playhead time.
@@ -121,6 +123,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Confirm Position, Rotation, and Scale appear as X/Y/Z rows in the timeline for easier transform inspection.
 - Apply Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation from the timeline toolbar and confirm the curve preview updates.
 - Toggle Graph in the timeline and confirm a keyed Position / Rotation / Scale track draws value curves while scrubbing. Ctrl/Cmd-click graph keys to toggle selection, Shift-click to select a key range, drag a graph marquee to select multiple keys, drag one selected key to move selected keys together, Alt-drag one selected key to stretch selected-key timing, drag horizontally and vertically to retime or edit channel values, hold Shift while dragging to constrain direction, then Undo to restore it.
+- Use Alt+Mouse Wheel over the timeline to zoom around the cursor, then Shift+Mouse Wheel or horizontal trackpad wheel to pan across dense keys.
 - Add two Position keys for the selected object and confirm the viewport draws a motion path between them.
 - Nudge a keyframe left or right by one frame from the toolbar.
 - Click timeline row labels to switch active object, camera, and light tracks.
