@@ -11,6 +11,8 @@ and edited directly without dragging.
 - `Key Time` retimes one active keyframe with snapping and collision checks.
   When multiple keyframes are selected, it edits the earliest selected key as
   the anchor and shifts the selected block while preserving relative spacing.
+- `End` is enabled for selected keyframes at two or more distinct times. It
+  time-stretches the selected block so the latest selected key lands there.
 - `Span` is enabled for selected keyframes at two or more distinct times. It
   time-stretches the selected block from the earliest selected key.
 - `X/Y/Z`, `R/G/B`, `FOV/Near/Far`, `U/V`, or scalar `Value` fields are shown

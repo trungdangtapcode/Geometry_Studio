@@ -317,6 +317,7 @@ export class KeyframeTimelinePanel {
   private readonly timecodeLabel = query<HTMLSpanElement>("#timeline-timecode");
   private readonly keyframeLabel = query<HTMLElement>("#timeline-key-label");
   private readonly keyframeTimeInput = query<HTMLInputElement>("#timeline-key-time");
+  private readonly keyframeEndInput = query<HTMLInputElement>("#timeline-key-end");
   private readonly keyframeSpanInput = query<HTMLInputElement>("#timeline-key-span");
   private readonly keyframeValueInputs = {
     x: query<HTMLInputElement>("#timeline-key-x"),
@@ -1127,6 +1128,11 @@ export class KeyframeTimelinePanel {
     });
     this.keyframeTimeInput.addEventListener("change", () => {
       this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { time: Number(this.keyframeTimeInput.value) });
+    });
+    this.keyframeEndInput.addEventListener("change", () => {
+      const start = Number(this.keyframeTimeInput.value);
+      const end = Number(this.keyframeEndInput.value);
+      this.callbacks.onStretchKeyframesToSpan([...this.selectedKeyframeIds], end - start);
     });
     this.keyframeSpanInput.addEventListener("change", () => {
       this.callbacks.onStretchKeyframesToSpan([...this.selectedKeyframeIds], Number(this.keyframeSpanInput.value));
@@ -2922,8 +2928,16 @@ export class KeyframeTimelinePanel {
       : "Selected keyframe time";
 
     const sourceTimes = sources.map((source) => source.keyframe.time);
-    const sourceSpan = sourceTimes.length > 1 ? Math.max(...sourceTimes) - Math.min(...sourceTimes) : 0;
+    const sourceStart = sourceTimes.length ? Math.min(...sourceTimes) : 0;
+    const sourceEnd = sourceTimes.length ? Math.max(...sourceTimes) : 0;
+    const sourceSpan = sourceTimes.length > 1 ? sourceEnd - sourceStart : 0;
     const spanEditable = sources.length > 1 && sourceSpan > 0.001;
+    this.keyframeEndInput.disabled = !spanEditable;
+    this.keyframeEndInput.value = spanEditable ? formatNumber(sourceEnd) : "";
+    this.keyframeEndInput.placeholder = sources.length > 1 ? "End" : "";
+    this.keyframeEndInput.title = spanEditable
+      ? "Stretch selected keyframe timing by setting the last selected key time"
+      : "Select keyframes at two or more different times before editing end time";
     this.keyframeSpanInput.disabled = !spanEditable;
     this.keyframeSpanInput.value = spanEditable ? formatNumber(sourceSpan) : "";
     this.keyframeSpanInput.placeholder = sources.length > 1 ? "Column" : "";

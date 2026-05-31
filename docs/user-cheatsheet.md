@@ -274,7 +274,9 @@ If a key already exists at that time, `Set Key` updates it.
 2. Edit `Key Time` in the keyframe editor.
 3. The earliest selected key moves to that time, and the rest of the selected
    keys keep their relative spacing.
-4. Edit `Span` to stretch or compress the selected block from the earliest key.
+4. Edit `End` to stretch the selected block so the latest selected key lands at
+   that time.
+5. Edit `Span` to stretch or compress the selected block from the earliest key.
 
 ### Apply A Motion Preset
 
