@@ -2700,6 +2700,31 @@ test("main transform key button records full position rotation and scale poses",
   expect(errors).toEqual([]);
 });
 
+test("deselects selected timeline keyframes with Escape", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes selected");
+
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#timeline-selection")).toContainText("No keyframe selected");
+  await expect(page.locator("#timeline-key-label")).toContainText("No keyframe selected");
+  await expect(page.locator("#selection-summary")).toContainText("Cube");
+  expect(errors).toEqual([]);
+});
+
 test("records grouped position rotation and scale keyframes", async ({ page }) => {
   test.setTimeout(480_000);
   const errors: string[] = [];

@@ -210,6 +210,7 @@ Position, Rotation, and Scale recorded together.
 | `Ctrl+Alt+A` | Select visible-row keyframes |
 | `Ctrl+Alt+K` | Select visible-row keys at playhead |
 | Command Palette: `select visible before` / `select visible after` | Select visible-row keys before or after playhead |
+| `Escape` | Deselect selected timeline keyframes |
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | Copy, cut, paste keyframes |
 | `Ctrl+D` | Duplicate selected keyframes |
 | `Delete` / `Backspace` | Delete selected keys, otherwise selected object |

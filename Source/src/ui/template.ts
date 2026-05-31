@@ -702,8 +702,9 @@ export function studioTemplate(): string {
             </section>
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Keyframing</h3>
-              <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
+              <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on non-transform tracks. Use row diamonds for one transform row.</p></div>
               <div class="quick-help-item"><strong>Set Pose</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
+              <div class="quick-help-item"><strong>Deselect Keys</strong><span>Escape</span><p>Clear selected timeline keyframes without changing object selection or playback time.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
               <div class="quick-help-item"><strong>Pose Keys</strong><span>Auto-Key option</span><p>With Auto-Key enabled, record Position, Rotation, and Scale together whenever transform values change.</p></div>
               <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast transform setup, then key, select, fit, or preview the pinned set.</p></div>

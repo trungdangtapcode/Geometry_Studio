@@ -99,6 +99,9 @@ PDF.
   work-area, and layer-boundary snap targets for timeline drags.
 - [Timeline Selected Key Boundaries](timeline-selected-key-boundaries.md)
   documents first/last selected keyframe navigation.
+- [Timeline Keyframe Deselect](timeline-keyframe-deselect.md) documents the
+  `Escape` workflow for clearing selected timeline keyframes without changing
+  scene selection.
 - [Timeline Selected Range Preview](timeline-selected-range-preview.md)
   documents one-command preview playback for selected keyframe spans.
 - [Timeline Zoom Controls](timeline-zoom-controls.md) documents toolbar and

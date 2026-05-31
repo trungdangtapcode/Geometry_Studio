@@ -1164,6 +1164,11 @@ function boot(root: HTMLDivElement): void {
         keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
       }),
       command("timeline.select-time", "Select Visible Row Keys At Playhead", "Selection", selectVisibleTimelineTimeKeyframes, { shortcut: "Ctrl+Alt+K" }),
+      command("timeline.deselect", "Deselect Timeline Keyframes", "Selection", deselectTimelineKeyframes, {
+        shortcut: "Escape",
+        keywords: ["clear selection", "unselect", "selected keys", "after effects", "ae"],
+        disabled: () => !hasSelectedTimelineKeyframes()
+      }),
 
       command("timeline.ease-linear", "Apply Linear Interpolation", "Interpolation", () => setTimelineInterpolation(timelinePanel.selectedKeyframeIdsList(), "linear"), {
         shortcut: "Shift+F9",
@@ -1330,6 +1335,10 @@ function boot(root: HTMLDivElement): void {
 
   function hasTimelineKeyframeTarget(): boolean {
     return resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList()).length > 0;
+  }
+
+  function hasSelectedTimelineKeyframes(): boolean {
+    return timelinePanel.selectedKeyframeIdsList().length > 0;
   }
 
   function hasClearableTimelineTrack(): boolean {
@@ -2045,6 +2054,11 @@ function boot(root: HTMLDivElement): void {
       return;
     }
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "escape" && hasSelectedTimelineKeyframes()) {
+      event.preventDefault();
+      deselectTimelineKeyframes();
+      return;
+    }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && (key === "?" || (event.shiftKey && code === "slash"))) {
       event.preventDefault();
       quickHelp.open();
@@ -3187,6 +3201,14 @@ function boot(root: HTMLDivElement): void {
       ? `${selectedCount} pinned-row keyframe${selectedCount === 1 ? "" : "s"} selected at ${formatNumber(sceneTimeline.currentTime)}s`
       : `No pinned-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s.`,
       selectedCount ? "good" : "bad");
+  }
+
+  function deselectTimelineKeyframes(): void {
+    const clearedCount = timelinePanel.clearSelectedKeyframes();
+    showToast(clearedCount
+      ? `${clearedCount} keyframe${clearedCount === 1 ? "" : "s"} deselected`
+      : "No selected keyframes to deselect.",
+      clearedCount ? "good" : "bad");
   }
 
   function addTimelineKeyframe(kind: TimelineTrackKind): void {

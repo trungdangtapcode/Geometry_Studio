@@ -540,6 +540,19 @@ export class KeyframeTimelinePanel {
     return [...this.selectedKeyframeIds];
   }
 
+  clearSelectedKeyframes(): number {
+    const previousCount = this.selectedKeyframeIds.size;
+    if (previousCount === 0) return 0;
+    this.selectedKeyframeIds.clear();
+    this.selectedAxis = null;
+    if (this.lastTimelineDocument) {
+      this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
+      this.renderGraph(this.lastTimelineDocument, this.lastSelectedId);
+      this.refreshCanvas();
+    }
+    return previousCount;
+  }
+
   selectKeyframes(keyframeIds: string[]): void {
     this.selectedKeyframeIds = new Set(keyframeIds);
     if (!this.lastTimelineDocument) return;
