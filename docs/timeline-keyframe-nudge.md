@@ -2,7 +2,7 @@
 
 ## Status
 
-Frame-step keyframe nudging is implemented for timeline schema v9. It does not
+Frame-step keyframe nudging is implemented for timeline schema v10. It does not
 add new saved fields; nudging edits ordinary keyframe `time` values.
 
 ## User-Facing Behavior

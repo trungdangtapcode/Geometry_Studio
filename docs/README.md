@@ -31,6 +31,9 @@ PDF.
   loading and imported source-material preservation.
 - [Post-Processing Toggles](post-processing.md) documents SSAO, Bloom,
   Vignette, FXAA, Depth of Field, and the EffectComposer pass chain.
+- [Stylized Toon Shading](stylized-toon-shading.md) documents the research and
+  implementation plan for Anime Toon cel shading, ink outlines, readable
+  imported model materials, and Comic Halftone post-processing.
 - [Depth Of Field Post-Processing](depth-of-field.md) documents the Three.js
   `BokehPass` integration, focus/aperture controls, scene JSON persistence, and
   why the effect remains real-time WebGL raster rendering.
@@ -38,6 +41,9 @@ PDF.
   anti-aliasing pass decision and scene JSON persistence.
 - [SSAO Rendering](ssao-rendering.md) documents optional screen-space ambient
   occlusion for contact shading in the real-time viewport.
+- [Path-Traced Still Preview](path-traced-preview.md) documents the optional
+  `three-gpu-pathtracer` integration for progressive high-quality still
+  screenshots.
 - [AE-Style Timeline Integration Research](ae-timeline-integration-research.md)
   records the no-reinvention decision for the next timeline phase: keep
   `animation-timeline-js` as the dope-sheet component and integrate proven

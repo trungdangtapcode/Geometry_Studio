@@ -40,7 +40,10 @@ export function studioTemplate(): string {
         <section class="keyframe-dock" id="keyframe-dock" aria-label="Keyframe timeline">
           <button class="timeline-resize-handle" id="timeline-resize-handle" type="button" aria-label="Resize timeline height" title="Drag to resize timeline height"></button>
           <header class="timeline-header">
-            <button class="icon-command" id="timeline-collapse" type="button" aria-label="Collapse timeline" title="Collapse timeline"><span data-icon="PanelBottomClose"></span></button>
+            <div class="timeline-header-actions">
+              <button class="icon-command" id="timeline-collapse" type="button" aria-label="Collapse timeline" title="Collapse timeline"><span data-icon="PanelBottomClose"></span></button>
+              <button class="icon-command" id="timeline-layer-strip-toggle" type="button" aria-label="Hide overview and object layer ranges" aria-pressed="true" title="Hide overview and object layer ranges"><span data-icon="PanelTopClose"></span></button>
+            </div>
             <div class="timeline-title">
               <strong>Keyframe Timeline</strong>
               <span id="timeline-selection">No keyframe selected</span>
@@ -69,6 +72,7 @@ export function studioTemplate(): string {
                   <option value="objectOpacity">Opacity</option>
                   <option value="objectRoughness">Roughness</option>
                   <option value="objectMetalness">Metalness</option>
+                  <option value="objectTextureSource">Texture Source</option>
                   <option value="objectTextureRepeat">Texture Repeat</option>
                   <option value="objectTextureOffset">Texture Offset</option>
                   <option value="objectTextureRotation">Texture Rotation</option>
@@ -347,6 +351,7 @@ export function studioTemplate(): string {
                 <option value="phong">Phong</option>
                 <option value="lambert">Lambert</option>
                 <option value="normal">Normal</option>
+                <option value="toon">Anime Toon</option>
               </select>
             </label>
             <label>
@@ -376,6 +381,7 @@ export function studioTemplate(): string {
             <button class="mini-button material-preset" type="button" data-material-preset="plastic">Plastic</button>
             <button class="mini-button material-preset" type="button" data-material-preset="glass">Glass</button>
             <button class="mini-button material-preset" type="button" data-material-preset="clay">Clay</button>
+            <button class="mini-button material-preset" type="button" data-material-preset="anime">Anime Toon</button>
             <button class="mini-button material-preset" type="button" data-material-preset="basic">Basic</button>
             <button class="mini-button material-preset" type="button" data-material-preset="lambert">Lambert</button>
             <button class="mini-button material-preset" type="button" data-material-preset="phong">Phong</button>
@@ -504,6 +510,19 @@ export function studioTemplate(): string {
                 <option value="cool">Cool Lab</option>
               </select>
             </label>
+            <label>
+              <span>Trace Samples</span>
+              <select id="path-trace-samples" aria-label="Path trace sample count">
+                <option value="16">16</option>
+                <option value="32" selected>32</option>
+                <option value="64">64</option>
+                <option value="128">128</option>
+              </select>
+            </label>
+            <button class="mini-button" id="path-trace-button" type="button" title="Render an optional path-traced still preview with three-gpu-pathtracer">
+              <span data-icon="Sparkles"></span><span>Trace Still</span>
+            </button>
+            <div class="render-summary" id="path-trace-status">Path tracing ready</div>
             <label class="toggle-line"><input id="post-fxaa-toggle" type="checkbox" /><span>FXAA</span></label>
             <label class="toggle-line"><input id="post-dof-toggle" type="checkbox" /><span>Depth of Field</span></label>
             <label>
@@ -548,6 +567,15 @@ export function studioTemplate(): string {
             <label>
               <span>Vignette Dark</span>
               <input id="post-vignette-darkness" type="range" min="0" max="1.5" step="0.05" value="0.75" />
+            </label>
+            <label class="toggle-line"><input id="post-halftone-toggle" type="checkbox" /><span>Comic Halftone</span></label>
+            <label>
+              <span>Halftone Size</span>
+              <input id="post-halftone-radius" type="range" min="1" max="12" step="0.25" value="3" />
+            </label>
+            <label>
+              <span>Halftone Scatter</span>
+              <input id="post-halftone-scatter" type="range" min="0" max="2" step="0.05" value="0.35" />
             </label>
           </div>
         </section>

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
+import { HalftonePass } from "three/addons/postprocessing/HalftonePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
@@ -21,6 +22,7 @@ export interface RenderPipeline {
   bokehPass: BokehPass;
   bloomPass: UnrealBloomPass;
   vignettePass: ShaderPass;
+  halftonePass: HalftonePass;
   outlinePass: OutlinePass;
   outputPass: OutputPass;
   resize: () => void;
@@ -75,6 +77,18 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   vignettePass.uniforms.darkness.value = DEFAULT_POST_PROCESSING_SETTINGS.vignetteDarkness;
   composer.addPass(vignettePass);
 
+  const halftonePass = new HalftonePass({
+    shape: 1,
+    radius: DEFAULT_POST_PROCESSING_SETTINGS.halftoneRadius,
+    scatter: DEFAULT_POST_PROCESSING_SETTINGS.halftoneScatter,
+    blending: 1,
+    blendingMode: 1,
+    greyscale: false
+  });
+  halftonePass.setSize(canvas.clientWidth, canvas.clientHeight);
+  halftonePass.enabled = DEFAULT_POST_PROCESSING_SETTINGS.halftone;
+  composer.addPass(halftonePass);
+
   const outlinePass = new OutlinePass(new THREE.Vector2(canvas.clientWidth, canvas.clientHeight), scene, camera);
   outlinePass.edgeStrength = 3;
   outlinePass.edgeGlow = 0.45;
@@ -89,7 +103,7 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
   composer.addPass(outputPass);
 
   let pixelBudget = DEFAULT_PIXEL_BUDGET;
-  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, fxaaPass, ssaoPass, bokehPass, bloomPass, camera, pixelBudget);
+  const resize = () => resizeRendererToDisplaySize(renderer, composer, outlinePass, fxaaPass, ssaoPass, bokehPass, bloomPass, halftonePass, camera, pixelBudget);
   const setPixelBudget = (maxPixelCount: number) => {
     const nextBudget = Number.isFinite(maxPixelCount) && maxPixelCount > 0 ? Math.floor(maxPixelCount) : DEFAULT_PIXEL_BUDGET;
     if (nextBudget === pixelBudget) return;
@@ -107,6 +121,7 @@ export function createRenderPipeline(canvas: HTMLCanvasElement, scene: THREE.Sce
     bokehPass,
     bloomPass,
     vignettePass,
+    halftonePass,
     outlinePass,
     outputPass,
     resize,
@@ -122,6 +137,7 @@ export function resizeRendererToDisplaySize(
   ssaoPass: SSAOPass,
   bokehPass: BokehPass,
   bloomPass: UnrealBloomPass,
+  halftonePass: HalftonePass,
   camera: THREE.PerspectiveCamera,
   maxPixelCount = DEFAULT_PIXEL_BUDGET
 ): void {
@@ -145,6 +161,7 @@ export function resizeRendererToDisplaySize(
     resizeSsaoPass(ssaoPass, width, height);
     bokehPass.setSize(width, height);
     resizeBloomPass(bloomPass, width, height);
+    halftonePass.setSize(width, height);
   }
 
   const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);

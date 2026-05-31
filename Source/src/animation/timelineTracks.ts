@@ -1,5 +1,6 @@
 import { MathUtils } from "three";
 import type { AnimationMode, LightKind, SceneEntry, TimelineTrackKind } from "../editor/types";
+import { textureSourceValue } from "./textureSourceTrack";
 
 export type CameraTimelineTrackKind = "cameraPosition" | "cameraTarget" | "cameraLens";
 export type ObjectTransformTrackKind = "position" | "rotation" | "scale";
@@ -8,6 +9,7 @@ export type ObjectPropertyTrackKind =
   | "objectOpacity"
   | "objectRoughness"
   | "objectMetalness"
+  | "objectTextureSource"
   | "objectTextureRepeat"
   | "objectTextureOffset"
   | "objectTextureRotation"
@@ -38,6 +40,7 @@ export function timelineValueForEntry(entry: SceneEntry, kind: TimelineTrackKind
   if (kind === "objectOpacity") return [entry.opacity, 0, 0];
   if (kind === "objectRoughness") return [entry.roughness, 0, 0];
   if (kind === "objectMetalness") return [entry.metalness, 0, 0];
+  if (kind === "objectTextureSource") return textureSourceValue(entry.textureName);
   if (kind === "objectTextureRepeat") return [entry.textureRepeat.x, entry.textureRepeat.y, 0];
   if (kind === "objectTextureOffset") return [entry.textureOffset.x, entry.textureOffset.y, 0];
   if (kind === "objectTextureRotation") return [entry.textureRotation, 0, 0];
@@ -88,6 +91,7 @@ export function isObjectPropertyTrackKind(kind: TimelineTrackKind): kind is Obje
     kind === "objectOpacity" ||
     kind === "objectRoughness" ||
     kind === "objectMetalness" ||
+    kind === "objectTextureSource" ||
     kind === "objectTextureRepeat" ||
     kind === "objectTextureOffset" ||
     kind === "objectTextureRotation" ||
@@ -122,6 +126,7 @@ export function objectTrackLabel(kind: TimelineTrackKind): string {
   if (kind === "objectOpacity") return "Object opacity";
   if (kind === "objectRoughness") return "Object roughness";
   if (kind === "objectMetalness") return "Object metalness";
+  if (kind === "objectTextureSource") return "Texture source";
   if (kind === "objectTextureRepeat") return "Texture repeat";
   if (kind === "objectTextureOffset") return "Texture offset";
   if (kind === "objectTextureRotation") return "Texture rotation";

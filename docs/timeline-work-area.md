@@ -3,7 +3,7 @@
 ## Status
 
 Timeline Work In/Out controls were added in schema v8 and remain supported in
-current schema v9. This adds an
+current schema v10. This adds an
 After Effects and Premiere style work area around the existing timeline:
 
 - `Work In` defines where playback starts.
@@ -24,14 +24,17 @@ After Effects and Premiere style work area around the existing timeline:
 - The timeline header shows a draggable work-area band. Drag either edge to
   trim Work In/Out, or drag the body to move the range without changing its
   length.
+- The timeline header has a dedicated range-strip toggle that hides only the
+  overview navigator and object layer bars. The main keyframe rows stay visible,
+  which keeps the timeline usable on short screens.
 
 ## Data Model
 
-Timeline schema v8 added two scalar fields, still present in schema v9:
+Timeline schema v8 added two scalar fields, still present in schema v10:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 9;
+  version: 10;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -91,4 +94,6 @@ Recommended manual check:
    are selected.
 9. Press `Preview Sel` and confirm playback starts from the selected span.
 10. Press Play with Loop enabled and confirm playback wraps at `4.5`.
-11. Save JSON and verify `timeline.version` is `9`.
+11. Use the range-strip toggle and confirm the overview/layer bars hide while
+    the keyframe rows remain usable.
+12. Save JSON and verify `timeline.version` is `10`.

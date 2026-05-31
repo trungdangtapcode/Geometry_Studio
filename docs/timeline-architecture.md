@@ -53,11 +53,11 @@ version 2 scene files do not contain Rendering Lab data; version 3 scene files
 do not contain environment lighting data; version 4 scene files do not contain
 source-material preservation data; version 5 scene files do not contain
 post-processing settings. Loading them creates default empty timeline data and
-default renderer settings. The current timeline schema is version 9:
+default renderer settings. The current timeline schema is version 10:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 9;
+  version: 10;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -86,6 +86,7 @@ type TimelineTrackKind =
   | "objectOpacity"
   | "objectRoughness"
   | "objectMetalness"
+  | "objectTextureSource"
   | "objectTextureRepeat"
   | "objectTextureOffset"
   | "objectTextureRotation"

@@ -7,6 +7,7 @@ import {
   type TimelineRow
 } from "animation-timeline-js";
 import { evaluateTimelineTrack } from "../animation/interpolation";
+import { textureSourceLabelFromValue } from "../animation/textureSourceTrack";
 import { objectLayerRange } from "../animation/timelineLayers";
 import type {
   SceneEntry,
@@ -193,6 +194,7 @@ const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
 const ROW_SEARCH_STORAGE_KEY = "geometry-studio-timeline-row-search";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
 const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
+const LAYER_STRIP_COLLAPSED_STORAGE_KEY = "geometry-studio-timeline-layer-strip-collapsed";
 const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
 const MIN_DOCK_HEIGHT = 190;
 const DEFAULT_ROW_HEIGHT = 30;
@@ -218,6 +220,7 @@ export class KeyframeTimelinePanel {
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
   private readonly setVisibleButton = query<HTMLButtonElement>("#timeline-set-visible");
+  private readonly layerStripToggleButton = query<HTMLButtonElement>("#timeline-layer-strip-toggle");
   private readonly copyTimeButton = query<HTMLButtonElement>("#timeline-copy-time");
   private readonly cutTimeButton = query<HTMLButtonElement>("#timeline-cut-time");
   private readonly pasteButton = query<HTMLButtonElement>("#timeline-paste-keyframes");
@@ -295,6 +298,7 @@ export class KeyframeTimelinePanel {
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
   private rowSearchText = loadTimelineRowSearch();
   private followPlayhead = loadTimelineFollowPlayhead();
+  private layerStripCollapsed = loadLayerStripCollapsed();
   private dopeSheetTool: TimelineDopeSheetTool = "selection";
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
@@ -318,6 +322,7 @@ export class KeyframeTimelinePanel {
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
     this.applyStoredDockHeight();
+    this.applyLayerStripCollapsed(this.layerStripCollapsed, false);
     this.playheadController = new TimelinePlayheadController({
       markerStrip: this.markerStrip,
       getTimelineDocument: () => this.lastTimelineDocument,
@@ -690,6 +695,9 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-select-layer-keys").addEventListener("click", () => this.callbacks.onSelectLayerKeyframes());
     query<HTMLButtonElement>("#timeline-fit-layer-keys").addEventListener("click", () => this.callbacks.onFitLayerKeyframes());
     query<HTMLButtonElement>("#timeline-sequence-layers").addEventListener("click", () => this.callbacks.onSequenceLayers());
+    this.layerStripToggleButton.addEventListener("click", () => {
+      this.applyLayerStripCollapsed(!this.layerStripCollapsed, true);
+    });
     query<HTMLButtonElement>("#timeline-delete-keyframe").addEventListener("click", () => {
       this.callbacks.onDeleteKeyframes([...this.selectedKeyframeIds]);
     });
@@ -979,6 +987,21 @@ export class KeyframeTimelinePanel {
   private applyStoredDockHeight(): void {
     const height = loadTimelineDockHeight();
     if (height) this.root.style.setProperty("--timeline-dock-height", `${clamp(height, MIN_DOCK_HEIGHT, this.maxDockHeight())}px`);
+  }
+
+  private applyLayerStripCollapsed(collapsed: boolean, persist: boolean): void {
+    this.layerStripCollapsed = collapsed;
+    this.root.classList.toggle("layer-strip-collapsed", collapsed);
+    this.layerStripToggleButton.setAttribute("aria-pressed", String(!collapsed));
+    this.layerStripToggleButton.setAttribute("aria-label", collapsed ? "Show overview and object layer ranges" : "Hide overview and object layer ranges");
+    this.layerStripToggleButton.title = collapsed
+      ? "Show overview and object layer ranges"
+      : "Hide overview and object layer ranges";
+    this.layerStripToggleButton.innerHTML = `<span data-icon="${collapsed ? "PanelTopOpen" : "PanelTopClose"}"></span>`;
+    hydrateIcons(this.layerStripToggleButton);
+    if (persist) storeLayerStripCollapsed(collapsed);
+    if (this.lastTimelineDocument) this.renderLayerStrip(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId);
+    window.setTimeout(() => this.refreshCanvas(), 0);
   }
 
   private maxDockHeight(): number {
@@ -1278,6 +1301,11 @@ export class KeyframeTimelinePanel {
   }
 
   private renderLayerStrip(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string): void {
+    if (this.layerStripCollapsed) {
+      this.root.style.setProperty("--timeline-layer-strip-height", "0px");
+      this.layerStrip.innerHTML = "";
+      return;
+    }
     const rowHeight = Math.max(18, this.timelineRowHeight());
     const maxVisibleRows = 5;
     const visibleRows = Math.max(1, Math.min(entries.length, maxVisibleRows));
@@ -2321,6 +2349,23 @@ function storeTimelineFollowPlayhead(enabled: boolean): void {
   }
 }
 
+function loadLayerStripCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(LAYER_STRIP_COLLAPSED_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function storeLayerStripCollapsed(collapsed: boolean): void {
+  try {
+    if (collapsed) window.localStorage.setItem(LAYER_STRIP_COLLAPSED_STORAGE_KEY, "true");
+    else window.localStorage.removeItem(LAYER_STRIP_COLLAPSED_STORAGE_KEY);
+  } catch {
+    // Layer-strip visibility is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
   return value === "keyed" || value === "all" || value === "focus" ? value : "focus";
 }
@@ -2398,6 +2443,7 @@ function roundTimelineTime(time: number): number {
 function formatRowValue(kind: TimelineTrackKind, value: [number, number, number], axis?: TimelineAxis): string {
   if (axis) return formatNumber(value[AXIS_INDEX[axis]]);
   if (kind === "objectColor" || kind.endsWith("Color")) return formatColorValue(value);
+  if (kind === "objectTextureSource") return textureSourceLabelFromValue(value[0]);
   if (kind === "objectVisibility") return value[0] >= 0.5 ? "On" : "Off";
   if (kind === "objectTextureRotation") return `${formatNumber(radToDeg(value[0]))} deg`;
   const axisCount = trackAxisConfig(kind).enabledAxes;

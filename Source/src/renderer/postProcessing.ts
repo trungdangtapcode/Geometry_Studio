@@ -16,7 +16,10 @@ export const DEFAULT_POST_PROCESSING_SETTINGS: PostProcessingSettings = {
   ssaoMinDistance: 0.005,
   ssaoMaxDistance: 0.12,
   vignette: false,
-  vignetteDarkness: 0.75
+  vignetteDarkness: 0.75,
+  halftone: false,
+  halftoneRadius: 3,
+  halftoneScatter: 0.35
 };
 
 export function normalizePostProcessingSettings(value: unknown): PostProcessingSettings {
@@ -36,7 +39,10 @@ export function normalizePostProcessingSettings(value: unknown): PostProcessingS
     ssaoMinDistance: finiteNumber(source.ssaoMinDistance, DEFAULT_POST_PROCESSING_SETTINGS.ssaoMinDistance, 0, 0.1),
     ssaoMaxDistance: finiteNumber(source.ssaoMaxDistance, DEFAULT_POST_PROCESSING_SETTINGS.ssaoMaxDistance, 0.01, 1),
     vignette: typeof source.vignette === "boolean" ? source.vignette : DEFAULT_POST_PROCESSING_SETTINGS.vignette,
-    vignetteDarkness: finiteNumber(source.vignetteDarkness, DEFAULT_POST_PROCESSING_SETTINGS.vignetteDarkness, 0, 1.5)
+    vignetteDarkness: finiteNumber(source.vignetteDarkness, DEFAULT_POST_PROCESSING_SETTINGS.vignetteDarkness, 0, 1.5),
+    halftone: typeof source.halftone === "boolean" ? source.halftone : DEFAULT_POST_PROCESSING_SETTINGS.halftone,
+    halftoneRadius: finiteNumber(source.halftoneRadius, DEFAULT_POST_PROCESSING_SETTINGS.halftoneRadius, 1, 12),
+    halftoneScatter: finiteNumber(source.halftoneScatter, DEFAULT_POST_PROCESSING_SETTINGS.halftoneScatter, 0, 2)
   };
 }
 
@@ -63,6 +69,10 @@ export function applyPostProcessingSettings(pipeline: RenderPipeline, settings: 
   pipeline.vignettePass.enabled = settings.vignette;
   pipeline.vignettePass.uniforms.offset.value = 1.05;
   pipeline.vignettePass.uniforms.darkness.value = settings.vignetteDarkness;
+
+  pipeline.halftonePass.enabled = settings.halftone;
+  pipeline.halftonePass.uniforms.radius.value = settings.halftoneRadius;
+  pipeline.halftonePass.uniforms.scatter.value = settings.halftoneScatter;
 }
 
 export function postProcessingLabel(settings: PostProcessingSettings): string {
@@ -71,14 +81,15 @@ export function postProcessingLabel(settings: PostProcessingSettings): string {
     settings.dof ? "DOF On" : "",
     settings.ssao ? "SSAO On" : "",
     settings.bloom ? "Bloom On" : "",
-    settings.vignette ? "Vignette On" : ""
+    settings.vignette ? "Vignette On" : "",
+    settings.halftone ? "Comic Halftone On" : ""
   ].filter(Boolean);
   return active.length > 0 ? active.join(" + ") : "Post Off";
 }
 
 function postProcessingPixelBudget(settings: PostProcessingSettings): number {
   if (settings.dof || settings.ssao) return 640 * 360;
-  if (settings.bloom) return 1280 * 720;
+  if (settings.bloom || settings.halftone) return 1280 * 720;
   return 2560 * 1440;
 }
 

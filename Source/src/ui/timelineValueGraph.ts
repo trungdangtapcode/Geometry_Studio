@@ -491,6 +491,7 @@ export function trackAxisConfig(kind: TimelineTrackKind): { labels: [string, str
     kind === "objectOpacity" ||
     kind === "objectRoughness" ||
     kind === "objectMetalness" ||
+    kind === "objectTextureSource" ||
     kind === "objectTextureRotation" ||
     kind === "objectVisibility" ||
     kind.endsWith("Intensity")
@@ -659,7 +660,7 @@ function parseTimelineAxis(value: string | undefined): TimelineAxis | null {
 }
 
 function isGraphEditableTrack(kind: TimelineTrackKind): boolean {
-  return kind !== "objectVisibility";
+  return kind !== "objectVisibility" && kind !== "objectTextureSource";
 }
 
 function loadTimelineGraphVisible(): boolean {

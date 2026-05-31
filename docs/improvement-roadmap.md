@@ -29,6 +29,7 @@ Implemented and tested:
 - Optional SSAO post-processing for contact shading in the real-time viewport.
 - Optional FXAA post-processing for lightweight composer anti-aliasing.
 - Optional Depth of Field post-processing for camera-style focus blur.
+- Optional path-traced still preview with `three-gpu-pathtracer`.
 - Timeline row search for dense AE-style track navigation.
 - Timeline row switches for direct enable, solo, lock, and key actions.
 - WebM work-area recording progress in the viewport status controls.
@@ -63,7 +64,8 @@ Recommended order:
 3. OBJ + MTL import workflow. Implemented.
 4. Post-processing toggles. Implemented for Bloom and Vignette.
 5. Timeline polish.
-6. Optional path-traced still preview.
+6. Optional path-traced still preview. Implemented as a still renderer, not the
+   default editor viewport.
 
 ## Phase 1: Rendering Lab
 
@@ -173,13 +175,14 @@ After rendering improvements, refine the timeline:
 
 ## Phase 6: Optional Path-Traced Preview
 
-Add only as a separate still-preview mode, not as the default viewport.
+Implemented as a separate still-preview mode, not as the default viewport.
 
 Implementation direction:
 
-- Evaluate `three-gpu-pathtracer`.
-- Limit supported objects and materials.
-- Render progressively in a modal or side preview.
+- Use `three-gpu-pathtracer@0.0.24` with `three-mesh-bvh` and `xatlas-web`.
+- Keep helper overlays out of the traced preview.
+- Render progressively into the existing viewport canvas with visible sample
+  progress.
 - Make clear in UI and report that the main editor is rasterized WebGL and the
   path tracer is an optional high-fidelity preview.
 

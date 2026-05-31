@@ -31,6 +31,7 @@ import {
   type TimelineKeyframeSource
 } from "./animation/timelineEditing";
 import { evaluateTimelineTrack } from "./animation/interpolation";
+import { textureSourceFromValue, textureSourceIndex } from "./animation/textureSourceTrack";
 import {
   fitObjectLayerKeyframesToRange,
   objectLayerKeyframeIds,
@@ -107,6 +108,7 @@ import type {
 } from "./editor/types";
 import { createEnvironmentController, environmentPreset } from "./renderer/environment";
 import { createRenderPipeline } from "./renderer/pipeline";
+import { createPathTracePreviewController, type PathTracePreviewStatus } from "./renderer/pathTracePreview";
 import { applyPostProcessingSettings, normalizePostProcessingSettings, postProcessingLabel } from "./renderer/postProcessing";
 import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
 import { loadModelFromFiles } from "./scene/importers";
@@ -169,7 +171,8 @@ function boot(root: HTMLDivElement): void {
   const transformControls = new TransformControls(camera, renderer.domElement);
   transformControls.setMode("translate");
   transformControls.setSpace("world");
-  scene.add(transformControls.getHelper());
+  const transformControlsHelper = transformControls.getHelper();
+  scene.add(transformControlsHelper);
 
   const resourceTracker = new ResourceTracker();
   const history = new CommandHistory();
@@ -194,6 +197,7 @@ function boot(root: HTMLDivElement): void {
   let pendingTransformAutoKeySeedValues: Record<TransformProperty, [number, number, number]> | null = null;
   let pendingTimelineDragSnapshot: SceneDocument | null = null;
   let evaluationTourTimers: number[] = [];
+  let pathTraceControlsEnabled = true;
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -203,6 +207,7 @@ function boot(root: HTMLDivElement): void {
   applyRenderSettings(renderer, lightRig, renderSettings);
   environmentController.apply(renderSettings);
   applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
+  const pathTracePreview = createPathTracePreviewController(renderer, scene, camera);
   const motionPathRig = createMotionPathRig();
   const frustumHelper = new THREE.CameraHelper(camera);
   frustumHelper.visible = false;
@@ -420,6 +425,7 @@ function boot(root: HTMLDivElement): void {
     visual.traverse((object) => {
       object.userData.sceneId = entry.id;
       if ((object as THREE.Mesh).isMesh) {
+        if (object.userData.stylizedOutline) return;
         const mesh = object as THREE.Mesh;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -432,6 +438,7 @@ function boot(root: HTMLDivElement): void {
 
   function applyEntryAppearance(entry: SceneEntry): void {
     entry.root.traverse((object) => {
+      if (object.userData.stylizedOutline) return;
       const material = (object as THREE.Mesh | THREE.LineSegments | THREE.Points).material;
       if (!material) return;
       const materials = Array.isArray(material) ? material : [material];
@@ -842,6 +849,16 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#post-vignette-darkness").addEventListener("change", (event) => {
       updatePostProcessingSettings({ vignetteDarkness: Number((event.target as HTMLInputElement).value) });
     });
+    query<HTMLInputElement>("#post-halftone-toggle").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ halftone: (event.target as HTMLInputElement).checked });
+    });
+    query<HTMLInputElement>("#post-halftone-radius").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ halftoneRadius: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLInputElement>("#post-halftone-scatter").addEventListener("change", (event) => {
+      updatePostProcessingSettings({ halftoneScatter: Number((event.target as HTMLInputElement).value) });
+    });
+    query<HTMLButtonElement>("#path-trace-button").addEventListener("click", () => void togglePathTracePreview());
     query<HTMLInputElement>("#grid-toggle").addEventListener("change", (event) => {
       recordHistory();
       stage.grid.visible = (event.target as HTMLInputElement).checked;
@@ -1163,7 +1180,9 @@ function boot(root: HTMLDivElement): void {
     if (existingTrack?.locked || existingTrack?.keyframes.length) return;
 
     const track = ensureTimelineTrack(objectTimeline, kind);
-    track.keyframes.push(createTimelineKeyframe(seedTime, [...value] as [number, number, number]));
+    const keyframe = createTimelineKeyframe(seedTime, [...value] as [number, number, number]);
+    if (kind === "objectTextureSource") keyframe.interpolation = "hold";
+    track.keyframes.push(keyframe);
     sortTimelineKeyframes(track);
   }
 
@@ -1307,10 +1326,15 @@ function boot(root: HTMLDivElement): void {
     query<HTMLInputElement>("#post-ssao-max").value = String(renderSettings.postProcessing.ssaoMaxDistance);
     query<HTMLInputElement>("#post-vignette-toggle").checked = renderSettings.postProcessing.vignette;
     query<HTMLInputElement>("#post-vignette-darkness").value = String(renderSettings.postProcessing.vignetteDarkness);
+    query<HTMLInputElement>("#post-halftone-toggle").checked = renderSettings.postProcessing.halftone;
+    query<HTMLInputElement>("#post-halftone-radius").value = String(renderSettings.postProcessing.halftoneRadius);
+    query<HTMLInputElement>("#post-halftone-scatter").value = String(renderSettings.postProcessing.halftoneScatter);
     query<HTMLDivElement>("#renderer-mode").textContent = `WebGL raster | ${toneMappingLabel(renderSettings.toneMapping)} | Exposure ${formatNumber(renderSettings.exposure)} | Shadows ${shadowQualityLabel(renderSettings.shadowQuality)} | Environment ${environmentPreset(renderSettings.environment).label} | ${postProcessingLabel(renderSettings.postProcessing)}`;
+    syncPathTraceUI();
   }
 
   function updateRenderSettings(patch: Partial<RenderSettings>): void {
+    stopPathTracePreview(false);
     recordHistory();
     renderSettings = normalizeRenderSettings({ ...renderSettings, ...patch });
     applyRenderSettings(renderer, lightRig, renderSettings);
@@ -1324,6 +1348,85 @@ function boot(root: HTMLDivElement): void {
     updateRenderSettings({
       postProcessing: normalizePostProcessingSettings({ ...renderSettings.postProcessing, ...patch })
     });
+  }
+
+  async function togglePathTracePreview(): Promise<void> {
+    if (pathTracePreview.isActive()) {
+      stopPathTracePreview(true);
+      return;
+    }
+
+    const initialStatus = pathTracePreview.status();
+    if (!initialStatus.supported) {
+      syncPathTraceUI(initialStatus);
+      showToast("Path tracing requires WebGL2.", "bad");
+      return;
+    }
+
+    if (recordingPreview) stopPreviewRecording(true);
+    transport.pause();
+    timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
+    updatePlayButton();
+
+    pathTraceControlsEnabled = controls.enabled;
+    controls.enabled = false;
+    syncPathTraceUI({ ...initialStatus, loading: true });
+
+    const status = await pathTracePreview.start({
+      targetSamples: pathTraceTargetSamples(),
+      hiddenObjects: pathTraceHiddenObjects()
+    });
+    syncPathTraceUI(status);
+
+    if (status.error) {
+      controls.enabled = pathTraceControlsEnabled;
+      showToast(status.error, "bad");
+      return;
+    }
+
+    showToast("Path-traced still preview started.", "good");
+  }
+
+  function stopPathTracePreview(notify: boolean): void {
+    if (!pathTracePreview.isActive() && !pathTracePreview.status().loading) return;
+    pathTracePreview.stop();
+    controls.enabled = pathTraceControlsEnabled;
+    syncPathTraceUI();
+    if (notify) showToast("Raster viewport resumed.", "good");
+  }
+
+  function syncPathTraceUI(status = pathTracePreview.status()): void {
+    const button = query<HTMLButtonElement>("#path-trace-button");
+    const label = button.querySelector<HTMLSpanElement>("span:last-child");
+    const statusLine = query<HTMLDivElement>("#path-trace-status");
+    button.disabled = status.loading || !status.supported;
+    button.classList.toggle("active", status.active);
+    if (label) label.textContent = status.active ? "Back to Raster" : "Trace Still";
+    statusLine.textContent = pathTraceStatusLabel(status);
+    if (status.active) query<HTMLDivElement>("#status-line").textContent = pathTraceStatusLabel(status);
+  }
+
+  function pathTraceStatusLabel(status: PathTracePreviewStatus): string {
+    if (!status.supported) return `Path tracing unavailable: ${status.unsupportedReason ?? "hardware WebGL2 renderer required"}`;
+    if (status.loading) return "Loading path tracer...";
+    if (status.error) return `Path tracing error: ${status.error}`;
+    if (status.active && status.complete) return `Path traced still ready | ${status.samples}/${status.targetSamples} samples`;
+    if (status.active) return `Path tracing | ${status.samples}/${status.targetSamples} samples`;
+    return "Optional still renderer | WebGL2 path tracing";
+  }
+
+  function pathTraceTargetSamples(): number {
+    return Number(query<HTMLSelectElement>("#path-trace-samples").value);
+  }
+
+  function pathTraceHiddenObjects(): THREE.Object3D[] {
+    return [
+      stage.grid,
+      stage.axes,
+      motionPathRig.group,
+      frustumHelper,
+      transformControlsHelper
+    ];
   }
 
   function syncSelectionSummary(): void {
@@ -1396,21 +1499,39 @@ function boot(root: HTMLDivElement): void {
   }
 
   function applyTexture(entry: SceneEntry, textureName: string): void {
+    const previousValue = timelineValueForEntry(entry, "objectTextureSource");
     recordHistory();
+    const normalizedTextureName = textureSourceFromValue(textureSourceIndex(textureName));
+    if (setEntryTextureSource(entry, normalizedTextureName)) rebuildEntryVisual(entry);
+    if (sceneTimeline.autoKey) {
+      seedInitialObjectAutoKey(entry, "objectTextureSource", previousValue);
+      setTimelineKeyframe("objectTextureSource", { notify: false, record: false, refresh: false });
+    }
+    updateAllUI();
+    showToast(normalizedTextureName === "none" ? "Texture removed" : `${capitalize(normalizedTextureName)} texture applied`, "good");
+  }
+
+  function setEntryTextureSource(entry: SceneEntry, textureName: string): boolean {
+    const normalizedTextureName = textureSourceFromValue(textureSourceIndex(textureName));
+    const sourceChanged = entry.textureName !== normalizedTextureName || entry.useSourceMaterials;
+    const materialChanged = entry.materialMode === "normal";
+    if (!sourceChanged && !materialChanged) return false;
+
     resourceTracker.disposeResource(entry.texture);
     entry.useSourceMaterials = false;
-    entry.textureName = textureName;
-    entry.texture = textureName === "none" ? null : resourceTracker.track(makeTexturePreset(textureName));
-    entry.materialMode = entry.materialMode === "normal" ? "standard" : entry.materialMode;
-    rebuildEntryVisual(entry);
-    updateAllUI();
-    showToast(textureName === "none" ? "Texture removed" : `${capitalize(textureName)} texture applied`, "good");
+    entry.textureName = normalizedTextureName;
+    entry.texture = normalizedTextureName === "none" ? null : resourceTracker.track(makeTexturePreset(normalizedTextureName));
+    entry.materialMode = materialChanged ? "standard" : entry.materialMode;
+    applyEntryTextureTransform(entry);
+    return true;
   }
 
   function applyMaterialPreset(preset: string): void {
     updateSelectedEntry((entry) => {
       const presetConfig = materialPresetById(preset);
       if (!presetConfig) return;
+      const previousTextureSource = timelineValueForEntry(entry, "objectTextureSource");
+      let textureSourceChanged = false;
       entry.useSourceMaterials = false;
       applyMaterialPresetValues(entry, presetConfig);
       if (presetConfig.textureName) {
@@ -1418,9 +1539,14 @@ function boot(root: HTMLDivElement): void {
           resourceTracker.disposeResource(entry.texture);
           entry.textureName = presetConfig.textureName;
           entry.texture = presetConfig.textureName === "none" ? null : resourceTracker.track(makeTexturePreset(presetConfig.textureName));
+          textureSourceChanged = true;
         }
       }
       rebuildEntryVisual(entry);
+      if (sceneTimeline.autoKey && textureSourceChanged) {
+        seedInitialObjectAutoKey(entry, "objectTextureSource", previousTextureSource);
+        setTimelineKeyframe("objectTextureSource", { notify: false, record: false, refresh: false });
+      }
     });
   }
 
@@ -1861,6 +1987,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function setCameraPreset(view: string): void {
+    stopPathTracePreview(false);
     const positions: Record<string, THREE.Vector3> = {
       front: new THREE.Vector3(0, 3.5, 12),
       top: new THREE.Vector3(0, 14, 0.01),
@@ -1900,6 +2027,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function playTimeline(direction: PlaybackDirection, message = direction > 0 ? "Timeline running forward" : "Timeline running backward"): void {
+    stopPathTracePreview(false);
     const state = transport.play(direction);
     syncPlaybackBoundary();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
@@ -2959,6 +3087,7 @@ function boot(root: HTMLDivElement): void {
     const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - time) < 0.001);
     const keyframe = existing ?? createTimelineKeyframe(time, value);
     keyframe.value = value;
+    if (kind === "objectTextureSource") keyframe.interpolation = "hold";
     if (!existing) track.keyframes.push(keyframe);
     sortTimelineKeyframes(track);
     if (isObjectTransformTrackKind(kind)) entry.animation = "none";
@@ -3923,6 +4052,7 @@ function boot(root: HTMLDivElement): void {
       const entry = entries.get(objectTimeline.objectId);
       if (!entry) return;
       let appearanceChanged = false;
+      let textureSourceChanged = false;
       let textureChanged = false;
       objectTimeline.tracks.forEach((track) => {
         if (!isObjectPropertyTrackKind(track.kind)) return;
@@ -3941,6 +4071,8 @@ function boot(root: HTMLDivElement): void {
         } else if (track.kind === "objectMetalness") {
           entry.metalness = clamp(value[0], 0, 1);
           appearanceChanged = true;
+        } else if (track.kind === "objectTextureSource") {
+          textureSourceChanged = setEntryTextureSource(entry, textureSourceFromValue(value[0])) || textureSourceChanged;
         } else if (track.kind === "objectTextureRepeat") {
           entry.textureRepeat.set(Math.max(0.001, value[0]), Math.max(0.001, value[1]));
           textureChanged = true;
@@ -3954,7 +4086,8 @@ function boot(root: HTMLDivElement): void {
           entry.root.visible = value[0] >= 0.5;
         }
       });
-      if (appearanceChanged) applyEntryAppearance(entry);
+      if (textureSourceChanged) rebuildEntryVisual(entry);
+      else if (appearanceChanged) applyEntryAppearance(entry);
       if (textureChanged) applyEntryTextureTransform(entry);
     });
   }
@@ -4014,7 +4147,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function exportScreenshot(): void {
-    composer.render();
+    if (!pathTracePreview.isActive()) composer.render();
     const link = document.createElement("a");
     link.download = "geometry-studio.png";
     link.href = renderer.domElement.toDataURL("image/png");
@@ -4023,6 +4156,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function togglePreviewRecording(): void {
+    stopPathTracePreview(false);
     if (recordingPreview) {
       stopPreviewRecording(true);
       return;
@@ -4130,6 +4264,11 @@ function boot(root: HTMLDivElement): void {
 
     controls.update();
     frustumHelper.update();
+    if (pathTracePreview.isActive()) {
+      syncPathTraceUI(pathTracePreview.renderNextSample());
+      updateFps();
+      return;
+    }
     composer.render();
     updateFps();
   }

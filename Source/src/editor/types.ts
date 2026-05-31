@@ -17,7 +17,7 @@ export type PrimitiveType =
   | "extrude";
 
 export type RenderMode = "solid" | "points" | "lines";
-export type MaterialMode = "standard" | "basic" | "phong" | "normal" | "lambert";
+export type MaterialMode = "standard" | "basic" | "phong" | "normal" | "lambert" | "toon";
 export type AnimationMode = "none" | "spin" | "orbit" | "bounce" | "pulse";
 export type LightKind = "directional" | "point" | "spot";
 export type ObjectKind = "primitive" | "model" | "sampleModel";
@@ -30,6 +30,7 @@ export type TimelineTrackKind =
   | "objectOpacity"
   | "objectRoughness"
   | "objectMetalness"
+  | "objectTextureSource"
   | "objectTextureRepeat"
   | "objectTextureOffset"
   | "objectTextureRotation"
@@ -68,6 +69,9 @@ export interface PostProcessingSettings {
   ssaoMaxDistance: number;
   vignette: boolean;
   vignetteDarkness: number;
+  halftone: boolean;
+  halftoneRadius: number;
+  halftoneScatter: number;
 }
 
 export interface RenderSettings {
@@ -165,7 +169,7 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   duration: number;
   workStart: number;
   workEnd: number;

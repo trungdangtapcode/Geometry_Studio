@@ -121,6 +121,26 @@ The line mode deliberately uses a real wireframe geometry instead of a single
 \texttt{Line} object. This avoids incomplete edge rendering on complex geometry
 and imported models.
 
+\subsection{Stylized Anime And Comic Rendering}
+
+In addition to the basic assignment render modes, the project includes a
+stylized rendering path for anime, game, and comic-like presentation. The
+selected object can use an \texttt{Anime Toon} material mode based on
+\texttt{THREE.MeshToonMaterial}. A generated nearest-filtered gradient map
+creates discrete lighting bands instead of smooth shading.
+
+Objects using the toon material also receive a local inverted-hull outline mesh.
+This produces visible ink-style silhouettes without replacing the whole renderer
+or breaking the existing post-processing composer. Imported models are handled
+carefully: unlit source materials such as \texttt{MeshBasicMaterial} are
+converted to readable lit material clones so hard-surface robot and drone models
+remain visible under shadows and scene lights.
+
+For comic presentation, the Rendering Lab provides a \texttt{Comic Halftone}
+post-processing toggle using the Three.js \texttt{HalftonePass}. The user can
+adjust dot size and scatter amount. This effect is stored with the scene render
+settings so it survives save/load.
+
 \subsection{Perspective Projection}
 
 The project uses \texttt{THREE.PerspectiveCamera}. The user can adjust:
@@ -327,16 +347,30 @@ Implemented rendering controls include:
   \item Exposure
   \item Shadow quality: Low, Medium, High, and Ultra
   \item Generated PMREM environment lighting presets
-  \item PBR material presets for Ceramic, Metal, Plastic, Glass, Clay, and
-  texture comparison
-  \item Post-processing toggles for FXAA, SSAO, Bloom, and Vignette
+  \item PBR and stylized material presets for Ceramic, Metal, Plastic, Glass,
+  Clay, Anime Toon, and texture comparison
+  \item Post-processing toggles for FXAA, SSAO, Depth of Field, Bloom, and
+  Vignette
+  \item Comic Halftone post-processing with adjustable dot radius and scatter
+  \item Optional path-traced still preview using \texttt{three-gpu-pathtracer}
 \end{itemize}
 
 FXAA is used as a lightweight screen-space anti-aliasing pass at the end of the
 composer chain. SSAO adds contact shading for depth perception, Bloom provides
-glow for cinematic demos, and Vignette gives an optional composition effect.
-These effects are optional and disabled conservatively by default so the release
-remains responsive on typical evaluator hardware.
+glow for cinematic demos, Vignette gives an optional composition effect, and
+Halftone provides a comic screen-print style. These effects are optional and
+disabled conservatively by default so the release remains responsive on typical
+evaluator hardware.
+
+The path-traced still preview is separate from the default viewport. It uses the
+MIT-licensed \texttt{three-gpu-pathtracer} library with BVH acceleration to
+progressively render a still image into the canvas. During this mode the editor
+pauses playback, hides helper overlays, disables camera controls, and reports
+sample progress. This gives the project a high-quality rendering demonstration
+without sacrificing real-time interaction for modeling, transforms, and timeline
+editing. The feature requires a hardware WebGL2 renderer and is disabled in
+automated or software WebGL contexts where path-tracer initialization can be too
+slow or unstable.
 
 \subsection{Evaluation Tour}
 
@@ -474,12 +508,14 @@ animation/timelineTransport.ts & Playback direction, explicit preview speed, shu
 scene/primitives.ts & Primitive geometry, extra shapes, labels, and built-in sample model. \\
 scene/materialPresets.ts & PBR and legacy material preset definitions. \\
 scene/materials.ts & Materials, texture presets, and solid/point/line visual construction. \\
+scene/stylizedMaterials.ts & Anime Toon material creation, imported material readability conversion, and inverted-hull outline meshes. \\
 scene/lights.ts & Stage, light rig, shadows, helpers, and light sweep. \\
 scene/lightingPresets.ts & Named direct-light rigs for Studio, Product, Dramatic, Soft, and Night lighting. \\
 scene/importers.ts & GLB, GLTF, OBJ, and STL import pipeline. \\
 renderer/environment.ts & Generated PMREM environment lighting controller. \\
-renderer/pipeline.ts & WebGLRenderer, EffectComposer, FXAA, SSAO, Bloom, Vignette, OutlinePass, and resize handling. \\
+renderer/pipeline.ts & WebGLRenderer, EffectComposer, FXAA, SSAO, Bloom, Vignette, Halftone, OutlinePass, and resize handling. \\
 renderer/postProcessing.ts & Post-processing defaults, normalization, application, and status labels. \\
+renderer/pathTracePreview.ts & Optional progressive path-traced still preview controller using three-gpu-pathtracer. \\
 animation/timeline.ts & Legacy procedural animation helper retained for compatibility. \\
 ui/template.ts & DOM template for the editor UI. \\
 ui/density.ts & UI density loading, persistence, and root layout mode application. \\
@@ -507,13 +543,11 @@ sessions.
 
 \section{Future Improvements}
 
-The current release focuses on a stable real-time WebGL editor. The following
-items are reasonable future extensions after the submitted release.
+The current release focuses on a stable real-time WebGL editor with an optional
+path-traced still mode. The following items are reasonable future extensions
+after the submitted release.
 
 \begin{enumerate}
-  \item \textbf{Path-Traced Preview}: evaluate a separate progressive still
-  preview using a GPU path-tracing library. This should remain optional because
-  the main editor is designed for real-time rasterized interaction.
   \item \textbf{Advanced Curve Editing}: add Bezier handle editing in the value
   graph while preserving the current simple keyframe workflow.
   \item \textbf{Nested Model Tracks}: allow imported model children to expose
@@ -535,7 +569,7 @@ The project includes automated browser tests with Playwright:
   \item Scene JSON loading
   \item Keyframe timeline creation and JSON save verification
   \item Auto-Key initial value seeding
-  \item Rendering Lab FXAA, SSAO, Bloom, and Vignette controls
+  \item Rendering Lab FXAA, SSAO, Bloom, Vignette, Comic Halftone, and Anime Toon controls
   \item Direct lighting preset persistence
   \item Evaluation Tour activation
 \end{itemize}

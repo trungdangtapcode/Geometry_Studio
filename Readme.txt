@@ -46,7 +46,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Perspective projection: editable camera position, FOV, Near, and Far values with Front, Top, Iso, and Reset presets.
 - Affine transformations: Move, Rotate, and Scale with TransformControls, numeric X/Y/Z inputs, and World/Local space modes.
 - Lighting: Ambient, Directional, Point, and Spot lights with color, intensity, position, helper, and shadow controls.
-- Rendering Lab: Tone mapping, exposure, shadow quality, PBR material presets, generated environment lighting, SSAO, Bloom, Vignette, and renderer telemetry controls for real-time WebGL raster rendering.
+- Rendering Lab: Tone mapping, exposure, shadow quality, PBR/Anime Toon material presets, generated environment lighting, SSAO, Bloom, Vignette, Comic Halftone, optional path-traced still preview, and renderer telemetry controls.
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, OBJ+MTL, and STL import with centering, normalization, source-material preservation, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
@@ -59,6 +59,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Evaluation Tour: automatically builds a scene that demonstrates all grading requirements.
 - Cinematic Demo: creates a polished animated showcase scene.
 - Screenshot Export: saves the current viewport as a PNG image.
+- Path-Traced Still Preview: Rendering Lab can progressively render a high-quality hardware WebGL2 path-traced still with three-gpu-pathtracer, then Screenshot exports the traced canvas before returning to raster editing.
 - WebM Preview Export: records the active Work In/Out range with progress shown in the status line and record button.
 - Telemetry: displays FPS, draw calls, triangles, lines, points, geometry count, texture count, and object count.
 - UI Density: choose Blender, Compact, or Comfortable sizing from the inspector header. Blender density is the default for a smaller professional editing layout.

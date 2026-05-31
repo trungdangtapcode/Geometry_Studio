@@ -14,7 +14,10 @@
     "animation-timeline-js": "2.3.5",
     "lil-gui": "0.21.0",
     "lucide": "1.16.0",
-    "three": "0.184.0"
+    "three": "0.184.0",
+    "three-gpu-pathtracer": "^0.0.24",
+    "three-mesh-bvh": "^0.9.10",
+    "xatlas-web": "^0.1.0"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

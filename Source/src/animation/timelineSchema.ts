@@ -17,6 +17,7 @@ const TRACK_LABELS: Record<TimelineTrackKind, string> = {
   objectOpacity: "Object Opacity",
   objectRoughness: "Object Roughness",
   objectMetalness: "Object Metalness",
+  objectTextureSource: "Texture Source",
   objectTextureRepeat: "Texture Repeat",
   objectTextureOffset: "Texture Offset",
   objectTextureRotation: "Texture Rotation",
@@ -45,6 +46,7 @@ const OBJECT_TRACK_KINDS = new Set<TimelineTrackKind>([
   "objectOpacity",
   "objectRoughness",
   "objectMetalness",
+  "objectTextureSource",
   "objectTextureRepeat",
   "objectTextureOffset",
   "objectTextureRotation",
@@ -66,7 +68,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 9,
+    version: 10,
     duration: 8,
     workStart: 0,
     workEnd: 8,
@@ -101,7 +103,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 9,
+    version: 10,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     workStart: defaults.workStart,
     workEnd: defaults.workEnd,
@@ -386,6 +388,7 @@ function isTimelineTrackKind(value: unknown): value is TimelineTrackKind {
     value === "objectOpacity" ||
     value === "objectRoughness" ||
     value === "objectMetalness" ||
+    value === "objectTextureSource" ||
     value === "objectTextureRepeat" ||
     value === "objectTextureOffset" ||
     value === "objectTextureRotation" ||

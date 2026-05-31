@@ -26,6 +26,9 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#render-exposure")).toHaveValue("1.05");
   await expect(page.locator("#shadow-quality")).toHaveValue("high");
   await expect(page.locator("#environment-preset")).toHaveValue("studio");
+  await expect(page.locator("#path-trace-samples")).toHaveValue("32");
+  await expect(page.locator("#path-trace-button")).toBeVisible();
+  await expect(page.locator("#path-trace-status")).toContainText(/Optional still|unavailable/);
   await page.locator("#environment-preset").selectOption("gallery");
   await expect(page.locator("#renderer-mode")).toContainText("Environment Gallery");
   await expect(page.locator("#post-bloom-toggle")).not.toBeChecked();
@@ -58,6 +61,15 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#renderer-mode")).toContainText("FXAA On + DOF On");
   await page.locator("#post-fxaa-toggle").uncheck();
   await page.locator("#post-dof-toggle").uncheck();
+  await expect(page.locator("#post-halftone-toggle")).not.toBeChecked();
+  await page.locator("#post-halftone-toggle").check();
+  await expect(page.locator("#renderer-mode")).toContainText("Comic Halftone On");
+  await page.locator("#post-halftone-radius").evaluate((input) => {
+    (input as HTMLInputElement).value = "4";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("#post-halftone-radius")).toHaveValue("4");
+  await page.locator("#post-halftone-toggle").uncheck();
   await expect(page.locator("#post-ssao-radius")).toHaveValue("8");
   await page.locator("#post-bloom-toggle").uncheck();
   await page.locator("#post-vignette-toggle").uncheck();
@@ -65,6 +77,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Ceramic", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Metal", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Glass", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Anime Toon", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Metal", exact: true }).click();
   await expect(page.locator("#material-mode")).toHaveValue("standard");
   await expect(page.locator("#object-metalness")).toHaveValue("1");
@@ -73,6 +86,9 @@ test("renders the studio and core controls", async ({ page }) => {
   await page.getByRole("button", { name: "Glass", exact: true }).click();
   await expect(page.locator("#object-opacity")).toHaveValue("0.42");
   await expect(page.getByRole("button", { name: "Glass", exact: true })).toHaveClass(/active/);
+  await page.getByRole("button", { name: "Anime Toon", exact: true }).click();
+  await expect(page.locator("#material-mode")).toHaveValue("toon");
+  await expect(page.getByRole("button", { name: "Anime Toon", exact: true })).toHaveClass(/active/);
   await expect(page.locator("#timeline-timecode")).toContainText("F0000");
   await expect(page.locator("#timeline-prev-frame")).toBeVisible();
   await expect(page.locator("#timeline-next-frame")).toBeVisible();
@@ -89,9 +105,17 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-select-layer-keys")).toBeVisible();
   await expect(page.locator("#timeline-fit-layer-keys")).toBeVisible();
   await expect(page.locator("#timeline-sequence-layers")).toBeVisible();
+  await expect(page.locator("#timeline-layer-strip-toggle")).toBeVisible();
   await expect(page.locator("#timeline-overview-track")).toBeVisible();
   await expect(page.locator("#timeline-layer-strip")).toBeVisible();
   await expect(page.locator('.timeline-layer-bar[data-object-id="object-1"]')).toContainText("Cube");
+  await page.locator("#timeline-layer-strip-toggle").click();
+  await expect(page.locator("#keyframe-dock")).toHaveClass(/layer-strip-collapsed/);
+  await expect(page.locator("#timeline-overview")).toBeHidden();
+  await expect(page.locator("#timeline-layer-strip")).toBeHidden();
+  await page.locator("#timeline-layer-strip-toggle").click();
+  await expect(page.locator("#timeline-overview")).toBeVisible();
+  await expect(page.locator("#timeline-layer-strip")).toBeVisible();
   await expect(page.locator("#timeline-ease-linear")).toBeVisible();
   await expect(page.locator("#timeline-ease-in")).toBeVisible();
   await expect(page.locator("#timeline-ease-out")).toBeVisible();
@@ -4092,11 +4116,14 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
       ssaoMinDistance: 0.005,
       ssaoMaxDistance: 0.12,
       vignette: false,
-      vignetteDarkness: 0.75
+      vignetteDarkness: 0.75,
+      halftone: false,
+      halftoneRadius: 3,
+      halftoneScatter: 0.35
     }
   });
   expect(sceneDocument.display.motionPath).toBe(true);
-  expect(sceneDocument.timeline.version).toBe(9);
+  expect(sceneDocument.timeline.version).toBe(10);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.workStart).toBe(0.5);
   expect(sceneDocument.timeline.workEnd).toBe(4.5);

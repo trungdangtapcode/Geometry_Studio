@@ -3,7 +3,7 @@
 ## Status
 
 Object appearance timeline tracks were introduced in schema v5 and expanded in
-schema v6. They remain supported in current schema v9. This adds a second class
+schema v6. They remain supported in current schema v10. This adds a second class
 of object-owned tracks beyond transforms:
 
 - Color.

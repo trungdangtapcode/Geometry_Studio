@@ -1,27 +1,32 @@
 import * as THREE from "three";
 import type { SceneEntry } from "../editor/types";
 import type { ResourceTracker } from "../utils/resourceTracker";
+import { cloneReadableSourceMaterial, cloneToonSourceMaterial, createToonMaterial, createToonOutlineMesh } from "./stylizedMaterials";
 
 export function createMaterial(entry: SceneEntry, tracker?: ResourceTracker): THREE.Material {
-  const materialParams = {
+  const materialParams: THREE.MeshBasicMaterialParameters = {
     color: entry.color,
-    map: entry.texture ?? undefined,
     side: THREE.DoubleSide,
     transparent: entry.opacity < 1,
     opacity: entry.opacity
   };
 
   syncTextureTransform(entry);
+  if (entry.texture) materialParams.map = entry.texture;
 
   if (entry.materialMode === "normal") {
     const params = { side: THREE.DoubleSide, transparent: entry.opacity < 1, opacity: entry.opacity };
     return tracker?.track(new THREE.MeshNormalMaterial(params)) ?? new THREE.MeshNormalMaterial(params);
   }
+  if (entry.materialMode === "toon") {
+    return createToonMaterial(entry, tracker);
+  }
   if (entry.materialMode === "basic") {
     return tracker?.track(new THREE.MeshBasicMaterial(materialParams)) ?? new THREE.MeshBasicMaterial(materialParams);
   }
   if (entry.materialMode === "phong") {
-    return tracker?.track(new THREE.MeshPhongMaterial({ ...materialParams, shininess: 70 })) ?? new THREE.MeshPhongMaterial({ ...materialParams, shininess: 70 });
+    const params: THREE.MeshPhongMaterialParameters = { ...materialParams, shininess: 70 };
+    return tracker?.track(new THREE.MeshPhongMaterial(params)) ?? new THREE.MeshPhongMaterial(params);
   }
   if (entry.materialMode === "lambert") {
     return tracker?.track(new THREE.MeshLambertMaterial(materialParams)) ?? new THREE.MeshLambertMaterial(materialParams);
@@ -59,7 +64,11 @@ export function buildGeometryVisual(entry: SceneEntry, tracker?: ResourceTracker
     return new THREE.LineSegments(wireGeometry, material);
   }
 
-  return new THREE.Mesh(geometry, createMaterial(entry, tracker));
+  const mesh = new THREE.Mesh(geometry, createMaterial(entry, tracker));
+  if (entry.materialMode !== "toon") return mesh;
+  const group = new THREE.Group();
+  group.add(createToonOutlineMesh(geometry, tracker), mesh);
+  return group;
 }
 
 export function buildModelVisual(entry: SceneEntry, tracker?: ResourceTracker): THREE.Object3D {
@@ -70,9 +79,8 @@ export function buildModelVisual(entry: SceneEntry, tracker?: ResourceTracker): 
     const mesh = object as THREE.Mesh;
     mesh.geometry = tracker?.track(mesh.geometry.clone()) ?? mesh.geometry.clone();
     if (entry.renderMode === "solid") {
-      mesh.material = entry.useSourceMaterials && mesh.material
-        ? cloneSourceMaterials(mesh.material, tracker)
-        : createMaterial(entry, tracker);
+      mesh.material = modelSolidMaterial(mesh.material, entry, tracker);
+      if (entry.materialMode === "toon") mesh.add(createToonOutlineMesh(mesh.geometry, tracker));
       return;
     }
 
@@ -97,45 +105,29 @@ export function buildModelVisual(entry: SceneEntry, tracker?: ResourceTracker): 
   return clone;
 }
 
-function cloneSourceMaterials(material: THREE.Material | THREE.Material[], tracker?: ResourceTracker): THREE.Material | THREE.Material[] {
+function modelSolidMaterial(
+  material: THREE.Material | THREE.Material[] | undefined,
+  entry: SceneEntry,
+  tracker?: ResourceTracker
+): THREE.Material | THREE.Material[] {
+  if (entry.materialMode === "toon") {
+    return material
+      ? mapSourceMaterials(material, (item) => cloneToonSourceMaterial(item, entry, tracker))
+      : createToonMaterial(entry, tracker);
+  }
+  if (entry.useSourceMaterials && material) {
+    return mapSourceMaterials(material, (item) => cloneReadableSourceMaterial(item, tracker));
+  }
+  return createMaterial(entry, tracker);
+}
+
+function mapSourceMaterials(
+  material: THREE.Material | THREE.Material[],
+  mapper: (material: THREE.Material) => THREE.Material
+): THREE.Material | THREE.Material[] {
   return Array.isArray(material)
-    ? material.map((item) => cloneSourceMaterial(item, tracker))
-    : cloneSourceMaterial(material, tracker);
-}
-
-function cloneSourceMaterial(material: THREE.Material, tracker?: ResourceTracker): THREE.Material {
-  const clone = material.clone();
-  cloneTextureSlots(clone, tracker);
-  return tracker?.track(clone) ?? clone;
-}
-
-function cloneTextureSlots(material: THREE.Material, tracker?: ResourceTracker): void {
-  const textureSlots = [
-    "alphaMap",
-    "aoMap",
-    "bumpMap",
-    "clearcoatMap",
-    "clearcoatNormalMap",
-    "clearcoatRoughnessMap",
-    "displacementMap",
-    "emissiveMap",
-    "envMap",
-    "lightMap",
-    "map",
-    "metalnessMap",
-    "normalMap",
-    "roughnessMap",
-    "sheenColorMap",
-    "sheenRoughnessMap",
-    "specularColorMap",
-    "specularIntensityMap",
-    "transmissionMap"
-  ];
-  const record = material as unknown as Record<string, unknown>;
-  textureSlots.forEach((slot) => {
-    const value = record[slot];
-    if (value instanceof THREE.Texture) record[slot] = tracker?.track(value.clone()) ?? value.clone();
-  });
+    ? material.map((item) => mapper(item))
+    : mapper(material);
 }
 
 export function makeTexturePreset(name: string): THREE.Texture {

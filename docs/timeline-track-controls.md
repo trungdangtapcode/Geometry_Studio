@@ -3,7 +3,7 @@
 ## Status
 
 Track enable/disable, solo, and lock/unlock are implemented for timeline
-schema v9. The schema stores `TimelineTrackDocument.enabled` for playback,
+schema v10. The schema stores `TimelineTrackDocument.enabled` for playback,
 `TimelineTrackDocument.solo` for focused playback filtering, and
 `TimelineTrackDocument.locked` for editing protection.
 

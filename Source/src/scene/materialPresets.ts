@@ -9,7 +9,8 @@ export type MaterialPresetId =
   | "metal"
   | "plastic"
   | "glass"
-  | "clay";
+  | "clay"
+  | "anime";
 
 export interface MaterialPreset {
   id: MaterialPresetId;
@@ -28,6 +29,7 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
   { id: "plastic", label: "Plastic", materialMode: "standard", color: "#f06c4f", opacity: 1, roughness: 0.36, metalness: 0.03, textureName: "none" },
   { id: "glass", label: "Glass", materialMode: "standard", color: "#a8e7ff", opacity: 0.42, roughness: 0.04, metalness: 0, textureName: "none" },
   { id: "clay", label: "Clay", materialMode: "standard", color: "#b96d50", opacity: 1, roughness: 0.86, metalness: 0, textureName: "none" },
+  { id: "anime", label: "Anime Toon", materialMode: "toon", color: "#f2f3ff", opacity: 1, roughness: 0.62, metalness: 0, textureName: "none" },
   { id: "basic", label: "Basic", materialMode: "basic" },
   { id: "lambert", label: "Lambert", materialMode: "lambert" },
   { id: "phong", label: "Phong", materialMode: "phong", roughness: 0.32, metalness: 0 },

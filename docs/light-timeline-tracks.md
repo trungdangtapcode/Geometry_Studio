@@ -3,7 +3,7 @@
 ## Status
 
 Light timeline tracks were introduced in schema v4 and remain supported in the
-current schema v9. They extend the existing dope-sheet rather than adding a
+current schema v10. They extend the existing dope-sheet rather than adding a
 second editor or animation framework.
 
 The supported tracks are:
@@ -41,7 +41,7 @@ features were added:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 9;
+  version: 10;
   duration: number;
   fps: number;
   currentTime: number;
