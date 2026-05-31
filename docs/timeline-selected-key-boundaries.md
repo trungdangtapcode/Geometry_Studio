@@ -12,6 +12,8 @@ selected keyframe times.
   Keyframe buttons.
 - `Shift+Home` jumps the playhead to the earliest selected keyframe.
 - `Shift+End` jumps the playhead to the latest selected keyframe.
+- The timeline selection readout shows the selected range and span, for example
+  `4 keyframes selected | 1-5s | span 4s`.
 - If no keyframes are selected, the editor shows a toast instead of changing
   time.
 - Plain `Home` and `End` remain mapped to Work In and Work Out.

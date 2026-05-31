@@ -2261,6 +2261,8 @@ test("stretches multiple selected keyframes from the key editor span", async ({ 
   await page.locator("#timeline-row-search").fill("position");
   await page.locator("#timeline-select-visible").click();
   await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  await expect(page.locator("#timeline-selection")).toContainText("1-3s");
+  await expect(page.locator("#timeline-selection")).toContainText("span 2s");
   await expect(page.locator("#timeline-key-span")).toBeEnabled();
   await expect(page.locator("#timeline-key-span")).toHaveValue("2");
 
@@ -2269,6 +2271,8 @@ test("stretches multiple selected keyframes from the key editor span", async ({ 
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(page.locator("#timeline-key-span")).toHaveValue("4");
+  await expect(page.locator("#timeline-selection")).toContainText("1-5s");
+  await expect(page.locator("#timeline-selection")).toContainText("span 4s");
 
   await page.locator("#save-scene").click();
   const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);

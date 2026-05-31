@@ -2826,7 +2826,7 @@ export class KeyframeTimelinePanel {
   private syncSelectionWidgets(timelineDocument: SceneTimelineDocument, selectedId: string): void {
     const sources = this.detailSources(timelineDocument, selectedId);
     this.selectionLabel.textContent = this.selectedKeyframeIds.size
-      ? `${this.selectedKeyframeIds.size} keyframe${this.selectedKeyframeIds.size === 1 ? "" : "s"} selected`
+      ? selectionSummaryLabel(sources.length || this.selectedKeyframeIds.size, sources)
       : sources.length
         ? "Playhead keyframe active"
       : "No keyframe selected";
@@ -3487,6 +3487,18 @@ function commonValue(values: number[]): string {
   if (values.length === 0) return "";
   const first = values[0];
   return values.every((value) => Math.abs(value - first) < 0.0001) ? formatNumber(first) : "";
+}
+
+function selectionSummaryLabel(count: number, sources: TimelineDetailSource[]): string {
+  const base = `${count} keyframe${count === 1 ? "" : "s"} selected`;
+  if (sources.length === 0) return base;
+
+  const times = sources.map((source) => source.keyframe.time);
+  const start = Math.min(...times);
+  const end = Math.max(...times);
+  const span = end - start;
+  if (span < 0.001) return `${base} @ ${formatNumber(start)}s`;
+  return `${base} | ${formatNumber(start)}-${formatNumber(end)}s | span ${formatNumber(span)}s`;
 }
 
 function escapeHtml(value: string): string {
