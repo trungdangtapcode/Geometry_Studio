@@ -1082,6 +1082,12 @@ function boot(root: HTMLDivElement): void {
         keywords: ["auto scroll", "current time indicator", "timeline view"]
       }),
       command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
+      command("timeline.collapse-groups", "Collapse Timeline Groups", "View", collapseTimelineGroups, {
+        keywords: ["layers", "disclosure", "twirl", "fold", "after effects"]
+      }),
+      command("timeline.expand-groups", "Expand Timeline Groups", "View", expandTimelineGroups, {
+        keywords: ["layers", "disclosure", "twirl", "unfold", "after effects"]
+      }),
       command("view.frame-selected", "Frame Selected Object", "View", frameSelectedView, {
         shortcut: "F",
         keywords: ["focus selected", "zoom selected", "viewport", "blender"],
@@ -2676,6 +2682,16 @@ function boot(root: HTMLDivElement): void {
   function toggleTimelineFollowPlayhead(): void {
     const enabled = timelinePanel.toggleFollowPlayhead();
     showToast(`Follow playhead ${enabled ? "enabled" : "disabled"}`, "good");
+  }
+
+  function collapseTimelineGroups(): void {
+    const count = timelinePanel.collapseAllTimelineGroups();
+    showToast(count ? "Timeline groups collapsed" : "No timeline groups to collapse.", count ? "good" : "bad");
+  }
+
+  function expandTimelineGroups(): void {
+    const count = timelinePanel.expandAllTimelineGroups();
+    showToast(count ? "Timeline groups expanded" : "No timeline groups to expand.", count ? "good" : "bad");
   }
 
   function setTimelineDopeSheetTool(tool: TimelineDopeSheetTool): void {

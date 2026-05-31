@@ -15,6 +15,17 @@ test("collapses timeline layer groups while preserving search reveal", async ({ 
   await expect(cubeGroup).toBeVisible();
   await expect(cubeGroup).toHaveAttribute("aria-expanded", "true");
   await expect.poll(async () => cubeRows.count(), { timeout: 10_000 }).toBeGreaterThan(0);
+  await expect.poll(async () => page.locator(".timeline-track-group").count(), { timeout: 10_000 }).toBeGreaterThan(2);
+
+  await cubeGroup.click({ modifiers: ["Alt"] });
+  await expect(page.locator('.timeline-track-group[aria-expanded="true"]')).toHaveCount(0);
+  await expect(cubeRows).toHaveCount(0);
+
+  await page.locator("#command-palette-btn").click();
+  await page.locator("#command-palette-search").fill("expand timeline groups");
+  await page.locator('[data-command-id="timeline.expand-groups"]').click();
+  await expect(page.locator('.timeline-track-group[aria-expanded="false"]')).toHaveCount(0);
+  await expect.poll(async () => cubeRows.count(), { timeout: 10_000 }).toBeGreaterThan(0);
 
   await cubeGroup.click();
   await expect(cubeGroup).toHaveAttribute("aria-expanded", "false");

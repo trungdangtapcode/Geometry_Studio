@@ -579,6 +579,14 @@ export class KeyframeTimelinePanel {
     return rowFilterLabel(next);
   }
 
+  collapseAllTimelineGroups(): number {
+    return this.setAllTimelineGroupsCollapsed(true);
+  }
+
+  expandAllTimelineGroups(): number {
+    return this.setAllTimelineGroupsCollapsed(false);
+  }
+
   focusRowSearch(): void {
     this.rowSearchInput.focus();
     this.rowSearchInput.select();
@@ -870,7 +878,10 @@ export class KeyframeTimelinePanel {
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
         const targetId = group.dataset.groupTargetId;
-        if (targetId) this.toggleTimelineGroup(targetId);
+        if (targetId) {
+          if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
+          else this.toggleTimelineGroup(targetId);
+        }
         return;
       }
       const keyButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-key");
@@ -900,7 +911,8 @@ export class KeyframeTimelinePanel {
         const targetId = group.dataset.groupTargetId;
         if (targetId) {
           event.preventDefault();
-          this.toggleTimelineGroup(targetId);
+          if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
+          else this.toggleTimelineGroup(targetId);
         }
         return;
       }
@@ -1127,6 +1139,22 @@ export class KeyframeTimelinePanel {
 
   private isTimelineGroupCollapsed(targetId: string): boolean {
     return !this.hasRowSearch() && this.collapsedTimelineGroups.has(targetId);
+  }
+
+  private setAllTimelineGroupsCollapsed(collapsed: boolean): number {
+    const groupIds = this.timelineGroupIds();
+    this.collapsedTimelineGroups = collapsed ? new Set(groupIds) : new Set();
+    storeCollapsedTimelineGroups(this.collapsedTimelineGroups);
+    if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+    return groupIds.length;
+  }
+
+  private timelineGroupIds(): string[] {
+    return [
+      ...this.lastEntries.map((entry) => entry.id),
+      CAMERA_TARGET_ID,
+      LIGHT_TARGET_ID
+    ];
   }
 
   private lockDockScroll(): void {
