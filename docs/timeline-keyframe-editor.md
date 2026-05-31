@@ -11,6 +11,9 @@ and edited directly without dragging.
 - `Key Time` retimes one active keyframe with snapping and collision checks.
   When multiple keyframes are selected, it edits the earliest selected key as
   the anchor and shifts the selected block while preserving relative spacing.
+- `Key Time`, `End`, and `Span` accept the same time formats as the main
+  timeline fields: seconds, frame counts like `90f`, timecode like
+  `00:00:03:00`, and relative offsets like `+10f`.
 - `End` is enabled for selected keyframes at two or more distinct times. It
   time-stretches the selected block so the latest selected key lands there.
 - `Span` is enabled for selected keyframes at two or more distinct times. It

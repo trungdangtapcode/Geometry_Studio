@@ -2214,7 +2214,7 @@ test("retimes multiple selected keyframes from the key editor anchor time", asyn
   await expect(page.locator("#timeline-key-time")).toHaveValue("1");
 
   await page.locator("#timeline-key-time").evaluate((input) => {
-    (input as HTMLInputElement).value = "3";
+    (input as HTMLInputElement).value = "90f";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(page.locator("#timeline-key-time")).toHaveValue("3");
@@ -2267,7 +2267,7 @@ test("stretches multiple selected keyframes from the key editor span", async ({ 
   await expect(page.locator("#timeline-key-span")).toHaveValue("2");
 
   await page.locator("#timeline-key-span").evaluate((input) => {
-    (input as HTMLInputElement).value = "4";
+    (input as HTMLInputElement).value = "120f";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(page.locator("#timeline-key-span")).toHaveValue("4");
@@ -2320,7 +2320,7 @@ test("stretches multiple selected keyframes from the key editor end time", async
   await expect(page.locator("#timeline-key-end")).toHaveValue("3");
 
   await page.locator("#timeline-key-end").evaluate((input) => {
-    (input as HTMLInputElement).value = "6";
+    (input as HTMLInputElement).value = "00:00:06:00";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await expect(page.locator("#timeline-key-end")).toHaveValue("6");

@@ -277,6 +277,8 @@ If a key already exists at that time, `Set Key` updates it.
 4. Edit `End` to stretch the selected block so the latest selected key lands at
    that time.
 5. Edit `Span` to stretch or compress the selected block from the earliest key.
+6. These fields accept seconds, frames like `90f`, timecode like
+   `00:00:03:00`, and relative offsets like `+10f`.
 
 ### Apply A Motion Preset
 

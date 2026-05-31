@@ -951,12 +951,34 @@ export class KeyframeTimelinePanel {
     });
   }
 
+  private parseKeyframeEditorTimeInput(input: HTMLInputElement, baseTime: number): number | null {
+    const time = this.parseTimeInput(input, baseTime);
+    if (time === null) this.restoreKeyframeEditor();
+    return time;
+  }
+
   private restoreTimeInputs(): void {
     if (!this.lastTimelineDocument) return;
     this.timeInput.value = formatNumber(this.lastTimelineDocument.currentTime);
     this.durationInput.value = formatNumber(this.lastTimelineDocument.duration);
     this.workStartInput.value = formatNumber(this.lastTimelineDocument.workStart);
     this.workEndInput.value = formatNumber(this.lastTimelineDocument.workEnd);
+  }
+
+  private restoreKeyframeEditor(): void {
+    if (!this.lastTimelineDocument) return;
+    this.syncSelectionWidgets(this.lastTimelineDocument, this.lastSelectedId);
+  }
+
+  private selectedKeyframeTimeRange(): { start: number; end: number } | null {
+    if (!this.lastTimelineDocument) return null;
+    const sources = this.detailSources(this.lastTimelineDocument, this.lastSelectedId);
+    if (sources.length === 0) return null;
+    const times = sources.map((source) => source.keyframe.time);
+    return {
+      start: Math.min(...times),
+      end: Math.max(...times)
+    };
   }
 
   private bindEvents(): void {
@@ -1127,15 +1149,23 @@ export class KeyframeTimelinePanel {
       this.callbacks.onTrackLabelSelected(objectId, this.selectedTrackKind());
     });
     this.keyframeTimeInput.addEventListener("change", () => {
-      this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { time: Number(this.keyframeTimeInput.value) });
+      const range = this.selectedKeyframeTimeRange();
+      const time = this.parseKeyframeEditorTimeInput(this.keyframeTimeInput, range?.start ?? this.lastTimelineDocument?.currentTime ?? 0);
+      if (time === null) return;
+      this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { time });
     });
     this.keyframeEndInput.addEventListener("change", () => {
-      const start = Number(this.keyframeTimeInput.value);
-      const end = Number(this.keyframeEndInput.value);
+      const range = this.selectedKeyframeTimeRange();
+      const end = this.parseKeyframeEditorTimeInput(this.keyframeEndInput, range?.end ?? this.lastTimelineDocument?.currentTime ?? 0);
+      if (!range || end === null) return;
+      const start = range.start;
       this.callbacks.onStretchKeyframesToSpan([...this.selectedKeyframeIds], end - start);
     });
     this.keyframeSpanInput.addEventListener("change", () => {
-      this.callbacks.onStretchKeyframesToSpan([...this.selectedKeyframeIds], Number(this.keyframeSpanInput.value));
+      const range = this.selectedKeyframeTimeRange();
+      const span = this.parseKeyframeEditorTimeInput(this.keyframeSpanInput, range ? range.end - range.start : 0);
+      if (span === null) return;
+      this.callbacks.onStretchKeyframesToSpan([...this.selectedKeyframeIds], span);
     });
     (["x", "y", "z"] as const).forEach((axis) => {
       this.keyframeValueInputs[axis].addEventListener("change", () => {

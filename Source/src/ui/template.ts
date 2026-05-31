@@ -218,9 +218,9 @@ export function studioTemplate(): string {
           </div>
           <div class="timeline-keyframe-editor" id="timeline-keyframe-editor">
             <strong id="timeline-key-label">No keyframe selected</strong>
-            <label><span>Key Time</span><input id="timeline-key-time" type="number" min="0" step="0.001" disabled /></label>
-            <label><span>End</span><input id="timeline-key-end" type="number" min="0" step="0.001" disabled /></label>
-            <label><span>Span</span><input id="timeline-key-span" type="number" min="0.001" step="0.001" disabled /></label>
+            <label><span>Key Time</span><input id="timeline-key-time" type="text" inputmode="decimal" disabled /></label>
+            <label><span>End</span><input id="timeline-key-end" type="text" inputmode="decimal" disabled /></label>
+            <label><span>Span</span><input id="timeline-key-span" type="text" inputmode="decimal" disabled /></label>
             <label><span id="timeline-key-x-label">X</span><input id="timeline-key-x" type="number" step="0.001" disabled /></label>
             <label><span id="timeline-key-y-label">Y</span><input id="timeline-key-y" type="number" step="0.001" disabled /></label>
             <label><span id="timeline-key-z-label">Z</span><input id="timeline-key-z" type="number" step="0.001" disabled /></label>
