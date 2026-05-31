@@ -169,7 +169,8 @@ PDF.
 - [Timeline Visible Row Keying](timeline-visible-row-keying.md) documents the
   `Set Visible` command for keying every currently visible dope-sheet row.
 - [Timeline Visible Row Selection](timeline-visible-row-selection.md) documents
-  selecting keyframes from the current row filter/search result.
+  selecting keyframes from the current row filter/search result, including
+  before/after playhead tail-edit selections.
 - [Timeline Visible Time Selection](timeline-visible-time-selection.md)
   documents selecting visible-row keyframes at the current playhead time.
 - [Timeline Visible Time Status](timeline-visible-time-status.md) documents the
@@ -311,6 +312,8 @@ animation runtime where it fits:
 - The `Select Visible` command turns current row visibility into an editable
   keyframe selection scope for copy, paste, retime, reverse, snap, distribute,
   fit, and preview workflows.
+- Visible-row before/after playhead selection commands support tail-edit
+  workflows after narrowing rows with search or filters.
 - The `Select Time` command selects visible-row keyframes at the playhead,
   enabling pose-column copy, delete, paste, and retime workflows.
 - The timeline timecode shows how many visible-row keyframes exist at the

@@ -915,6 +915,7 @@ test("selects keyframes on visible timeline rows", async ({ page }) => {
   await page.goto("/");
   await page.locator("#timeline-row-search").fill("texture");
   const visibleTextureRows = page.locator(
+    '.timeline-track-label[data-track-kind="objectTextureSource"], ' +
     '.timeline-track-label[data-track-kind="objectTextureRepeat"], ' +
     '.timeline-track-label[data-track-kind="objectTextureOffset"], ' +
     '.timeline-track-label[data-track-kind="objectTextureRotation"]'
@@ -970,6 +971,7 @@ test("selects visible-row keyframes at the playhead time", async ({ page }) => {
   await page.goto("/");
   await page.locator("#timeline-row-search").fill("texture");
   const visibleTextureRows = page.locator(
+    '.timeline-track-label[data-track-kind="objectTextureSource"], ' +
     '.timeline-track-label[data-track-kind="objectTextureRepeat"], ' +
     '.timeline-track-label[data-track-kind="objectTextureOffset"], ' +
     '.timeline-track-label[data-track-kind="objectTextureRotation"]'
@@ -999,7 +1001,7 @@ test("selects visible-row keyframes at the playhead time", async ({ page }) => {
   const sceneJson = await sceneText.jsonValue();
   const sceneDocument = JSON.parse(sceneJson as string);
   const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
-  (["objectTextureRepeat", "objectTextureOffset", "objectTextureRotation"] as const).forEach((kind) => {
+  (["objectTextureSource", "objectTextureRepeat", "objectTextureOffset", "objectTextureRotation"] as const).forEach((kind) => {
     const track = objectTimeline.tracks.find((candidate: { kind: string }) => candidate.kind === kind);
     expect(track.keyframes.map((keyframe: { time: number }) => keyframe.time)).toEqual([0]);
   });
@@ -1010,6 +1012,57 @@ test("selects visible-row keyframes at the playhead time", async ({ page }) => {
   });
   await page.keyboard.press("Control+Alt+K");
   await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount} keyframes selected`);
+  expect(errors).toEqual([]);
+});
+
+test("selects visible-row keyframes before and after the playhead", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await page.locator("#timeline-row-search").fill("texture");
+  const visibleTextureRows = page.locator(
+    '.timeline-track-label[data-track-kind="objectTextureSource"], ' +
+    '.timeline-track-label[data-track-kind="objectTextureRepeat"], ' +
+    '.timeline-track-label[data-track-kind="objectTextureOffset"], ' +
+    '.timeline-track-label[data-track-kind="objectTextureRotation"]'
+  );
+  const visibleTrackCount = await visibleTextureRows.evaluateAll((rows) =>
+    new Set(rows.map((row) => `${(row as HTMLElement).dataset.objectId}:${(row as HTMLElement).dataset.trackKind}`)).size
+  );
+  expect(visibleTrackCount).toBeGreaterThan(0);
+
+  for (const time of [0, 2, 4]) {
+    await page.locator("#timeline-current-time").evaluate((input, value) => {
+      (input as HTMLInputElement).value = String(value);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+    await page.locator("#timeline-set-visible").click();
+  }
+
+  const runCommand = async (query: string) => {
+    await page.keyboard.press("Control+K");
+    await expect(page.locator("#command-palette-search")).toBeVisible();
+    await page.locator("#command-palette-search").fill(query);
+    await page.keyboard.press("Enter");
+  };
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await runCommand("select visible row keys after playhead");
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount * 2} keyframes selected`);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "3";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await runCommand("select visible row keys before playhead");
+  await expect(page.locator("#timeline-selection")).toContainText(`${visibleTrackCount * 2} keyframes selected`);
   expect(errors).toEqual([]);
 });
 

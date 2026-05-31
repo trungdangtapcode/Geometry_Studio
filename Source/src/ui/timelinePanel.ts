@@ -580,6 +580,16 @@ export class KeyframeTimelinePanel {
     return this.selectRowTargetKeyframesAtCurrentTime(this.visibleRowTargets());
   }
 
+  selectVisibleRowKeyframesBeforeCurrentTime(): number {
+    if (!this.lastTimelineDocument) return 0;
+    return this.selectRowTargetKeyframesByTime(this.visibleRowTargets(), "before");
+  }
+
+  selectVisibleRowKeyframesAfterCurrentTime(): number {
+    if (!this.lastTimelineDocument) return 0;
+    return this.selectRowTargetKeyframesByTime(this.visibleRowTargets(), "after");
+  }
+
   selectPinnedRowKeyframesAtCurrentTime(): number {
     if (!this.lastTimelineDocument) return 0;
     return this.selectRowTargetKeyframesAtCurrentTime(this.pinnedRowTargets());
@@ -595,6 +605,27 @@ export class KeyframeTimelinePanel {
       const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
       track?.keyframes.forEach((keyframe) => {
         if (Math.abs(keyframe.time - currentTime) <= tolerance) selectedIds.add(keyframe.id);
+      });
+    });
+    this.selectedKeyframeIds = selectedIds;
+    this.selectedAxis = null;
+    this.syncSelectionWidgets(timelineDocument, this.lastSelectedId);
+    this.renderGraph(timelineDocument, this.lastSelectedId);
+    this.refreshCanvas();
+    return this.selectedKeyframeIds.size;
+  }
+
+  private selectRowTargetKeyframesByTime(rows: TimelineVisibleRowTarget[], direction: "before" | "after"): number {
+    if (!this.lastTimelineDocument) return 0;
+    const timelineDocument = this.lastTimelineDocument;
+    const currentTime = timelineDocument.currentTime;
+    const tolerance = Math.max(0.001, timelineDocument.snapEnabled ? timelineDocument.snapStep * 0.5 : 0.001);
+    const selectedIds = new Set<string>();
+    rows.forEach((target) => {
+      const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
+      track?.keyframes.forEach((keyframe) => {
+        if (direction === "before" && keyframe.time < currentTime - tolerance) selectedIds.add(keyframe.id);
+        if (direction === "after" && keyframe.time > currentTime + tolerance) selectedIds.add(keyframe.id);
       });
     });
     this.selectedKeyframeIds = selectedIds;

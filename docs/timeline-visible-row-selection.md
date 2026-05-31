@@ -17,6 +17,10 @@ copied, pasted, nudged, reversed, snapped, distributed, or fit to the work area.
 - The toolbar button selects all keyframes on visible rows.
 - `Ctrl/Cmd+Alt+A` selects all keyframes on visible rows.
 - `Ctrl/Cmd+Alt+Shift+A` selects visible-row keyframes inside Work In/Out.
+- Command Palette `Select Visible Row Keys Before Playhead` selects visible-row
+  keyframes earlier than the current playhead time.
+- Command Palette `Select Visible Row Keys After Playhead` selects visible-row
+  keyframes later than the current playhead time.
 
 ## Workflow
 
@@ -26,6 +30,8 @@ copied, pasted, nudged, reversed, snapped, distributed, or fit to the work area.
    Distribute, Fit Keys, or Preview Sel.
 4. For work-area-only edits, set Work In/Out and press
    `Ctrl/Cmd+Alt+Shift+A`.
+5. For tail edits, park the playhead at the edit point and use the Command
+   Palette to select visible-row keys before or after the playhead.
 
 This makes the timeline behave more like a real dope sheet: visible properties
 become an editable selection scope instead of only a display filter.

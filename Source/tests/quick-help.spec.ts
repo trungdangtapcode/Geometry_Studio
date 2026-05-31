@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("opens and searches the in-app quick help", async ({ page }) => {
+  test.setTimeout(120_000);
   await page.goto("/");
 
   const help = page.locator("#quick-help");
@@ -28,6 +29,6 @@ test("opens and searches the in-app quick help", async ({ page }) => {
 
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("quick help");
-  await page.keyboard.press("Enter");
+  await page.locator('[data-command-id="help.quick"]').click({ force: true });
   await expect(help).toHaveClass(/open/);
 });

@@ -1085,6 +1085,12 @@ function boot(root: HTMLDivElement): void {
       command("timeline.select-work", "Select Active Track Work Area Keyframes", "Selection", selectTimelineWorkAreaKeyframes, { shortcut: "Ctrl+Shift+A" }),
       command("timeline.select-visible", "Select Visible Row Keyframes", "Selection", () => selectVisibleTimelineKeyframes(false), { shortcut: "Ctrl+Alt+A" }),
       command("timeline.select-visible-work", "Select Visible Row Work Area Keyframes", "Selection", () => selectVisibleTimelineKeyframes(true), { shortcut: "Ctrl+Alt+Shift+A" }),
+      command("timeline.select-visible-before", "Select Visible Row Keys Before Playhead", "Selection", () => selectVisibleTimelineRelativeKeyframes("before"), {
+        keywords: ["previous", "earlier", "tail edit", "retime", "rows"]
+      }),
+      command("timeline.select-visible-after", "Select Visible Row Keys After Playhead", "Selection", () => selectVisibleTimelineRelativeKeyframes("after"), {
+        keywords: ["following", "later", "tail edit", "retime", "rows"]
+      }),
       command("timeline.select-pinned", "Select Pinned Row Keyframes", "Selection", () => selectPinnedTimelineKeyframes(false), {
         keywords: ["pin", "pinned", "favorite", "keying set", "rows", "channels"]
       }),
@@ -3006,6 +3012,16 @@ function boot(root: HTMLDivElement): void {
       : workAreaOnly
         ? "No visible-row keyframes inside the work area."
         : "No keyframes on visible timeline rows.",
+      selectedCount ? "good" : "bad");
+  }
+
+  function selectVisibleTimelineRelativeKeyframes(direction: "before" | "after"): void {
+    const selectedCount = direction === "before"
+      ? timelinePanel.selectVisibleRowKeyframesBeforeCurrentTime()
+      : timelinePanel.selectVisibleRowKeyframesAfterCurrentTime();
+    showToast(selectedCount
+      ? `${selectedCount} visible-row keyframe${selectedCount === 1 ? "" : "s"} selected ${direction} playhead`
+      : `No visible-row keyframes ${direction} the playhead.`,
       selectedCount ? "good" : "bad");
   }
 

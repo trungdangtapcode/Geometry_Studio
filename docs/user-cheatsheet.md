@@ -147,6 +147,7 @@ Scale recorded together.
 | Select Visible | Select keys on visible rows |
 | Select Pinned | Select keys on pinned rows |
 | Select Time | Select keys at current playhead time |
+| Select Visible Before / After | Command Palette actions for visible-row tail edits around the playhead |
 | Pinned Time Commands | Command Palette actions for select/copy/cut/duplicate/delete pinned-row keys at the playhead |
 | Dup Time / Del Time | Duplicate or delete visible-row keys at the playhead |
 | Insert Gap | Push later visible-row keys by Work In/Out length |
@@ -199,6 +200,7 @@ Scale recorded together.
 | `Ctrl+Shift+A` | Select active-track keys inside Work In/Out |
 | `Ctrl+Alt+A` | Select visible-row keyframes |
 | `Ctrl+Alt+K` | Select visible-row keys at playhead |
+| Command Palette: `select visible before` / `select visible after` | Select visible-row keys before or after playhead |
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | Copy, cut, paste keyframes |
 | `Ctrl+D` | Duplicate selected keyframes |
 | `Delete` / `Backspace` | Delete selected keys, otherwise selected object |
@@ -278,6 +280,15 @@ animation.
    time.
 8. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
    pinned set is no longer useful.
+
+### Select A Timeline Tail
+
+1. Search or filter the timeline to the rows you want to edit.
+2. Move the playhead to the timing boundary.
+3. Press `Ctrl+K` or `F3`.
+4. Run `Select Visible Row Keys After Playhead` to select later keys, or
+   `Select Visible Row Keys Before Playhead` to select earlier keys.
+5. Move, nudge, ease, delete, copy, or fit the selected keys.
 
 ### Animate Camera
 
