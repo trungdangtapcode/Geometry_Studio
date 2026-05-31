@@ -983,6 +983,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["work area", "selection"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
+      command("timeline.preview-pinned", "Preview Pinned Row Keyframe Range", "Playback", previewPinnedTimelineKeyRange, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "work area", "range"],
+        disabled: () => timelinePanel.pinnedRowKeyframeTimes().length === 0
+      }),
       command("timeline.previous-pinned-key", "Previous Pinned Row Keyframe", "Playback", () => stepPinnedTimelineKeyframe(-1), {
         shortcut: "Ctrl+Alt+Shift+Left",
         keywords: ["pin", "pinned", "favorite", "keying set", "previous", "navigation"]
@@ -1137,6 +1141,14 @@ function boot(root: HTMLDivElement): void {
         shortcut: "Shift+0",
         keywords: ["zoom selection", "view selected keys"],
         disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.fit-pinned", "Fit Pinned Row Keyframes", "View", fitTimelineViewToPinnedKeyRange, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "zoom", "range"],
+        disabled: () => timelinePanel.pinnedRowKeyframeTimes().length === 0
+      }),
+      command("timeline.work-area-pinned", "Set Work Area To Pinned Row Keyframes", "View", setTimelineWorkAreaToPinnedKeys, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "work in", "work out", "range"],
+        disabled: () => timelinePanel.pinnedRowKeyframeTimes().length === 0
       }),
       command("timeline.follow-playhead", "Toggle Follow Playhead", "View", toggleTimelineFollowPlayhead, {
         keywords: ["auto scroll", "current time indicator", "timeline view"]
@@ -2793,6 +2805,18 @@ function boot(root: HTMLDivElement): void {
     return selectedResolvedKeyframeRange(sceneTimeline, sources);
   }
 
+  function timelineTimesRange(times: number[], emptyMessage: string): { start: number; end: number; count: number } | null {
+    if (times.length === 0) {
+      showToast(emptyMessage, "bad");
+      return null;
+    }
+
+    const start = Math.max(0, Math.min(...times, sceneTimeline.duration - 0.001));
+    const minimumSpan = Math.max(sceneTimeline.snapStep, 1 / sceneTimeline.fps, 0.001);
+    const end = Math.max(start + minimumSpan, Math.min(Math.max(...times, start + minimumSpan), sceneTimeline.duration));
+    return { start: roundTime(start), end: roundTime(end), count: times.length };
+  }
+
   function setTimelineWorkAreaToSelectedKeys(): void {
     const range = selectedTimelineKeyRange("Select timeline keyframes before fitting the work area.");
     if (!range) return;
@@ -2802,6 +2826,17 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.workEnd = range.end;
     updateAllUI();
     showToast(`Work area fit to ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`, "good");
+  }
+
+  function setTimelineWorkAreaToPinnedKeys(): void {
+    const range = timelineTimesRange(timelinePanel.pinnedRowKeyframeTimes(), "Pin rows with keyframes before fitting the work area.");
+    if (!range) return;
+
+    recordHistory();
+    sceneTimeline.workStart = range.start;
+    sceneTimeline.workEnd = range.end;
+    updateAllUI();
+    showToast(`Work area fit to ${range.count} pinned-row key time${range.count === 1 ? "" : "s"}`, "good");
   }
 
   function previewSelectedTimelineKeyRange(): void {
@@ -2816,12 +2851,32 @@ function boot(root: HTMLDivElement): void {
     playTimeline(1, `Previewing ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`);
   }
 
+  function previewPinnedTimelineKeyRange(): void {
+    const range = timelineTimesRange(timelinePanel.pinnedRowKeyframeTimes(), "Pin rows with keyframes before previewing a range.");
+    if (!range) return;
+
+    recordHistory();
+    sceneTimeline.workStart = range.start;
+    sceneTimeline.workEnd = range.end;
+    setTimelineTime(range.start);
+    transport.pause();
+    playTimeline(1, `Previewing ${range.count} pinned-row key time${range.count === 1 ? "" : "s"}`);
+  }
+
   function fitTimelineViewToSelectedKeyRange(): void {
     const range = selectedTimelineKeyRange("Select timeline keyframes before fitting the timeline view.");
     if (!range) return;
 
     timelinePanel.fitTimelineToRange(range.start, range.end);
     showToast(`Timeline view fit to ${range.count} selected keyframe${range.count === 1 ? "" : "s"}`, "good");
+  }
+
+  function fitTimelineViewToPinnedKeyRange(): void {
+    const range = timelineTimesRange(timelinePanel.pinnedRowKeyframeTimes(), "Pin rows with keyframes before fitting the timeline view.");
+    if (!range) return;
+
+    timelinePanel.fitTimelineToRange(range.start, range.end);
+    showToast(`Timeline view fit to ${range.count} pinned-row key time${range.count === 1 ? "" : "s"}`, "good");
   }
 
   function toggleTimelineFollowPlayhead(): void {

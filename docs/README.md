@@ -186,7 +186,8 @@ PDF.
 - [Timeline Row Search](timeline-row-search.md) documents the AE-style row
   search field for quickly isolating object, camera, and light tracks.
 - [Timeline Pinned Rows](timeline-pinned-rows.md) documents starred timeline
-  rows, the Pinned Rows filter, and pinned-row keying sets for dense AE-style
+  rows, the Pinned Rows filter, pinned-row keying sets, pinned-row navigation,
+  and pinned-row range preview/work-area/fitting commands for dense AE-style
   editing.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
   enable, solo, lock, and key controls.

@@ -27,6 +27,14 @@ timeline rows and switch the row filter to `Pinned Rows`.
   filter state.
 - `Previous/Next Pinned Row Keyframe` jumps the playhead through timing columns
   on pinned rows. The shortcuts are `Ctrl/Cmd+Alt+Shift+Left/Right`.
+- `Fit Pinned Row Keyframes` zooms the dope sheet around the key times that
+  exist on pinned rows, so a pinned transform set can be framed without
+  selecting all of its keys first.
+- `Set Work Area To Pinned Row Keyframes` sets Work In/Out to the earliest and
+  latest pinned-row key times. This is useful before previewing or recording a
+  focused motion range.
+- `Preview Pinned Row Keyframe Range` sets the same focused Work In/Out range,
+  jumps to its start, and starts playback.
 - The command palette includes `Pin Active Timeline Row`, `Pin Visible Timeline
   Rows`, `Unpin Visible Timeline Rows`, `Clear Pinned Timeline Rows`, `Show
   Pinned Timeline Rows`, `Pin Selected Transform Rows`, and `Set Keys On Pinned
@@ -34,7 +42,8 @@ timeline rows and switch the row filter to `Pinned Rows`.
   Keyframes`, `Select Pinned Row Keys At Playhead`, `Copy Pinned Row Keys At
   Playhead`, `Cut Pinned Row Keys At Playhead`, `Duplicate Pinned Row Keys At
   Playhead`, `Delete Pinned Row Keys At Playhead`, `Previous Pinned Row
-  Keyframe`, and `Next Pinned Row Keyframe`.
+  Keyframe`, `Next Pinned Row Keyframe`, `Fit Pinned Row Keyframes`, `Set Work
+  Area To Pinned Row Keyframes`, and `Preview Pinned Row Keyframe Range`.
 - `Pinned Rows` in the timeline row filter shows pinned rows plus the active
   row. The filter label shows the current pinned-row count.
 - Pinned rows also remain visible in `Focus Rows` and `Keyed Rows`, so important
@@ -66,4 +75,6 @@ covers bulk visible-row pinning and clearing through the toolbar and command
 palette. It also verifies that `Set Keys On Pinned Rows` can key a pinned row
 while that row is hidden by row search, and that `Pin Selected Transform Rows`
 creates a three-track transform keying set for `Set Pinned`, `Select Pinned`,
-and pinned playhead-time copy/selection.
+and pinned playhead-time copy/selection. Range coverage verifies that pinned-row
+keys can set Work In/Out, fit the timeline view, and start focused range
+preview.

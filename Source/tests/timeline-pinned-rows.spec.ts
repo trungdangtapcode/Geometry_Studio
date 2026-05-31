@@ -225,3 +225,40 @@ test("navigates between pinned row keyframes", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(0);
 });
+
+test("uses pinned row keyframes as a focused preview range", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  const runCommand = async (query: string) => {
+    await page.keyboard.press("Control+K");
+    await expect(page.locator("#command-palette-search")).toBeVisible();
+    await page.locator("#command-palette-search").fill(query);
+    await page.keyboard.press("Enter");
+  };
+
+  await runCommand("pin selected transform rows");
+  await runCommand("set keys on pinned rows");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await runCommand("set keys on pinned rows");
+
+  await runCommand("set work area to pinned row keyframes");
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBe(0);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBe(2);
+
+  await runCommand("fit pinned row keyframes");
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes");
+
+  await runCommand("preview pinned row keyframe range");
+  await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBe(0);
+  await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBe(2);
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Pause");
+});

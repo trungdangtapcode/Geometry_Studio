@@ -122,6 +122,9 @@ Scale recorded together.
 | Previous/Next key | Jump between keys on the active track |
 | Previous/Next visible-row key | Jump between keys in visible rows |
 | Previous/Next pinned-row key | Command Palette or `Ctrl+Alt+Shift+Left/Right` |
+| Fit Pinned Row Keyframes | Command Palette action to zoom around pinned-row key times |
+| Set Work Area To Pinned Row Keyframes | Command Palette action to make Work In/Out match pinned-row key times |
+| Preview Pinned Row Keyframe Range | Command Palette action to play only the pinned-row key range |
 | Set Key | Add or update one key on the selected track dropdown |
 | Set TRS | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
