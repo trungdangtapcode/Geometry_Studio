@@ -86,6 +86,8 @@ PDF.
 - [Timeline Wheel Navigation](timeline-wheel-navigation.md) documents
   cursor-anchored wheel zoom and horizontal wheel/trackpad panning for dense
   timeline editing.
+- [Timeline Label Column Resize](timeline-label-column-resize.md) documents the
+  persisted resizable layer/property label column.
 - [Timeline Selection And Pan Tools](timeline-selection-pan-tools.md) documents
   the explicit dope-sheet Selection and Hand/Pan tools backed by
   `animation-timeline-js` interaction modes.

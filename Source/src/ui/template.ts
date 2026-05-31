@@ -244,6 +244,7 @@ export function studioTemplate(): string {
           </div>
           <div class="timeline-body">
             <div class="timeline-track-labels" id="timeline-track-labels"></div>
+            <button class="timeline-label-resize-handle" id="timeline-label-resize-handle" type="button" aria-label="Resize timeline label column" title="Drag to resize timeline label column. Double-click to reset."></button>
             <div class="timeline-workspace">
               <div class="timeline-marker-strip" id="timeline-marker-strip" aria-label="Timeline markers"></div>
               <div class="timeline-layer-strip" id="timeline-layer-strip" aria-label="Object layer ranges"></div>

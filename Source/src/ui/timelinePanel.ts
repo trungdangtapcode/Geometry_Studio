@@ -199,11 +199,14 @@ const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
 const ROW_SEARCH_STORAGE_KEY = "geometry-studio-timeline-row-search";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
+const LABEL_WIDTH_STORAGE_KEY = "geometry-studio-timeline-label-width";
 const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
 const LAYER_STRIP_COLLAPSED_STORAGE_KEY = "geometry-studio-timeline-layer-strip-collapsed";
 const COLLAPSED_GROUPS_STORAGE_KEY = "geometry-studio-timeline-collapsed-groups";
 const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
 const MIN_DOCK_HEIGHT = 190;
+const MIN_LABEL_WIDTH = 112;
+const MAX_LABEL_WIDTH = 340;
 const DEFAULT_ROW_HEIGHT = 30;
 const DEFAULT_HEADER_HEIGHT = 28;
 
@@ -211,6 +214,7 @@ export class KeyframeTimelinePanel {
   private readonly timeline: Timeline;
   private readonly root = query<HTMLElement>("#keyframe-dock");
   private readonly resizeHandle = query<HTMLButtonElement>("#timeline-resize-handle");
+  private readonly labelResizeHandle = query<HTMLButtonElement>("#timeline-label-resize-handle");
   private readonly labels = query<HTMLDivElement>("#timeline-track-labels");
   private readonly markerStrip = query<HTMLDivElement>("#timeline-marker-strip");
   private readonly layerStrip = query<HTMLDivElement>("#timeline-layer-strip");
@@ -313,6 +317,8 @@ export class KeyframeTimelinePanel {
   private dopeSheetTool: TimelineDopeSheetTool = "selection";
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
+  private labelResizeState: { pointerId: number; startX: number; startWidth: number } | null = null;
+  private lastLabelResizePointerDownAt = 0;
   private markerDragState: TimelineMarkerDragState | null = null;
   private overviewDragState: TimelineOverviewDragState | null = null;
   private layerDragState: TimelineLayerDragState | null = null;
@@ -324,6 +330,8 @@ export class KeyframeTimelinePanel {
   private updating = false;
   private readonly handleResizeMove = (event: PointerEvent) => this.resizeDock(event);
   private readonly handleResizeEnd = (event: PointerEvent) => this.finishResize(event);
+  private readonly handleLabelResizeMove = (event: PointerEvent) => this.resizeLabelColumn(event);
+  private readonly handleLabelResizeEnd = (event: PointerEvent) => this.finishLabelResize(event);
   private readonly handleMarkerDragMove = (event: PointerEvent) => this.dragMarker(event);
   private readonly handleMarkerDragEnd = (event: PointerEvent) => this.finishMarkerDrag(event);
   private readonly handleOverviewDragMove = (event: PointerEvent) => this.dragOverview(event);
@@ -332,12 +340,16 @@ export class KeyframeTimelinePanel {
   private readonly handleLayerDragEnd = (event: PointerEvent) => this.finishLayerRangeDrag(event);
   private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
   private readonly handleTimelineWheel = (event: WheelEvent) => this.handleTimelineWheelNavigation(event);
-  private readonly handleWindowResize = () => this.syncToolbarOverflow();
+  private readonly handleWindowResize = () => {
+    this.syncToolbarOverflow();
+    this.clampLabelWidthToViewport();
+  };
   private readonly handleLayerStretchModifierKey = (event: KeyboardEvent) => this.trackLayerStretchModifier(event);
   private readonly handleWindowBlur = () => { this.layerStretchModifierActive = false; };
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
     this.applyStoredDockHeight();
+    this.applyStoredLabelWidth();
     this.applyLayerStripCollapsed(this.layerStripCollapsed, false);
     this.playheadController = new TimelinePlayheadController({
       markerStrip: this.markerStrip,
@@ -697,6 +709,14 @@ export class KeyframeTimelinePanel {
   private bindEvents(): void {
     this.resizeHandle.addEventListener("pointerdown", (event) => this.startResize(event));
     this.resizeHandle.addEventListener("dblclick", () => this.resetDockHeight());
+    this.labelResizeHandle.addEventListener("pointerdown", (event) => this.startLabelResize(event));
+    this.labelResizeHandle.addEventListener("mousedown", (event) => {
+      if (event.detail < 2) return;
+      event.preventDefault();
+      this.resetLabelWidth();
+    });
+    this.labelResizeHandle.addEventListener("dblclick", () => this.resetLabelWidth());
+    this.labelResizeHandle.addEventListener("keydown", (event) => this.adjustLabelWidthWithKeyboard(event));
     this.labels.addEventListener("scroll", () => this.syncCanvasScrollFromLabels());
     this.toolbar.addEventListener("scroll", () => this.syncToolbarOverflow());
     this.toolbar.addEventListener("wheel", (event) => this.scrollToolbarWithWheel(event), { passive: false });
@@ -1068,6 +1088,101 @@ export class KeyframeTimelinePanel {
   private applyStoredDockHeight(): void {
     const height = loadTimelineDockHeight();
     if (height) this.root.style.setProperty("--timeline-dock-height", `${clamp(height, MIN_DOCK_HEIGHT, this.maxDockHeight())}px`);
+  }
+
+  private startLabelResize(event: PointerEvent): void {
+    if (this.root.classList.contains("collapsed")) return;
+    const now = performance.now();
+    if (event.detail >= 2 || now - this.lastLabelResizePointerDownAt < 360) {
+      this.lastLabelResizePointerDownAt = 0;
+      this.resetLabelWidth();
+      return;
+    }
+    this.lastLabelResizePointerDownAt = now;
+    this.labelResizeState = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startWidth: this.currentLabelWidth()
+    };
+    this.root.classList.add("label-resizing");
+    this.labelResizeHandle.setPointerCapture(event.pointerId);
+    window.addEventListener("pointermove", this.handleLabelResizeMove);
+    window.addEventListener("pointerup", this.handleLabelResizeEnd);
+    window.addEventListener("pointercancel", this.handleLabelResizeEnd);
+  }
+
+  private resizeLabelColumn(event: PointerEvent): void {
+    if (!this.labelResizeState || event.pointerId !== this.labelResizeState.pointerId) return;
+    this.setLabelWidth(this.labelResizeState.startWidth + event.clientX - this.labelResizeState.startX, false);
+  }
+
+  private finishLabelResize(event: PointerEvent): void {
+    if (!this.labelResizeState || event.pointerId !== this.labelResizeState.pointerId) return;
+    const width = this.currentLabelWidth();
+    storeTimelineLabelWidth(width);
+    this.labelResizeState = null;
+    this.root.classList.remove("label-resizing");
+    if (this.labelResizeHandle.hasPointerCapture(event.pointerId)) this.labelResizeHandle.releasePointerCapture(event.pointerId);
+    window.removeEventListener("pointermove", this.handleLabelResizeMove);
+    window.removeEventListener("pointerup", this.handleLabelResizeEnd);
+    window.removeEventListener("pointercancel", this.handleLabelResizeEnd);
+    this.refreshCanvas();
+  }
+
+  private adjustLabelWidthWithKeyboard(event: KeyboardEvent): void {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    if (event.key === "Home") {
+      this.resetLabelWidth();
+      return;
+    }
+    const step = event.shiftKey ? 24 : 8;
+    const nextWidth = event.key === "End"
+      ? this.maxLabelWidth()
+      : this.currentLabelWidth() + (event.key === "ArrowRight" ? step : -step);
+    this.setLabelWidth(nextWidth, true);
+  }
+
+  private applyStoredLabelWidth(): void {
+    const width = loadTimelineLabelWidth();
+    if (width) this.setLabelWidth(width, false);
+  }
+
+  private resetLabelWidth(): void {
+    this.labelResizeState = null;
+    this.root.classList.remove("label-resizing");
+    window.removeEventListener("pointermove", this.handleLabelResizeMove);
+    window.removeEventListener("pointerup", this.handleLabelResizeEnd);
+    window.removeEventListener("pointercancel", this.handleLabelResizeEnd);
+    this.root.style.removeProperty("--timeline-track-label-width");
+    clearTimelineLabelWidth();
+    this.refreshCanvas();
+  }
+
+  private setLabelWidth(width: number, persist: boolean): void {
+    const nextWidth = Math.round(clamp(width, MIN_LABEL_WIDTH, this.maxLabelWidth()));
+    this.root.style.setProperty("--timeline-track-label-width", `${nextWidth}px`);
+    if (persist) storeTimelineLabelWidth(nextWidth);
+    this.refreshCanvas();
+    this.syncOverviewViewport();
+  }
+
+  private currentLabelWidth(): number {
+    const inline = Number.parseFloat(this.root.style.getPropertyValue("--timeline-track-label-width"));
+    if (Number.isFinite(inline) && inline > 0) return inline;
+    const computed = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--timeline-track-label-width"));
+    return Number.isFinite(computed) && computed > 0 ? computed : MIN_LABEL_WIDTH;
+  }
+
+  private maxLabelWidth(): number {
+    const width = this.root.getBoundingClientRect().width;
+    if (width <= 0) return MAX_LABEL_WIDTH;
+    return Math.max(MIN_LABEL_WIDTH, Math.min(MAX_LABEL_WIDTH, width * 0.45));
+  }
+
+  private clampLabelWidthToViewport(): void {
+    if (!this.root.style.getPropertyValue("--timeline-track-label-width")) return;
+    this.setLabelWidth(this.currentLabelWidth(), true);
   }
 
   private applyLayerStripCollapsed(collapsed: boolean, persist: boolean): void {
@@ -2677,6 +2792,31 @@ function clearTimelineDockHeight(): void {
     window.localStorage.removeItem(DOCK_HEIGHT_STORAGE_KEY);
   } catch {
     // Dock sizing is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function loadTimelineLabelWidth(): number | null {
+  try {
+    const value = Number(window.localStorage.getItem(LABEL_WIDTH_STORAGE_KEY));
+    return Number.isFinite(value) && value >= MIN_LABEL_WIDTH ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeTimelineLabelWidth(width: number): void {
+  try {
+    window.localStorage.setItem(LABEL_WIDTH_STORAGE_KEY, String(width));
+  } catch {
+    // Label sizing is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function clearTimelineLabelWidth(): void {
+  try {
+    window.localStorage.removeItem(LABEL_WIDTH_STORAGE_KEY);
+  } catch {
+    // Label sizing is an editor preference; blocked storage should not affect timeline editing.
   }
 }
 
