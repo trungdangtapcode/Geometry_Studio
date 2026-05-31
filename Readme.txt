@@ -84,6 +84,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - Left / Right: step the timeline one frame.
 - Shift+Left / Shift+Right: jump to the previous or next keyframe on the selected track.
 - Shift+Home / Shift+End: jump to the first or last selected timeline keyframe.
+- Ctrl+Alt+Shift+Left / Ctrl+Alt+Shift+Right: jump to the previous or next pinned-row keyframe.
 - Alt+Left / Alt+Right: nudge selected or playhead keyframes by one frame.
 - Shift+Enter: move selected keyframes so the first selected key lands at the playhead.
 - Shift+C: center selected keyframe timing around the playhead.

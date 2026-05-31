@@ -983,6 +983,14 @@ function boot(root: HTMLDivElement): void {
         keywords: ["work area", "selection"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
+      command("timeline.previous-pinned-key", "Previous Pinned Row Keyframe", "Playback", () => stepPinnedTimelineKeyframe(-1), {
+        shortcut: "Ctrl+Alt+Shift+Left",
+        keywords: ["pin", "pinned", "favorite", "keying set", "previous", "navigation"]
+      }),
+      command("timeline.next-pinned-key", "Next Pinned Row Keyframe", "Playback", () => stepPinnedTimelineKeyframe(1), {
+        shortcut: "Ctrl+Alt+Shift+Right",
+        keywords: ["pin", "pinned", "favorite", "keying set", "next", "navigation"]
+      }),
 
       command("timeline.set-key", "Set Key On Active Track", "Keyframes", () => addTimelineKeyframe(timelinePanel.selectedTrackKind()), { keywords: ["diamond", "update"] }),
       command("timeline.set-transform", "Set Transform Keys", "Keyframes", setTransformTimelineKeyframes, { keywords: ["trs", "position", "rotation", "scale"] }),
@@ -2190,7 +2198,8 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "arrowleft" || key === "arrowright") {
       event.preventDefault();
-      if (event.altKey && (event.ctrlKey || event.metaKey)) stepVisibleTimelineKeyframe(key === "arrowright" ? 1 : -1);
+      if (event.altKey && event.shiftKey && (event.ctrlKey || event.metaKey)) stepPinnedTimelineKeyframe(key === "arrowright" ? 1 : -1);
+      else if (event.altKey && (event.ctrlKey || event.metaKey)) stepVisibleTimelineKeyframe(key === "arrowright" ? 1 : -1);
       else if (event.altKey) nudgeTimelineKeyframes(key === "arrowright" ? 1 : -1);
       else if (event.shiftKey) stepTimelineKeyframe(key === "arrowright" ? 1 : -1);
       else stepTimelineFrame(key === "arrowright" ? 1 : -1);
@@ -4308,6 +4317,27 @@ function boot(root: HTMLDivElement): void {
 
     setTimelineTime(target);
     showToast(`Jumped to visible-row keyframe at ${formatNumber(target)}s`, "good");
+  }
+
+  function stepPinnedTimelineKeyframe(direction: -1 | 1): void {
+    const times = timelinePanel.pinnedRowKeyframeTimes();
+    if (times.length === 0) {
+      showToast("No pinned-row keyframes to navigate.", "bad");
+      return;
+    }
+
+    const current = sceneTimeline.currentTime;
+    const epsilon = 0.001;
+    const target = direction > 0
+      ? times.find((time) => time > current + epsilon)
+      : [...times].reverse().find((time) => time < current - epsilon);
+    if (target === undefined) {
+      showToast(direction > 0 ? "No later pinned-row keyframe." : "No earlier pinned-row keyframe.", "bad");
+      return;
+    }
+
+    setTimelineTime(target);
+    showToast(`Jumped to pinned-row keyframe at ${formatNumber(target)}s`, "good");
   }
 
   function stepSelectedTimelineKeyBoundary(direction: -1 | 1): void {

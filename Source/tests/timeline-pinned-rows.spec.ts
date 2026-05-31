@@ -190,3 +190,38 @@ test("pins selected transform rows as a reusable keying set", async ({ page }) =
   await page.keyboard.press("Enter");
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes");
 });
+
+test("navigates between pinned row keyframes", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("pin selected transform rows");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("set keys on pinned rows");
+  await page.keyboard.press("Enter");
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("set keys on pinned rows");
+  await page.keyboard.press("Enter");
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.keyboard.press("Control+Alt+Shift+ArrowRight");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(2);
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("previous pinned row keyframe");
+  await page.keyboard.press("Enter");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBe(0);
+});

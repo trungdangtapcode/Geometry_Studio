@@ -606,9 +606,19 @@ export class KeyframeTimelinePanel {
 
   visibleRowKeyframeTimes(): number[] {
     if (!this.lastTimelineDocument) return [];
+    return this.rowTargetKeyframeTimes(this.visibleRowTargets());
+  }
+
+  pinnedRowKeyframeTimes(): number[] {
+    if (!this.lastTimelineDocument) return [];
+    return this.rowTargetKeyframeTimes(this.pinnedRowTargets());
+  }
+
+  private rowTargetKeyframeTimes(rows: TimelineVisibleRowTarget[]): number[] {
+    if (!this.lastTimelineDocument) return [];
     const timelineDocument = this.lastTimelineDocument;
     const times = new Set<number>();
-    this.visibleRowTargets().forEach((target) => {
+    rows.forEach((target) => {
       const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
       track?.keyframes.forEach((keyframe) => times.add(roundTimelineTime(keyframe.time)));
     });

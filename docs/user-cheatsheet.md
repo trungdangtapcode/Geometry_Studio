@@ -121,6 +121,7 @@ Scale recorded together.
 | Previous/Next frame | Step one frame |
 | Previous/Next key | Jump between keys on the active track |
 | Previous/Next visible-row key | Jump between keys in visible rows |
+| Previous/Next pinned-row key | Command Palette or `Ctrl+Alt+Shift+Left/Right` |
 | Set Key | Add or update one key on the selected track dropdown |
 | Set TRS | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
@@ -176,6 +177,7 @@ Scale recorded together.
 | `Left`, `Right` | Step one frame |
 | `Shift+Left`, `Shift+Right` | Previous / next keyframe on active track |
 | `Ctrl+Alt+Left`, `Ctrl+Alt+Right` | Previous / next visible-row keyframe |
+| `Ctrl+Alt+Shift+Left`, `Ctrl+Alt+Shift+Right` | Previous / next pinned-row keyframe |
 | `Home`, `End` | Work In / Work Out |
 | `B`, `N` or `I`, `O` | Set Work In / Work Out to playhead |
 | `U` | Cycle Focus, Keyed, Pinned, All Rows |

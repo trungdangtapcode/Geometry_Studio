@@ -25,13 +25,16 @@ timeline rows and switch the row filter to `Pinned Rows`.
 - `Select/Copy/Cut/Duplicate/Delete Pinned Row Keys At Playhead` work with only
   the pinned pose column at the current time, regardless of row search or row
   filter state.
+- `Previous/Next Pinned Row Keyframe` jumps the playhead through timing columns
+  on pinned rows. The shortcuts are `Ctrl/Cmd+Alt+Shift+Left/Right`.
 - The command palette includes `Pin Active Timeline Row`, `Pin Visible Timeline
   Rows`, `Unpin Visible Timeline Rows`, `Clear Pinned Timeline Rows`, `Show
   Pinned Timeline Rows`, `Pin Selected Transform Rows`, and `Set Keys On Pinned
   Rows`, `Select Pinned Row Keyframes`, and `Select Pinned Row Work Area
   Keyframes`, `Select Pinned Row Keys At Playhead`, `Copy Pinned Row Keys At
   Playhead`, `Cut Pinned Row Keys At Playhead`, `Duplicate Pinned Row Keys At
-  Playhead`, and `Delete Pinned Row Keys At Playhead`.
+  Playhead`, `Delete Pinned Row Keys At Playhead`, `Previous Pinned Row
+  Keyframe`, and `Next Pinned Row Keyframe`.
 - `Pinned Rows` in the timeline row filter shows pinned rows plus the active
   row. The filter label shows the current pinned-row count.
 - Pinned rows also remain visible in `Focus Rows` and `Keyed Rows`, so important
