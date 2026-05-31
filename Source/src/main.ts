@@ -27,6 +27,7 @@ import {
   selectedResolvedKeyframeRange,
   snapResolvedKeyframesToFrames,
   staggerResolvedKeyframesFromTime,
+  stretchResolvedKeyframesToSpan,
   type EditTimelineResult,
   type TimelineClipboard,
   type TimelineKeyframeEditPatch,
@@ -287,6 +288,7 @@ function boot(root: HTMLDivElement): void {
     onCascadeKeyframesFromPlayhead: cascadeTimelineKeyframesFromPlayhead,
     onCycleKeyframesAcrossWorkArea: cycleTimelineKeyframesAcrossWorkArea,
     onEditKeyframes: editTimelineKeyframes,
+    onStretchKeyframesToSpan: stretchTimelineKeyframesToSpan,
     onAddMarker: addTimelineMarker,
     onDeleteMarker: deleteTimelineMarker,
     onRenameMarker: renameTimelineMarker,
@@ -4288,6 +4290,28 @@ function boot(root: HTMLDivElement): void {
       result,
       (editResult) => editResult.skipped ? `No keyframe fitted, ${editResult.skipped} skipped.` : "Selected keyframes already fit Work In/Out.",
       (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} fitted to Work In/Out${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
+  }
+
+  function stretchTimelineKeyframesToSpan(keyframeIds: string[], span: number): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before editing span.", "bad");
+      return;
+    }
+    if (!Number.isFinite(span) || span <= 0) {
+      showToast("Enter a positive selected-key span.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "stretching selected keyframes")) return;
+
+    recordHistory();
+    const result = stretchResolvedKeyframesToSpan(sceneTimeline, sources, span);
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      (editResult) => editResult.skipped ? `No keyframe span changed, ${editResult.skipped} skipped.` : "Selected keyframes already match that span.",
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} stretched to ${formatNumber(span)}s span${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
     );
   }
 

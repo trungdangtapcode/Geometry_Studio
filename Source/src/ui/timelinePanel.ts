@@ -106,6 +106,7 @@ export interface KeyframeTimelineCallbacks {
   onStaggerKeyframesFromPlayhead(keyframeIds: string[]): void;
   onCascadeKeyframesFromPlayhead(keyframeIds: string[]): void;
   onEditKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void;
+  onStretchKeyframesToSpan(keyframeIds: string[], span: number): void;
   onAddMarker(label: string, color?: string): void;
   onDeleteMarker(markerId: string | null): void;
   onRenameMarker(markerId: string, label: string): void;
@@ -316,6 +317,7 @@ export class KeyframeTimelinePanel {
   private readonly timecodeLabel = query<HTMLSpanElement>("#timeline-timecode");
   private readonly keyframeLabel = query<HTMLElement>("#timeline-key-label");
   private readonly keyframeTimeInput = query<HTMLInputElement>("#timeline-key-time");
+  private readonly keyframeSpanInput = query<HTMLInputElement>("#timeline-key-span");
   private readonly keyframeValueInputs = {
     x: query<HTMLInputElement>("#timeline-key-x"),
     y: query<HTMLInputElement>("#timeline-key-y"),
@@ -1125,6 +1127,9 @@ export class KeyframeTimelinePanel {
     });
     this.keyframeTimeInput.addEventListener("change", () => {
       this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { time: Number(this.keyframeTimeInput.value) });
+    });
+    this.keyframeSpanInput.addEventListener("change", () => {
+      this.callbacks.onStretchKeyframesToSpan([...this.selectedKeyframeIds], Number(this.keyframeSpanInput.value));
     });
     (["x", "y", "z"] as const).forEach((axis) => {
       this.keyframeValueInputs[axis].addEventListener("change", () => {
@@ -2915,6 +2920,16 @@ export class KeyframeTimelinePanel {
     this.keyframeTimeInput.title = sources.length > 1
       ? "Move selected keyframes as a block by setting the earliest selected key time"
       : "Selected keyframe time";
+
+    const sourceTimes = sources.map((source) => source.keyframe.time);
+    const sourceSpan = sourceTimes.length > 1 ? Math.max(...sourceTimes) - Math.min(...sourceTimes) : 0;
+    const spanEditable = sources.length > 1 && sourceSpan > 0.001;
+    this.keyframeSpanInput.disabled = !spanEditable;
+    this.keyframeSpanInput.value = spanEditable ? formatNumber(sourceSpan) : "";
+    this.keyframeSpanInput.placeholder = sources.length > 1 ? "Column" : "";
+    this.keyframeSpanInput.title = spanEditable
+      ? "Stretch selected keyframe timing from the earliest selected key"
+      : "Select keyframes at two or more different times before editing span";
     if (!first) {
       this.keyframeLabel.textContent = "No keyframe selected";
     } else if (sources.length === 1) {

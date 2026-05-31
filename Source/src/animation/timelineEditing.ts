@@ -862,6 +862,26 @@ export function fitResolvedKeyframesToRange(
   });
 }
 
+export function stretchResolvedKeyframesToSpan(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[],
+  span: number
+): EditTimelineResult {
+  if (sources.length < 2 || !Number.isFinite(span)) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const groups = groupSourcesByOriginalTime(sources);
+  if (groups.length < 2) {
+    return { edited: 0, skipped: sources.length, currentTime: timeline.currentTime, changedTransformObjectIds: [] };
+  }
+
+  const start = groups[0].time;
+  const minimumSpan = Math.max(timeline.snapStep, 1 / Math.max(timeline.fps, 1), 0.001);
+  const safeSpan = Math.min(Math.max(span, minimumSpan), Math.max(minimumSpan, timeline.duration - start));
+  return fitResolvedKeyframesToRange(timeline, sources, start, start + safeSpan);
+}
+
 export function staggerResolvedKeyframesFromTime(
   timeline: SceneTimelineDocument,
   sources: TimelineKeyframeSource[],
