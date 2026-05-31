@@ -980,7 +980,18 @@ svg {
   height: calc(var(--timeline-track-row-height) - 4px);
   display: grid;
   place-items: center;
+  border: 1px solid transparent;
+  border-radius: calc(var(--control-radius) - 3px);
+  background: transparent;
   color: rgba(26, 35, 42, 0.62);
+  padding: 0;
+}
+
+.timeline-group-toggle:hover,
+.timeline-group-toggle:focus-visible {
+  border-color: rgba(32, 191, 169, 0.34);
+  color: var(--teal);
+  outline: 0;
 }
 
 .timeline-track-label:hover,

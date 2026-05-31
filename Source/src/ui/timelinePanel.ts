@@ -875,12 +875,17 @@ export class KeyframeTimelinePanel {
     this.lockTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackLock(this.selectedTrackKind()));
     this.soloTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackSolo(this.selectedTrackKind()));
     this.labels.addEventListener("click", (event) => {
+      const groupToggle = (event.target as HTMLElement).closest<HTMLElement>(".timeline-group-toggle");
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
         const targetId = group.dataset.groupTargetId;
         if (targetId) {
-          if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
-          else this.toggleTimelineGroup(targetId);
+          if (groupToggle) {
+            if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
+            else this.toggleTimelineGroup(targetId);
+          } else {
+            this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
+          }
         }
         return;
       }
@@ -905,17 +910,19 @@ export class KeyframeTimelinePanel {
       if (keyButton) this.callbacks.onAddKeyframe(kind);
     });
     this.labels.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
+        if (event.key !== "Enter" && event.key !== " " && event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
         const targetId = group.dataset.groupTargetId;
         if (targetId) {
           event.preventDefault();
-          if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
-          else this.toggleTimelineGroup(targetId);
+          if (event.key === "ArrowLeft") this.setTimelineGroupCollapsed(targetId, true);
+          else if (event.key === "ArrowRight") this.setTimelineGroupCollapsed(targetId, false);
+          else this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
         }
         return;
       }
+      if (event.key !== "Enter" && event.key !== " ") return;
       const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
       if (!row || event.target instanceof HTMLButtonElement) return;
       const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
@@ -1131,8 +1138,12 @@ export class KeyframeTimelinePanel {
   }
 
   private toggleTimelineGroup(targetId: string): void {
-    if (this.collapsedTimelineGroups.has(targetId)) this.collapsedTimelineGroups.delete(targetId);
-    else this.collapsedTimelineGroups.add(targetId);
+    this.setTimelineGroupCollapsed(targetId, !this.collapsedTimelineGroups.has(targetId));
+  }
+
+  private setTimelineGroupCollapsed(targetId: string, collapsed: boolean): void {
+    if (collapsed) this.collapsedTimelineGroups.add(targetId);
+    else this.collapsedTimelineGroups.delete(targetId);
     storeCollapsedTimelineGroups(this.collapsedTimelineGroups);
     if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
   }
@@ -1813,8 +1824,10 @@ export class KeyframeTimelinePanel {
     const keyText = options.keyframeCount === 1 ? "1 key" : `${options.keyframeCount} keys`;
     const stateText = options.collapsed ? "Expand" : "Collapse";
     return `
-      <div class="${["timeline-track-group", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group">
-        <span class="timeline-group-toggle" aria-hidden="true"><span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span></span>
+      <div class="${["timeline-track-group", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
+        <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
+          <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
+        </button>
         <span class="track-swatch" style="background:${options.color}"></span>
         <span class="track-label-text">
           <strong>${escapeHtml(options.targetName)}</strong>
