@@ -39,6 +39,7 @@ import {
   sequenceObjectLayerRanges,
   setObjectVisibilityRange,
   shiftObjectLayerKeyframes,
+  stretchObjectLayerKeyframesToRange,
   type TimelineLayerRange
 } from "./animation/timelineLayers";
 import { TimelinePlayer } from "./animation/timelinePlayer";
@@ -118,7 +119,7 @@ import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetBy
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateMotionPath } from "./scene/motionPath";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
-import { KeyframeTimelinePanel, type TimelineDopeSheetTool, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
+import { KeyframeTimelinePanel, type TimelineDopeSheetTool, type TimelineLayerKeyframeEditMode, type TimelineVisibleRowTarget } from "./ui/timelinePanel";
 import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
 import { bindUiDensityControl } from "./ui/density";
 import { studioTemplate } from "./ui/template";
@@ -162,6 +163,12 @@ function boot(root: HTMLDivElement): void {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
+  controls.mouseButtons = {
+    LEFT: null,
+    MIDDLE: THREE.MOUSE.ROTATE,
+    RIGHT: THREE.MOUSE.PAN
+  };
+  controls.screenSpacePanning = true;
   controls.target.set(0, 1.2, 0);
   controls.maxPolarAngle = Math.PI * 0.49;
   controls.minDistance = 2.5;
@@ -886,7 +893,11 @@ function boot(root: HTMLDivElement): void {
     });
 
     canvas.addEventListener("pointerdown", handleCanvasPick);
+    canvas.addEventListener("pointerdown", syncBlenderNavigationMouseButton, { capture: true });
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     window.addEventListener("keydown", handleKeyboard);
+    window.addEventListener("pointerup", resetBlenderNavigationMouseButton);
+    window.addEventListener("pointercancel", resetBlenderNavigationMouseButton);
     window.addEventListener("resize", resize);
     window.addEventListener("dragover", handleDragOver);
     window.addEventListener("dragleave", handleDragLeave);
@@ -1640,6 +1651,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function handleCanvasPick(event: PointerEvent): void {
+    if (event.button !== 0) return;
     const rect = canvas.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1651,6 +1663,15 @@ function boot(root: HTMLDivElement): void {
       const id = lookupSceneId(sceneId);
       if (id) setSelected(id);
     }
+  }
+
+  function syncBlenderNavigationMouseButton(event: PointerEvent): void {
+    if (event.button !== 1) return;
+    controls.mouseButtons.MIDDLE = event.ctrlKey ? THREE.MOUSE.DOLLY : THREE.MOUSE.ROTATE;
+  }
+
+  function resetBlenderNavigationMouseButton(): void {
+    controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE;
   }
 
   function lookupSceneId(object: THREE.Object3D): string | undefined {
@@ -2878,7 +2899,7 @@ function boot(root: HTMLDivElement): void {
     );
   }
 
-  function editTimelineLayerRange(objectId: string, start: number, end: number, shiftKeyframes: boolean): void {
+  function editTimelineLayerRange(objectId: string, start: number, end: number, keyframeEditMode: TimelineLayerKeyframeEditMode): void {
     const entry = entries.get(objectId);
     if (!entry) {
       showToast("Layer object no longer exists.", "bad");
@@ -2891,21 +2912,30 @@ function boot(root: HTMLDivElement): void {
     const safeStart = clamp(Math.min(start, end - 0.001), 0, duration);
     const safeEnd = clamp(Math.max(end, safeStart + 0.001), safeStart + 0.001, duration);
     const previousRange = objectLayerRange(sceneTimeline, entry.id);
-    const layerMoveDelta = shiftKeyframes && previousRange ? safeStart - previousRange.start : 0;
+    const layerMoveDelta = keyframeEditMode === "shift" && previousRange ? safeStart - previousRange.start : 0;
     recordHistory();
-    const shiftResult = shiftKeyframes ? shiftObjectLayerKeyframes(sceneTimeline, entry.id, layerMoveDelta) : null;
+    const shiftResult = keyframeEditMode === "shift" ? shiftObjectLayerKeyframes(sceneTimeline, entry.id, layerMoveDelta) : null;
+    const stretchResult = keyframeEditMode === "stretch" && previousRange
+      ? stretchObjectLayerKeyframesToRange(sceneTimeline, entry.id, previousRange, { start: safeStart, end: safeEnd })
+      : null;
     const result = setObjectVisibilityRange(sceneTimeline, entry.id, safeStart, safeEnd >= duration - 0.001 ? null : safeEnd);
     selectedId = entry.id;
     transformControls.attach(entry.root);
     syncOutline();
+    clearPresetAnimationsForTimelineObjects([
+      ...(shiftResult?.changedTransformObjectIds ?? []),
+      ...(stretchResult?.changedTransformObjectIds ?? [])
+    ]);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyObjectPropertyTimeline();
     updateAllUI();
-    timelinePanel.selectKeyframes(result.keyframeIds);
+    timelinePanel.selectKeyframes([...result.keyframeIds, ...(shiftResult?.keyframeIds ?? []), ...(stretchResult?.keyframeIds ?? [])]);
     const shifted = shiftResult?.shifted ? `, ${shiftResult.shifted} keys shifted` : "";
-    const skipped = shiftResult?.skipped ? ` (${shiftResult.skipped} locked/out-of-range keys skipped)` : "";
-    showToast(`${entry.name} layer range ${formatNumber(safeStart)}-${formatNumber(safeEnd)}s${shifted}${skipped}`, "good");
+    const stretched = stretchResult?.stretched ? `, ${stretchResult.stretched} keys stretched` : "";
+    const skippedCount = (shiftResult?.skipped ?? 0) + (stretchResult?.skipped ?? 0);
+    const skipped = skippedCount ? ` (${skippedCount} locked/colliding/out-of-range keys skipped)` : "";
+    showToast(`${entry.name} layer range ${formatNumber(safeStart)}-${formatNumber(safeEnd)}s${shifted}${stretched}${skipped}`, "good");
   }
 
   function stepSelectedLayerBoundary(edge: "in" | "out"): void {

@@ -1497,6 +1497,11 @@ svg {
   background: rgba(32, 191, 169, 0.16);
 }
 
+.timeline-layer-bar.stretching {
+  border-color: rgba(124, 112, 244, 0.78);
+  background: rgba(124, 112, 244, 0.18);
+}
+
 .timeline-layer-bar.active {
   color: #ffffff;
   background: var(--charcoal);

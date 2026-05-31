@@ -28,6 +28,17 @@ export interface ShiftLayerKeyframesResult {
   changedTransformObjectIds: string[];
 }
 
+export interface StretchLayerKeyframesResult {
+  stretched: number;
+  skipped: number;
+  sourceStart: number;
+  sourceEnd: number;
+  targetStart: number;
+  targetEnd: number;
+  keyframeIds: string[];
+  changedTransformObjectIds: string[];
+}
+
 export interface SequenceLayerRangesResult {
   sequenced: number;
   skipped: number;
@@ -188,6 +199,87 @@ export function fitObjectLayerKeyframesToRange(
   };
 }
 
+export function stretchObjectLayerKeyframesToRange(
+  timeline: SceneTimelineDocument,
+  objectId: string,
+  sourceRange: TimelineLayerRange,
+  targetRange: TimelineLayerRange
+): StretchLayerKeyframesResult {
+  const objectTimeline = timeline.objects.find((candidate) => candidate.objectId === objectId);
+  const duration = Math.max(timeline.duration, 0);
+  const sourceStart = snapTimelineTime(timeline, Math.min(Math.max(sourceRange.start, 0), duration));
+  const sourceEnd = snapTimelineTime(timeline, Math.min(Math.max(sourceRange.end, sourceStart), duration));
+  const targetStart = snapTimelineTime(timeline, Math.min(Math.max(targetRange.start, 0), duration));
+  const targetEnd = snapTimelineTime(timeline, Math.min(Math.max(targetRange.end, targetStart), duration));
+  if (!objectTimeline || sourceEnd <= sourceStart + 0.001 || targetEnd <= targetStart + 0.001) {
+    return emptyStretchLayerResult(sourceStart, sourceEnd, targetStart, targetEnd);
+  }
+
+  const changedTransformObjectIds = new Set<string>();
+  const movingKeyframes = new Map<TimelineKeyframeDocument, TimelineTrackDocument>();
+  let skipped = 0;
+
+  objectTimeline.tracks.forEach((track) => {
+    if (track.kind === "objectVisibility" || track.keyframes.length === 0) return;
+    const inRangeKeys = track.keyframes.filter((keyframe) => keyframe.time >= sourceStart - 0.001 && keyframe.time <= sourceEnd + 0.001);
+    if (track.locked) {
+      skipped += inRangeKeys.length;
+      return;
+    }
+    inRangeKeys.forEach((keyframe) => movingKeyframes.set(keyframe, track));
+  });
+
+  const movingIds = new Set([...movingKeyframes.keys()].map((keyframe) => keyframe.id));
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+  objectTimeline.tracks.forEach((track) => {
+    if (track.kind === "objectVisibility" || track.locked) return;
+    occupiedTimes.set(track, new Set(
+      track.keyframes
+        .filter((keyframe) => !movingIds.has(keyframe.id))
+        .map((keyframe) => timelineTimeKey(keyframe.time))
+    ));
+  });
+
+  const sourceSpan = sourceEnd - sourceStart;
+  const targetSpan = targetEnd - targetStart;
+  let stretched = 0;
+  const keyframeIds: string[] = [];
+
+  [...movingKeyframes.keys()]
+    .sort((left, right) => left.time - right.time)
+    .forEach((keyframe) => {
+      const track = movingKeyframes.get(keyframe);
+      if (!track) return;
+      const ratio = (keyframe.time - sourceStart) / sourceSpan;
+      const nextTime = snapTimelineTime(timeline, targetStart + ratio * targetSpan);
+      const occupancy = occupiedTimes.get(track);
+      const timeKey = timelineTimeKey(nextTime);
+      if (!occupancy || nextTime < -0.001 || nextTime > duration + 0.001 || occupancy.has(timeKey)) {
+        skipped += 1;
+        return;
+      }
+
+      occupancy.add(timeKey);
+      keyframeIds.push(keyframe.id);
+      if (Math.abs(keyframe.time - nextTime) < 0.001) return;
+      keyframe.time = Math.min(Math.max(nextTime, 0), duration);
+      stretched += 1;
+      if (isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+    });
+
+  objectTimeline.tracks.forEach(sortTimelineKeyframes);
+  return {
+    stretched,
+    skipped,
+    sourceStart,
+    sourceEnd,
+    targetStart,
+    targetEnd,
+    keyframeIds,
+    changedTransformObjectIds: [...changedTransformObjectIds]
+  };
+}
+
 export function sequenceObjectLayerRanges(
   timeline: SceneTimelineDocument,
   objectIds: string[],
@@ -305,6 +397,24 @@ function emptyFitLayerResult(targetStart: number, targetEnd: number): FitLayerKe
     targetEnd,
     sourceStart: targetStart,
     sourceEnd: targetEnd,
+    keyframeIds: [],
+    changedTransformObjectIds: []
+  };
+}
+
+function emptyStretchLayerResult(
+  sourceStart: number,
+  sourceEnd: number,
+  targetStart: number,
+  targetEnd: number
+): StretchLayerKeyframesResult {
+  return {
+    stretched: 0,
+    skipped: 0,
+    sourceStart,
+    sourceEnd,
+    targetStart,
+    targetEnd,
     keyframeIds: [],
     changedTransformObjectIds: []
   };

@@ -26,6 +26,10 @@ track. The current implementation maps layer timing commands onto
 - Drag the middle of a layer bar to move the whole visible range and all
   unlocked non-Visibility object keyframes in time.
 - Drag the left or right edge handles to trim the layer in or out directly.
+- Alt-drag the left or right edge handle to time-stretch unlocked
+  non-Visibility keyframes inside the original layer range into the new range.
+  This mirrors the AE habit of changing layer duration while preserving the
+  relative timing of the keyed content.
 - Keyboard shortcuts:
   - `Alt+[` trims the selected layer in.
   - `Alt+]` trims the selected layer out.
@@ -86,6 +90,19 @@ This keeps Undo/Redo, locked-track checks, JSON persistence, selected keyframes,
 and playback evaluation consistent whether the user edits through buttons,
 shortcuts, or direct manipulation.
 
+Alt-drag layer-edge edits call `stretchObjectLayerKeyframesToRange()` before
+the Visibility range is rewritten. The stretch maps each unlocked
+non-Visibility keyframe inside the original visible range from:
+
+```text
+(keyTime - oldIn) / (oldOut - oldIn)
+```
+
+to the same normalized position inside the new range. Keys outside the original
+range are left untouched. Keys on locked tracks, keys that would collide with
+non-stretched keys on the same track, and keys that would move outside the
+timeline duration are skipped.
+
 ## Constraints
 
 - The selected object must exist.
@@ -105,4 +122,6 @@ layer in/out points, trims a sequenced layer shorter, fits its motion keys into
 the shorter layer range, selects in-range layer keyframes, exports scene JSON,
 verifies hold visibility keys, reloads, splits the layer, verifies both original
 and duplicate visibility ranges, clicks the original layer bar, and confirms
-object selection changes.
+object selection changes. The focused layer-stretch workflow verifies
+Alt-dragging a layer edge from 4s to 8s maps Position keys at 1s and 3s to 2s
+and 6s.

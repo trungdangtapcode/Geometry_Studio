@@ -21,6 +21,8 @@ PDF.
   polish, and optional path-traced preview.
 - [Rendering Lab](rendering-lab.md) documents tone mapping, exposure, shadow
   quality, telemetry, and scene JSON persistence.
+- [Viewport Navigation](viewport-navigation.md) documents Blender-style middle
+  mouse orbit, Shift-middle pan, Ctrl-middle dolly, and left-click selection.
 - [PBR Material Presets](pbr-material-presets.md) documents Ceramic, Metal,
   Plastic, Glass, Clay, and legacy material comparison presets.
 - [Environment Lighting Presets](environment-lighting.md) documents generated

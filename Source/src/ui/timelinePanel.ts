@@ -49,6 +49,7 @@ import {
 
 type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
 export type TimelineDopeSheetTool = "selection" | "pan";
+export type TimelineLayerKeyframeEditMode = "none" | "shift" | "stretch";
 
 export interface KeyframeTimelineCallbacks {
   onTimeChanged(time: number): void;
@@ -62,7 +63,7 @@ export interface KeyframeTimelineCallbacks {
   onSelectLayerKeyframes(): void;
   onFitLayerKeyframes(): void;
   onSequenceLayers(): void;
-  onEditLayerRange(objectId: string, start: number, end: number, shiftKeyframes: boolean): void;
+  onEditLayerRange(objectId: string, start: number, end: number, keyframeEditMode: TimelineLayerKeyframeEditMode): void;
   onDeleteKeyframes(keyframeIds: string[]): void;
   onRippleDeleteKeyframes(keyframeIds: string[]): void;
   onCopyKeyframes(keyframeIds: string[]): void;
@@ -157,6 +158,7 @@ type TimelineLayerDragState = {
   originalEnd: number;
   nextStart: number;
   nextEnd: number;
+  keyframeEditMode: TimelineLayerKeyframeEditMode;
   duration: number;
   width: number;
   moved: boolean;
@@ -313,6 +315,7 @@ export class KeyframeTimelinePanel {
   private suppressLayerClick = false;
   private timelineScroller: HTMLElement | null = null;
   private syncingScroll = false;
+  private layerStretchModifierActive = false;
   private updating = false;
   private readonly handleResizeMove = (event: PointerEvent) => this.resizeDock(event);
   private readonly handleResizeEnd = (event: PointerEvent) => this.finishResize(event);
@@ -324,6 +327,8 @@ export class KeyframeTimelinePanel {
   private readonly handleLayerDragEnd = (event: PointerEvent) => this.finishLayerRangeDrag(event);
   private readonly handleTimelineScroll = () => this.syncLabelsFromCanvasScroll();
   private readonly handleWindowResize = () => this.syncToolbarOverflow();
+  private readonly handleLayerStretchModifierKey = (event: KeyboardEvent) => this.trackLayerStretchModifier(event);
+  private readonly handleWindowBlur = () => { this.layerStretchModifierActive = false; };
 
   constructor(private readonly callbacks: KeyframeTimelineCallbacks) {
     this.applyStoredDockHeight();
@@ -683,6 +688,9 @@ export class KeyframeTimelinePanel {
     this.toolbar.addEventListener("wheel", (event) => this.scrollToolbarWithWheel(event), { passive: false });
     this.toolbar.addEventListener("keydown", (event) => this.scrollToolbarWithKeyboard(event));
     window.addEventListener("resize", this.handleWindowResize);
+    window.addEventListener("keydown", this.handleLayerStretchModifierKey);
+    window.addEventListener("keyup", this.handleLayerStretchModifierKey);
+    window.addEventListener("blur", this.handleWindowBlur);
     query<HTMLButtonElement>("#timeline-collapse").addEventListener("click", (event) => {
       const collapsed = this.root.classList.toggle("collapsed");
       const button = event.currentTarget as HTMLButtonElement;
@@ -1394,7 +1402,7 @@ export class KeyframeTimelinePanel {
       button.style.left = `${left}%`;
       button.style.width = `${Math.min(width, 100 - left)}%`;
       button.style.borderLeftColor = entry.color.getStyle();
-      button.title = `${entry.name}: ${formatNumber(start)}-${formatNumber(end)}s`;
+      button.title = `${entry.name}: ${formatNumber(start)}-${formatNumber(end)}s. Drag to move; drag edges to trim; Alt-drag an edge to stretch keys.`;
       button.innerHTML = `
         <span class="timeline-layer-handle timeline-layer-handle-start" data-layer-action="trim-start" aria-hidden="true"></span>
         <span class="timeline-layer-bar-name">${escapeHtml(entry.name)}</span>
@@ -1434,11 +1442,13 @@ export class KeyframeTimelinePanel {
       originalEnd,
       nextStart: originalStart,
       nextEnd: originalEnd,
+      keyframeEditMode: mode === "move" ? "shift" : this.isLayerStretchModifierActive(event) ? "stretch" : "none",
       duration: Math.max(this.lastTimelineDocument.duration, 0.001),
       width: stripRect.width,
       moved: false
     };
     button.classList.add("dragging");
+    button.classList.toggle("stretching", mode !== "move" && this.isLayerStretchModifierActive(event));
     button.setPointerCapture(event.pointerId);
     button.addEventListener("pointermove", this.handleLayerDragMove);
     button.addEventListener("pointerup", this.handleLayerDragEnd);
@@ -1475,6 +1485,7 @@ export class KeyframeTimelinePanel {
     const state = this.layerDragState;
     if (!state || event.pointerId !== state.pointerId) return;
     state.button.classList.remove("dragging");
+    state.button.classList.remove("stretching");
     state.button.removeEventListener("pointermove", this.handleLayerDragMove);
     state.button.removeEventListener("pointerup", this.handleLayerDragEnd);
     state.button.removeEventListener("pointercancel", this.handleLayerDragEnd);
@@ -1484,7 +1495,7 @@ export class KeyframeTimelinePanel {
     const changed = Math.abs(state.nextStart - state.originalStart) > 0.001 || Math.abs(state.nextEnd - state.originalEnd) > 0.001;
     if (state.moved && changed) {
       this.suppressLayerClick = true;
-      this.callbacks.onEditLayerRange(state.objectId, state.nextStart, state.nextEnd, state.mode === "move");
+      this.callbacks.onEditLayerRange(state.objectId, state.nextStart, state.nextEnd, state.keyframeEditMode);
     }
   }
 
@@ -1495,7 +1506,7 @@ export class KeyframeTimelinePanel {
     button.dataset.layerEnd = formatNumber(end);
     button.style.left = `${left}%`;
     button.style.width = `${Math.min(width, 100 - left)}%`;
-    button.title = `${button.querySelector(".timeline-layer-bar-name")?.textContent ?? "Layer"}: ${formatNumber(start)}-${formatNumber(end)}s`;
+    button.title = `${button.querySelector(".timeline-layer-bar-name")?.textContent ?? "Layer"}: ${formatNumber(start)}-${formatNumber(end)}s. Drag to move; drag edges to trim; Alt-drag an edge to stretch keys.`;
     const timeLabel = button.querySelector<HTMLElement>(".timeline-layer-bar-time");
     if (timeLabel) timeLabel.textContent = `${formatNumber(start)}-${formatNumber(end)}s`;
   }
@@ -1512,6 +1523,15 @@ export class KeyframeTimelinePanel {
     const timelineDocument = this.lastTimelineDocument;
     if (!timelineDocument) return roundTimelineTime(time);
     return snapTimelineEditorTime(timelineDocument, time, options);
+  }
+
+  private trackLayerStretchModifier(event: KeyboardEvent): void {
+    if (event.key !== "Alt") return;
+    this.layerStretchModifierActive = event.type === "keydown";
+  }
+
+  private isLayerStretchModifierActive(event: PointerEvent): boolean {
+    return event.altKey || this.layerStretchModifierActive;
   }
 
   private syncMarkerEditor(timelineDocument: SceneTimelineDocument, marker = this.currentMarker(timelineDocument)): void {
