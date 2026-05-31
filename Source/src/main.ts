@@ -225,6 +225,7 @@ function boot(root: HTMLDivElement): void {
   let evaluationTourTimers: number[] = [];
   let pathTraceControlsEnabled = true;
   let lastTransportStopAt = 0;
+  let suppressPrimaryTransportClick = false;
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -536,7 +537,26 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#delete-selected").addEventListener("click", deleteSelected);
     query<HTMLButtonElement>("#duplicate-selected").addEventListener("click", duplicateSelected);
     query<HTMLButtonElement>("#reset-scene").addEventListener("click", resetScene);
-    query<HTMLButtonElement>("#play-toggle").addEventListener("click", (event) => {
+    const primaryTransportButton = query<HTMLButtonElement>("#play-toggle");
+    primaryTransportButton.addEventListener("pointerdown", () => {
+      if (!transport.playing) return;
+      suppressPrimaryTransportClick = true;
+      pauseTimeline("Timeline stopped");
+      const suppressionController = new AbortController();
+      const releaseSuppression = () => {
+        suppressionController.abort();
+        window.setTimeout(() => {
+          suppressPrimaryTransportClick = false;
+        }, 0);
+      };
+      window.addEventListener("pointerup", releaseSuppression, { once: true, signal: suppressionController.signal });
+      window.addEventListener("pointercancel", releaseSuppression, { once: true, signal: suppressionController.signal });
+    });
+    primaryTransportButton.addEventListener("click", (event) => {
+      if (suppressPrimaryTransportClick) {
+        suppressPrimaryTransportClick = false;
+        return;
+      }
       handleTransportButtonAction(readTransportButtonAction(event.currentTarget as HTMLButtonElement));
     });
     query<HTMLSelectElement>("#timeline-playback-rate").addEventListener("change", (event) => {
@@ -2416,7 +2436,9 @@ function boot(root: HTMLDivElement): void {
   }
 
   function syncPlaybackRateControl(): void {
-    query<HTMLSelectElement>("#timeline-playback-rate").value = String(transport.rate);
+    const control = query<HTMLSelectElement>("#timeline-playback-rate");
+    const value = String(transport.rate);
+    if (control.value !== value) control.value = value;
   }
 
   function playTimeline(
@@ -5014,19 +5036,23 @@ function boot(root: HTMLDivElement): void {
     const label = transport.buttonLabel();
     const iconName = transport.iconName();
     const ariaLabel = transport.playing ? `Stop timeline playback at ${formatPlaybackRate(transport.rate)}` : "Play timeline animation";
+    const action = transport.playing ? "stop" : "play";
     const button = query<HTMLButtonElement>("#play-toggle");
-    button.dataset.transportAction = transport.playing ? "stop" : "play";
+    syncTransportButton(button, action, iconName, label, ariaLabel);
+    const timelineButton = query<HTMLButtonElement>("#timeline-play-toggle");
+    syncTransportButton(timelineButton, action, iconName, label, ariaLabel);
+    if (recordingPreview) updateRecordingButton();
+  }
+
+  function syncTransportButton(button: HTMLButtonElement, action: TimelineTransportButtonAction, iconName: string, label: string, ariaLabel: string): void {
+    const signature = `${action}|${iconName}|${label}|${ariaLabel}`;
+    if (button.dataset.transportRenderSignature === signature) return;
+    button.dataset.transportRenderSignature = signature;
+    button.dataset.transportAction = action;
     button.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
     button.setAttribute("aria-label", ariaLabel);
     button.title = ariaLabel;
     hydrateIcons(button);
-    const timelineButton = query<HTMLButtonElement>("#timeline-play-toggle");
-    timelineButton.dataset.transportAction = transport.playing ? "stop" : "play";
-    timelineButton.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
-    timelineButton.setAttribute("aria-label", ariaLabel);
-    timelineButton.title = ariaLabel;
-    hydrateIcons(timelineButton);
-    if (recordingPreview) updateRecordingButton();
   }
 
   function updateRecordingButton(): void {

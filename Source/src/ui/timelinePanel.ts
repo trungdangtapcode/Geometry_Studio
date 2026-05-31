@@ -352,6 +352,7 @@ export class KeyframeTimelinePanel {
   private layerDragState: TimelineLayerDragState | null = null;
   private suppressMarkerClick = false;
   private suppressLayerClick = false;
+  private suppressTransportClick = false;
   private timelineScroller: HTMLElement | null = null;
   private syncingScroll = false;
   private layerStretchModifierActive = false;
@@ -876,8 +877,13 @@ export class KeyframeTimelinePanel {
   private syncPlayButton(playing: boolean): void {
     const label = playing ? "Stop" : "Play";
     const ariaLabel = playing ? "Stop timeline playback" : "Play timeline playback";
-    this.playButton.dataset.transportAction = playing ? "stop" : "play";
-    this.playButton.innerHTML = `<span data-icon="${playing ? "Square" : "Play"}"></span><span>${label}</span>`;
+    const action = playing ? "stop" : "play";
+    const icon = playing ? "Square" : "Play";
+    const signature = `${action}|${icon}|${label}|${ariaLabel}`;
+    if (this.playButton.dataset.transportRenderSignature === signature) return;
+    this.playButton.dataset.transportRenderSignature = signature;
+    this.playButton.dataset.transportAction = action;
+    this.playButton.innerHTML = `<span data-icon="${icon}"></span><span>${label}</span>`;
     this.playButton.setAttribute("aria-label", ariaLabel);
     this.playButton.title = ariaLabel;
     hydrateIcons(this.playButton);
@@ -1233,7 +1239,25 @@ export class KeyframeTimelinePanel {
     this.followPlayheadButton.addEventListener("click", () => this.toggleFollowPlayhead());
     query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workStartInput, this.lastTimelineDocument?.workStart ?? 0)));
     query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workEndInput, this.lastTimelineDocument?.workEnd ?? 0)));
+    this.playButton.addEventListener("pointerdown", () => {
+      if (parseTimelineTransportButtonAction(this.playButton.dataset.transportAction) !== "stop") return;
+      this.suppressTransportClick = true;
+      this.callbacks.onTogglePlayback("stop");
+      const suppressionController = new AbortController();
+      const releaseSuppression = () => {
+        suppressionController.abort();
+        window.setTimeout(() => {
+          this.suppressTransportClick = false;
+        }, 0);
+      };
+      window.addEventListener("pointerup", releaseSuppression, { once: true, signal: suppressionController.signal });
+      window.addEventListener("pointercancel", releaseSuppression, { once: true, signal: suppressionController.signal });
+    });
     this.playButton.addEventListener("click", () => {
+      if (this.suppressTransportClick) {
+        this.suppressTransportClick = false;
+        return;
+      }
       this.callbacks.onTogglePlayback(parseTimelineTransportButtonAction(this.playButton.dataset.transportAction));
     });
     this.timeInput.addEventListener("change", () => this.commitTimeInput(this.timeInput, this.lastTimelineDocument?.currentTime ?? 0, (time) => this.callbacks.onTimeChanged(time)));

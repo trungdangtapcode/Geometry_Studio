@@ -4165,6 +4165,66 @@ test("keeps playback stopped after repeated Stop activations", async ({ page }) 
   expect(errors).toEqual([]);
 });
 
+test("stops playback when Stop is pressed and held during timeline UI refreshes", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-current-time")).toBeVisible();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await page.locator("#play-toggle").click();
+  await expect(page.locator("#play-toggle")).toContainText("Stop 1x");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0.05);
+
+  const buttonBox = await page.locator("#play-toggle").boundingBox();
+  expect(buttonBox).not.toBeNull();
+  await page.mouse.move(buttonBox!.x + buttonBox!.width / 2, buttonBox!.y + buttonBox!.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(300);
+  await page.mouse.up();
+
+  await expect(page.locator("#play-toggle")).toContainText("Play");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Play");
+  await expect(page.locator("#status-line")).toContainText("Ready");
+
+  const stoppedAt = Number(await page.locator("#timeline-current-time").inputValue());
+  await page.waitForTimeout(600);
+  const afterStop = Number(await page.locator("#timeline-current-time").inputValue());
+  expect(Math.abs(afterStop - stoppedAt)).toBeLessThan(0.05);
+
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-play-toggle").click();
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Stop 1x");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0.05);
+
+  const timelineButtonBox = await page.locator("#timeline-play-toggle").boundingBox();
+  expect(timelineButtonBox).not.toBeNull();
+  await page.mouse.move(timelineButtonBox!.x + timelineButtonBox!.width / 2, timelineButtonBox!.y + timelineButtonBox!.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(300);
+  await page.mouse.up();
+
+  await expect(page.locator("#play-toggle")).toContainText("Play");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Play");
+
+  const timelineStoppedAt = Number(await page.locator("#timeline-current-time").inputValue());
+  await page.waitForTimeout(600);
+  const timelineAfterStop = Number(await page.locator("#timeline-current-time").inputValue());
+  expect(Math.abs(timelineAfterStop - timelineStoppedAt)).toBeLessThan(0.05);
+
+  expect(errors).toEqual([]);
+});
+
 test("creates and saves transform keyframes on the timeline", async ({ page }) => {
   test.setTimeout(480_000);
   const errors: string[] = [];
