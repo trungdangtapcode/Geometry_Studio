@@ -56,7 +56,7 @@ import {
   trackLabel
 } from "./timelineTrackMetadata";
 
-type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey">>;
+type TimelineSettingsPatch = Partial<Pick<SceneTimelineDocument, "duration" | "workStart" | "workEnd" | "fps" | "loop" | "snapEnabled" | "snapStep" | "autoKey" | "autoKeyPose">>;
 export type TimelineDopeSheetTool = "selection" | "pan";
 export type TimelineLayerKeyframeEditMode = "none" | "shift" | "stretch";
 export type TimelineTransportButtonAction = "play" | "stop";
@@ -305,6 +305,7 @@ export class KeyframeTimelinePanel {
   private readonly timeDisplaySelect = query<HTMLSelectElement>("#timeline-time-display");
   private readonly snapInput = query<HTMLInputElement>("#timeline-snap");
   private readonly autoKeyInput = query<HTMLInputElement>("#timeline-auto-key");
+  private readonly autoKeyPoseInput = query<HTMLInputElement>("#timeline-auto-key-pose");
   private readonly loopInput = query<HTMLInputElement>("#timeline-loop");
   private readonly snapStepInput = query<HTMLInputElement>("#timeline-snap-step");
   private readonly interpolationSelect = query<HTMLSelectElement>("#timeline-interpolation");
@@ -470,6 +471,7 @@ export class KeyframeTimelinePanel {
     this.pruneSelectedKeyframes(timelineDocument);
     this.root.classList.toggle("playing", playing);
     this.root.classList.toggle("auto-key-active", timelineDocument.autoKey);
+    this.root.classList.toggle("auto-key-pose-active", timelineDocument.autoKey && timelineDocument.autoKeyPose);
     this.syncPlayButton(playing);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.durationInput.value = formatNumber(timelineDocument.duration);
@@ -480,6 +482,8 @@ export class KeyframeTimelinePanel {
     this.loopInput.checked = timelineDocument.loop;
     this.snapInput.checked = timelineDocument.snapEnabled;
     this.autoKeyInput.checked = timelineDocument.autoKey;
+    this.autoKeyPoseInput.checked = timelineDocument.autoKeyPose;
+    this.autoKeyPoseInput.disabled = !timelineDocument.autoKey;
     this.syncTimeInputHints(timelineDocument.fps);
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
     this.syncRowFilterSelect();
@@ -853,6 +857,7 @@ export class KeyframeTimelinePanel {
     this.updating = true;
     this.root.classList.toggle("playing", playing);
     this.root.classList.toggle("auto-key-active", timelineDocument.autoKey);
+    this.root.classList.toggle("auto-key-pose-active", timelineDocument.autoKey && timelineDocument.autoKeyPose);
     this.syncPlayButton(playing);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.timeline.setTime(timelineDocument.currentTime);
@@ -1275,6 +1280,7 @@ export class KeyframeTimelinePanel {
     this.loopInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ loop: this.loopInput.checked }));
     this.snapInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapEnabled: this.snapInput.checked }));
     this.autoKeyInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ autoKey: this.autoKeyInput.checked }));
+    this.autoKeyPoseInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ autoKeyPose: this.autoKeyPoseInput.checked }));
     this.trackSelect.addEventListener("change", () => {
       this.selectedAxis = null;
       if (!this.updating) this.callbacks.onTrackKindChanged();

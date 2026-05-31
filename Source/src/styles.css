@@ -409,6 +409,18 @@ svg {
   color: #a51d35;
 }
 
+.keyframe-dock.auto-key-active.auto-key-pose-active .timeline-title::after {
+  content: "AUTO-POSE";
+}
+
+.keyframe-dock.auto-key-pose-active #timeline-auto-key-pose + span {
+  color: #a51d35;
+}
+
+#timeline-auto-key-pose:disabled + span {
+  opacity: 0.46;
+}
+
 .timeline-resize-handle {
   position: absolute;
   top: 0;

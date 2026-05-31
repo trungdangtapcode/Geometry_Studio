@@ -600,8 +600,7 @@ function boot(root: HTMLDivElement): void {
       if (sceneTimeline.autoKey) {
         const kind = trackKindForTransformMode();
         const entry = selectedEntry();
-        if (entry) seedInitialTransformAutoKey(entry, kind, pendingTransformAutoKeySeedValues?.[kind]);
-        setTimelineKeyframe(kind, { notify: false, record: false, refresh: false });
+        if (entry) autoKeyTransformChange(entry, kind, pendingTransformAutoKeySeedValues);
       }
       syncTransformUI();
       syncSelectedBases();
@@ -1466,6 +1465,26 @@ function boot(root: HTMLDivElement): void {
     entry.root.scale.fromArray(pose.scale);
   }
 
+  function autoKeyTransformChange(
+    entry: SceneEntry,
+    kind: TransformProperty,
+    seedValues: Record<TransformProperty, [number, number, number]> | null = null
+  ): void {
+    if (sceneTimeline.autoKeyPose) {
+      setTransformTimelineKeyframes(entry.id, {
+        notify: false,
+        record: false,
+        refresh: false,
+        select: false,
+        seedValues
+      });
+      return;
+    }
+
+    seedInitialTransformAutoKey(entry, kind, seedValues?.[kind]);
+    setTimelineKeyframe(kind, { notify: false, record: false, refresh: false });
+  }
+
   function updateTransformValue(prop: TransformProperty, axis: TransformAxis, value: number): void {
     const current = selectedEntry();
     if (!current) return;
@@ -1475,8 +1494,9 @@ function boot(root: HTMLDivElement): void {
     else current.root[prop][axis] = value;
     syncSelectedBases();
     if (sceneTimeline.autoKey) {
-      seedInitialTransformAutoKey(current, prop, previousValue);
-      setTimelineKeyframe(prop, { notify: false, record: false, refresh: false });
+      const previousValues = captureTransformValues(current);
+      previousValues[prop] = previousValue;
+      autoKeyTransformChange(current, prop, previousValues);
     }
     updateAllUI();
   }
@@ -2918,6 +2938,7 @@ function boot(root: HTMLDivElement): void {
     if (typeof patch.loop === "boolean") sceneTimeline.loop = patch.loop;
     if (typeof patch.snapEnabled === "boolean") sceneTimeline.snapEnabled = patch.snapEnabled;
     if (typeof patch.autoKey === "boolean") sceneTimeline.autoKey = patch.autoKey;
+    if (typeof patch.autoKeyPose === "boolean") sceneTimeline.autoKeyPose = patch.autoKeyPose;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();
@@ -3192,10 +3213,19 @@ function boot(root: HTMLDivElement): void {
     return keyframe;
   }
 
-  function setTransformTimelineKeyframes(targetId = selectedId): void {
+  function setTransformTimelineKeyframes(
+    targetId = selectedId,
+    options: {
+      notify?: boolean;
+      record?: boolean;
+      refresh?: boolean;
+      select?: boolean;
+      seedValues?: Record<TransformProperty, [number, number, number]> | null;
+    } = {}
+  ): void {
     const entry = entries.get(targetId) ?? null;
     if (!entry) {
-      showToast("Select an object before setting transform keyframes.", "bad");
+      if (options.notify !== false) showToast("Select an object before setting transform keyframes.", "bad");
       return;
     }
     if (selectedId !== entry.id) {
@@ -3215,9 +3245,10 @@ function boot(root: HTMLDivElement): void {
       scale: timelineValueForEntry(entry, "scale")
     };
 
-    recordHistory();
+    if (options.record !== false) recordHistory();
     const keyframeIds: string[] = [];
     (["position", "rotation", "scale"] as const).forEach((kind) => {
+      if (options.seedValues) seedInitialTransformAutoKey(entry, kind, options.seedValues[kind]);
       const track = ensureTimelineTrack(objectTimeline, kind);
       keyframeIds.push(upsertTimelineKeyframe(track, time, values[kind]).id);
     });
@@ -3226,9 +3257,9 @@ function boot(root: HTMLDivElement): void {
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyObjectPropertyTimeline();
-    updateAllUI();
-    timelinePanel.selectKeyframes(keyframeIds);
-    showToast(`${entry.name} pose keys set at ${formatNumber(time)}s`, "good");
+    if (options.refresh !== false) updateAllUI();
+    if (options.select !== false) timelinePanel.selectKeyframes(keyframeIds);
+    if (options.notify !== false) showToast(`${entry.name} pose keys set at ${formatNumber(time)}s`, "good");
   }
 
   function setPinnedTimelineKeyframes(): void {

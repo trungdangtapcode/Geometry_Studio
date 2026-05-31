@@ -41,7 +41,7 @@ features were added:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 10;
+  version: 11;
   duration: number;
   fps: number;
   currentTime: number;
@@ -49,6 +49,7 @@ interface SceneTimelineDocument {
   snapEnabled: boolean;
   snapStep: number;
   autoKey: boolean;
+  autoKeyPose: boolean;
   camera: CameraTimelineDocument;
   lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];

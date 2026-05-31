@@ -57,7 +57,7 @@ default renderer settings. The current timeline schema is version 10:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 10;
+  version: 11;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -67,6 +67,7 @@ interface SceneTimelineDocument {
   snapEnabled: boolean;
   snapStep: number;
   autoKey: boolean;
+  autoKeyPose: boolean;
   camera: CameraTimelineDocument;
   lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];

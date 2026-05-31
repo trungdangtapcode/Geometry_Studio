@@ -31,11 +31,11 @@ After Effects and Premiere style work area around the existing timeline:
 
 ## Data Model
 
-Timeline schema v8 added two scalar fields, still present in schema v10:
+Timeline schema v8 added two scalar fields, still present in schema v11:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 10;
+  version: 11;
   duration: number;
   workStart: number;
   workEnd: number;

@@ -170,7 +170,7 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -180,6 +180,7 @@ export interface SceneTimelineDocument {
   snapEnabled: boolean;
   snapStep: number;
   autoKey: boolean;
+  autoKeyPose: boolean;
   camera: CameraTimelineDocument;
   lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];

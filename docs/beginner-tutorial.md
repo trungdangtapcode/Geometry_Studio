@@ -141,6 +141,10 @@ Auto-Key is useful after the first pose exists.
 4. Change the object, camera, light, or material value.
 5. The app records the changed value automatically.
 
+Enable `Pose Keys` next to `Auto-Key` when transform edits should record
+Position, Rotation, and Scale together. This is the closest mode to setting a
+complete transform pose in After Effects.
+
 Use Auto-Key carefully. It is faster, but it can create many keys if you forget
 it is enabled.
 

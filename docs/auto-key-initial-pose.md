@@ -25,6 +25,9 @@ existing keys.
 - The edited value is then written at the current playhead time.
 - If the track already has any keyframes, Auto-Key updates only the current
   playhead key as before.
+- If `Pose Keys` is enabled next to Auto-Key, object transform edits key
+  Position, Rotation, and Scale together. The original full transform pose is
+  seeded at `Work In` before the new pose is written.
 - When Auto-Key is enabled, the timeline dock shows an active recording state so
   the user can see that edits will write keys.
 - Manual `Set Key`, row diamonds, and `Set Pose` keep their explicit behavior.

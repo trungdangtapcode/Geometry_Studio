@@ -214,6 +214,7 @@ export function studioTemplate(): string {
             <label class="toggle-line"><input id="timeline-loop" type="checkbox" checked /><span>Loop</span></label>
             <label class="toggle-line"><input id="timeline-snap" type="checkbox" checked /><span>Snap</span></label>
             <label class="toggle-line"><input id="timeline-auto-key" type="checkbox" /><span>Auto-Key</span></label>
+            <label class="toggle-line" title="When Auto-Key is enabled, transform edits record Position, Rotation, and Scale together"><input id="timeline-auto-key-pose" type="checkbox" /><span>Pose Keys</span></label>
           </div>
           <div class="timeline-keyframe-editor" id="timeline-keyframe-editor">
             <strong id="timeline-key-label">No keyframe selected</strong>
@@ -702,6 +703,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
               <div class="quick-help-item"><strong>Set Pose</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
+              <div class="quick-help-item"><strong>Pose Keys</strong><span>Auto-Key option</span><p>With Auto-Key enabled, record Position, Rotation, and Scale together whenever transform values change.</p></div>
               <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast transform setup, then key, select, fit, or preview the pinned set.</p></div>
               <div class="quick-help-item"><strong>Set Pose Key</strong><span>Inspector / timeline</span><p>Record Position, Rotation, and Scale together at the playhead for full transform animation.</p></div>
               <div class="quick-help-item"><strong>Motion Presets</strong><span>Command Palette</span><p>Apply Turntable, Float Loop, Pop Intro, or Product Reveal as editable timeline keys.</p></div>

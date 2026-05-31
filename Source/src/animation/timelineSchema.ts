@@ -69,7 +69,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 10,
+    version: 11,
     duration: 8,
     workStart: 0,
     workEnd: 8,
@@ -79,6 +79,7 @@ export function createDefaultTimeline(): SceneTimelineDocument {
     snapEnabled: true,
     snapStep: 1 / 30,
     autoKey: false,
+    autoKeyPose: false,
     camera: { tracks: [] },
     lights: { tracks: [] },
     objects: [],
@@ -104,7 +105,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 10,
+    version: 11,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     workStart: defaults.workStart,
     workEnd: defaults.workEnd,
@@ -114,6 +115,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
     snapEnabled: typeof source.snapEnabled === "boolean" ? source.snapEnabled : defaults.snapEnabled,
     snapStep: finiteNumber(source.snapStep, defaults.snapStep, 0.001, 10),
     autoKey: typeof source.autoKey === "boolean" ? source.autoKey : defaults.autoKey,
+    autoKeyPose: typeof source.autoKeyPose === "boolean" ? source.autoKeyPose : defaults.autoKeyPose,
     camera: normalizeTrackCollection(source.camera, CAMERA_TRACK_KINDS),
     lights: normalizeTrackCollection(source.lights, LIGHT_TRACK_KINDS),
     objects: [],

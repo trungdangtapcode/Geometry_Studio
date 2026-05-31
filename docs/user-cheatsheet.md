@@ -111,6 +111,7 @@ Position, Rotation, and Scale recorded together.
 | Snap | Snap keyframes/playhead to frame or marker landmarks |
 | Loop | Repeat Work In/Out during playback |
 | Auto-Key | Automatically records changed values when time is not at the first pose |
+| Pose Keys | With Auto-Key on, transform edits record Position, Rotation, and Scale together |
 | Track dropdown | Chooses which property the main `Set Key` button records |
 | Row filter | `Focus`, `Selected Layer`, `Selected Keyed`, `Keyed`, `Pinned`, or `All` timeline rows; command palette can jump directly to any mode |
 | Search rows | Filter dense object/camera/light/material rows |
@@ -247,6 +248,15 @@ Position, Rotation, and Scale recorded together.
 6. Move, rotate, and scale the object to the second pose.
 7. Click `Set Pose` / `Set Pose Key` again.
 8. Scrub the playhead or press `Play`.
+
+### Auto-Key Full Transform Poses
+
+1. Enable `Auto-Key`.
+2. Enable `Pose Keys`.
+3. Move the playhead to the target time.
+4. Change Position, Rotation, or Scale in the inspector or viewport gizmo.
+5. The app records Position, Rotation, and Scale tracks together, so the object
+   keeps one coherent pose at that time.
 
 ### Record One Property Only
 
