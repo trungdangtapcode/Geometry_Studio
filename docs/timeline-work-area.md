@@ -97,4 +97,4 @@ Recommended manual check:
 10. Press Play with Loop enabled and confirm playback wraps at `4.5`.
 11. Use the range-strip toggle and confirm the overview/layer bars hide while
     the keyframe rows remain usable.
-12. Save JSON and verify `timeline.version` is `10`.
+12. Save JSON and verify `timeline.version` is `11`.

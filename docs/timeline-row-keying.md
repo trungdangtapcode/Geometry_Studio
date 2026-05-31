@@ -11,11 +11,13 @@ not need to switch to a global track dropdown before adding a key.
 - Clicking a row still selects that target and property track.
 - Clicking the diamond button on a row selects that row and immediately creates
   or updates a keyframe at the current playhead time.
-- The global key button uses `Set Key` when no key exists at the current
-  playhead time and `Update Key` when pressing it will overwrite the existing
-  key at that time.
-- The separate `Set Pose` command records Position, Rotation, and Scale together
-  for the selected object when the user wants to key a complete pose.
+- The global key button records a full Position/Rotation/Scale pose whenever the
+  active dropdown track is `Position`, `Rotation`, or `Scale`. Its label changes
+  between `Set Pose` and `Update Pose`.
+- The global key button still uses `Set Key` / `Update Key` for non-transform
+  tracks such as material, camera, light, visibility, and texture channels.
+- Row diamonds remain single-row key controls. Use them when only one transform
+  property should be keyed.
 - Object group rows expose the same pose-key command, so a user can key a
   complete object pose directly from the layer stack without first selecting a
   transform child row.

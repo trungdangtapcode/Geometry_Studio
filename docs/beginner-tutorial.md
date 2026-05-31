@@ -122,20 +122,23 @@ visible in the timeline.
 2. Set `Time` to `0`.
 3. Rotate the object to the first angle.
 4. Choose `Rotation` in the timeline track dropdown.
-5. Click `Set Key`, or click the diamond on the Rotation row.
+5. Click the diamond on the Rotation row.
 6. Set `Time` to `2`.
 7. Rotate the object to the second angle.
-8. Click `Set Key` again.
+8. Click the Rotation row diamond again.
 9. Scrub or play.
 
-The same pattern works for Position, Scale, Color, Opacity, Roughness,
-Metalness, Texture controls, Camera, and Lights.
+The main timeline key button becomes `Set Pose` on Position, Rotation, and Scale
+tracks because it records all three transform channels together. For single-row
+transform animation, use the row diamond. For Color, Opacity, Roughness,
+Metalness, Texture controls, Camera, and Lights, the same main button uses
+`Set Key`.
 
 ## 10. Use Auto-Key
 
 Auto-Key is useful after the first pose exists.
 
-1. Set the first key manually with `Set Pose` / `Set Pose Key` or `Set Key`.
+1. Set the first key manually with `Set Pose` / `Set Pose Key` or a row diamond.
 2. Enable `Auto-Key`.
 3. Move the playhead to another time.
 4. Change the object, camera, light, or material value.

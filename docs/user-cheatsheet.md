@@ -112,7 +112,7 @@ Position, Rotation, and Scale recorded together.
 | Loop | Repeat Work In/Out during playback |
 | Auto-Key | Automatically records changed values when time is not at the first pose |
 | Pose Keys | With Auto-Key on, transform edits record Position, Rotation, and Scale together |
-| Track dropdown | Chooses which property the main `Set Key` button records |
+| Track dropdown | Chooses the active row; for Position/Rotation/Scale the main key button records a full pose |
 | Row filter | `Focus`, `Selected Layer`, `Selected Keyed`, `Keyed`, `Pinned`, or `All` timeline rows; command palette can jump directly to any mode |
 | Search rows | Filter dense object/camera/light/material rows |
 | Pin visible rows | Pins every row currently visible after search/filtering |
@@ -132,7 +132,7 @@ Position, Rotation, and Scale recorded together.
 | Set Work Area To Pinned Row Keyframes | Command Palette action to make Work In/Out match pinned-row key times |
 | Preview Pinned Row Keyframe Range | Command Palette action to play only the pinned-row key range |
 | Motion Presets | Command Palette actions that bake Turntable, Float Loop, Pop Intro, or Product Reveal into editable keys |
-| Set Key | Add or update one key on the selected track dropdown |
+| Set Key | Add or update one key on the selected non-transform track dropdown |
 | Set Pose / Set Pose Key | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
 | Set Pinned | Record every pinned timeline row at the playhead |
@@ -243,7 +243,7 @@ Position, Rotation, and Scale recorded together.
 1. Select the object.
 2. Set `Time` to `0`.
 3. Place the object at its first pose.
-4. Click `Set Pose` in the timeline or `Set Pose Key` in the Transform inspector.
+4. Click the main timeline `Set Pose` button or `Set Pose Key` in the Transform inspector.
 5. Set `Time` to the next moment, for example `2`.
 6. Move, rotate, and scale the object to the second pose.
 7. Click `Set Pose` / `Set Pose Key` again.
@@ -264,9 +264,10 @@ Position, Rotation, and Scale recorded together.
 2. Pick a track from the timeline dropdown, for example `Rotation`.
 3. Set the playhead time.
 4. Change that property.
-5. Click `Set Key` or the diamond on that property row.
+5. Click the diamond on that property row. For non-transform rows, `Set Key`
+   also records the active property.
 
-If a key already exists at that time, `Set Key` updates it.
+If a key already exists at that time, the row diamond or `Set Key` updates it.
 
 ### Retime A Selected Key Block Numerically
 

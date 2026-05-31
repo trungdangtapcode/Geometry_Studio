@@ -1008,7 +1008,9 @@ export class KeyframeTimelinePanel {
       window.setTimeout(() => this.refreshCanvas(), 0);
     });
     this.addKeyframeButton.addEventListener("click", () => {
-      this.callbacks.onAddKeyframe(this.selectedTrackKind());
+      const kind = this.selectedTrackKind();
+      if (isTransformKeyingTrack(kind)) this.callbacks.onSetTransformKeyframes();
+      else this.callbacks.onAddKeyframe(kind);
     });
     this.setTransformButton.addEventListener("click", () => {
       this.callbacks.onSetTransformKeyframes();
@@ -2794,12 +2796,32 @@ export class KeyframeTimelinePanel {
   }
 
   private syncAddKeyframeButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    const selectedTrack = this.selectedTrackKind();
+    if (isTransformKeyingTrack(selectedTrack)) {
+      const hasPlayheadPoseKey = this.hasTransformPoseKeyframeAtPlayhead(timelineDocument, selectedId);
+      this.addKeyframeButton.innerHTML = `<span data-icon="${hasPlayheadPoseKey ? "Diamond" : "DiamondPlus"}"></span><span>${hasPlayheadPoseKey ? "Update Pose" : "Set Pose"}</span>`;
+      this.addKeyframeButton.title = hasPlayheadPoseKey
+        ? "Update Position, Rotation, and Scale together at the current playhead time. Use row diamonds for one property only."
+        : "Create Position, Rotation, and Scale keyframes together at the current playhead time. Use row diamonds for one property only.";
+      hydrateIcons(this.addKeyframeButton);
+      return;
+    }
+
     const hasPlayheadKey = Boolean(this.playheadKeyframe(timelineDocument, selectedId));
     this.addKeyframeButton.innerHTML = `<span data-icon="${hasPlayheadKey ? "Diamond" : "DiamondPlus"}"></span><span>${hasPlayheadKey ? "Update Key" : "Set Key"}</span>`;
     this.addKeyframeButton.title = hasPlayheadKey
-      ? "Update the active property keyframe at the current playhead time. Use Set Pose for Position + Rotation + Scale together."
-      : "Create an active property keyframe at the current playhead time. Use Set Pose for Position + Rotation + Scale together.";
+      ? "Update the active property keyframe at the current playhead time."
+      : "Create an active property keyframe at the current playhead time.";
     hydrateIcons(this.addKeyframeButton);
+  }
+
+  private hasTransformPoseKeyframeAtPlayhead(timelineDocument: SceneTimelineDocument, selectedId: string): boolean {
+    const objectTimeline = timelineDocument.objects.find((object) => object.objectId === selectedId);
+    if (!objectTimeline) return false;
+    return TRANSFORM_KEYING_SET.some((kind) => {
+      const track = objectTimeline.tracks.find((candidate) => candidate.kind === kind);
+      return hasPlayheadKey(track, timelineDocument.currentTime);
+    });
   }
 
   private syncRowKeyButtons(timelineDocument: SceneTimelineDocument): void {
@@ -3470,6 +3492,10 @@ function rangeSelection(track: TimelineTrackDocument, current: Set<string>, keyf
 
 function hasPlayheadKey(track: TimelineTrackDocument | undefined, currentTime: number): boolean {
   return Boolean(track?.keyframes.some((keyframe) => Math.abs(keyframe.time - currentTime) < 0.001));
+}
+
+function isTransformKeyingTrack(kind: TimelineTrackKind): boolean {
+  return TRANSFORM_KEYING_SET.includes(kind);
 }
 
 function roundTimelineTime(time: number): number {

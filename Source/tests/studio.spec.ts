@@ -2624,6 +2624,82 @@ test("shows live timeline row values while editing and scrubbing", async ({ page
   expect(errors).toEqual([]);
 });
 
+test("main transform key button records full position rotation and scale poses", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors: string[] = [];
+  await page.addInitScript(() => {
+    const downloads: string[] = [];
+    (window as unknown as { __sceneDownloads: string[] }).__sceneDownloads = downloads;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      if (object instanceof Blob) {
+        void object.text().then((text) => downloads.push(text));
+      }
+      return createObjectURL(object);
+    };
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const setTime = async (time: number) => {
+    await page.locator("#timeline-current-time").evaluate((input, value) => {
+      (input as HTMLInputElement).value = String(value);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, time);
+  };
+  const setTransformInput = async (prop: "position" | "rotation" | "scale", axis: "x" | "y" | "z", value: number) => {
+    await page.locator(`.transform-input[data-prop="${prop}"][data-axis="${axis}"]`).evaluate((input, nextValue) => {
+      (input as HTMLInputElement).value = String(nextValue);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+  };
+  const transformValue = async (prop: "position" | "rotation" | "scale", axis: "x" | "y" | "z") =>
+    Number(await page.locator(`.transform-input[data-prop="${prop}"][data-axis="${axis}"]`).inputValue());
+
+  await expect(page.locator("#timeline-track-kind")).toHaveValue("position");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Set Pose");
+  await page.locator("#timeline-add-keyframe").click();
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Pose");
+
+  await setTime(2);
+  await setTransformInput("position", "x", 4);
+  await setTransformInput("rotation", "y", 90);
+  await setTransformInput("scale", "x", 2);
+  await setTransformInput("scale", "y", 1.5);
+  await setTransformInput("scale", "z", 0.5);
+  await page.locator("#timeline-add-keyframe").click();
+
+  await setTime(1);
+  expect(await transformValue("position", "x")).toBeCloseTo(2, 1);
+  expect(await transformValue("rotation", "y")).toBeCloseTo(45, 1);
+  expect(await transformValue("scale", "x")).toBeCloseTo(1.5, 1);
+  expect(await transformValue("scale", "y")).toBeCloseTo(1.25, 2);
+  expect(await transformValue("scale", "z")).toBeCloseTo(0.75, 2);
+
+  await page.locator("#timeline-track-kind").selectOption("rotation");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Set Pose");
+  await page.locator("#timeline-track-kind").selectOption("scale");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Set Pose");
+  await setTime(2);
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Pose");
+
+  await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>("#save-scene")?.click();
+  });
+  const sceneText = await page.waitForFunction(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.at(-1) ?? null);
+  const sceneDocument = JSON.parse((await sceneText.jsonValue()) as string);
+  const objectTimeline = sceneDocument.timeline.objects.find((object: { objectId: string }) => object.objectId === "object-1");
+  const track = (kind: string) => objectTimeline.tracks.find((candidate: { kind: string }) => candidate.kind === kind);
+  expect(track("position").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[0]])).toEqual([[0, 0], [2, 4]]);
+  expect(track("rotation").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[1]])).toEqual([[0, 0], [2, 90]]);
+  expect(track("scale").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[0]])).toEqual([[0, 1], [2, 2]]);
+  expect(track("scale").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[1]])).toEqual([[0, 1], [2, 1.5]]);
+  expect(track("scale").keyframes.map((keyframe: { time: number; value: number[] }) => [keyframe.time, keyframe.value[2]])).toEqual([[0, 1], [2, 0.5]]);
+  expect(errors).toEqual([]);
+});
+
 test("records grouped position rotation and scale keyframes", async ({ page }) => {
   test.setTimeout(480_000);
   const errors: string[] = [];
@@ -2639,11 +2715,11 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-track-kind")).toHaveValue("position");
   await expect(page.getByRole("button", { name: "Cube Position X", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cube Scale Z", exact: true })).toBeVisible();
-  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Pose");
   await page.locator("#timeline-track-kind").selectOption("rotation");
-  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Pose");
   await page.locator("#timeline-track-kind").selectOption("scale");
-  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Pose");
 
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "2";
@@ -4611,8 +4687,8 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
 
-  await page.locator("#timeline-add-keyframe").click();
-  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position");
+  await page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"][data-track-axis="x"] .timeline-row-key').click();
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Position X");
   await expect(page.locator("#timeline-key-time")).toBeEnabled();
   await expect(page.locator("#timeline-key-x")).toBeEnabled();
   await page.locator("#timeline-key-time").evaluate((input) => {
@@ -4682,8 +4758,8 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     (input as HTMLInputElement).value = "0";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await page.locator("#timeline-add-keyframe").click();
-  await expect(page.locator("#timeline-add-keyframe")).toContainText("Update Key");
+  await page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="rotation"][data-track-axis="y"] .timeline-row-key').click();
+  await expect(page.locator("#timeline-key-label")).toContainText("Cube | Rotation Y");
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "2";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -4692,7 +4768,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     (input as HTMLInputElement).value = "360";
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await page.locator("#timeline-add-keyframe").click();
+  await page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="rotation"][data-track-axis="y"] .timeline-row-key').click();
   await page.locator("#timeline-current-time").evaluate((input) => {
     (input as HTMLInputElement).value = "1";
     input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -4921,7 +4997,7 @@ test("creates and saves transform keyframes on the timeline", async ({ page }) =
     }
   });
   expect(sceneDocument.display.motionPath).toBe(true);
-  expect(sceneDocument.timeline.version).toBe(10);
+  expect(sceneDocument.timeline.version).toBe(11);
   expect(sceneDocument.timeline.duration).toBe(8);
   expect(sceneDocument.timeline.workStart).toBe(0.5);
   expect(sceneDocument.timeline.workEnd).toBe(4.5);

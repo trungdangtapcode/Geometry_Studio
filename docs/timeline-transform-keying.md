@@ -8,7 +8,10 @@ record it, then park the playhead at \(t_1\), set a second pose, and record it
 without manually keying three separate tracks.
 
 Geometry Studio now provides `Set Pose` in the timeline and `Set Pose Key` in
-the Transform inspector for this workflow.
+the Transform inspector for this workflow. The main timeline key button also
+acts as `Set Pose` / `Update Pose` whenever the active dropdown track is
+Position, Rotation, or Scale, so the common transform-key workflow does not
+accidentally record only one channel.
 
 ## Behavior
 
@@ -17,10 +20,11 @@ the Transform inspector for this workflow.
 - If a key already exists on any of those tracks at that time, the command
   updates that key instead of creating a duplicate.
 - The command uses one undo history entry for the whole pose record operation.
-- The active track dropdown does not matter. `Set Pose` always writes transform
-  tracks only.
-- A single-property `Set Key` remains available for focused editing, and row
-  diamonds remain available for direct row-level keying.
+- The dedicated `Set Pose` command always writes transform tracks only.
+- The main key button writes a full pose for Position/Rotation/Scale dropdown
+  tracks, and writes a single key for non-transform tracks.
+- Row diamonds remain available for direct single-row keying when only Position,
+  Rotation, or Scale should be keyed.
 - Recording transform keys disables the older preset animation mode for that
   object, so authored timeline tracks remain the source of truth.
 
