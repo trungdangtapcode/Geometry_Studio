@@ -65,6 +65,10 @@ Using a local static server is recommended instead of double-clicking index.html
 - UI Density: choose Blender, Compact, or Comfortable sizing from the inspector header. Blender density is the default for a smaller professional editing layout.
 
 7. Keyboard Shortcuts
+For a cleaner tutorial and full button map, open:
+Geometry_Studio/docs/user-cheatsheet.md
+Geometry_Studio/docs/beginner-tutorial.md
+
 - T: Move / Translate.
 - R: Rotate.
 - S: Scale.
@@ -143,13 +147,14 @@ Using a local static server is recommended instead of double-clicking index.html
 - renderer/: WebGLRenderer, EffectComposer, OutlinePass, and capped responsive resizing.
 - animation/: timeline schema, keyframe editing helpers, shared interpolation evaluator, and keyframe playback runtime.
 - ui/: editor DOM template, keyframe timeline panel adapter, and value graph editor.
+- viewport/: OrbitControls navigation setup and camera framing helpers.
 - utils/: DOM helpers and ResourceTracker for disposing geometries, materials, textures, and object URLs.
 
 10. Engineering Docs
 Technical engineering plans are in:
 Geometry_Studio/docs/README.md
 
-The lowercase docs/ folder contains design notes for advanced features, including the keyframe timeline architecture and longer-term expansion plan. The Doc/ folder remains the formal LaTeX report folder.
+The lowercase docs/ folder contains the user cheatsheet, beginner tutorial, design notes for advanced features, the keyframe timeline architecture, and the longer-term expansion plan. The Doc/ folder remains the formal LaTeX report folder.
 
 11. Rebuild The Report
 Open a terminal in:

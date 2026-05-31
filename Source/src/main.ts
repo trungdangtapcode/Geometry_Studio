@@ -126,6 +126,7 @@ import { studioTemplate } from "./ui/template";
 import { renderTransformInspector, type TransformAxis, type TransformProperty } from "./ui/transformInspector";
 import { capitalize, clamp, downloadText, formatNumber, hasWebGL2, hydrateIcons, query, safeJsonParse } from "./utils/dom";
 import { ResourceTracker } from "./utils/resourceTracker";
+import { applyCameraPreset, boxForObjects, frameCameraToBox as fitCameraToBox } from "./viewport/cameraFraming";
 import { configureViewportNavigation, resetBlenderNavigationMouseButton, syncBlenderNavigationMouseButton } from "./viewport/navigation";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -2156,17 +2157,7 @@ function boot(root: HTMLDivElement): void {
 
   function setCameraPreset(view: string): void {
     stopPathTracePreview(false);
-    const positions: Record<string, THREE.Vector3> = {
-      front: new THREE.Vector3(0, 3.5, 12),
-      top: new THREE.Vector3(0, 14, 0.01),
-      iso: new THREE.Vector3(8, 6, 8),
-      reset: new THREE.Vector3(7.5, 5.5, 9)
-    };
-    const position = positions[view] ?? positions.reset;
-    camera.position.copy(position);
-    controls.target.set(0, 1.2, 0);
-    camera.lookAt(controls.target);
-    controls.update();
+    applyCameraPreset(camera, controls, view);
     frustumHelper.update();
     syncCameraUI();
   }
@@ -2200,39 +2191,9 @@ function boot(root: HTMLDivElement): void {
     frameCameraToBox(box, "Scene framed");
   }
 
-  function boxForObjects(objects: THREE.Object3D[]): THREE.Box3 | null {
-    const box = new THREE.Box3();
-    let hasBounds = false;
-    objects.forEach((object) => {
-      const objectBox = new THREE.Box3().setFromObject(object);
-      if (objectBox.isEmpty()) return;
-      box.union(objectBox);
-      hasBounds = true;
-    });
-    return hasBounds ? box : null;
-  }
-
   function frameCameraToBox(box: THREE.Box3, message: string): void {
     stopPathTracePreview(false);
-    const sphere = box.getBoundingSphere(new THREE.Sphere());
-    const radius = Math.max(sphere.radius, 0.5);
-    const direction = new THREE.Vector3().subVectors(camera.position, controls.target);
-    if (direction.lengthSq() < 0.0001) direction.set(0.65, 0.45, 0.62);
-    direction.normalize();
-
-    const verticalFov = THREE.MathUtils.degToRad(camera.fov);
-    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(camera.aspect, 0.001));
-    const fitDistance = Math.max(
-      radius / Math.sin(verticalFov / 2),
-      radius / Math.sin(horizontalFov / 2)
-    ) * 1.18;
-    const distanceToTarget = Math.max(controls.minDistance, fitDistance);
-    if (distanceToTarget > controls.maxDistance) controls.maxDistance = distanceToTarget * 1.5;
-
-    controls.target.copy(sphere.center);
-    camera.position.copy(sphere.center).addScaledVector(direction, distanceToTarget);
-    camera.lookAt(controls.target);
-    controls.update();
+    fitCameraToBox(camera, controls, box);
     frustumHelper.update();
     syncCameraUI();
     showToast(message, "good");

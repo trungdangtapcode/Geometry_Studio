@@ -44,6 +44,9 @@ Left-button object picking is deferred until pointer-up and ignored when the
 pointer moved more than a few pixels. That keeps normal left-drag orbit usable
 while preserving click-to-select behavior.
 
+`Source/src/viewport/cameraFraming.ts` owns camera preset and framing math so
+the main editor shell only wires UI events to reusable viewport behavior.
+
 The camera panel also exposes viewport framing commands:
 
 - `Frame Sel` computes the selected object's world-space bounding box,

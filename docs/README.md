@@ -4,6 +4,14 @@ This folder contains engineering design notes for future development. It does
 not replace `Doc/`, which contains the formal LaTeX course report and generated
 PDF.
 
+## User Docs
+
+- [User Cheatsheet](user-cheatsheet.md) is the practical button and shortcut map
+  for operating the finished app.
+- [Beginner Tutorial](beginner-tutorial.md) walks through navigation, object
+  editing, keyframing, camera/light animation, import, rendering, and report
+  evidence screenshots.
+
 ## Timeline Planning Set
 
 - [Timeline Research](timeline-research.md) compares timeline and animation
