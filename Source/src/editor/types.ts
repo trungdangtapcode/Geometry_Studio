@@ -85,6 +85,7 @@ export interface RenderSettings {
 export interface SceneEntry {
   id: string;
   name: string;
+  parentId: string | null;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   root: THREE.Group;
@@ -233,6 +234,7 @@ export interface SerializedLight {
 export interface SerializedObject {
   id: string;
   name: string;
+  parentId?: string | null;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   renderMode: RenderMode;

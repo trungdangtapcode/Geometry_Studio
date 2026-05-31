@@ -20,6 +20,8 @@ PDF.
   evidence screenshots.
 - [Coursework Showcase Demo](showcase-demo.md) documents the reference-GIF
   inspired presentation preset and how it remains editable in the main timeline.
+- [AE-Style Parent And Link](ae-parent-link.md) documents parent layers, Null
+  Controllers, JSON persistence, deletion behavior, and future pick-whip work.
 
 ## Timeline Planning Set
 

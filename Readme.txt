@@ -45,6 +45,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - Rendering modes: Solid, Points, and Lines. The Lines mode uses WireframeGeometry + LineSegments so object edges render correctly.
 - Perspective projection: editable camera position, FOV, Near, and Far values with Front, Top, Iso, Reset, Frame Selected, and Frame All viewport controls.
 - Affine transformations: Move, Rotate, and Scale with TransformControls, numeric X/Y/Z inputs, and World/Local space modes.
+- AE-style Parent & Link: assign parent layers, create Null Controllers, clear links while preserving world pose, and persist parent relationships in scene JSON.
 - Lighting: Ambient, Directional, Point, and Spot lights with color, intensity, position, helper, and shadow controls.
 - Rendering Lab: Tone mapping, exposure, shadow quality, PBR/Anime Toon material presets, generated environment lighting, SSAO, Bloom, Vignette, Comic Halftone, optional path-traced still preview, and renderer telemetry controls.
 - Asset Store: one-click built-in looks, procedural textures, materials, Teapot/Torus Knot geometry, and the Sample Drone model for polished screenshots without runtime network assets.

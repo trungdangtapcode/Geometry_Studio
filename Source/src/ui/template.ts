@@ -397,6 +397,23 @@ export function studioTemplate(): string {
         </section>
 
         <section class="panel-section">
+          <div class="section-title">
+            <span data-icon="GitFork"></span>
+            <h3>Parent & Link</h3>
+          </div>
+          <label>
+            <span>Parent</span>
+            <select id="parent-select" aria-label="Parent layer">
+              <option value="">None</option>
+            </select>
+          </label>
+          <div class="compact-row">
+            <button class="wide-button" id="parent-to-null" type="button"><span data-icon="Box"></span><span>Parent To Null</span></button>
+            <button class="wide-button" id="clear-parent" type="button"><span data-icon="Unlink"></span><span>Clear Parent</span></button>
+          </div>
+        </section>
+
+        <section class="panel-section">
           <button class="section-title section-button" id="render-mode-button" type="button" aria-label="Render mode">
             <span data-icon="ScanLine"></span>
             <h3>Render Mode</h3>
@@ -730,6 +747,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Move</strong><span>T</span><p>Use translate gizmo.</p></div>
               <div class="quick-help-item"><strong>Rotate</strong><span>R</span><p>Use rotation gizmo.</p></div>
               <div class="quick-help-item"><strong>Scale</strong><span>S</span><p>Use scale gizmo.</p></div>
+              <div class="quick-help-item"><strong>Parent & Link</strong><span>Inspector / commands</span><p>Assign a parent layer or create a Null Controller while preserving the selected object's world pose.</p></div>
               <div class="quick-help-item"><strong>Copy / Paste Pose</strong><span>Transform panel</span><p>Copy selected Position, Rotation, and Scale, then paste onto another time or object.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="timeline shortcuts">

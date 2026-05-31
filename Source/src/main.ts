@@ -129,6 +129,14 @@ import { applyLightingPreset, lightingPresetById, lightRigMatchesPreset } from "
 import { applyMaterialPresetValues, entryMatchesMaterialPreset, materialPresetById } from "./scene/materialPresets";
 import { buildGeometryVisual, buildModelVisual, makeTexturePreset, syncTextureTransform } from "./scene/materials";
 import { clearMotionPath, createMotionPathRig, updateCameraMotionPath, updateMotionPath, updateObjectOnionSkins } from "./scene/motionPath";
+import {
+  attachEntryToStoredParent,
+  canParentEntry,
+  detachAllParents,
+  detachChildrenFromParent,
+  setEntryParentPreserveWorld,
+  validStoredParentId
+} from "./scene/parenting";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
 import {
   KeyframeTimelinePanel,
@@ -432,6 +440,7 @@ function boot(root: HTMLDivElement): void {
     return {
       id,
       root,
+      parentId: null,
       kind: config.kind,
       type: config.type,
       name: config.name,
@@ -542,6 +551,11 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#delete-selected").addEventListener("click", deleteSelected);
     query<HTMLButtonElement>("#duplicate-selected").addEventListener("click", duplicateSelected);
     query<HTMLButtonElement>("#reset-scene").addEventListener("click", resetScene);
+    query<HTMLSelectElement>("#parent-select").addEventListener("change", (event) => {
+      setSelectedParent((event.target as HTMLSelectElement).value || null);
+    });
+    query<HTMLButtonElement>("#parent-to-null").addEventListener("click", parentSelectedToNewNull);
+    query<HTMLButtonElement>("#clear-parent").addEventListener("click", () => setSelectedParent(null));
     const primaryTransportButton = query<HTMLButtonElement>("#play-toggle");
     primaryTransportButton.addEventListener("pointerdown", () => {
       if (!transport.playing) return;
@@ -993,6 +1007,7 @@ function boot(root: HTMLDivElement): void {
     renderOutliner();
     syncTransformUI();
     syncTransformPoseClipboardUI();
+    syncParentUI();
     syncCameraUI();
     syncLightUI();
     syncSelectionSummary();
@@ -1075,6 +1090,17 @@ function boot(root: HTMLDivElement): void {
       command("transform.paste-pose", "Paste Transform Pose", "Keyframes", pasteTransformPose, {
         keywords: ["pose", "position", "rotation", "scale", "clipboard", "auto-key"],
         disabled: () => !selectedEntry() || !hasTransformPoseClipboard()
+      }),
+      command("transform.add-null", "Add Null Controller", "Transform", () => addNullController(), {
+        keywords: ["parent", "link", "ae", "controller", "null"]
+      }),
+      command("transform.parent-to-null", "Parent Selected To New Null", "Transform", parentSelectedToNewNull, {
+        keywords: ["parent", "link", "pick whip", "ae", "null"],
+        disabled: () => !selectedEntry()
+      }),
+      command("transform.clear-parent", "Clear Selected Parent", "Transform", () => setSelectedParent(null), {
+        keywords: ["parent", "link", "unparent", "unlink"],
+        disabled: () => !selectedEntry()?.parentId
       }),
       command("timeline.auto-orient-path", "Auto-Orient Along Path", "Keyframes", autoOrientSelectedAlongPath, {
         keywords: ["rotation", "path", "orient", "direction", "motion path", "after effects", "ae"],
@@ -1374,10 +1400,12 @@ function boot(root: HTMLDivElement): void {
       item.dataset.id = entry.id;
       item.ariaLabel = `Select ${entry.name}`;
       item.classList.toggle("active", entry.id === selectedId);
+      const parent = entry.parentId ? entries.get(entry.parentId) : null;
+      const modeLabel = parent ? `${capitalize(entry.renderMode)} | Parent: ${parent.name}` : capitalize(entry.renderMode);
       item.innerHTML = `
         <span class="object-dot" style="background:${entry.color.getStyle()}"></span>
         <span class="object-name">${entry.name}</span>
-        <span class="object-mode">${capitalize(entry.renderMode)}</span>
+        <span class="object-mode">${modeLabel}</span>
       `;
       item.addEventListener("click", () => setSelected(entry.id));
       outliner.appendChild(item);
@@ -1402,6 +1430,86 @@ function boot(root: HTMLDivElement): void {
     pasteButton.title = transformPoseClipboard
       ? `Paste pose copied from ${transformPoseClipboard.sourceName}${sceneTimeline.autoKey ? " and set transform keys" : ""}`
       : "Copy a transform pose before pasting";
+  }
+
+  function syncParentUI(): void {
+    const entry = selectedEntry();
+    const select = query<HTMLSelectElement>("#parent-select");
+    select.innerHTML = "";
+
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "None";
+    select.appendChild(none);
+
+    entries.forEach((candidate) => {
+      if (candidate.id === entry?.id) return;
+      const option = document.createElement("option");
+      option.value = candidate.id;
+      option.textContent = candidate.name;
+      option.disabled = entry ? !canParentEntry(entry, candidate, entries) : true;
+      select.appendChild(option);
+    });
+
+    select.disabled = !entry;
+    select.value = entry?.parentId ?? "";
+    query<HTMLButtonElement>("#parent-to-null").disabled = !entry;
+    query<HTMLButtonElement>("#clear-parent").disabled = !entry || !entry.parentId;
+  }
+
+  function setSelectedParent(parentId: string | null): void {
+    const entry = selectedEntry();
+    if (!entry) return;
+    const parent = parentId ? entries.get(parentId) ?? null : null;
+    if (parentId && !parent) {
+      showToast("Parent layer no longer exists.", "bad");
+      syncParentUI();
+      return;
+    }
+    recordHistory();
+    if (!setEntryParentPreserveWorld(entry, parent, scene, entries)) {
+      showToast("Cannot create a parenting cycle.", "bad");
+      updateAllUI();
+      return;
+    }
+    updateAllUI();
+    showToast(parent ? `${entry.name} parented to ${parent.name}` : `${entry.name} parent cleared`, "good");
+  }
+
+  function addNullController(position = nextSpawnPosition(), record = true): SceneEntry {
+    if (record) recordHistory();
+    const controller = addPrimitive("cube", position, {
+      name: "Null Controller",
+      color: "#f4ad2f",
+      materialMode: "basic",
+      renderMode: "lines",
+      opacity: 0.78
+    }, false);
+    controller.root.scale.setScalar(0.72);
+    controller.baseScale.copy(controller.root.scale);
+    rebuildEntryVisual(controller);
+    setSelected(controller.id);
+    updateAllUI();
+    if (record) showToast("Null Controller added", "good");
+    return controller;
+  }
+
+  function parentSelectedToNewNull(): void {
+    const child = selectedEntry();
+    if (!child) return;
+    recordHistory();
+    scene.updateMatrixWorld(true);
+    const worldPosition = new THREE.Vector3();
+    child.root.getWorldPosition(worldPosition);
+    const controller = addNullController(worldPosition, false);
+    if (!setEntryParentPreserveWorld(child, controller, scene, entries)) {
+      showToast("Could not parent selected object to the null.", "bad");
+      updateAllUI();
+      return;
+    }
+    setSelected(child.id);
+    updateAllUI();
+    showToast(`${child.name} parented to new Null Controller`, "good");
   }
 
   function transformKeyState(kind: TransformProperty): { locked: boolean; hasPlayheadKey: boolean } {
@@ -2836,6 +2944,7 @@ function boot(root: HTMLDivElement): void {
     timelinePlayer.clear();
     transformControls.detach();
     clearMotionPath(motionPathRig);
+    detachAllParents(entries, scene);
     entries.forEach((entry) => {
       disposeEntry(entry);
       scene.remove(entry.root);
@@ -2857,6 +2966,12 @@ function boot(root: HTMLDivElement): void {
     if (!entry) return;
     recordHistory();
     transformControls.detach();
+    if (entry.parentId) {
+      scene.updateMatrixWorld(true);
+      scene.attach(entry.root);
+      entry.parentId = null;
+    }
+    detachChildrenFromParent(entry.id, entries, scene);
     disposeEntry(entry);
     scene.remove(entry.root);
     entries.delete(entry.id);
@@ -2880,6 +2995,10 @@ function boot(root: HTMLDivElement): void {
       name: `${entry.name} Copy`,
       position: [entry.root.position.x + 0.8, entry.root.position.y, entry.root.position.z + 0.8]
     });
+    if (entry.parentId) {
+      const parent = entries.get(entry.parentId);
+      if (parent) attachEntryToStoredParent(copy, parent, entries);
+    }
     copyTimelineObject(sceneTimeline, entry.id, copy.id);
     rebuildTimelineRuntime();
     setSelected(copy.id);
@@ -2990,6 +3109,7 @@ function boot(root: HTMLDivElement): void {
     applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
     transport.set(document.playing, 1, 1);
     document.objects.forEach((object) => restoreObject(object));
+    restoreParentLinks(document.objects);
     sceneTimeline = normalizeTimelineDocument(document.timeline, new Set(entries.keys()));
     bakeLegacyAnimationPresetsWithoutTracks();
     selectedId = document.selectedId && entries.has(document.selectedId) ? document.selectedId : entries.size ? firstEntryId() : "";
@@ -3056,6 +3176,17 @@ function boot(root: HTMLDivElement): void {
     entry.baseScale.copy(entry.root.scale);
     rebuildEntryVisual(entry);
     return entry;
+  }
+
+  function restoreParentLinks(objects: SerializedObject[]): void {
+    objects.forEach((object) => {
+      const parentId = validStoredParentId(object, objects);
+      if (!parentId) return;
+      const entry = entries.get(object.id);
+      const parent = entries.get(parentId);
+      if (!entry || !parent) return;
+      attachEntryToStoredParent(entry, parent, entries);
+    });
   }
 
   function bakeLegacyAnimationPresetsWithoutTracks(): void {
@@ -5420,6 +5551,7 @@ function boot(root: HTMLDivElement): void {
     return {
       id: entry.id,
       name: entry.name,
+      parentId: entry.parentId,
       kind: entry.kind,
       type: entry.type,
       renderMode: entry.renderMode,

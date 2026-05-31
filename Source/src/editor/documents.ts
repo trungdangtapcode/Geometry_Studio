@@ -73,6 +73,7 @@ function serializeEntry(entry: SceneEntry): SerializedObject {
   return {
     id: entry.id,
     name: entry.name,
+    parentId: entry.parentId,
     kind: entry.kind,
     type: entry.type,
     renderMode: entry.renderMode,

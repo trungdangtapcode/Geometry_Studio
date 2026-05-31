@@ -74,6 +74,7 @@ Drag-and-drop model or texture files onto the viewport also works.
 | Asset Store | One-click looks, procedural textures, material presets, Teapot/Torus Knot, and Sample Drone |
 | Outliner | Select, rename, duplicate, or delete objects |
 | Transform | Move, rotate, scale, world/local space, reset transform |
+| Parent & Link | Parent selected objects to another layer or create a Null Controller |
 | Geometry / Render Mode | Change primitive type or switch Solid, Lines, Points |
 | Material | Color, material mode, PBR presets, opacity, roughness, metalness |
 | Textures | Built-in texture presets, uploaded bitmap texture, repeat/offset/rotation |
@@ -97,6 +98,8 @@ the setting inside the app.
 | Reset transform | Transform `Reset` | Command palette search `reset transform` |
 | Copy pose | Timeline / command palette | `Alt+C` in keyframe context is property reveal; use command palette for pose |
 | Paste pose | Timeline / command palette | Command palette search `paste pose` |
+| Parent to null | Parent & Link panel / command palette | Command palette search `parent null` |
+| Clear parent | Parent & Link panel / command palette | Command palette search `clear parent` |
 
 For animation authoring, prefer `Set Pose` or `Set Pose Key` when you want
 Position, Rotation, and Scale recorded together.
