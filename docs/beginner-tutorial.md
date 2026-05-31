@@ -92,6 +92,10 @@ This records Position, Rotation, and Scale together.
 7. Click `Set TRS` again.
 8. Drag the playhead between `0` and `2`, or press `Play`.
 
+Time fields also accept frame and timecode entry. For example, at 30 FPS,
+`60f`, `2s`, and `00:00:02:00` all mean 2 seconds. `+10f` moves relative to
+the current field value.
+
 If the object does not move, check that:
 
 - The same object is selected.

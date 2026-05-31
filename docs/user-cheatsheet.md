@@ -102,9 +102,9 @@ Scale recorded together.
 
 | Control | Meaning |
 | --- | --- |
-| Time | Current playhead time in seconds |
-| Duration | Full timeline length |
-| Work In / Work Out | Preview/export range |
+| Time | Current playhead time; accepts seconds, frames like `45f`, timecode like `00:00:02:15`, or relative offsets like `+10f` |
+| Duration | Full timeline length; accepts the same seconds/frame/timecode formats |
+| Work In / Work Out | Preview/export range; accepts the same seconds/frame/timecode formats |
 | FPS | Frame grid for stepping and snapping |
 | Speed | Playback rate |
 | Snap | Snap keyframes/playhead to frame or marker landmarks |

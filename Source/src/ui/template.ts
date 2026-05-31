@@ -185,10 +185,10 @@ export function studioTemplate(): string {
             </div>
           </header>
           <div class="timeline-settings">
-            <label><span>Time</span><input id="timeline-current-time" type="number" min="0" step="0.033" value="0" /></label>
-            <label><span>Duration</span><input id="timeline-duration" type="number" min="0.5" max="120" step="0.5" value="8" /></label>
-            <label><span>Work In</span><input id="timeline-work-start" type="number" min="0" max="120" step="0.1" value="0" /></label>
-            <label><span>Work Out</span><input id="timeline-work-end" type="number" min="0.1" max="120" step="0.1" value="8" /></label>
+            <label><span>Time</span><input id="timeline-current-time" type="text" inputmode="decimal" value="0" title="Seconds, frames like 45f, timecode like 00:00:02:15, or relative offsets like +10f" /></label>
+            <label><span>Duration</span><input id="timeline-duration" type="text" inputmode="decimal" value="8" title="Seconds, frames like 240f, timecode like 00:00:08:00, or relative offsets like +1s" /></label>
+            <label><span>Work In</span><input id="timeline-work-start" type="text" inputmode="decimal" value="0" title="Seconds, frames like 45f, timecode like 00:00:01:15, or relative offsets like +10f" /></label>
+            <label><span>Work Out</span><input id="timeline-work-end" type="text" inputmode="decimal" value="8" title="Seconds, frames like 240f, timecode like 00:00:08:00, or relative offsets like +10f" /></label>
             <label><span>FPS</span><input id="timeline-fps" type="number" min="1" max="120" step="1" value="30" /></label>
             <label>
               <span>Speed</span>

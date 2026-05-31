@@ -424,6 +424,45 @@ test("sets explicit timeline playback speed from UI and command palette", async 
   expect(errors).toEqual([]);
 });
 
+test("accepts frame, timecode, and relative timeline time entry", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  const changeInput = async (selector: string, value: string) => {
+    await page.locator(selector).evaluate((element, nextValue) => {
+      const input = element as HTMLInputElement;
+      input.value = nextValue as string;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+  };
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-fps")).toHaveValue("30");
+
+  await changeInput("#timeline-current-time", "45f");
+  await expect(page.locator("#timeline-current-time")).toHaveValue("1.5");
+
+  await changeInput("#timeline-current-time", "+15f");
+  await expect(page.locator("#timeline-current-time")).toHaveValue("2");
+
+  await changeInput("#timeline-work-start", "00:00:01:15");
+  await expect(page.locator("#timeline-work-start")).toHaveValue("1.5");
+
+  await changeInput("#timeline-work-end", "0:03");
+  await expect(page.locator("#timeline-work-end")).toHaveValue("3");
+
+  await changeInput("#timeline-duration", "300f");
+  await expect(page.locator("#timeline-duration")).toHaveValue("10");
+
+  await changeInput("#timeline-current-time", "not-time");
+  await expect(page.locator("#timeline-current-time")).toHaveValue("2");
+
+  expect(errors).toEqual([]);
+});
+
 test("sequences object layer ranges from the command palette", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];

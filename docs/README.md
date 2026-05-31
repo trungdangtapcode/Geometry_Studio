@@ -123,9 +123,11 @@ PDF.
 - [Timeline Property Reveal Shortcuts](timeline-property-reveal.md) documents
   AE-style Position, Rotation, Scale, and Opacity row reveal commands.
 - [Timeline Transport Shortcuts](timeline-transport-shortcuts.md) documents
-  J/K/L forward, pause, and reverse playback behavior.
+  J/K/L forward, stop, and reverse playback behavior.
 - [Timeline Playback Speed](timeline-playback-speed.md) documents explicit
   `0.25x` to `4x` preview speed controls and command palette integration.
+- [Timeline Time Entry](timeline-time-entry.md) documents seconds, frame,
+  timecode, and relative-offset input for Time, Duration, Work In, and Work Out.
 - [Timeline Keyframe Clipboard](timeline-keyframe-clipboard.md) documents
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Paste Insert](timeline-paste-insert.md) documents insert-style
@@ -374,9 +376,12 @@ animation runtime where it fits:
   `Shift+B`, and `Ctrl/Cmd+Shift+A` keyboard workflows for fast preview-range
   authoring and range selection. The ruler scrub lane also supports `Shift`
   click for Work In and `Alt` click for Work Out.
-- J/K/L transport shortcuts provide forward, pause, reverse, and repeated-key
+- J/K/L transport shortcuts provide forward, stop, reverse, and repeated-key
   shuttle playback inside the active work area, while the Speed selector gives
   direct `0.25x` to `4x` preview rates.
+- Timeline Time, Duration, Work In, and Work Out fields accept seconds, frames,
+  timecode, and relative offsets, then feed the existing clamped timeline
+  callbacks so saved scene data remains simple seconds.
 - The red Current Time Indicator in the timeline ruler can be dragged directly
   to scrub the scene, and the ruler scrub lane supports direct click-to-seek,
   with the matching playhead line shown across layer ranges.
@@ -430,6 +435,8 @@ object appearance, camera, and light tracks:
   work-area, and layer-range drag workflows.
 - `ui/timelineWorkArea.ts` owns direct Work In/Out range dragging in the timeline
   header.
+- `ui/timelineTimeInput.ts` owns editor-style seconds, frame, timecode, and
+  relative-offset parsing for timeline time fields.
 - `ui/density.ts` owns UI-density persistence and root layout mode application.
 - `main.ts` evaluates camera, light, color, opacity, and visibility tracks
   against the same keyframe schema so non-transform properties remain

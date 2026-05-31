@@ -35,6 +35,7 @@ import {
 import { appendLayerPlayhead, TimelinePlayheadController } from "./timelinePlayhead";
 import { snapTimelineEditorTime, type TimelineSnapOptions } from "./timelineSnapping";
 import { timelineRowMatchesSearch } from "./timelineRowSearch";
+import { parseTimelineTimeInput, timelineTimeInputHelp } from "./timelineTimeInput";
 import { TimelineWorkAreaController } from "./timelineWorkArea";
 import {
   CAMERA_TRACKS,
@@ -459,6 +460,7 @@ export class KeyframeTimelinePanel {
     this.loopInput.checked = timelineDocument.loop;
     this.snapInput.checked = timelineDocument.snapEnabled;
     this.autoKeyInput.checked = timelineDocument.autoKey;
+    this.syncTimeInputHints(timelineDocument.fps);
     this.snapStepInput.value = formatNumber(timelineDocument.snapStep);
     this.syncRowFilterSelect();
     this.rowSearchInput.value = this.rowSearchText;
@@ -856,6 +858,46 @@ export class KeyframeTimelinePanel {
     hydrateIcons(this.playButton);
   }
 
+  private syncTimeInputHints(fps: number): void {
+    const help = timelineTimeInputHelp(fps);
+    [this.timeInput, this.durationInput, this.workStartInput, this.workEndInput].forEach((input) => {
+      input.title = help;
+    });
+  }
+
+  private commitTimeInput(input: HTMLInputElement, baseTime: number, commit: (time: number) => void): void {
+    const time = this.parseTimeInput(input, baseTime);
+    if (time === null) {
+      this.restoreTimeInputs();
+      return;
+    }
+    commit(time);
+  }
+
+  private readTimeInput(input: HTMLInputElement, fallback: number): number {
+    const time = this.parseTimeInput(input, fallback);
+    if (time === null) {
+      this.restoreTimeInputs();
+      return fallback;
+    }
+    return time;
+  }
+
+  private parseTimeInput(input: HTMLInputElement, baseTime: number): number | null {
+    return parseTimelineTimeInput(input.value, {
+      fps: this.lastTimelineDocument?.fps ?? Number(this.fpsInput.value),
+      baseTime
+    });
+  }
+
+  private restoreTimeInputs(): void {
+    if (!this.lastTimelineDocument) return;
+    this.timeInput.value = formatNumber(this.lastTimelineDocument.currentTime);
+    this.durationInput.value = formatNumber(this.lastTimelineDocument.duration);
+    this.workStartInput.value = formatNumber(this.lastTimelineDocument.workStart);
+    this.workEndInput.value = formatNumber(this.lastTimelineDocument.workEnd);
+  }
+
   private bindEvents(): void {
     this.resizeHandle.addEventListener("pointerdown", (event) => this.startResize(event));
     this.resizeHandle.addEventListener("dblclick", () => this.resetDockHeight());
@@ -1144,13 +1186,13 @@ export class KeyframeTimelinePanel {
     this.selectionToolButton.addEventListener("click", () => this.setDopeSheetTool("selection"));
     this.panToolButton.addEventListener("click", () => this.setDopeSheetTool("pan"));
     this.followPlayheadButton.addEventListener("click", () => this.toggleFollowPlayhead());
-    query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workStartInput.value)));
-    query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(Number(this.workEndInput.value)));
+    query<HTMLButtonElement>("#timeline-start").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workStartInput, this.lastTimelineDocument?.workStart ?? 0)));
+    query<HTMLButtonElement>("#timeline-end").addEventListener("click", () => this.callbacks.onTimeChanged(this.readTimeInput(this.workEndInput, this.lastTimelineDocument?.workEnd ?? 0)));
     this.playButton.addEventListener("click", () => this.callbacks.onTogglePlayback());
-    this.timeInput.addEventListener("change", () => this.callbacks.onTimeChanged(Number(this.timeInput.value)));
-    this.durationInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ duration: Number(this.durationInput.value) }));
-    this.workStartInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ workStart: Number(this.workStartInput.value) }));
-    this.workEndInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ workEnd: Number(this.workEndInput.value) }));
+    this.timeInput.addEventListener("change", () => this.commitTimeInput(this.timeInput, this.lastTimelineDocument?.currentTime ?? 0, (time) => this.callbacks.onTimeChanged(time)));
+    this.durationInput.addEventListener("change", () => this.commitTimeInput(this.durationInput, this.lastTimelineDocument?.duration ?? 8, (duration) => this.callbacks.onSettingsChanged({ duration })));
+    this.workStartInput.addEventListener("change", () => this.commitTimeInput(this.workStartInput, this.lastTimelineDocument?.workStart ?? 0, (workStart) => this.callbacks.onSettingsChanged({ workStart })));
+    this.workEndInput.addEventListener("change", () => this.commitTimeInput(this.workEndInput, this.lastTimelineDocument?.workEnd ?? 8, (workEnd) => this.callbacks.onSettingsChanged({ workEnd })));
     this.fpsInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ fps: Number(this.fpsInput.value) }));
     this.snapStepInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ snapStep: Number(this.snapStepInput.value) }));
     this.loopInput.addEventListener("change", () => this.callbacks.onSettingsChanged({ loop: this.loopInput.checked }));
