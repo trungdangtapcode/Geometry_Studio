@@ -130,6 +130,7 @@ test("sets keys on pinned timeline rows as a keying set", async ({ page }) => {
 });
 
 test("pins selected transform rows as a reusable keying set", async ({ page }) => {
+  test.setTimeout(120_000);
   await page.addInitScript(() => {
     window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
     window.localStorage.removeItem("geometry-studio-timeline-row-filter");
@@ -164,4 +165,15 @@ test("pins selected transform rows as a reusable keying set", async ({ page }) =
   await page.locator("#command-palette-search").fill("select pinned row keyframes");
   await page.keyboard.press("Enter");
   await expect(page.locator("#timeline-selection")).toContainText("3 keyframes");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("select pinned row keys at playhead");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-selection")).toContainText("3 keyframes");
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("copy pinned row keys at playhead");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#timeline-paste-keyframes")).toBeEnabled();
+  await expect(page.locator("#timeline-paste-keyframes")).toHaveAttribute("title", /Paste 3 keyframes/);
 });

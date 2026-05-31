@@ -142,6 +142,7 @@ Scale recorded together.
 | Select Visible | Select keys on visible rows |
 | Select Pinned | Select keys on pinned rows |
 | Select Time | Select keys at current playhead time |
+| Select/Copy Pinned Time | Command Palette actions for pinned-row keys at the playhead |
 | Dup Time / Del Time | Duplicate or delete visible-row keys at the playhead |
 | Insert Gap | Push later visible-row keys by Work In/Out length |
 | Lift Work | Delete visible-row keys inside Work In/Out without closing gap |
@@ -252,7 +253,10 @@ If a key already exists at that time, `Set Key` updates it.
    keying set.
 6. Click `Select Pinned` when you want to retime, copy, ease, or delete keys
    only on that pinned keying set.
-7. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
+7. Search `Select Pinned Row Keys At Playhead` or `Copy Pinned Row Keys At
+   Playhead` when you want to work with the pinned pose column at the current
+   time.
+8. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
    pinned set is no longer useful.
 
 ### Animate Camera

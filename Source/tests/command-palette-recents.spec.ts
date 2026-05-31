@@ -32,4 +32,7 @@ test("prioritizes exact title matches over broad keyword matches", async ({ page
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill("select pinned row keyframes");
   await expect(page.locator(".command-palette-item").first()).toHaveAttribute("data-command-id", "timeline.select-pinned");
+
+  await page.locator("#command-palette-search").fill("select pinned row keys at playhead");
+  await expect(page.locator(".command-palette-item").first()).toHaveAttribute("data-command-id", "timeline.select-pinned-time");
 });

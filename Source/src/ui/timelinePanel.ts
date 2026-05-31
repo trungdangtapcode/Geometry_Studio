@@ -576,11 +576,21 @@ export class KeyframeTimelinePanel {
 
   selectVisibleRowKeyframesAtCurrentTime(): number {
     if (!this.lastTimelineDocument) return 0;
+    return this.selectRowTargetKeyframesAtCurrentTime(this.visibleRowTargets());
+  }
+
+  selectPinnedRowKeyframesAtCurrentTime(): number {
+    if (!this.lastTimelineDocument) return 0;
+    return this.selectRowTargetKeyframesAtCurrentTime(this.pinnedRowTargets());
+  }
+
+  private selectRowTargetKeyframesAtCurrentTime(rows: TimelineVisibleRowTarget[]): number {
+    if (!this.lastTimelineDocument) return 0;
     const timelineDocument = this.lastTimelineDocument;
     const currentTime = timelineDocument.currentTime;
     const tolerance = Math.max(0.001, timelineDocument.snapEnabled ? timelineDocument.snapStep * 0.5 : 0.001);
     const selectedIds = new Set<string>();
-    this.visibleRowTargets().forEach((target) => {
+    rows.forEach((target) => {
       const track = this.trackForTarget(timelineDocument, target.targetId, target.kind);
       track?.keyframes.forEach((keyframe) => {
         if (Math.abs(keyframe.time - currentTime) <= tolerance) selectedIds.add(keyframe.id);

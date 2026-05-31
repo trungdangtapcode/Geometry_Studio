@@ -10,8 +10,9 @@ by search instead of scanning long toolbars.
 
 - Open with the `Commands` button, `Ctrl/Cmd+K`, or `F3`.
 - Search by command name, category, shortcut, or keyword.
-- Exact command-title and title-prefix matches are ranked above broad keyword
-  matches, so typing the visible command name runs the expected command.
+- Exact command-title, title-prefix, and title-word matches are ranked above
+  broad keyword matches, so typing the visible command name runs the expected
+  command.
 - Use `ArrowUp` / `ArrowDown` to move the active command.
 - Use `Enter` to run the active enabled command.
 - Use `Escape` or click outside the dialog to close it.

@@ -998,6 +998,9 @@ function boot(root: HTMLDivElement): void {
       command("timeline.set-pinned", "Set Keys On Pinned Rows", "Keyframes", setPinnedTimelineKeyframes, {
         keywords: ["pin", "pinned", "favorite", "keying set", "rows", "channels"]
       }),
+      command("timeline.copy-pinned-time", "Copy Pinned Row Keys At Playhead", "Keyframes", copyPinnedTimelineTimeKeyframes, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
+      }),
       command("timeline.pin-selected-transform", "Pin Selected Transform Rows", "Keyframes", pinSelectedTransformRows, {
         keywords: ["pin", "pinned", "keying set", "position", "rotation", "scale", "trs"],
         disabled: () => !selectedEntry()
@@ -1046,6 +1049,9 @@ function boot(root: HTMLDivElement): void {
       }),
       command("timeline.select-pinned-work", "Select Pinned Row Work Area Keyframes", "Selection", () => selectPinnedTimelineKeyframes(true), {
         keywords: ["pin", "pinned", "favorite", "keying set", "work area", "rows"]
+      }),
+      command("timeline.select-pinned-time", "Select Pinned Row Keys At Playhead", "Selection", selectPinnedTimelineTimeKeyframes, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "pose", "time", "column"]
       }),
       command("timeline.select-time", "Select Visible Row Keys At Playhead", "Selection", selectVisibleTimelineTimeKeyframes, { shortcut: "Ctrl+Alt+K" }),
 
@@ -2921,6 +2927,14 @@ function boot(root: HTMLDivElement): void {
       selectedCount ? "good" : "bad");
   }
 
+  function selectPinnedTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectPinnedRowKeyframesAtCurrentTime();
+    showToast(selectedCount
+      ? `${selectedCount} pinned-row keyframe${selectedCount === 1 ? "" : "s"} selected at ${formatNumber(sceneTimeline.currentTime)}s`
+      : `No pinned-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s.`,
+      selectedCount ? "good" : "bad");
+  }
+
   function addTimelineKeyframe(kind: TimelineTrackKind): void {
     setTimelineKeyframe(kind);
   }
@@ -3534,6 +3548,15 @@ function boot(root: HTMLDivElement): void {
     const selectedCount = timelinePanel.selectVisibleRowKeyframesAtCurrentTime();
     if (selectedCount === 0) {
       showToast(`No visible-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to copy.`, "bad");
+      return;
+    }
+    copyTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
+  }
+
+  function copyPinnedTimelineTimeKeyframes(): void {
+    const selectedCount = timelinePanel.selectPinnedRowKeyframesAtCurrentTime();
+    if (selectedCount === 0) {
+      showToast(`No pinned-row keyframes at ${formatNumber(sceneTimeline.currentTime)}s to copy.`, "bad");
       return;
     }
     copyTimelineKeyframes(timelinePanel.selectedKeyframeIdsList(), { preserveObjectTargets: true });
