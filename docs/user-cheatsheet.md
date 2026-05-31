@@ -107,7 +107,7 @@ Scale recorded together.
 | Loop | Repeat Work In/Out during playback |
 | Auto-Key | Automatically records changed values when time is not at the first pose |
 | Track dropdown | Chooses which property the main `Set Key` button records |
-| Row filter | `Focus`, `Keyed`, or `All` timeline rows |
+| Row filter | `Focus`, `Keyed`, `Pinned`, or `All` timeline rows |
 | Search rows | Filter dense object/camera/light/material rows |
 
 ## Timeline Buttons
@@ -173,7 +173,7 @@ Scale recorded together.
 | `Ctrl+Alt+Left`, `Ctrl+Alt+Right` | Previous / next visible-row keyframe |
 | `Home`, `End` | Work In / Work Out |
 | `B`, `N` or `I`, `O` | Set Work In / Work Out to playhead |
-| `U` | Cycle Focus, Keyed, All Rows |
+| `U` | Cycle Focus, Keyed, Pinned, All Rows |
 | `V`, `H` | Timeline selection tool, timeline pan tool |
 | `Alt+P`, `Alt+R`, `Alt+S` | Reveal Position, Rotation, Scale rows |
 | `Alt+C`, `Alt+T`, `Alt+M`, `Alt+U` | Reveal Color, Opacity, Material, Texture rows |

@@ -144,7 +144,7 @@ type TimelineUiRow = TimelineRow & {
   group?: boolean;
 };
 
-type TimelineRowFilter = "focus" | "keyed" | "all";
+type TimelineRowFilter = "focus" | "keyed" | "pinned" | "all";
 type TimelineLayerDragMode = "move" | "trimStart" | "trimEnd";
 type TimelineRowDescriptor = {
   kind: TimelineTrackKind;
@@ -197,13 +197,14 @@ type TimelineDetailSource = {
 const CAMERA_TARGET_ID = "__camera__";
 const LIGHT_TARGET_ID = "__lights__";
 const ROW_FILTER_STORAGE_KEY = "geometry-studio-timeline-row-filter";
+const PINNED_ROWS_STORAGE_KEY = "geometry-studio-timeline-pinned-rows";
 const ROW_SEARCH_STORAGE_KEY = "geometry-studio-timeline-row-search";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
 const LABEL_WIDTH_STORAGE_KEY = "geometry-studio-timeline-label-width";
 const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
 const LAYER_STRIP_COLLAPSED_STORAGE_KEY = "geometry-studio-timeline-layer-strip-collapsed";
 const COLLAPSED_GROUPS_STORAGE_KEY = "geometry-studio-timeline-collapsed-groups";
-const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
+const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "pinned", "all"];
 const MIN_DOCK_HEIGHT = 190;
 const MIN_LABEL_WIDTH = 112;
 const MAX_LABEL_WIDTH = 340;
@@ -310,6 +311,7 @@ export class KeyframeTimelinePanel {
   private activeMarkerId: string | null = null;
   private selectedAxis: TimelineAxis | null = null;
   private rowFilter: TimelineRowFilter = loadTimelineRowFilter();
+  private pinnedRows = loadPinnedTimelineRows();
   private rowSearchText = loadTimelineRowSearch();
   private followPlayhead = loadTimelineFollowPlayhead();
   private layerStripCollapsed = loadLayerStripCollapsed();
@@ -929,6 +931,7 @@ export class KeyframeTimelinePanel {
       this.callbacks.onTrackLabelSelected(targetId, kind);
       if (switchButton) {
         const action = switchButton.dataset.rowAction;
+        if (action === "pin") this.togglePinnedRow(targetId, kind);
         if (action === "toggle") this.callbacks.onToggleTrack(kind, targetId);
         if (action === "solo") this.callbacks.onToggleTrackSolo(kind, targetId);
         if (action === "lock") this.callbacks.onToggleTrackLock(kind, targetId);
@@ -1337,6 +1340,27 @@ export class KeyframeTimelinePanel {
     return groupIds.length;
   }
 
+  private togglePinnedRow(targetId: string, kind: TimelineTrackKind): void {
+    const key = timelineRowKey(targetId, kind);
+    if (this.pinnedRows.has(key)) this.pinnedRows.delete(key);
+    else this.pinnedRows.add(key);
+    storePinnedTimelineRows(this.pinnedRows);
+    if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+  }
+
+  private isPinnedRow(targetId: string, kind: TimelineTrackKind): boolean {
+    return this.pinnedRows.has(timelineRowKey(targetId, kind));
+  }
+
+  private pinnedObjectIds(): Set<string> {
+    const ids = new Set<string>();
+    this.pinnedRows.forEach((key) => {
+      const targetId = targetIdFromTimelineRowKey(key);
+      if (targetId && targetId !== CAMERA_TARGET_ID && targetId !== LIGHT_TARGET_ID) ids.add(targetId);
+    });
+    return ids;
+  }
+
   private timelineGroupIds(): string[] {
     return [
       ...this.lastEntries.map((entry) => entry.id),
@@ -1425,12 +1449,16 @@ export class KeyframeTimelinePanel {
     if (this.rowFilter === "all") return entryList;
 
     const keyedIds = new Set(timelineDocument.objects.map((object) => object.objectId));
+    const pinnedIds = this.pinnedObjectIds();
     const selected = entryList.find((entry) => entry.id === selectedId);
-    const keyed = entryList.filter((entry) => entry.id !== selectedId && keyedIds.has(entry.id));
+    if (this.rowFilter === "pinned") {
+      return entryList.filter((entry) => pinnedIds.has(entry.id) || (entry.id === selectedId && isObjectTrack(this.selectedTrackKind())));
+    }
+    const keyed = entryList.filter((entry) => entry.id !== selectedId && (keyedIds.has(entry.id) || pinnedIds.has(entry.id)));
     if (this.rowFilter === "keyed") {
       const activeSelected = selected && isObjectTrack(this.selectedTrackKind());
       return [
-        ...(selected && (activeSelected || keyedIds.has(selected.id)) ? [selected] : []),
+        ...(selected && (activeSelected || keyedIds.has(selected.id) || pinnedIds.has(selected.id)) ? [selected] : []),
         ...keyed
       ];
     }
@@ -1841,13 +1869,18 @@ export class KeyframeTimelinePanel {
     const trackByKind = new Map(tracks.map((track) => [track.kind, track]));
     const hasKeyframes = (kind: TimelineTrackKind) => Boolean(trackByKind.get(kind)?.keyframes.length);
     const isActive = (kind: TimelineTrackKind) => this.isActiveRow(targetId, kind, selectedId);
+    const isPinned = (kind: TimelineTrackKind) => this.isPinnedRow(targetId, kind);
+
+    if (this.rowFilter === "pinned") {
+      return kinds.filter((kind) => isPinned(kind) || isActive(kind));
+    }
 
     if (this.rowFilter === "keyed") {
-      return kinds.filter((kind) => hasKeyframes(kind) || isActive(kind));
+      return kinds.filter((kind) => hasKeyframes(kind) || isActive(kind) || isPinned(kind));
     }
 
     if (targetId === selectedId) return kinds;
-    return kinds.filter((kind) => hasKeyframes(kind) || isActive(kind));
+    return kinds.filter((kind) => hasKeyframes(kind) || isActive(kind) || isPinned(kind));
   }
 
   private filteredRowDescriptors(targetName: string, kinds: TimelineTrackKind[], includeAxes: boolean): TimelineRowDescriptor[] {
@@ -1909,6 +1942,7 @@ export class KeyframeTimelinePanel {
             muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
             hasKeyframes: Boolean(track?.keyframes.length),
             hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
+            pinned: this.isPinnedRow(entry.id, row.kind),
             valueText: this.objectRowValueText(entry, row.kind, row.axis)
           });
           })
@@ -1945,6 +1979,7 @@ export class KeyframeTimelinePanel {
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
+        pinned: this.isPinnedRow(CAMERA_TARGET_ID, row.kind),
         valueText: this.timelineRowValueText(track, row.kind, timelineDocument.currentTime, row.axis),
         extraClass: "camera-track-label"
       });
@@ -1979,6 +2014,7 @@ export class KeyframeTimelinePanel {
         muted: Boolean(soloActive && track?.enabled && track.keyframes.length > 0 && !track.solo),
         hasKeyframes: Boolean(track?.keyframes.length),
         hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
+        pinned: this.isPinnedRow(LIGHT_TARGET_ID, row.kind),
         valueText: this.timelineRowValueText(track, row.kind, timelineDocument.currentTime, row.axis),
         extraClass: "light-track-label"
       });
@@ -2031,6 +2067,7 @@ export class KeyframeTimelinePanel {
     muted: boolean;
     hasKeyframes: boolean;
     hasPlayheadKey: boolean;
+    pinned: boolean;
     valueText?: string;
     extraClass?: string;
   }): string {
@@ -2042,13 +2079,16 @@ export class KeyframeTimelinePanel {
         ? "Update key at playhead"
         : "Set key at playhead";
     return `
-      <div class="${this.labelClass(options.active, options.enabled, options.locked, options.solo, options.muted, options.hasKeyframes, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
+      <div class="${this.labelClass(options.active, options.enabled, options.locked, options.solo, options.muted, options.hasKeyframes, options.pinned, [options.extraClass ?? "", options.axis ? "axis-track-label" : ""].join(" "))}" role="button" tabindex="0" data-object-id="${options.targetId}" data-track-kind="${options.kind}" ${options.axis ? `data-track-axis="${options.axis}"` : ""} aria-label="${options.targetName} ${label}">
         <span class="track-swatch" style="background:${TRACK_COLORS[options.kind]}"></span>
         <span class="track-label-text">
           <strong>${options.targetName}</strong>
           <small>${detail}</small>
         </span>
         <span class="timeline-row-switches">
+          <button class="timeline-row-switch" type="button" data-row-action="pin" aria-label="${options.pinned ? "Unpin" : "Pin"} row: ${options.targetName} ${label}" title="${options.pinned ? "Unpin row" : "Pin row"}">
+            <span data-icon="${options.pinned ? "Star" : "Star"}"></span>
+          </button>
           <button class="timeline-row-switch" type="button" data-row-action="toggle" aria-label="${options.enabled ? "Disable" : "Enable"} track: ${options.targetName} ${label}" title="${options.enabled ? "Disable track" : "Enable track"}" ${options.hasKeyframes ? "" : "disabled"}>
             <span data-icon="${options.enabled ? "Eye" : "EyeOff"}"></span>
           </button>
@@ -2120,11 +2160,12 @@ export class KeyframeTimelinePanel {
     return [...targets.values()];
   }
 
-  private labelClass(active: boolean, enabled: boolean, locked: boolean, solo: boolean, muted: boolean, hasKeyframes: boolean, extra = ""): string {
+  private labelClass(active: boolean, enabled: boolean, locked: boolean, solo: boolean, muted: boolean, hasKeyframes: boolean, pinned: boolean, extra = ""): string {
     return [
       "timeline-track-label",
       extra,
       active ? "active" : "",
+      pinned ? "pinned-track" : "",
       hasKeyframes ? "has-keyframes" : "",
       hasKeyframes && solo ? "solo-track" : "",
       muted ? "muted-track" : "",
@@ -2874,12 +2915,42 @@ function storeCollapsedTimelineGroups(groups: Set<string>): void {
   }
 }
 
+function loadPinnedTimelineRows(): Set<string> {
+  try {
+    const value = window.localStorage.getItem(PINNED_ROWS_STORAGE_KEY);
+    const parsed = value ? JSON.parse(value) as unknown : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function storePinnedTimelineRows(rows: Set<string>): void {
+  try {
+    const values = [...rows].sort();
+    if (values.length > 0) window.localStorage.setItem(PINNED_ROWS_STORAGE_KEY, JSON.stringify(values));
+    else window.localStorage.removeItem(PINNED_ROWS_STORAGE_KEY);
+  } catch {
+    // Pinned rows are an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function timelineRowKey(targetId: string, kind: TimelineTrackKind): string {
+  return `${targetId}:${kind}`;
+}
+
+function targetIdFromTimelineRowKey(key: string): string | null {
+  const index = key.lastIndexOf(":");
+  return index > 0 ? key.slice(0, index) : null;
+}
+
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
-  return value === "keyed" || value === "all" || value === "focus" ? value : "focus";
+  return value === "keyed" || value === "pinned" || value === "all" || value === "focus" ? value : "focus";
 }
 
 function rowFilterLabel(filter: TimelineRowFilter): string {
   if (filter === "keyed") return "Keyed Rows";
+  if (filter === "pinned") return "Pinned Rows";
   if (filter === "all") return "All Rows";
   return "Focus Rows";
 }

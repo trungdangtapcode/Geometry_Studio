@@ -185,6 +185,8 @@ PDF.
   documents previous/next keyframe navigation scoped to visible rows.
 - [Timeline Row Search](timeline-row-search.md) documents the AE-style row
   search field for quickly isolating object, camera, and light tracks.
+- [Timeline Pinned Rows](timeline-pinned-rows.md) documents starred timeline
+  rows and the Pinned Rows filter for dense AE-style editing.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
   enable, solo, lock, and key controls.
 - [Timeline Row Value Readouts](timeline-row-value-readouts.md) documents live
@@ -225,7 +227,7 @@ PDF.
 - [Timeline Graph Marquee Selection](timeline-graph-marquee-selection.md)
   documents drag-box selection for graph keys.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus, Keyed,
-  and All row visibility modes for dense scenes.
+  Pinned, and All row visibility modes for dense scenes.
 - [Timeline Motion Paths](timeline-motion-paths.md) documents selected-object
   position path rendering for visible spatial keyframe feedback.
 - [Preview Export](preview-export.md) documents WebM work-area recording and

@@ -8,12 +8,15 @@ turning the dope sheet into a long, noisy list.
 ## Modes
 
 - `Focus Rows`: selected object tracks stay visible, keyed non-selected object
-  tracks remain visible, and camera/light tracks stay available.
+  tracks remain visible, pinned tracks remain visible, and camera/light tracks
+  stay available.
 - `Keyed Rows`: only tracks with keyframes are shown, plus the currently active
-  track so a new keyframe can still be added.
+  track and pinned tracks so a new keyframe can still be added.
+- `Pinned Rows`: starred timeline rows are shown, plus the currently active row.
 - `All Rows`: all object, camera, and light tracks are shown.
-- `U` cycles Focus -> Keyed -> All -> Focus when focus is outside form fields,
-  matching the reveal-animated-properties habit from motion-graphics tools.
+- `U` cycles Focus -> Keyed -> Pinned -> All -> Focus when focus is outside
+  form fields, matching the reveal-animated-properties habit from
+  motion-graphics tools.
 
 ## Implementation
 
