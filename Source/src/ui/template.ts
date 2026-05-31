@@ -1,4 +1,7 @@
+import { ASSET_STORE_ITEMS } from "../scene/assetStore";
+
 export function studioTemplate(): string {
+  const assetStoreCards = ASSET_STORE_ITEMS.map(renderAssetStoreCard).join("");
   return `
     <main class="studio-shell">
       <section class="viewport" aria-label="3D viewport">
@@ -20,6 +23,9 @@ export function studioTemplate(): string {
           </button>
           <button class="timeline-btn strong" id="cinematic-btn" type="button" aria-label="Cinematic demo">
             <span data-icon="Sparkles"></span><span>Cinematic Demo</span>
+          </button>
+          <button class="timeline-btn" id="showcase-btn" type="button" aria-label="Coursework showcase demo">
+            <span data-icon="Presentation"></span><span>Showcase</span>
           </button>
           <button class="timeline-btn" id="command-palette-btn" type="button" aria-label="Command palette">
             <span data-icon="Search"></span><span>Commands</span>
@@ -312,6 +318,16 @@ export function studioTemplate(): string {
                 <option value="blender">Blender</option>
               </select>
             </label>
+            <label class="density-control">
+              <span>Scale</span>
+              <select id="ui-scale" aria-label="UI scale">
+                <option value="0.75">75%</option>
+                <option value="0.85">85%</option>
+                <option value="1">100%</option>
+                <option value="1.1">110%</option>
+                <option value="1.25">125%</option>
+              </select>
+            </label>
           </div>
           <button class="icon-command" id="reset-scene" type="button" aria-label="Reset scene" title="Reset scene"><span data-icon="RotateCcw"></span></button>
         </header>
@@ -328,6 +344,16 @@ export function studioTemplate(): string {
             <label class="wide-button file-action"><span data-icon="FolderOpen"></span><span>Load JSON</span><input id="scene-input" type="file" accept="application/json,.json" /></label>
           </div>
           <div class="load-progress" id="load-progress"><span></span><strong>Idle</strong></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-title">
+            <span data-icon="Package"></span>
+            <h3>Asset Store</h3>
+          </div>
+          <div class="asset-store" id="asset-store" aria-label="Built-in asset store">
+            ${assetStoreCards}
+          </div>
         </section>
 
         <section class="panel-section">
@@ -437,6 +463,11 @@ export function studioTemplate(): string {
             <button class="texture-swatch" type="button" data-texture="checker">Checker</button>
             <button class="texture-swatch" type="button" data-texture="uv">UV</button>
             <button class="texture-swatch" type="button" data-texture="grid">Grid</button>
+            <button class="texture-swatch texture-bricks" type="button" data-texture="bricks">Bricks</button>
+            <button class="texture-swatch texture-wood" type="button" data-texture="wood">Wood</button>
+            <button class="texture-swatch texture-carbon" type="button" data-texture="carbon">Carbon</button>
+            <button class="texture-swatch texture-blueprint" type="button" data-texture="blueprint">Blueprint</button>
+            <button class="texture-swatch texture-halftone" type="button" data-texture="halftone">Dots</button>
             <label class="texture-swatch upload-texture">Upload<input id="texture-input" type="file" accept="image/*" /></label>
           </div>
           <div class="form-grid">
@@ -684,6 +715,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Commands</strong><span>Ctrl+K / F3</span><p>Search every major app action without finding the exact button.</p></div>
               <div class="quick-help-item"><strong>Help</strong><span>?</span><p>Open this cheatsheet.</p></div>
               <div class="quick-help-item"><strong>Blender Density</strong><span>Inspector header</span><p>Use the smaller professional layout when controls feel too large.</p></div>
+              <div class="quick-help-item"><strong>UI Scale</strong><span>75% / 85% / 100%</span><p>Scale the whole editor like Chrome zoom while keeping the canvas fitted to the window.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="viewport shortcuts">
               <h3>Viewport</h3>
@@ -703,14 +735,15 @@ export function studioTemplate(): string {
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Keyframing</h3>
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on non-transform tracks. Use row diamonds for one transform row.</p></div>
-              <div class="quick-help-item"><strong>Set Pose</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
+              <div class="quick-help-item"><strong>Set Pose</strong><span>Shift+K / toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Deselect Keys</strong><span>Escape</span><p>Clear selected timeline keyframes without changing object selection or playback time.</p></div>
               <div class="quick-help-item"><strong>Offset Values</strong><span>+= / -=</span><p>Type +=1 or -=1 in a key value field to offset selected keys without flattening them.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
               <div class="quick-help-item"><strong>Pose Keys</strong><span>Auto-Key option</span><p>With Auto-Key enabled, record Position, Rotation, and Scale together whenever transform values change.</p></div>
               <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast transform setup, then key, select, fit, or preview the pinned set.</p></div>
-              <div class="quick-help-item"><strong>Set Pose Key</strong><span>Inspector / timeline</span><p>Record Position, Rotation, and Scale together at the playhead for full transform animation.</p></div>
+              <div class="quick-help-item"><strong>Set Pose Key</strong><span>Shift+K / inspector</span><p>Record Position, Rotation, and Scale together at the playhead for full transform animation.</p></div>
               <div class="quick-help-item"><strong>Motion Presets</strong><span>Command Palette</span><p>Apply Turntable, Float Loop, Pop Intro, or Product Reveal as editable timeline keys.</p></div>
+              <div class="quick-help-item"><strong>Showcase Demo</strong><span>Bottom bar / commands</span><p>Stage a polished grid, wire/glass sphere, contact-shadow scene inspired by the reference coursework GIF.</p></div>
               <div class="quick-help-item"><strong>Auto-Orient Along Path</strong><span>Command Palette</span><p>Create Rotation keys from the selected object's Position path direction.</p></div>
               <div class="quick-help-item"><strong>Selected Keyed Rows</strong><span>Shift+U</span><p>Show only the selected layer's keyed rows, plus the active row, like an AE animated-property reveal.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
@@ -738,6 +771,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Save / Load JSON</strong><span>Document panel</span><p>Persist scene objects, camera, lights, materials, and timeline.</p></div>
               <div class="quick-help-item"><strong>Screenshot</strong><span>Bottom bar</span><p>Export the current viewport as PNG for the report.</p></div>
               <div class="quick-help-item"><strong>Record WebM</strong><span>Bottom bar</span><p>Capture the Work In/Out animation range.</p></div>
+              <div class="quick-help-item"><strong>Asset Store</strong><span>Inspector</span><p>Apply built-in looks, procedural textures, materials, and sample models without external downloads.</p></div>
               <div class="quick-help-item"><strong>Rendering Lab</strong><span>Inspector</span><p>Use tone mapping, shadows, SSAO, bloom, depth of field, halftone, and path-traced still preview.</p></div>
               <div class="quick-help-item"><strong>Import</strong><span>Left rail / drag-drop</span><p>Load GLB, GLTF, OBJ, MTL, STL, and texture files.</p></div>
             </section>
@@ -756,4 +790,22 @@ export function studioTemplate(): string {
       </section>
     </main>
   `;
+}
+
+function renderAssetStoreCard(item: typeof ASSET_STORE_ITEMS[number]): string {
+  return `
+    <button class="asset-card asset-${escapeHtml(item.kind)}" type="button" data-asset-id="${escapeHtml(item.id)}" title="${escapeHtml(item.source)}">
+      <span>${escapeHtml(item.badge)}</span>
+      <strong>${escapeHtml(item.label)}</strong>
+      <small>${escapeHtml(item.description)}</small>
+    </button>
+  `;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

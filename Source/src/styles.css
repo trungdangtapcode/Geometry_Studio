@@ -71,6 +71,7 @@ svg {
 }
 
 .studio-shell {
+  --ui-scale: 1;
   --viewport-left: 88px;
   --viewport-right: 396px;
   --viewport-edge: 22px;
@@ -130,8 +131,9 @@ svg {
   --toast-left: 88px;
   --toast-bottom: 78px;
   position: relative;
-  width: 100%;
-  height: 100%;
+  width: calc(100% / var(--ui-scale));
+  height: calc(100% / var(--ui-scale));
+  zoom: var(--ui-scale);
   background: #e8ecef;
 }
 
@@ -323,6 +325,7 @@ svg {
 .segment,
 .outliner-item,
 .texture-swatch,
+.asset-card,
 .section-button {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.8);
@@ -343,7 +346,8 @@ svg {
 .tool-button:hover,
 .segment:hover,
 .outliner-item:hover,
-.texture-swatch:hover {
+.texture-swatch:hover,
+.asset-card:hover {
   transform: translateY(-1px);
   border-color: rgba(32, 191, 169, 0.5);
 }
@@ -1999,6 +2003,65 @@ svg {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.asset-store {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  max-height: 236px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.asset-card {
+  min-height: 82px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 9px;
+  text-align: left;
+  background: linear-gradient(145deg, #ffffffed, #f0f5f7d9);
+}
+
+.asset-card span {
+  width: max-content;
+  border: 1px solid #20bfa94d;
+  border-radius: 6px;
+  color: #0f766e;
+  background: #d1faf4b3;
+  padding: 1px 6px;
+  font-size: var(--ui-tiny-font);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.asset-card strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+  font-size: calc(var(--ui-font) + 1px);
+  line-height: 1.1;
+}
+
+.asset-card small {
+  color: var(--muted);
+  font-size: var(--ui-small-font);
+  line-height: 1.25;
+}
+
+.asset-card.asset-look {
+  background: linear-gradient(145deg, #ffffffed, #fff3dccc);
+}
+
+.asset-card.asset-texture {
+  background: linear-gradient(145deg, #ffffffed, #edf7ffcc);
+}
+
+.asset-card.asset-model,
+.asset-card.asset-primitive {
+  background: linear-gradient(145deg, #ffffffed, #f2efffcc);
+}
+
 .wide-button,
 .mini-button {
   min-height: var(--button-height);
@@ -2203,6 +2266,31 @@ svg {
   padding: 0 var(--control-padding-x);
   font-size: var(--ui-small-font);
   text-align: center;
+}
+
+.texture-bricks {
+  color: #ffffff;
+  background: linear-gradient(135deg, #79352b 0 46%, #d9c1a2 46% 52%, #a14434 52%);
+}
+
+.texture-wood {
+  color: #261307;
+  background: linear-gradient(90deg, #8f5a2c, #d09a52, #6f411f);
+}
+
+.texture-carbon {
+  color: #f7fafc;
+  background: repeating-linear-gradient(45deg, #101418 0 10px, #2c333a 10px 20px);
+}
+
+.texture-blueprint {
+  color: #ffffff;
+  background: #173d78;
+}
+
+.texture-halftone {
+  color: #1f252b;
+  background: radial-gradient(circle, #1f252b 0 18%, transparent 20%) 0 0 / 14px 14px, #fff7df;
 }
 
 .telemetry-grid {

@@ -197,6 +197,7 @@ export class TimelineValueGraph {
       this.callbacks.onToggle();
     });
     this.elements.keyLayer.addEventListener("pointerdown", (event) => this.startGraphKeyDrag(event));
+    this.elements.keyLayer.addEventListener("keydown", (event) => this.nudgeGraphKeyFromKeyboard(event));
     this.elements.svg.addEventListener("pointerdown", (event) => this.startGraphMarquee(event));
     window.addEventListener("pointermove", this.handlePointerMove);
     window.addEventListener("pointerup", this.handlePointerEnd);
@@ -264,7 +265,7 @@ export class TimelineValueGraph {
           point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
           point.setAttribute("role", editable ? "button" : "img");
           point.setAttribute("tabindex", editable ? "0" : "-1");
-          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, Alt drag stretches selected keys, and dragging retimes or edits values.`);
+          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, Alt drag stretches selected keys, dragging retimes or edits values, and Up or Down nudges selected key values.`);
           this.elements.keyLayer.appendChild(point);
         });
       });
@@ -329,6 +330,38 @@ export class TimelineValueGraph {
       started: false
     };
     this.updateMarqueeRect(start, start);
+  }
+
+  private nudgeGraphKeyFromKeyboard(event: KeyboardEvent): void {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    const target = (event.target as Element | null)?.closest<SVGCircleElement>(".timeline-graph-key");
+    if (!target || target.classList.contains("locked")) return;
+    const keyframeId = target.dataset.keyframeId;
+    const axis = parseTimelineAxis(target.dataset.axis);
+    const context = this.lastContext;
+    if (!keyframeId || !axis || !context?.track || !isGraphEditableTrack(context.selectedKind)) return;
+    const keyframe = context.track.keyframes.find((candidate) => candidate.id === keyframeId);
+    if (!keyframe) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const axisIndex = AXIS_INDEX[axis];
+    const keyframes = context.selectedKeyframeIds.has(keyframeId) && context.selectedKeyframeIds.size > 1
+      ? context.track.keyframes.filter((candidate) => context.selectedKeyframeIds.has(candidate.id))
+      : [keyframe];
+    const range = rangeForKeyframeAxis(context, axis);
+    if (!range) return;
+    const direction = event.key === "ArrowUp" ? 1 : -1;
+    const step = graphKeyboardValueStep(range, event);
+    this.callbacks.onDragStarted();
+    if (keyframes.length === 1 && !context.selectedKeyframeIds.has(keyframeId)) {
+      this.callbacks.onKeyframeSelected(keyframeId, "replace");
+    }
+    keyframes.forEach((candidate) => {
+      this.callbacks.onKeyframeValueChanged(candidate.id, axis, candidate.value[axisIndex] + direction * step);
+    });
+    this.callbacks.onDragFinished();
+    if (this.lastContext) this.render(this.lastContext);
   }
 
   private moveGraphKey(event: PointerEvent): void {
@@ -644,6 +677,13 @@ function expandedRange(values: number[]): ValueGraphRange {
   }
   const pad = span * 0.2;
   return { min: min - pad, max: max + pad };
+}
+
+function graphKeyboardValueStep(range: ValueGraphRange, event: KeyboardEvent): number {
+  const base = Math.max((range.max - range.min) / 50, 0.001);
+  if (event.shiftKey) return base * 10;
+  if (event.altKey) return base * 0.1;
+  return base;
 }
 
 function formatAxisRange(label: string, values: number[]): string {

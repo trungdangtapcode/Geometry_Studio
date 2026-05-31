@@ -1,4 +1,14 @@
-export const TIMELINE_TEXTURE_SOURCES = ["none", "checker", "uv", "grid"] as const;
+export const TIMELINE_TEXTURE_SOURCES = [
+  "none",
+  "checker",
+  "uv",
+  "grid",
+  "bricks",
+  "wood",
+  "carbon",
+  "blueprint",
+  "halftone"
+] as const;
 
 export type TimelineTextureSource = typeof TIMELINE_TEXTURE_SOURCES[number];
 

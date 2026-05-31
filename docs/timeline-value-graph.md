@@ -37,6 +37,8 @@ actually do before pressing Play.
 - Graph retiming uses the timeline Snap setting and Snap Step.
 - Holding Shift constrains the drag to the dominant direction: mostly
   horizontal motion retimes only, mostly vertical motion edits value only.
+- Focusing a graph key and pressing Up or Down nudges selected key values on
+  that graph channel. Shift makes the nudge larger, and Alt makes it smaller.
 - A graph drag is stored as one undoable edit through the same drag snapshot
   mechanism used by dope-sheet keyframe dragging.
 - Visibility tracks are drawn as value curves but remain locked because they are
@@ -102,3 +104,5 @@ The Playwright smoke workflow verifies that:
   Position key and change its value on the active snap step.
 - Holding Shift while dragging vertically edits value without changing key time.
 - Undo restores the time and value before the graph drag.
+- Keyboard Up/Down nudges selected graph key values while preserving selected
+  value spacing.

@@ -122,6 +122,7 @@ import { createRenderPipeline } from "./renderer/pipeline";
 import { createPathTracePreviewController, type PathTracePreviewStatus } from "./renderer/pathTracePreview";
 import { applyPostProcessingSettings, normalizePostProcessingSettings, postProcessingLabel } from "./renderer/postProcessing";
 import { applyRenderSettings, createDefaultRenderSettings, normalizeRenderSettings, shadowQualityLabel, toneMappingLabel } from "./renderer/renderSettings";
+import { assetLookPresetById, assetStoreItemById, type AssetLookPreset } from "./scene/assetStore";
 import { loadModelFromFiles } from "./scene/importers";
 import { createLights, createStage, currentLight, setActiveLight, syncLightHelpers, syncLights, updateLightSweep } from "./scene/lights";
 import { applyLightingPreset, lightingPresetById, lightRigMatchesPreset } from "./scene/lightingPresets";
@@ -567,6 +568,7 @@ function boot(root: HTMLDivElement): void {
       setTimelinePlaybackRate(Number((event.target as HTMLSelectElement).value));
     });
     query<HTMLButtonElement>("#cinematic-btn").addEventListener("click", startCinematicDemo);
+    query<HTMLButtonElement>("#showcase-btn").addEventListener("click", startShowcaseDemo);
     query<HTMLButtonElement>("#command-palette-btn").addEventListener("click", () => commandPalette.open());
     query<HTMLButtonElement>("#quick-help-btn").addEventListener("click", () => quickHelp.open());
     query<HTMLButtonElement>("#evaluation-btn").addEventListener("click", startEvaluationTour);
@@ -739,6 +741,10 @@ function boot(root: HTMLDivElement): void {
 
     document.querySelectorAll<HTMLButtonElement>(".material-preset").forEach((button) => {
       button.addEventListener("click", () => applyMaterialPreset(button.dataset.materialPreset ?? "standard"));
+    });
+
+    document.querySelectorAll<HTMLButtonElement>("[data-asset-id]").forEach((button) => {
+      button.addEventListener("click", () => applyAssetStoreItem(button.dataset.assetId ?? ""));
     });
 
     query<HTMLInputElement>("#texture-input").addEventListener("change", handleTextureUpload);
@@ -1061,7 +1067,7 @@ function boot(root: HTMLDivElement): void {
       }),
 
       command("timeline.set-key", "Set Key On Active Track", "Keyframes", () => addTimelineKeyframe(timelinePanel.selectedTrackKind()), { keywords: ["diamond", "update"] }),
-      command("timeline.set-transform", "Set Pose Key (Position Rotation Scale)", "Keyframes", setTransformTimelineKeyframes, { keywords: ["trs", "position", "rotation", "scale", "pose"] }),
+      command("timeline.set-transform", "Set Pose Key (Position Rotation Scale)", "Keyframes", setTransformTimelineKeyframes, { shortcut: "Shift+K", keywords: ["trs", "position", "rotation", "scale", "pose"] }),
       command("transform.copy-pose", "Copy Transform Pose", "Keyframes", copySelectedTransformPose, {
         keywords: ["pose", "position", "rotation", "scale", "clipboard"],
         disabled: () => !selectedEntry()
@@ -1310,6 +1316,7 @@ function boot(root: HTMLDivElement): void {
       command("scene.load", "Load Scene JSON", "Scene", () => query<HTMLInputElement>("#scene-input").click()),
       command("scene.screenshot", "Export Screenshot", "Scene", exportScreenshot),
       command("scene.cinematic", "Run Cinematic Demo", "Scene", startCinematicDemo),
+      command("scene.showcase", "Run Coursework Showcase Demo", "Scene", startShowcaseDemo, { keywords: ["reference", "gif", "grid", "sphere", "shadow", "presentation"] }),
       command("scene.evaluation", "Run Evaluation Tour", "Scene", startEvaluationTour),
       command("scene.reset", "Reset Scene", "Scene", resetScene)
     ];
@@ -1830,6 +1837,13 @@ function boot(root: HTMLDivElement): void {
     updateObjectOnionSkins(motionPathRig, sceneTimeline, selectedEntry(), onionSkinVisible);
   }
 
+  function setGroundShadowOpacity(opacity: number): void {
+    const material = stage.ground.material;
+    if (Array.isArray(material)) return;
+    material.opacity = clamp(opacity, 0, 1);
+    material.needsUpdate = true;
+  }
+
   function syncTextureUI(): void {
     const entry = selectedEntry();
     document.querySelectorAll<HTMLElement>(".texture-swatch").forEach((button) => {
@@ -1908,6 +1922,86 @@ function boot(root: HTMLDivElement): void {
         setTimelineKeyframe("objectTextureSource", { notify: false, record: false, refresh: false });
       }
     });
+  }
+
+  function applyAssetStoreItem(itemId: string): void {
+    const item = assetStoreItemById(itemId);
+    if (!item) return;
+
+    if (item.kind === "material") {
+      if (!selectedEntry()) {
+        showToast("Select an object before applying a material asset.", "bad");
+        return;
+      }
+      applyMaterialPreset(item.materialPreset ?? "ceramic");
+      showToast(`${item.label} applied`, "good");
+      return;
+    }
+
+    if (item.kind === "texture") {
+      const entry = selectedEntry();
+      if (!entry || !item.textureName) {
+        showToast("Select an object before applying a texture asset.", "bad");
+        return;
+      }
+      applyTexture(entry, item.textureName);
+      return;
+    }
+
+    if (item.kind === "primitive") {
+      if (!item.primitiveType) return;
+      addPrimitive(item.primitiveType, nextSpawnPosition(), {
+        color: item.color,
+        renderMode: item.renderMode ?? "solid",
+        materialMode: item.materialPreset === "anime" ? "toon" : "standard",
+        name: item.label
+      });
+      return;
+    }
+
+    if (item.kind === "model") {
+      addSampleModel();
+      return;
+    }
+
+    if (item.kind === "look" && item.lookPreset) {
+      if (item.lookPreset === "showcase") {
+        startShowcaseDemo();
+        return;
+      }
+      if (item.materialPreset && selectedEntry()) applyMaterialPreset(item.materialPreset);
+      const preset = assetLookPresetById(item.lookPreset);
+      if (preset) applyAssetLookPreset(preset);
+    }
+  }
+
+  function applyAssetLookPreset(preset: AssetLookPreset): void {
+    recordHistory();
+    stopPathTracePreview(false);
+
+    if (preset.lighting) {
+      const lighting = lightingPresetById(preset.lighting);
+      if (lighting) applyLightingPreset(lightRig, lighting);
+    }
+
+    renderSettings = normalizeRenderSettings({
+      ...renderSettings,
+      toneMapping: preset.toneMapping ?? renderSettings.toneMapping,
+      exposure: preset.exposure ?? renderSettings.exposure,
+      shadowQuality: preset.shadowQuality ?? renderSettings.shadowQuality,
+      environment: preset.environment ?? renderSettings.environment,
+      postProcessing: normalizePostProcessingSettings({
+        ...renderSettings.postProcessing,
+        ...preset.postProcessing
+      })
+    });
+    syncLights(lightRig, entries.values());
+    applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
+    syncRenderUI();
+    updateAllUI();
+    showToast(`${preset.label} applied`, "good");
   }
 
   function handleTextureUpload(event: Event): void {
@@ -2343,6 +2437,11 @@ function boot(root: HTMLDivElement): void {
       else addTimelineMarker("");
       return;
     }
+    if (event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey && key === "k") {
+      event.preventDefault();
+      setTransformTimelineKeyframes();
+      return;
+    }
     if (key === "j") {
       event.preventDefault();
       playTimeline(-1);
@@ -2528,6 +2627,7 @@ function boot(root: HTMLDivElement): void {
     recordHistory();
     clearSceneEntries();
     sceneTimeline = createDefaultTimeline();
+    setGroundShadowOpacity(0.2);
     const cube = addPrimitive("cube", new THREE.Vector3(-4.2, 0.02, 0.8), { color: "#4bd0a0", textureName: "uv" }, false);
     const sphere = addPrimitive("sphere", new THREE.Vector3(-1.4, 0.02, -1.6), { color: "#f7bd4b", textureName: "checker" }, false);
     const teapot = addPrimitive("teapot", new THREE.Vector3(1.55, 0.02, 0.7), { color: "#df6b80", materialMode: "phong" }, false);
@@ -2552,11 +2652,131 @@ function boot(root: HTMLDivElement): void {
     showToast("Cinematic demo staged", "good");
   }
 
+  function startShowcaseDemo(): void {
+    clearEvaluationTourMessages();
+    stopPathTracePreview(false);
+    recordHistory();
+    clearSceneEntries();
+    sceneTimeline = createDefaultTimeline();
+    sceneTimeline.duration = 6;
+    sceneTimeline.workEnd = 6;
+    sceneTimeline.loop = true;
+    renderSettings = normalizeRenderSettings({
+      ...renderSettings,
+      toneMapping: "aces",
+      exposure: 1.18,
+      shadowQuality: "ultra",
+      environment: "cool",
+      postProcessing: {
+        ...renderSettings.postProcessing,
+        fxaa: true,
+        bloom: true,
+        bloomStrength: 0.32,
+        bloomThreshold: 0.58,
+        bloomRadius: 0.34,
+        vignette: true,
+        vignetteDarkness: 0.48,
+        dof: false,
+        ssao: false,
+        halftone: false
+      }
+    });
+    applyRenderSettings(renderer, lightRig, renderSettings);
+    environmentController.apply(renderSettings);
+    applyPostProcessingSettings(renderPipeline, renderSettings.postProcessing);
+
+    stage.grid.visible = true;
+    stage.axes.visible = false;
+    frustumHelper.visible = false;
+    motionPathVisible = true;
+    onionSkinVisible = true;
+    setGroundShadowOpacity(0.34);
+
+    const shadowDisc = addPrimitive("cylinder", new THREE.Vector3(0, 0.015, 0), {
+      name: "Animated Shadow Study",
+      color: "#111820",
+      materialMode: "basic",
+      opacity: 0.38,
+      roughness: 0.7
+    }, false);
+    shadowDisc.root.scale.set(1.75, 0.035, 1.08);
+    shadowDisc.root.rotation.y = -0.18;
+
+    const glassSphere = addPrimitive("sphere", new THREE.Vector3(-3, 0.46, 0), {
+      name: "Glass Sphere Shadow Caster",
+      color: "#f6fbff",
+      materialMode: "phong",
+      opacity: 0.34,
+      roughness: 0.05
+    }, false);
+    const wireSphere = addPrimitive("sphere", new THREE.Vector3(-3, 0.46, 0), {
+      name: "White Wire Sphere",
+      color: "#ffffff",
+      renderMode: "lines",
+      opacity: 0.92
+    }, false);
+
+    [glassSphere, wireSphere].forEach((entry) => {
+      const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+      replaceTimelineTrack(objectTimeline, "position", [
+        { time: 0, value: [-3, 0.46, 0], interpolation: "smooth" },
+        { time: 2.1, value: [-0.65, 1.12, -0.22], interpolation: "smooth" },
+        { time: 4.2, value: [1.65, 0.48, 0.16], interpolation: "smooth" },
+        { time: 6, value: [3, 0.82, -0.1], interpolation: "smooth" }
+      ]);
+      replaceTimelineTrack(objectTimeline, "rotation", [
+        { time: 0, value: [0, 0, 0], interpolation: "linear" },
+        { time: 3, value: [0, 180, 18], interpolation: "linear" },
+        { time: 6, value: [0, 360, 0], interpolation: "linear" }
+      ]);
+    });
+    replaceTimelineTrack(ensureObjectTimeline(sceneTimeline, shadowDisc.id), "scale", [
+      { time: 0, value: [1.55, 0.035, 0.92], interpolation: "smooth" },
+      { time: 2.1, value: [0.92, 0.035, 0.58], interpolation: "smooth" },
+      { time: 4.2, value: [1.38, 0.035, 0.82], interpolation: "smooth" },
+      { time: 6, value: [1.05, 0.035, 0.64], interpolation: "smooth" }
+    ]);
+
+    lightRig.active = "spot";
+    lightRig.helpers = false;
+    lightRig.shadows = true;
+    lightRig.sweep = false;
+    lightRig.ambient.intensity = 0.34;
+    lightRig.directional.color.set("#dbe8ff");
+    lightRig.directional.intensity = 3.2;
+    lightRig.directional.position.set(-4.8, 7.8, 5.6);
+    lightRig.point.color.set("#9bbcff");
+    lightRig.point.intensity = 2.6;
+    lightRig.point.position.set(3.6, 4.2, 3.2);
+    lightRig.spot.color.set("#ffffff");
+    lightRig.spot.intensity = 8.4;
+    lightRig.spot.position.set(-4.8, 6.4, 4.6);
+    lightRig.spot.target.position.set(0.3, 0.35, 0);
+    syncLights(lightRig, entries.values());
+
+    camera.position.set(6.8, 4.35, 6.8);
+    controls.target.set(0.1, 0.55, 0);
+    camera.fov = 52;
+    camera.near = 0.1;
+    camera.far = 500;
+    camera.updateProjectionMatrix();
+    controls.update();
+    frustumHelper.update();
+
+    setSelected(wireSphere.id);
+    rebuildTimelineRuntime();
+    setTimelineTime(0);
+    playTimeline(1, "Showcase demo running");
+    updateAllUI();
+    showToast("Showcase demo staged: wire sphere, grid floor, shadow study, and editable timeline keys.", "good");
+  }
+
   function startEvaluationTour(): void {
     clearEvaluationTourMessages();
     recordHistory();
     clearSceneEntries();
     sceneTimeline = createDefaultTimeline();
+    setGroundShadowOpacity(0.2);
     const cube = addPrimitive("cube", new THREE.Vector3(-5, 0.02, -1.3), { color: "#4bd0a0", renderMode: "solid", materialMode: "standard" }, false);
     const sphere = addPrimitive("sphere", new THREE.Vector3(-2.5, 0.02, 1.2), { color: "#df6b80", textureName: "checker" }, false);
     addPrimitive("cone", new THREE.Vector3(0, 0.02, -1.5), { color: "#f7bd4b", renderMode: "points", materialMode: "basic" }, false);
@@ -2607,6 +2827,7 @@ function boot(root: HTMLDivElement): void {
     setCameraPreset("reset");
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    setGroundShadowOpacity(0.2);
     updateAllUI();
     showToast("Scene reset", "good");
   }
@@ -3789,6 +4010,7 @@ function boot(root: HTMLDivElement): void {
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
     const currentTrack = objectTimeline.tracks.find((candidate) => candidate.kind === kind);
     if (!assertTimelineTrackUnlocked(currentTrack, "setting a keyframe")) return;
+    const liveTransformPose = isObjectTransformTrackKind(kind) ? captureTransformValues(entry) : null;
     if (options.record !== false) recordHistory();
     const track = ensureTimelineTrack(objectTimeline, kind);
     const value = timelineValueForEntry(entry, kind);
@@ -3802,6 +4024,7 @@ function boot(root: HTMLDivElement): void {
     sceneTimeline.currentTime = time;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
+    if (liveTransformPose) applyTransformPose(entry, liveTransformPose);
     applyObjectPropertyTimeline();
     if (options.refresh !== false) updateAllUI();
     if (options.select !== false) timelinePanel.selectKeyframes([keyframe.id]);

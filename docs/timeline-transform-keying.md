@@ -13,6 +13,8 @@ acts as `Set Pose` / `Update Pose` whenever the active dropdown track is
 Position, Rotation, or Scale, so the common transform-key workflow does not
 accidentally record only one channel.
 
+Shortcut: `Shift+K`.
+
 ## Behavior
 
 - `Set Pose` / `Set Pose Key` records the selected object's current Position,
@@ -33,10 +35,10 @@ accidentally record only one channel.
 1. Select an object.
 2. Move the playhead to \(t_0\).
 3. Set Position, Rotation, and Scale in the viewport or inspector.
-4. Press `Set Pose` or `Set Pose Key`.
+4. Press `Shift+K`, `Set Pose`, or `Set Pose Key`.
 5. Move the playhead to \(t_1\).
 6. Set the second Position, Rotation, and Scale pose.
-7. Press `Set Pose` or `Set Pose Key` again.
+7. Press `Shift+K`, `Set Pose`, or `Set Pose Key` again.
 8. Scrub or play the timeline to preview interpolation between the two poses.
 
 This matches the expected motion-graphics pattern: key a complete pose, change
@@ -64,6 +66,7 @@ creation semantics:
 The Playwright smoke workflow verifies that:
 
 - the `Set Pose Key` inspector control is visible,
+- `Shift+K` records a full transform pose,
 - pressing it creates Position, Rotation, and Scale keys at the playhead,
 - pressing it at a later time records a second pose,
 - scrubbing between poses interpolates Position, Rotation, and Scale together,

@@ -71,6 +71,7 @@ Drag-and-drop model or texture files onto the viewport also works.
 | Section | Use It For |
 | --- | --- |
 | Document | Undo, redo, save/load scene JSON |
+| Asset Store | One-click looks, procedural textures, material presets, Teapot/Torus Knot, and Sample Drone |
 | Outliner | Select, rename, duplicate, or delete objects |
 | Transform | Move, rotate, scale, world/local space, reset transform |
 | Geometry / Render Mode | Change primitive type or switch Solid, Lines, Points |
@@ -78,10 +79,12 @@ Drag-and-drop model or texture files onto the viewport also works.
 | Textures | Built-in texture presets, uploaded bitmap texture, repeat/offset/rotation |
 | Camera | Projection controls, view presets, frame selected/all, frustum helper |
 | Lighting | Sun, point, spot, ambient, shadows, helpers, lighting presets |
-| Display | Grid, axes, FPS/telemetry, motion paths, UI density |
+| Display | Grid, axes, FPS/telemetry, motion paths, UI density, UI scale |
 | Rendering Lab | Tone mapping, exposure, shadow quality, SSAO, bloom, vignette, FXAA, depth of field, path-traced preview |
 
-Use `Blender` UI density when the inspector feels too large.
+Use `Blender` UI density when the inspector feels too large. Use `Scale` at
+`75%` when you want the whole editor to look like Chrome zoom 0.75 while keeping
+the setting inside the app.
 
 ## Transform Tools
 
@@ -136,6 +139,7 @@ Position, Rotation, and Scale recorded together.
 | Set Pose / Set Pose Key | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
 | Set Pinned | Record every pinned timeline row at the playhead |
+| Showcase | Build the reference-style wire sphere, grid floor, shadow, and editable timeline demo |
 | Layer In / Layer Out | Trim selected object layer range |
 | Split | Split selected object layer at the playhead |
 | Layer Work | Set Work In/Out to selected layer range |
@@ -198,6 +202,7 @@ Position, Rotation, and Scale recorded together.
 | `V`, `H` | Timeline selection tool, timeline pan tool |
 | `Alt+P`, `Alt+R`, `Alt+S` | Reveal Position, Rotation, Scale rows |
 | `Shift+P` | Pin or unpin the active timeline row |
+| `Shift+K` | Set Pose Key for Position, Rotation, and Scale |
 | `Alt+C`, `Alt+T`, `Alt+M`, `Alt+U` | Reveal Color, Opacity, Material, Texture rows |
 | `F9` | Easy Ease |
 | `Shift+F9` | Linear |
@@ -230,6 +235,7 @@ Position, Rotation, and Scale recorded together.
 | `Alt+Shift+M` | Delete marker at playhead |
 | `-`, `=`, `0` | Timeline zoom out, zoom in, fit duration |
 | `Shift+0` | Fit selected keyframes in timeline view |
+| Focus graph key, `Up` / `Down` | Nudge selected graph key values |
 | `Alt+Mouse Wheel` | Cursor-centered timeline zoom |
 | `Shift+Mouse Wheel` | Horizontal timeline pan |
 | `Ctrl+Z` | Undo |
@@ -244,10 +250,10 @@ Position, Rotation, and Scale recorded together.
 1. Select the object.
 2. Set `Time` to `0`.
 3. Place the object at its first pose.
-4. Click the main timeline `Set Pose` button or `Set Pose Key` in the Transform inspector.
+4. Press `Shift+K`, click the main timeline `Set Pose` button, or click `Set Pose Key` in the Transform inspector.
 5. Set `Time` to the next moment, for example `2`.
 6. Move, rotate, and scale the object to the second pose.
-7. Click `Set Pose` / `Set Pose Key` again.
+7. Press `Shift+K` or click `Set Pose` / `Set Pose Key` again.
 8. Scrub the playhead or press `Play`.
 
 ### Auto-Key Full Transform Poses
