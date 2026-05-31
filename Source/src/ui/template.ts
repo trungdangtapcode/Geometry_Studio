@@ -1,7 +1,9 @@
 import { ASSET_STORE_ITEMS } from "../scene/assetStore";
+import { REMOTE_3D_ASSETS } from "../scene/remoteAssetStore";
 
 export function studioTemplate(): string {
   const assetStoreCards = ASSET_STORE_ITEMS.map(renderAssetStoreCard).join("");
+  const remoteAssetCards = REMOTE_3D_ASSETS.map(renderRemoteAssetCard).join("");
   return `
     <main class="studio-shell">
       <section class="viewport" aria-label="3D viewport">
@@ -299,11 +301,47 @@ export function studioTemplate(): string {
         <button class="tool-button primitive-btn" type="button" data-primitive="parametric" aria-label="Parametric Surface" title="Parametric Surface"><span data-icon="Waves"></span></button>
         <button class="tool-button primitive-btn" type="button" data-primitive="extrude" aria-label="Extruded Shape" title="Extruded Shape"><span data-icon="Gem"></span></button>
         <button class="tool-button" id="sample-model-btn" type="button" aria-label="Built-in sample model" title="Built-in sample model"><span data-icon="Bot"></span></button>
+        <button class="tool-button" id="asset-browser-toggle" type="button" aria-label="Open asset browser" title="Asset browser"><span data-icon="Package"></span></button>
         <label class="tool-button import-button" aria-label="Import model" title="Import GLB, GLTF, OBJ, MTL, STL">
           <span data-icon="Upload"></span>
           <input id="model-input" type="file" accept=".glb,.gltf,.obj,.mtl,.stl,.bin,.jpg,.jpeg,.png,.webp" multiple />
         </label>
       </nav>
+
+      <section class="asset-browser is-hidden" id="asset-browser" aria-label="Asset browser" aria-hidden="true">
+        <header class="asset-browser-header">
+          <div>
+            <span class="asset-browser-kicker">Assets</span>
+            <strong>3D Asset Browser</strong>
+          </div>
+          <div class="asset-browser-actions">
+            <button class="icon-command" id="asset-browser-minimize" type="button" aria-label="Minimize asset browser" title="Minimize asset browser"><span data-icon="ChevronLeft"></span></button>
+            <button class="icon-command" id="asset-browser-close" type="button" aria-label="Close asset browser" title="Close asset browser"><span data-icon="X"></span></button>
+          </div>
+        </header>
+        <div class="asset-browser-body">
+          <div class="asset-browser-tabs" role="tablist" aria-label="Asset browser filters">
+            <button class="asset-tab active" type="button" data-asset-tab="online" aria-pressed="true">Online Models</button>
+            <button class="asset-tab" type="button" data-asset-tab="built-in" aria-pressed="false">Built-in</button>
+            <button class="asset-tab" type="button" data-asset-tab="materials" aria-pressed="false">Materials</button>
+            <button class="asset-tab" type="button" data-asset-tab="models" aria-pressed="false">Models</button>
+          </div>
+          <label class="asset-browser-search" aria-label="Search assets">
+            <span data-icon="Search"></span>
+            <input id="asset-browser-search" type="search" placeholder="Search assets, e.g. teacup, PBR, drone" autocomplete="off" />
+          </label>
+          <div class="asset-store asset-browser-grid" id="asset-store" aria-label="Asset browser catalog">
+            ${remoteAssetCards}
+            ${assetStoreCards}
+          </div>
+          <div class="asset-browser-empty" id="asset-browser-empty" hidden>No matching assets</div>
+        </div>
+        <button class="asset-browser-minibar" id="asset-browser-restore" type="button" aria-label="Restore asset browser">
+          <span data-icon="Package"></span>
+          <strong>Assets</strong>
+          <small id="asset-browser-mini-status">Browser minimized</small>
+        </button>
+      </section>
 
       <aside class="inspector" aria-label="Studio inspector">
         <header class="panel-header">
@@ -344,16 +382,6 @@ export function studioTemplate(): string {
             <label class="wide-button file-action"><span data-icon="FolderOpen"></span><span>Load JSON</span><input id="scene-input" type="file" accept="application/json,.json" /></label>
           </div>
           <div class="load-progress" id="load-progress"><span></span><strong>Idle</strong></div>
-        </section>
-
-        <section class="panel-section">
-          <div class="section-title">
-            <span data-icon="Package"></span>
-            <h3>Asset Store</h3>
-          </div>
-          <div class="asset-store" id="asset-store" aria-label="Built-in asset store">
-            ${assetStoreCards}
-          </div>
         </section>
 
         <section class="panel-section">
@@ -789,7 +817,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Save / Load JSON</strong><span>Document panel</span><p>Persist scene objects, camera, lights, materials, and timeline.</p></div>
               <div class="quick-help-item"><strong>Screenshot</strong><span>Bottom bar</span><p>Export the current viewport as PNG for the report.</p></div>
               <div class="quick-help-item"><strong>Record WebM</strong><span>Bottom bar</span><p>Capture the Work In/Out animation range.</p></div>
-              <div class="quick-help-item"><strong>Asset Store</strong><span>Inspector</span><p>Apply built-in looks, procedural textures, materials, and sample models without external downloads.</p></div>
+              <div class="quick-help-item"><strong>Asset Browser</strong><span>Left rail</span><p>Import curated Khronos GLB models or apply local built-in looks, materials, textures, and sample models.</p></div>
               <div class="quick-help-item"><strong>Rendering Lab</strong><span>Inspector</span><p>Use tone mapping, shadows, SSAO, bloom, depth of field, halftone, and path-traced still preview.</p></div>
               <div class="quick-help-item"><strong>Import</strong><span>Left rail / drag-drop</span><p>Load GLB, GLTF, OBJ, MTL, STL, and texture files.</p></div>
             </section>
@@ -811,12 +839,34 @@ export function studioTemplate(): string {
 }
 
 function renderAssetStoreCard(item: typeof ASSET_STORE_ITEMS[number]): string {
+  const searchText = [item.label, item.kind, item.badge, item.description, item.source].join(" ");
+  const category = item.kind === "material" || item.kind === "texture" || item.kind === "look" ? "built-in materials" : "built-in models";
   return `
-    <button class="asset-card asset-${escapeHtml(item.kind)}" type="button" data-asset-id="${escapeHtml(item.id)}" title="${escapeHtml(item.source)}">
+    <article class="asset-card asset-${escapeHtml(item.kind)}" data-asset-category="${escapeHtml(category)}" data-asset-search="${escapeHtml(searchText)}">
       <span>${escapeHtml(item.badge)}</span>
       <strong>${escapeHtml(item.label)}</strong>
       <small>${escapeHtml(item.description)}</small>
-    </button>
+      <em>Built-in | ${escapeHtml(item.kind)}</em>
+      <div class="asset-card-actions">
+        <button class="mini-button" type="button" data-asset-id="${escapeHtml(item.id)}" title="${escapeHtml(item.source)}"><span data-icon="Plus"></span><span>Apply</span></button>
+      </div>
+    </article>
+  `;
+}
+
+function renderRemoteAssetCard(item: typeof REMOTE_3D_ASSETS[number]): string {
+  const searchText = [item.label, item.provider, item.license, item.description, item.tags.join(" ")].join(" ");
+  return `
+    <article class="asset-card remote-asset-card" data-asset-category="online models" data-asset-search="${escapeHtml(searchText)}">
+      <span>${escapeHtml(item.badge)}</span>
+      <strong>${escapeHtml(item.label)}</strong>
+      <small>${escapeHtml(item.description)}</small>
+      <em>${escapeHtml(item.provider)} | ${escapeHtml(item.sizeLabel)} | ${escapeHtml(item.license)}</em>
+      <div class="asset-card-actions">
+        <button class="mini-button" type="button" data-remote-asset-id="${escapeHtml(item.id)}"><span data-icon="CloudDownload"></span><span>Import</span></button>
+        <a class="asset-source-link" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noreferrer">Source</a>
+      </div>
+    </article>
   `;
 }
 

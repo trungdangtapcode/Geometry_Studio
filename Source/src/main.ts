@@ -138,6 +138,7 @@ import {
   validStoredParentId
 } from "./scene/parenting";
 import { createPrimitiveGeometry, createSampleModel, labelForPrimitive, normalizedGeometry } from "./scene/primitives";
+import { remoteAssetById, type RemoteAssetItem } from "./scene/remoteAssetStore";
 import {
   KeyframeTimelinePanel,
   type TimelineDopeSheetTool,
@@ -158,6 +159,8 @@ import { configureViewportNavigation, resetBlenderNavigationMouseButton, syncBle
 
 const app = document.querySelector<HTMLDivElement>("#app");
 const TRANSPORT_RESTART_GUARD_MS = 300;
+const REMOTE_ASSET_IMPORT_LIMIT_BYTES = 80 * 1024 * 1024;
+const ASSET_BROWSER_STORAGE_KEY = "geometry-studio-asset-browser-state";
 
 interface TransformPoseClipboard {
   sourceName: string;
@@ -760,6 +763,14 @@ function boot(root: HTMLDivElement): void {
     document.querySelectorAll<HTMLButtonElement>("[data-asset-id]").forEach((button) => {
       button.addEventListener("click", () => applyAssetStoreItem(button.dataset.assetId ?? ""));
     });
+
+    document.querySelectorAll<HTMLButtonElement>("[data-remote-asset-id]").forEach((button) => {
+      button.addEventListener("click", () => {
+        void importRemoteAsset(button.dataset.remoteAssetId ?? "");
+      });
+    });
+
+    bindAssetBrowser();
 
     query<HTMLInputElement>("#texture-input").addEventListener("change", handleTextureUpload);
     query<HTMLInputElement>("#model-input").addEventListener("change", handleModelImport);
@@ -2032,6 +2043,106 @@ function boot(root: HTMLDivElement): void {
     });
   }
 
+  function bindAssetBrowser(): void {
+    const browser = query<HTMLElement>("#asset-browser");
+    const toggleButton = query<HTMLButtonElement>("#asset-browser-toggle");
+    const minimizeButton = query<HTMLButtonElement>("#asset-browser-minimize");
+    const closeButton = query<HTMLButtonElement>("#asset-browser-close");
+    const restoreButton = query<HTMLButtonElement>("#asset-browser-restore");
+    const searchInput = query<HTMLInputElement>("#asset-browser-search");
+    const emptyState = query<HTMLElement>("#asset-browser-empty");
+    const cards = Array.from(browser.querySelectorAll<HTMLElement>(".asset-card"));
+    const tabs = Array.from(browser.querySelectorAll<HTMLButtonElement>(".asset-tab"));
+    let activeTab = parseAssetBrowserTab(loadAssetBrowserState().tab);
+
+    const setState = (state: "open" | "minimized" | "closed", persist = true) => {
+      browser.classList.toggle("is-hidden", state === "closed");
+      browser.classList.toggle("is-minimized", state === "minimized");
+      browser.setAttribute("aria-hidden", String(state === "closed"));
+      toggleButton.classList.toggle("active", state !== "closed");
+      toggleButton.setAttribute("aria-pressed", String(state !== "closed"));
+      toggleButton.title = state === "closed" ? "Open asset browser" : "Close asset browser";
+      if (persist) storeAssetBrowserState({ state, tab: activeTab });
+    };
+
+    const applyFilter = () => {
+      const queryText = searchInput.value.trim().toLowerCase();
+      let visibleCount = 0;
+      cards.forEach((card) => {
+        const categories = (card.dataset.assetCategory ?? "").split(/\s+/);
+        const matchesTab =
+          activeTab === "online"
+            ? categories.includes("online")
+            : activeTab === "built-in"
+              ? categories.includes("built-in")
+              : activeTab === "materials"
+                ? categories.includes("materials")
+                : categories.includes("models");
+        const matchesSearch = !queryText || (card.dataset.assetSearch ?? "").toLowerCase().includes(queryText);
+        const visible = matchesTab && matchesSearch;
+        card.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+      emptyState.hidden = visibleCount > 0;
+    };
+
+    tabs.forEach((tab) => {
+      const selected = tab.dataset.assetTab === activeTab;
+      tab.classList.toggle("active", selected);
+      tab.setAttribute("aria-pressed", String(selected));
+      tab.addEventListener("click", () => {
+        activeTab = parseAssetBrowserTab(tab.dataset.assetTab);
+        tabs.forEach((item) => {
+          const isActive = item === tab;
+          item.classList.toggle("active", isActive);
+          item.setAttribute("aria-pressed", String(isActive));
+        });
+        applyFilter();
+        storeAssetBrowserState({ state: browserState(browser), tab: activeTab });
+      });
+    });
+
+    toggleButton.addEventListener("click", () => {
+      setState(browser.classList.contains("is-hidden") ? "open" : "closed");
+    });
+    minimizeButton.addEventListener("click", () => setState("minimized"));
+    closeButton.addEventListener("click", () => setState("closed"));
+    restoreButton.addEventListener("click", () => setState("open"));
+    searchInput.addEventListener("input", applyFilter);
+
+    const storedState = loadAssetBrowserState();
+    setState(storedState.state ?? "closed", false);
+    applyFilter();
+  }
+
+  function browserState(browser: HTMLElement): "open" | "minimized" | "closed" {
+    if (browser.classList.contains("is-hidden")) return "closed";
+    if (browser.classList.contains("is-minimized")) return "minimized";
+    return "open";
+  }
+
+  function loadAssetBrowserState(): { state?: "open" | "minimized" | "closed"; tab?: string } {
+    try {
+      const raw = window.localStorage.getItem(ASSET_BROWSER_STORAGE_KEY);
+      const parsed = raw ? safeJsonParse<{ state?: "open" | "minimized" | "closed"; tab?: string }>(raw) : null;
+      return parsed ?? {};
+    } catch {
+      return {};
+    }
+  }
+
+  function parseAssetBrowserTab(tab: string | undefined): "online" | "built-in" | "materials" | "models" {
+    return tab === "built-in" || tab === "materials" || tab === "models" ? tab : "online";
+  }
+
+  function storeAssetBrowserState(state: { state: "open" | "minimized" | "closed"; tab: string }): void {
+    try {
+      window.localStorage.setItem(ASSET_BROWSER_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // The asset browser still works when storage is unavailable.
+    }
+  }
+
   function applyAssetStoreItem(itemId: string): void {
     const item = assetStoreItemById(itemId);
     if (!item) return;
@@ -2081,6 +2192,67 @@ function boot(root: HTMLDivElement): void {
       const preset = assetLookPresetById(item.lookPreset);
       if (preset) applyAssetLookPreset(preset);
     }
+  }
+
+  async function importRemoteAsset(assetId: string): Promise<void> {
+    const asset = remoteAssetById(assetId);
+    if (!asset) return;
+
+    try {
+      setProgress(`Downloading ${asset.label}`, 0.05);
+      const blob = await downloadRemoteAsset(asset);
+      const file = new File([blob], asset.fileName, { type: "model/gltf-binary" });
+      const entry = await importModelFiles([file]);
+      if (!entry) return;
+      entry.name = asset.label;
+      entry.root.name = asset.label;
+      setSelected(entry.id);
+      updateAllUI();
+      showToast(`${asset.label} imported from ${asset.provider}`, "good");
+    } catch (error) {
+      setProgress("Remote import failed", 0);
+      showToast(error instanceof Error ? error.message : "Remote asset import failed.", "bad");
+    }
+  }
+
+  async function downloadRemoteAsset(asset: RemoteAssetItem): Promise<Blob> {
+    const response = await fetch(asset.downloadUrl, { mode: "cors" });
+    if (!response.ok) {
+      throw new Error(`Could not download ${asset.label} (${response.status}).`);
+    }
+
+    const contentLength = Number(response.headers.get("content-length") ?? "0");
+    if (contentLength > REMOTE_ASSET_IMPORT_LIMIT_BYTES) {
+      throw new Error(`${asset.label} is larger than 80 MB.`);
+    }
+
+    if (!response.body) {
+      const blob = await response.blob();
+      if (blob.size > REMOTE_ASSET_IMPORT_LIMIT_BYTES) throw new Error(`${asset.label} is larger than 80 MB.`);
+      setProgress(`Downloaded ${asset.label}`, 0.9);
+      return blob;
+    }
+
+    const reader = response.body.getReader();
+    const chunks: ArrayBuffer[] = [];
+    let loaded = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      loaded += value.byteLength;
+      if (loaded > REMOTE_ASSET_IMPORT_LIMIT_BYTES) {
+        reader.cancel().catch(() => undefined);
+        throw new Error(`${asset.label} is larger than 80 MB.`);
+      }
+      const chunk = new Uint8Array(value.byteLength);
+      chunk.set(value);
+      chunks.push(chunk.buffer);
+      const downloadRatio = contentLength > 0 ? Math.min(0.85, loaded / contentLength) : 0.35;
+      setProgress(`Downloading ${asset.label}`, 0.05 + downloadRatio * 0.85);
+    }
+    setProgress(`Downloaded ${asset.label}`, 0.9);
+    return new Blob(chunks, { type: "model/gltf-binary" });
   }
 
   function applyAssetLookPreset(preset: AssetLookPreset): void {
@@ -2158,11 +2330,11 @@ function boot(root: HTMLDivElement): void {
     input.value = "";
   }
 
-  async function importModelFiles(files: File[]): Promise<void> {
+  async function importModelFiles(files: File[]): Promise<SceneEntry | null> {
     const file = files.find(isModelFile);
     if (!file) {
       showToast("Choose a GLB, GLTF, OBJ, or STL model file.", "bad");
-      return;
+      return null;
     }
     try {
       recordHistory();
@@ -2190,9 +2362,11 @@ function boot(root: HTMLDivElement): void {
       setSelected(entry.id);
       setProgress("Model loaded", 1);
       showToast(imported.warnings[0] ?? `Model imported: ${file.name}`, imported.warnings.length > 0 ? "bad" : "good");
+      return entry;
     } catch (error) {
       setProgress("Import failed", 0);
       showToast(error instanceof Error ? error.message : "Model import failed.", "bad");
+      return null;
     } finally {
       updateAllUI();
     }

@@ -48,7 +48,7 @@ Using a local static server is recommended instead of double-clicking index.html
 - AE-style Parent & Link: assign parent layers, create Null Controllers, clear links while preserving world pose, and persist parent relationships in scene JSON.
 - Lighting: Ambient, Directional, Point, and Spot lights with color, intensity, position, helper, and shadow controls.
 - Rendering Lab: Tone mapping, exposure, shadow quality, PBR/Anime Toon material presets, generated environment lighting, SSAO, Bloom, Vignette, Comic Halftone, optional path-traced still preview, and renderer telemetry controls.
-- Asset Store: one-click built-in looks, procedural textures, materials, Teapot/Torus Knot geometry, and the Sample Drone model for polished screenshots without runtime network assets.
+- Asset Browser: left-rail dock with Online Models from Khronos glTF Sample Assets plus Built-in looks, procedural textures, materials, Teapot/Torus Knot geometry, and the Sample Drone model.
 - Textures: Checker, UV, Grid, Bricks, Wood, Carbon Fiber, Blueprint, and Comic Dots presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, OBJ+MTL, and STL import with centering, normalization, source-material preservation, shadows, outliner integration, and transform support.
 - Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Stop runs the authored timeline.

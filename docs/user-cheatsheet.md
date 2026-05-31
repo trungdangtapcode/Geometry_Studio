@@ -62,16 +62,32 @@ The left icon rail creates geometry or imports assets.
 | Parametric Surface | Add generated surface |
 | Extruded Shape | Add extruded custom shape |
 | Built-in sample model | Add the robot/drone sample model |
+| Asset browser | Open online GLB models and built-in asset presets |
 | Import | Import `.glb`, `.gltf`, `.obj`, `.mtl`, `.stl`, and texture files |
 
 Drag-and-drop model or texture files onto the viewport also works.
+
+## Asset Browser
+
+Open `Asset browser` from the left tool rail.
+
+| Tab | Use It For |
+| --- | --- |
+| Online Models | Import curated `.glb` models from Khronos glTF Sample Assets |
+| Built-in | Apply local looks, textures, materials, primitives, and the Sample Drone |
+| Materials | Filter built-in looks, procedural textures, and material presets |
+| Models | Filter built-in geometry/model cards |
+
+The browser has search, `Import` / `Apply` buttons, source links for online
+models, a close button, and a minimize button. Imported online models are added
+to the outliner like normal GLB imports, then can be transformed, shaded,
+animated, saved, or exported.
 
 ## Inspector Sections
 
 | Section | Use It For |
 | --- | --- |
 | Document | Undo, redo, save/load scene JSON |
-| Asset Store | One-click looks, procedural textures, material presets, Teapot/Torus Knot, and Sample Drone |
 | Outliner | Select, rename, duplicate, or delete objects |
 | Transform | Move, rotate, scale, world/local space, reset transform |
 | Parent & Link | Parent selected objects to another layer or create a Null Controller |

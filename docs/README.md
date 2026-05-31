@@ -13,8 +13,9 @@ PDF.
   for operating the finished app.
 - [UI Scale](ui-scale.md) documents the persisted whole-editor scale control
   that matches the Chrome 75% zoom workflow.
-- [Asset Store Research And Design](asset-store-research.md) documents the
-  offline built-in asset catalog and future CC0/Khronos asset pack plan.
+- [Asset Browser Research And Design](asset-store-research.md) documents the
+  left-rail asset browser, Khronos online GLB imports, built-in presets, and
+  future CC0 asset pack plan.
 - [Beginner Tutorial](beginner-tutorial.md) walks through navigation, object
   editing, keyframing, camera/light animation, import, rendering, and report
   evidence screenshots.
