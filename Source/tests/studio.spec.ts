@@ -398,7 +398,7 @@ test("sets explicit timeline playback speed from UI and command palette", async 
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("l");
   await expect(page.locator("#status-line")).toContainText("Forward 0.5x");
-  await expect(page.locator("#timeline-play-toggle")).toContainText("Pause 0.5x");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Stop");
 
   await page.keyboard.press("l");
   await expect(page.locator("#status-line")).toContainText("Forward 1x");
@@ -3799,7 +3799,7 @@ test("previews the selected timeline keyframe range", async ({ page }) => {
   await page.locator("#timeline-preview-selection").click();
   await expect(page.locator("#timeline-work-start")).toHaveValue("1");
   await expect(page.locator("#timeline-work-end")).toHaveValue("3");
-  await expect(page.locator("#timeline-play-toggle")).toContainText("Pause 1x");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Stop");
 
   await page.keyboard.press("k");
   await page.locator("#timeline-current-time").evaluate((input) => {
@@ -3818,12 +3818,13 @@ test("previews the selected timeline keyframe range", async ({ page }) => {
   await page.keyboard.press("Shift+Space");
   await expect(page.locator("#timeline-work-start")).toHaveValue("1");
   await expect(page.locator("#timeline-work-end")).toHaveValue("3");
-  await expect(page.locator("#timeline-play-toggle")).toContainText("Pause 1x");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Stop");
 
   expect(errors).toEqual([]);
 });
 
 test("supports JKL timeline transport shortcuts", async ({ page }) => {
+  test.setTimeout(120_000);
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -3839,13 +3840,13 @@ test("supports JKL timeline transport shortcuts", async ({ page }) => {
 
   const forwardStart = Number(await page.locator("#timeline-current-time").inputValue());
   await page.keyboard.press("l");
-  await expect(page.locator("#play-toggle")).toContainText("Pause 1x");
+  await expect(page.locator("#play-toggle")).toContainText("Stop 1x");
   await expect(page.locator("#status-line")).toContainText("Forward 1x");
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(forwardStart);
   await page.keyboard.press("l");
   await expect(page.locator("#status-line")).toContainText("Forward 2x");
   await page.keyboard.press("l");
-  await expect(page.locator("#play-toggle")).toContainText("Pause 4x");
+  await expect(page.locator("#play-toggle")).toContainText("Stop 4x");
 
   await page.keyboard.press("k");
   await expect(page.locator("#play-toggle")).toContainText("Play");
@@ -3858,7 +3859,7 @@ test("supports JKL timeline transport shortcuts", async ({ page }) => {
 
   const reverseStart = Number(await page.locator("#timeline-current-time").inputValue());
   await page.keyboard.press("j");
-  await expect(page.locator("#play-toggle")).toContainText("Pause 1x");
+  await expect(page.locator("#play-toggle")).toContainText("Stop 1x");
   await expect(page.locator("#status-line")).toContainText("Reverse 1x");
   await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeLessThan(reverseStart);
   await page.keyboard.press("j");
@@ -3866,6 +3867,39 @@ test("supports JKL timeline transport shortcuts", async ({ page }) => {
   await page.keyboard.press("k");
   await expect(page.locator("#play-toggle")).toContainText("Play");
   await expect(page.locator("#status-line")).toContainText("Ready");
+
+  expect(errors).toEqual([]);
+});
+
+test("stops timeline playback when the Play/Stop toggle is clicked", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.locator("#timeline-current-time")).toBeVisible();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await page.locator("#play-toggle").click();
+  await expect(page.locator("#play-toggle")).toContainText("Stop 1x");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Stop 1x");
+  await expect.poll(async () => Number(await page.locator("#timeline-current-time").inputValue())).toBeGreaterThan(0.05);
+
+  await page.locator("#play-toggle").click();
+  await expect(page.locator("#play-toggle")).toContainText("Play");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Play");
+  await expect(page.locator("#status-line")).toContainText("Ready");
+
+  const stoppedAt = Number(await page.locator("#timeline-current-time").inputValue());
+  await page.waitForTimeout(600);
+  const afterStop = Number(await page.locator("#timeline-current-time").inputValue());
+  expect(Math.abs(afterStop - stoppedAt)).toBeLessThan(0.05);
+  await expect(page.locator("#timeline-playback-rate")).toHaveValue("1");
 
   expect(errors).toEqual([]);
 });

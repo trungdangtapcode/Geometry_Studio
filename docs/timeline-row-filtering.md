@@ -10,16 +10,21 @@ turning the dope sheet into a long, noisy list.
 - `Focus Rows`: selected object tracks stay visible, keyed non-selected object
   tracks remain visible, pinned tracks remain visible, and camera/light tracks
   stay available.
+- `Selected Keyed Rows`: only the selected object's keyed tracks are shown, plus
+  the active row and pinned rows. This mirrors the After Effects `U` habit of
+  revealing animated properties on the selected layer without showing the whole
+  scene.
 - `Keyed Rows`: only tracks with keyframes are shown, plus the currently active
   track and pinned tracks so a new keyframe can still be added.
 - `Pinned Rows`: starred timeline rows are shown, plus the currently active row.
 - `All Rows`: all object, camera, and light tracks are shown.
-- `U` cycles Focus -> Keyed -> Pinned -> All -> Focus when focus is outside
-  form fields, matching the reveal-animated-properties habit from
-  motion-graphics tools.
+- `Shift+U` jumps directly to `Selected Keyed Rows`.
+- `U` cycles Focus -> Selected Keyed -> Keyed -> Pinned -> All -> Focus when
+  focus is outside form fields.
 - The command palette exposes direct jumps for `Show Focus Timeline Rows`,
-  `Show Keyed Timeline Rows`, `Show Pinned Timeline Rows`, and `Show All
-  Timeline Rows`. These avoid repeated cycling when the timeline is dense.
+  `Show Selected Keyed Timeline Rows`, `Show Keyed Timeline Rows`, `Show Pinned
+  Timeline Rows`, and `Show All Timeline Rows`. These avoid repeated cycling
+  when the timeline is dense.
 
 ## Implementation
 

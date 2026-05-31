@@ -991,9 +991,9 @@ function boot(root: HTMLDivElement): void {
       command("help.rendering", "Open Rendering Help", "Help", () => quickHelp.open("", "rendering"), {
         keywords: ["shading", "toon", "ssao", "path trace", "screenshot", "export"]
       }),
-      command("timeline.play", "Play / Pause Timeline", "Playback", togglePlay, { shortcut: "Space", keywords: ["transport", "preview"] }),
+      command("timeline.play", "Play / Stop Timeline", "Playback", togglePlay, { shortcut: "Space", keywords: ["transport", "preview", "pause"] }),
       command("timeline.reverse", "Play Backward", "Playback", () => playTimeline(-1), { shortcut: "J", keywords: ["transport"] }),
-      command("timeline.pause", "Pause Timeline", "Playback", () => pauseTimeline(), { shortcut: "K", keywords: ["transport"] }),
+      command("timeline.pause", "Stop Timeline", "Playback", () => pauseTimeline("Timeline stopped"), { shortcut: "K", keywords: ["transport", "pause"] }),
       command("timeline.forward", "Play Forward", "Playback", () => playTimeline(1), { shortcut: "L", keywords: ["transport"] }),
       command("timeline.speed-quarter", "Set Playback Speed 0.25x", "Playback", () => setTimelinePlaybackRate(0.25), { keywords: ["slow", "preview", "transport"] }),
       command("timeline.speed-half", "Set Playback Speed 0.5x", "Playback", () => setTimelinePlaybackRate(0.5), { keywords: ["slow", "preview", "transport"] }),
@@ -1202,6 +1202,10 @@ function boot(root: HTMLDivElement): void {
       command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
       command("timeline.rows-focus", "Show Focus Timeline Rows", "View", () => setTimelineRowFilter("focus"), {
         keywords: ["filter", "focused", "selected", "rows", "tracks", "timeline"]
+      }),
+      command("timeline.rows-selected-keyed", "Show Selected Keyed Timeline Rows", "View", () => setTimelineRowFilter("selectedKeyed"), {
+        shortcut: "Shift+U",
+        keywords: ["filter", "selected", "keyed", "animated properties", "layer", "after effects", "timeline"]
       }),
       command("timeline.rows-keyed", "Show Keyed Timeline Rows", "View", () => setTimelineRowFilter("keyed"), {
         keywords: ["filter", "keyframed", "animated", "rows", "tracks", "timeline"]
@@ -2198,7 +2202,8 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "u") {
       event.preventDefault();
-      showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good");
+      if (event.shiftKey) setTimelineRowFilter("selectedKeyed");
+      else showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good");
       return;
     }
     if (key === "=" || key === "+" || code === "equal" || code === "numpadadd") {
@@ -2237,7 +2242,7 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "k") {
       event.preventDefault();
-      pauseTimeline();
+      pauseTimeline("Timeline stopped");
       return;
     }
     if (key === "l") {
@@ -2341,7 +2346,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function togglePlay(): void {
-    if (transport.playing) pauseTimeline();
+    if (transport.playing) pauseTimeline("Timeline stopped");
     else playTimeline(1, "Timeline running");
   }
 
@@ -2372,7 +2377,7 @@ function boot(root: HTMLDivElement): void {
     showToast(`${message} ${formatPlaybackRate(state.rate)}`, "good");
   }
 
-  function pauseTimeline(message = "Timeline paused"): void {
+  function pauseTimeline(message = "Timeline stopped"): void {
     transport.pause();
     timelinePanel.update(sceneTimeline, entries.values(), selectedId, transport.playing);
     updatePlayButton();
@@ -4828,7 +4833,7 @@ function boot(root: HTMLDivElement): void {
         if (!hasObjectTransformTimelineTracks(sceneTimeline, entry.id)) updateEntryAnimation(entry, playbackDelta, elapsed);
       });
     }
-    if (lightRig.sweep && !hasLightTimelineTracks(sceneTimeline)) updateLightSweep(lightRig, elapsed);
+    if (transport.playing && lightRig.sweep && !hasLightTimelineTracks(sceneTimeline)) updateLightSweep(lightRig, elapsed);
 
     controls.update();
     frustumHelper.update();
@@ -4912,11 +4917,16 @@ function boot(root: HTMLDivElement): void {
     syncPlaybackRateControl();
     const label = transport.buttonLabel();
     const iconName = transport.iconName();
+    const ariaLabel = transport.playing ? `Stop timeline playback at ${formatPlaybackRate(transport.rate)}` : "Play timeline animation";
     const button = query<HTMLButtonElement>("#play-toggle");
     button.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
+    button.setAttribute("aria-label", ariaLabel);
+    button.title = ariaLabel;
     hydrateIcons(button);
     const timelineButton = query<HTMLButtonElement>("#timeline-play-toggle");
     timelineButton.innerHTML = `<span data-icon="${iconName}"></span><span>${label}</span>`;
+    timelineButton.setAttribute("aria-label", ariaLabel);
+    timelineButton.title = ariaLabel;
     hydrateIcons(timelineButton);
     if (recordingPreview) updateRecordingButton();
   }

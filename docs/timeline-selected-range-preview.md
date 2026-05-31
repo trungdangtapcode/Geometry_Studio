@@ -41,7 +41,7 @@ handling consistent:
 - minimum span comes from snap step or one frame;
 - range values are rounded with the timeline time rounding helper.
 
-Before starting playback, the transport is paused internally so preview always
+Before starting playback, the transport is stopped internally so preview always
 starts at `1x`, even if the user previously pressed `L` multiple times for
 shuttle playback.
 
@@ -52,7 +52,7 @@ Automated coverage verifies:
 - The `Preview Sel` button is visible in the core smoke test.
 - Selecting keys inside Work In/Out and clicking `Preview Sel` sets Work In/Out
   to the selected span.
-- Preview starts playback at `Pause 1x`.
+- Preview starts playback and the transport button changes to `Stop 1x`.
 - `Shift+Space` performs the same selected-range preview.
 
 Manual check:

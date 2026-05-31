@@ -111,7 +111,7 @@ Scale recorded together.
 | Loop | Repeat Work In/Out during playback |
 | Auto-Key | Automatically records changed values when time is not at the first pose |
 | Track dropdown | Chooses which property the main `Set Key` button records |
-| Row filter | `Focus`, `Keyed`, `Pinned`, or `All` timeline rows; command palette can jump directly to any mode |
+| Row filter | `Focus`, `Selected Keyed`, `Keyed`, `Pinned`, or `All` timeline rows; command palette can jump directly to any mode |
 | Search rows | Filter dense object/camera/light/material rows |
 | Pin visible rows | Pins every row currently visible after search/filtering |
 | Clear pinned rows | Removes every pinned-row preference |
@@ -120,7 +120,7 @@ Scale recorded together.
 
 | Button | Use It For |
 | --- | --- |
-| Play | Play/pause timeline |
+| Play | Play/stop timeline |
 | Start / Out | Jump to Work In / Work Out |
 | Previous/Next frame | Step one frame |
 | Previous/Next key | Jump between keys on the active track |
@@ -181,16 +181,17 @@ Scale recorded together.
 | `Ctrl+K` or `F3` | Command palette |
 | `T`, `R`, `S` | Move, rotate, scale tools |
 | `F` or `Numpad .` | Frame selected object |
-| `Space` | Play / pause |
+| `Space` | Play / stop |
 | `Shift+Space` | Preview selected keyframe range |
-| `J`, `K`, `L` | Play backward, pause, play forward |
+| `J`, `K`, `L` | Play backward, stop, play forward |
 | `Left`, `Right` | Step one frame |
 | `Shift+Left`, `Shift+Right` | Previous / next keyframe on active track |
 | `Ctrl+Alt+Left`, `Ctrl+Alt+Right` | Previous / next visible-row keyframe |
 | `Ctrl+Alt+Shift+Left`, `Ctrl+Alt+Shift+Right` | Previous / next pinned-row keyframe |
 | `Home`, `End` | Work In / Work Out |
 | `B`, `N` or `I`, `O` | Set Work In / Work Out to playhead |
-| `U` | Cycle Focus, Keyed, Pinned, All Rows |
+| `Shift+U` | Show keyed rows for the selected layer/object |
+| `U` | Cycle Focus, Selected Keyed, Keyed, Pinned, All Rows |
 | `V`, `H` | Timeline selection tool, timeline pan tool |
 | `Alt+P`, `Alt+R`, `Alt+S` | Reveal Position, Rotation, Scale rows |
 | `Shift+P` | Pin or unpin the active timeline row |

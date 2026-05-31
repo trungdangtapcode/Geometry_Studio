@@ -49,8 +49,8 @@ Using a local static server is recommended instead of double-clicking index.html
 - Rendering Lab: Tone mapping, exposure, shadow quality, PBR/Anime Toon material presets, generated environment lighting, SSAO, Bloom, Vignette, Comic Halftone, optional path-traced still preview, and renderer telemetry controls.
 - Textures: Checker, UV, and Grid presets, bitmap image upload, and repeat controls.
 - Model loading: GLB, GLTF, OBJ, OBJ+MTL, and STL import with centering, normalization, source-material preservation, shadows, outliner integration, and transform support.
-- Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Pause runs the authored timeline.
-- Keyframe Timeline: resizable bottom timeline dock and label column for object, camera, light, material, visibility, and texture tracks with AE-style selectable and renamable object/camera/light layer groups, object group pose-key buttons, transform pose copy/paste, disclosure collapse/expand, Alt-click bulk collapse/expand, X/Y/Z transform rows, inspector Position/Rotation/Scale key diamonds, Auto-Key initial-pose seeding, Focus/Keyed/Pinned/All row filtering with pinned-row count, bulk visible-row pinning and clearing, pinned-row keying sets, Ctrl+F row search, Alt+P/R/S/C/T/M/U property reveal shortcuts, named timeline markers, minimizable overview/layer range strip, clickable track rows, per-row pin/eye/solo/lock/diamond switches, Set TRS grouped transform keying, layer In/Out bars with move, trim, split, sequencing, and Alt-drag key time-stretch, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Back In/Back Out/Hold controls with curve preview, active-track value graph preview with draggable value key points, cursor-anchored wheel zoom, horizontal wheel/trackpad panning, playhead scrubbing, visible-row before/after playhead tail selection, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview with key time labels and pose ghosts, and JSON save/load.
+- Animation: Spin, Orbit, Bounce, Pulse, and Light Sweep presets bake visible timeline keyframes, then Play/Stop runs the authored timeline.
+- Keyframe Timeline: resizable bottom timeline dock and label column for object, camera, light, material, visibility, and texture tracks with AE-style selectable and renamable object/camera/light layer groups, object group pose-key buttons, transform pose copy/paste, disclosure collapse/expand, Alt-click bulk collapse/expand, X/Y/Z transform rows, inspector Position/Rotation/Scale key diamonds, Auto-Key initial-pose seeding, Focus/Selected Keyed/Keyed/Pinned/All row filtering with pinned-row count, bulk visible-row pinning and clearing, pinned-row keying sets, Ctrl+F row search, Shift+U selected-layer keyed-row reveal, Alt+P/R/S/C/T/M/U property reveal shortcuts, named timeline markers, minimizable overview/layer range strip, clickable track rows, per-row pin/eye/solo/lock/diamond switches, Set TRS grouped transform keying, layer In/Out bars with move, trim, split, sequencing, and Alt-drag key time-stretch, per-keyframe Linear/Ease In/Ease Out/Easy Ease/Back In/Back Out/Hold controls with curve preview, active-track value graph preview with draggable value key points, cursor-anchored wheel zoom, horizontal wheel/trackpad panning, playhead scrubbing, visible-row before/after playhead tail selection, set/update/delete/copy/paste/nudge/center/rove/distribute/fit keyframes, numeric keyframe time/value editing, full-turn Euler rotation playback, active-track enable/disable, solo, and lock/unlock, dragging, snap, loop, duration, FPS, Undo/Redo, selected-object motion path preview with key time labels and pose ghosts, and JSON save/load.
 - Motion Presets: Command Palette can bake Turntable, Float Loop, Pop Intro, and Product Reveal into editable Position/Rotation/Scale/Opacity timeline keys.
 - Display helpers: Blender-style UI Density, Grid, Axes, FPS, selected-object outline, position motion paths, progress UI, and toast messages.
 - Scene persistence: Save JSON and Load JSON for objects, camera, lights, rendering settings, display settings, materials, baked preset motion, and keyframe timelines.
@@ -79,9 +79,9 @@ Geometry_Studio/docs/beginner-tutorial.md
 - ?: open Quick Help.
 - Ctrl+K / F3: open command palette; pinned and recent commands appear first when search is empty.
 - Shift+Enter in command palette: pin or unpin the active command.
-- Space: Play or pause animation.
+- Space: Play or stop animation.
 - Shift+Space: preview the currently selected keyframe range.
-- J / K / L: play backward, pause, or play forward inside the work area. Press J or L repeatedly for 2x and 4x shuttle speed.
+- J / K / L: play backward, stop, or play forward inside the work area. Press J or L repeatedly for 2x and 4x shuttle speed.
 - Left / Right: step the timeline one frame.
 - Shift+Left / Shift+Right: jump to the previous or next keyframe on the selected track.
 - Shift+Home / Shift+End: jump to the first or last selected timeline keyframe.
@@ -108,8 +108,9 @@ Geometry_Studio/docs/beginner-tutorial.md
 - I / O: set Work In or Work Out to the current playhead time.
 - Shift+B: fit Work In/Out to the selected timeline keyframes.
 - Ctrl+Shift+A: select active-track keyframes inside Work In/Out.
-- U: cycle timeline row visibility through Focus, Keyed, Pinned, and All Rows.
-- Command Palette: search Show Focus/Keyed/Pinned/All Timeline Rows to jump directly to a row filter.
+- Shift+U: show keyed rows for the selected layer/object.
+- U: cycle timeline row visibility through Focus, Selected Keyed, Keyed, Pinned, and All Rows.
+- Command Palette: search Show Focus/Selected Keyed/Keyed/Pinned/All Timeline Rows to jump directly to a row filter.
 - Shift+P: pin or unpin the active timeline row.
 - Command Palette: search Pin Selected Transform Rows to pin Position, Rotation, and Scale for the selected object.
 - Toolbar pin button: pin every currently visible timeline row.
@@ -157,7 +158,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - Select and rename objects from timeline layer group rows, collapse and expand groups from their disclosure controls, Alt-click a disclosure control to collapse or expand all groups, then use row search to reveal a hidden property row.
 - Minimize the timeline overview/layer range strip and confirm only that section collapses; the keyframe rows and playhead remain usable.
 - Alt-drag a layer range edge and confirm in-range object keyframes stretch proportionally into the new layer duration.
-- Run Cinematic Demo and Play/Pause the baked keyframe animation.
+- Run Cinematic Demo and Play/Stop the baked keyframe animation.
 - Run Evaluation Tour to show every assignment requirement in one guided scene.
 - Save JSON, then Load JSON to verify scene persistence.
 - Use Undo/Redo after adding, deleting, or changing an object render mode.

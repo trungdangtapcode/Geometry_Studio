@@ -91,7 +91,7 @@ UI behavior:
 - Clicking the timeline ruler moves the playhead.
 - Dragging the playhead scrubs without starting playback.
 - Pressing Play starts playback from the current time.
-- Pressing Pause freezes at the current time.
+- Pressing Stop freezes playback at the current time.
 - Loop repeats from zero when the playhead reaches duration.
 - Snap rounds keyframe time to the configured snap step.
 - Add Keyframe captures the selected object's current transform value.

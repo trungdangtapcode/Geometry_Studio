@@ -101,6 +101,7 @@ export function studioTemplate(): string {
               </select>
               <select id="timeline-row-filter" aria-label="Timeline row filter">
                 <option value="focus">Focus Rows</option>
+                <option value="selectedKeyed">Selected Keyed Rows</option>
                 <option value="keyed">Keyed Rows</option>
                 <option value="pinned">Pinned Rows</option>
                 <option value="all">All Rows</option>
@@ -689,13 +690,14 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
               <div class="quick-help-item"><strong>Pin Rows</strong><span>Commands / Set or Select Pinned</span><p>Pin important tracks, use Pin Selected Transform Rows for fast TRS setup, then key, select, fit, or preview the pinned set.</p></div>
               <div class="quick-help-item"><strong>Motion Presets</strong><span>Command Palette</span><p>Apply Turntable, Float Loop, Pop Intro, or Product Reveal as editable timeline keys.</p></div>
+              <div class="quick-help-item"><strong>Selected Keyed Rows</strong><span>Shift+U</span><p>Show only the selected layer's keyed rows, plus the active row, like an AE animated-property reveal.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Playback</h3>
-              <div class="quick-help-item"><strong>Play / Pause</strong><span>Space</span><p>Preview the active Work In/Out range.</p></div>
-              <div class="quick-help-item"><strong>Shuttle</strong><span>J / K / L</span><p>Play backward, pause, or play forward.</p></div>
+              <div class="quick-help-item"><strong>Play / Stop</strong><span>Space</span><p>Preview the active Work In/Out range, then stop immediately from the same button.</p></div>
+              <div class="quick-help-item"><strong>Shuttle</strong><span>J / K / L</span><p>Play backward, stop, or play forward.</p></div>
               <div class="quick-help-item"><strong>Step Frames</strong><span>Left / Right</span><p>Move the playhead one frame.</p></div>
               <div class="quick-help-item"><strong>Work In / Work Out</strong><span>B / N or I / O</span><p>Set the preview and WebM export range.</p></div>
               <div class="quick-help-item"><strong>Preview Selected</strong><span>Shift+Space</span><p>Play only the selected keyframe span.</p></div>

@@ -31,7 +31,7 @@ export class TimelineTransport {
   }
 
   pause(): TimelineTransportState {
-    return this.set(false, this.state.direction, this.state.rate);
+    return this.set(false, this.state.direction, 1);
   }
 
   setRate(rate: number): TimelineTransportState {
@@ -52,7 +52,7 @@ export class TimelineTransport {
   }
 
   buttonLabel(): string {
-    return this.state.playing ? `Pause ${formatPlaybackRate(this.state.rate)}` : "Play";
+    return this.state.playing ? `Stop ${formatPlaybackRate(this.state.rate)}` : "Play";
   }
 
   statusLabel(): string {
@@ -60,8 +60,8 @@ export class TimelineTransport {
     return `${this.state.direction > 0 ? "Forward" : "Reverse"} ${formatPlaybackRate(this.state.rate)}`;
   }
 
-  iconName(): "Pause" | "Play" {
-    return this.state.playing ? "Pause" : "Play";
+  iconName(): "Square" | "Play" {
+    return this.state.playing ? "Square" : "Play";
   }
 
   private nextRate(direction: PlaybackDirection): number {

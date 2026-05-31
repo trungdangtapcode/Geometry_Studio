@@ -149,7 +149,7 @@ type TimelineUiRow = TimelineRow & {
   group?: boolean;
 };
 
-export type TimelineRowFilter = "focus" | "keyed" | "pinned" | "all";
+export type TimelineRowFilter = "focus" | "selectedKeyed" | "keyed" | "pinned" | "all";
 type TimelineLayerDragMode = "move" | "trimStart" | "trimEnd";
 type TimelineRowDescriptor = {
   kind: TimelineTrackKind;
@@ -209,7 +209,7 @@ const LABEL_WIDTH_STORAGE_KEY = "geometry-studio-timeline-label-width";
 const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
 const LAYER_STRIP_COLLAPSED_STORAGE_KEY = "geometry-studio-timeline-layer-strip-collapsed";
 const COLLAPSED_GROUPS_STORAGE_KEY = "geometry-studio-timeline-collapsed-groups";
-const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "pinned", "all"];
+const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "selectedKeyed", "keyed", "pinned", "all"];
 const TRANSFORM_KEYING_SET: TimelineTrackKind[] = ["position", "rotation", "scale"];
 const MIN_DOCK_HEIGHT = 190;
 const MIN_LABEL_WIDTH = 112;
@@ -450,8 +450,7 @@ export class KeyframeTimelinePanel {
     this.pruneSelectedKeyframes(timelineDocument);
     this.root.classList.toggle("playing", playing);
     this.root.classList.toggle("auto-key-active", timelineDocument.autoKey);
-    this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
-    hydrateIcons(this.playButton);
+    this.syncPlayButton(playing);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.durationInput.value = formatNumber(timelineDocument.duration);
     this.workStartInput.value = formatNumber(timelineDocument.workStart);
@@ -832,8 +831,7 @@ export class KeyframeTimelinePanel {
     this.updating = true;
     this.root.classList.toggle("playing", playing);
     this.root.classList.toggle("auto-key-active", timelineDocument.autoKey);
-    this.playButton.innerHTML = `<span data-icon="${playing ? "Pause" : "Play"}"></span><span>${playing ? "Pause" : "Play"}</span>`;
-    hydrateIcons(this.playButton);
+    this.syncPlayButton(playing);
     this.timeInput.value = formatNumber(timelineDocument.currentTime);
     this.timeline.setTime(timelineDocument.currentTime);
     this.ensurePlayheadVisible(timelineDocument.currentTime, playing);
@@ -847,6 +845,15 @@ export class KeyframeTimelinePanel {
     this.renderGraph(timelineDocument, this.lastSelectedId);
     this.lockDockScroll();
     this.updating = false;
+  }
+
+  private syncPlayButton(playing: boolean): void {
+    const label = playing ? "Stop" : "Play";
+    const ariaLabel = playing ? "Stop timeline playback" : "Play timeline playback";
+    this.playButton.innerHTML = `<span data-icon="${playing ? "Square" : "Play"}"></span><span>${label}</span>`;
+    this.playButton.setAttribute("aria-label", ariaLabel);
+    this.playButton.title = ariaLabel;
+    hydrateIcons(this.playButton);
   }
 
   private bindEvents(): void {
@@ -1665,6 +1672,9 @@ export class KeyframeTimelinePanel {
     const keyedIds = new Set(timelineDocument.objects.map((object) => object.objectId));
     const pinnedIds = this.pinnedObjectIds();
     const selected = entryList.find((entry) => entry.id === selectedId);
+    if (this.rowFilter === "selectedKeyed") {
+      return selected ? [selected] : [];
+    }
     if (this.rowFilter === "pinned") {
       return entryList.filter((entry) => pinnedIds.has(entry.id) || (entry.id === selectedId && isObjectTrack(this.selectedTrackKind())));
     }
@@ -2087,6 +2097,12 @@ export class KeyframeTimelinePanel {
 
     if (this.rowFilter === "pinned") {
       return kinds.filter((kind) => isPinned(kind) || isActive(kind));
+    }
+
+    if (this.rowFilter === "selectedKeyed") {
+      return targetId === selectedId
+        ? kinds.filter((kind) => hasKeyframes(kind) || isActive(kind) || isPinned(kind))
+        : [];
     }
 
     if (this.rowFilter === "keyed") {
@@ -3183,10 +3199,11 @@ function isTimelineTrackKind(value: string): value is TimelineTrackKind {
 }
 
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
-  return value === "keyed" || value === "pinned" || value === "all" || value === "focus" ? value : "focus";
+  return value === "selectedKeyed" || value === "keyed" || value === "pinned" || value === "all" || value === "focus" ? value : "focus";
 }
 
 function rowFilterLabel(filter: TimelineRowFilter): string {
+  if (filter === "selectedKeyed") return "Selected Keyed Rows";
   if (filter === "keyed") return "Keyed Rows";
   if (filter === "pinned") return "Pinned Rows";
   if (filter === "all") return "All Rows";

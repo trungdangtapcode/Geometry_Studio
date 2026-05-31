@@ -10,7 +10,7 @@ timeline graph.
 ## Behavior
 
 - `J` plays the timeline backward through the active Work In/Out range.
-- `K` pauses playback.
+- `K` stops playback.
 - `L` plays the timeline forward through the active Work In/Out range.
 - The timeline Speed selector can set `0.25x`, `0.5x`, `1x`, `2x`, or `4x`
   preview playback without changing FPS or keyframe timing.
@@ -18,9 +18,10 @@ timeline graph.
   `1x`, then `2x`, then `4x`.
 - Pressing the opposite direction keeps the selected speed in that direction,
   making slow reverse preview possible.
-- `K` pauses playback without resetting the selected speed.
-- `Space` keeps the existing play/pause behavior and starts forward playback
-  when resuming from a paused state.
+- `K` stops playback and resets shuttle speed to `1x` so the next start is
+  predictable.
+- `Space` keeps the existing play/stop behavior and starts forward playback
+  when resuming from a stopped state.
 
 The shortcuts are ignored while a text input or select menu has focus, so
 typing object names, marker labels, or numeric values does not trigger

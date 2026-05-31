@@ -97,11 +97,37 @@ test("jumps directly to timeline row filters from the command palette", async ({
   await runCommand("show focus timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("focus");
 
+  await runCommand("show selected keyed timeline rows");
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
+
   await runCommand("show keyed timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("keyed");
 
   await runCommand("show pinned timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
+});
+
+test("reveals selected layer keyed rows with Shift+U", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.locator("#timeline-add-keyframe").click();
+
+  await page.locator('.outliner-item[data-id="object-2"]').click({ force: true });
+  await page.locator("#timeline-track-kind").selectOption("scale");
+  await page.locator("#timeline-add-keyframe").click();
+
+  await page.locator('.outliner-item[data-id="object-1"]').click({ force: true });
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.keyboard.press("Shift+U");
+
+  await expect(page.locator("#timeline-row-filter")).toHaveValue("selectedKeyed");
+  await expect(page.locator('.timeline-track-label[data-object-id="object-1"][data-track-kind="position"]').first()).toBeVisible();
+  await expect(page.locator('.timeline-track-label[data-object-id="object-2"][data-track-kind="scale"]').first()).toBeHidden();
 });
 
 test("sets keys on pinned timeline rows as a keying set", async ({ page }) => {
@@ -260,5 +286,5 @@ test("uses pinned row keyframes as a focused preview range", async ({ page }) =>
   await runCommand("preview pinned row keyframe range");
   await expect.poll(async () => Number(await page.locator("#timeline-work-start").inputValue())).toBe(0);
   await expect.poll(async () => Number(await page.locator("#timeline-work-end").inputValue())).toBe(2);
-  await expect(page.locator("#timeline-play-toggle")).toContainText("Pause");
+  await expect(page.locator("#timeline-play-toggle")).toContainText("Stop");
 });
