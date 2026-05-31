@@ -124,6 +124,7 @@ Scale recorded together.
 | Set Key | Add or update one key on the selected track dropdown |
 | Set TRS | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
+| Set Pinned | Record every pinned timeline row at the playhead |
 | Layer In / Layer Out | Trim selected object layer range |
 | Split | Split selected object layer at the playhead |
 | Layer Work | Set Work In/Out to selected layer range |
@@ -244,7 +245,9 @@ If a key already exists at that time, `Set Key` updates it.
 2. Click the toolbar pin button, or search `Pin Visible Timeline Rows` in the
    command palette.
 3. Switch the row filter to `Pinned Rows`, or search `Show Pinned Timeline Rows`.
-4. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
+4. Click `Set Pinned` when you want the pinned rows to act like a reusable
+   keying set.
+5. Use the pin-off toolbar button or `Clear Pinned Timeline Rows` when the
    pinned set is no longer useful.
 
 ### Animate Camera

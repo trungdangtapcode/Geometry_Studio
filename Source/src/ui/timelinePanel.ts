@@ -57,6 +57,7 @@ export interface KeyframeTimelineCallbacks {
   onSetTransformKeyframes(): void;
   onSetObjectTransformKeyframes(targetId: string): void;
   onSetVisibleKeyframes(rows: TimelineVisibleRowTarget[]): void;
+  onSetPinnedKeyframes(rows: TimelineVisibleRowTarget[]): void;
   onTrimLayerIn(): void;
   onTrimLayerOut(): void;
   onSplitLayer(): void;
@@ -237,6 +238,7 @@ export class KeyframeTimelinePanel {
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
   private readonly setVisibleButton = query<HTMLButtonElement>("#timeline-set-visible");
+  private readonly setPinnedButton = query<HTMLButtonElement>("#timeline-set-pinned");
   private readonly layerStripToggleButton = query<HTMLButtonElement>("#timeline-layer-strip-toggle");
   private readonly layerStripInlineToggleButton = query<HTMLButtonElement>("#timeline-layer-strip-inline-toggle");
   private readonly layerStripRestoreButton = query<HTMLButtonElement>("#timeline-layer-strip-restore");
@@ -463,6 +465,7 @@ export class KeyframeTimelinePanel {
     this.syncLockTrackButton(timelineDocument, selectedId);
     this.syncSoloTrackButton(timelineDocument, selectedId);
     this.syncClearTrackButton(timelineDocument, selectedId);
+    this.syncPinnedKeyingButton();
 
     const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
     const rowHeight = this.timelineRowHeight();
@@ -591,6 +594,10 @@ export class KeyframeTimelinePanel {
 
   visibleRowTargetsList(): TimelineVisibleRowTarget[] {
     return this.visibleRowTargets();
+  }
+
+  pinnedRowTargetsList(): TimelineVisibleRowTarget[] {
+    return this.pinnedRowTargets();
   }
 
   cycleRowFilter(): string {
@@ -797,6 +804,9 @@ export class KeyframeTimelinePanel {
     });
     this.setVisibleButton.addEventListener("click", () => {
       this.callbacks.onSetVisibleKeyframes(this.visibleRowTargets());
+    });
+    this.setPinnedButton.addEventListener("click", () => {
+      this.callbacks.onSetPinnedKeyframes(this.pinnedRowTargets());
     });
     query<HTMLButtonElement>("#timeline-layer-in").addEventListener("click", () => this.callbacks.onTrimLayerIn());
     query<HTMLButtonElement>("#timeline-layer-out").addEventListener("click", () => this.callbacks.onTrimLayerOut());
@@ -1456,6 +1466,26 @@ export class KeyframeTimelinePanel {
       if (targetId && targetId !== CAMERA_TARGET_ID && targetId !== LIGHT_TARGET_ID) ids.add(targetId);
     });
     return ids;
+  }
+
+  private pinnedRowTargets(): TimelineVisibleRowTarget[] {
+    return [...this.pinnedRows]
+      .map(timelineRowTargetFromKey)
+      .filter((target): target is TimelineVisibleRowTarget => Boolean(target && this.isValidPinnedTarget(target)));
+  }
+
+  private isValidPinnedTarget(target: TimelineVisibleRowTarget): boolean {
+    if (target.targetId === CAMERA_TARGET_ID) return CAMERA_TRACKS.includes(target.kind);
+    if (target.targetId === LIGHT_TARGET_ID) return LIGHT_TRACKS.includes(target.kind);
+    return OBJECT_TRACKS.includes(target.kind) && this.lastEntries.some((entry) => entry.id === target.targetId);
+  }
+
+  private syncPinnedKeyingButton(): void {
+    const count = this.pinnedRowTargets().length;
+    this.setPinnedButton.disabled = count === 0;
+    this.setPinnedButton.title = count > 0
+      ? `Set keys on ${count} pinned timeline row${count === 1 ? "" : "s"}`
+      : "Pin timeline rows before setting pinned keys";
   }
 
   private timelineGroupIds(): string[] {
@@ -3036,9 +3066,21 @@ function timelineRowKey(targetId: string, kind: TimelineTrackKind): string {
   return `${targetId}:${kind}`;
 }
 
+function timelineRowTargetFromKey(key: string): TimelineVisibleRowTarget | null {
+  const index = key.lastIndexOf(":");
+  if (index <= 0 || index >= key.length - 1) return null;
+  const kind = key.slice(index + 1);
+  if (!isTimelineTrackKind(kind)) return null;
+  return { targetId: key.slice(0, index), kind };
+}
+
 function targetIdFromTimelineRowKey(key: string): string | null {
   const index = key.lastIndexOf(":");
   return index > 0 ? key.slice(0, index) : null;
+}
+
+function isTimelineTrackKind(value: string): value is TimelineTrackKind {
+  return [...OBJECT_TRACKS, ...CAMERA_TRACKS, ...LIGHT_TRACKS].includes(value as TimelineTrackKind);
 }
 
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {

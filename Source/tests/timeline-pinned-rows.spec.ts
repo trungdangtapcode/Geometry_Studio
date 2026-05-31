@@ -103,3 +103,28 @@ test("jumps directly to timeline row filters from the command palette", async ({
   await runCommand("show pinned timeline rows");
   await expect(page.locator("#timeline-row-filter")).toHaveValue("pinned");
 });
+
+test("sets keys on pinned timeline rows as a keying set", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+    window.localStorage.removeItem("geometry-studio-timeline-row-search");
+  });
+  await page.goto("/");
+
+  await page.locator("#timeline-row-filter").selectOption("all");
+  const rotationRow = page.locator('.timeline-track-label[data-track-kind="rotation"]').first();
+  await rotationRow.locator('[data-row-action="pin"]').click();
+  await page.locator("#timeline-row-search").fill("scale");
+  await expect(rotationRow).toBeHidden();
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("set keys on pinned rows");
+  await page.keyboard.press("Enter");
+
+  await page.locator("#timeline-row-search").fill("");
+  await page.locator("#timeline-row-filter").selectOption("pinned");
+  await expect(rotationRow).toBeVisible();
+  await expect(rotationRow).toHaveClass(/has-keyframes/);
+  await expect(page.locator("#timeline-selection")).toContainText("1 keyframe");
+});

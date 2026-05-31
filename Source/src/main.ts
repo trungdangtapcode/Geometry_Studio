@@ -228,6 +228,7 @@ function boot(root: HTMLDivElement): void {
     onSetTransformKeyframes: setTransformTimelineKeyframes,
     onSetObjectTransformKeyframes: setTransformTimelineKeyframes,
     onSetVisibleKeyframes: setVisibleTimelineKeyframes,
+    onSetPinnedKeyframes: setPinnedTimelineKeyframes,
     onTrimLayerIn: trimSelectedLayerInPoint,
     onTrimLayerOut: trimSelectedLayerOutPoint,
     onSplitLayer: splitSelectedLayerAtPlayhead,
@@ -993,6 +994,9 @@ function boot(root: HTMLDivElement): void {
         disabled: () => !selectedEntry() || !hasTransformPoseClipboard()
       }),
       command("timeline.set-visible", "Set Keys On Visible Rows", "Keyframes", () => setVisibleTimelineKeyframes(timelinePanel.visibleRowTargetsList()), { keywords: ["rows", "channels"] }),
+      command("timeline.set-pinned", "Set Keys On Pinned Rows", "Keyframes", setPinnedTimelineKeyframes, {
+        keywords: ["pin", "pinned", "favorite", "keying set", "rows", "channels"]
+      }),
       command("timeline.copy", "Copy Selected Keyframes", "Keyframes", () => copyTimelineKeyframes(), {
         shortcut: "Ctrl+C",
         disabled: () => !hasTimelineKeyframeTarget()
@@ -2948,10 +2952,14 @@ function boot(root: HTMLDivElement): void {
     showToast(`${entry.name} pose keys set at ${formatNumber(time)}s`, "good");
   }
 
-  function setVisibleTimelineKeyframes(rows: TimelineVisibleRowTarget[]): void {
+  function setPinnedTimelineKeyframes(): void {
+    setVisibleTimelineKeyframes(timelinePanel.pinnedRowTargetsList(), "pinned");
+  }
+
+  function setVisibleTimelineKeyframes(rows: TimelineVisibleRowTarget[], rowScope = "visible"): void {
     const targets = dedupeTimelineRowTargets(rows);
     if (targets.length === 0) {
-      showToast("No visible timeline rows to key.", "bad");
+      showToast(`No ${rowScope} timeline rows to key.`, "bad");
       return;
     }
 
@@ -2965,7 +2973,7 @@ function boot(root: HTMLDivElement): void {
     });
 
     if (keyableTargets.length === 0) {
-      showToast(lockedCount > 0 ? "All visible timeline rows are locked." : "No keyable visible timeline rows.", "bad");
+      showToast(lockedCount > 0 ? `All ${rowScope} timeline rows are locked.` : `No keyable ${rowScope} timeline rows.`, "bad");
       return;
     }
 
@@ -3009,7 +3017,7 @@ function boot(root: HTMLDivElement): void {
     timelinePanel.selectKeyframes(keyframeIds);
 
     const skipped = lockedCount > 0 ? ` (${lockedCount} locked skipped)` : "";
-    showToast(`${keyframeIds.length} visible ${keyframeIds.length === 1 ? "key" : "keys"} set at ${formatNumber(time)}s${skipped}`, "good");
+    showToast(`${keyframeIds.length} ${rowScope} ${keyframeIds.length === 1 ? "key" : "keys"} set at ${formatNumber(time)}s${skipped}`, "good");
   }
 
   function trimSelectedLayerInPoint(): void {

@@ -114,6 +114,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-add-keyframe" type="button"><span data-icon="DiamondPlus"></span><span>Set Key</span></button>
               <button class="mini-button" id="timeline-set-transform" type="button"><span data-icon="Box"></span><span>Set TRS</span></button>
               <button class="mini-button" id="timeline-set-visible" type="button" title="Set keys on every currently visible timeline row"><span data-icon="ListChecks"></span><span>Set Visible</span></button>
+              <button class="mini-button" id="timeline-set-pinned" type="button" title="Set keys on every pinned timeline row"><span data-icon="Pin"></span><span>Set Pinned</span></button>
               <button class="mini-button" id="timeline-layer-in" type="button" title="Trim selected layer in at the playhead (Alt+[)"><span data-icon="LogIn"></span><span>Layer In</span></button>
               <button class="mini-button" id="timeline-layer-out" type="button" title="Trim selected layer out at the playhead (Alt+])"><span data-icon="LogOut"></span><span>Layer Out</span></button>
               <button class="mini-button" id="timeline-split-layer" type="button" title="Split selected layer at the playhead (Ctrl+Shift+D)"><span data-icon="Scissors"></span><span>Split</span></button>
@@ -677,7 +678,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on the active timeline track.</p></div>
               <div class="quick-help-item"><strong>Set TRS</strong><span>Timeline toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
               <div class="quick-help-item"><strong>Auto-Key</strong><span>Timeline setting</span><p>After an initial key exists, changed values are recorded at the playhead.</p></div>
-              <div class="quick-help-item"><strong>Pin Rows</strong><span>Row star / Shift+P / Toolbar pin</span><p>Keep important tracks visible, bulk-pin visible rows, and jump directly to Focus, Keyed, Pinned, or All row filters from Commands.</p></div>
+              <div class="quick-help-item"><strong>Pin Rows</strong><span>Row star / Shift+P / Set Pinned</span><p>Keep important tracks visible, bulk-pin visible rows, and use pinned rows as a reusable keying set.</p></div>
               <div class="quick-help-item"><strong>Reveal Position / Rotation / Scale</strong><span>Alt+P / Alt+R / Alt+S</span><p>Show the common transform rows quickly.</p></div>
               <div class="quick-help-item"><strong>Graph</strong><span>Timeline toolbar</span><p>Show value curves for the active track.</p></div>
             </section>

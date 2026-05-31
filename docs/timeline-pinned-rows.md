@@ -15,9 +15,12 @@ timeline rows and switch the row filter to `Pinned Rows`.
 - The toolbar pin button pins every currently visible timeline row. This is
   useful after using row search or reveal shortcuts to isolate a set of tracks.
 - The toolbar pin-off button clears all pinned timeline rows.
+- `Set Pinned` records keys on every pinned row, even when row search or the
+  current filter hides those rows. This makes pinned rows work as a reusable
+  keying set for Position/Rotation/Scale, camera, light, or material channels.
 - The command palette includes `Pin Active Timeline Row`, `Pin Visible Timeline
-  Rows`, `Unpin Visible Timeline Rows`, `Clear Pinned Timeline Rows`, and `Show
-  Pinned Timeline Rows`.
+  Rows`, `Unpin Visible Timeline Rows`, `Clear Pinned Timeline Rows`, `Show
+  Pinned Timeline Rows`, and `Set Keys On Pinned Rows`.
 - `Pinned Rows` in the timeline row filter shows pinned rows plus the active
   row. The filter label shows the current pinned-row count.
 - Pinned rows also remain visible in `Focus Rows` and `Keyed Rows`, so important
@@ -46,4 +49,5 @@ Automated browser coverage lives in `Source/tests/timeline-pinned-rows.spec.ts`.
 The test pins a Rotation row, switches to `Pinned Rows`, confirms unrelated
 rows hide, reloads the app, confirms the pinned row and filter persist, then
 covers bulk visible-row pinning and clearing through the toolbar and command
-palette.
+palette. It also verifies that `Set Keys On Pinned Rows` can key a pinned row
+while that row is hidden by row search.
