@@ -136,9 +136,10 @@ type TimelineUiKeyframe = TimelineKeyframe & {
 };
 
 type TimelineUiRow = TimelineRow & {
-  targetId: string;
-  trackKind: TimelineTrackKind;
+  targetId?: string;
+  trackKind?: TimelineTrackKind;
   axis?: TimelineAxis;
+  group?: boolean;
 };
 
 type TimelineRowFilter = "focus" | "keyed" | "all";
@@ -198,6 +199,7 @@ const ROW_SEARCH_STORAGE_KEY = "geometry-studio-timeline-row-search";
 const DOCK_HEIGHT_STORAGE_KEY = "geometry-studio-timeline-dock-height";
 const FOLLOW_PLAYHEAD_STORAGE_KEY = "geometry-studio-timeline-follow-playhead";
 const LAYER_STRIP_COLLAPSED_STORAGE_KEY = "geometry-studio-timeline-layer-strip-collapsed";
+const COLLAPSED_GROUPS_STORAGE_KEY = "geometry-studio-timeline-collapsed-groups";
 const ROW_FILTER_SEQUENCE: TimelineRowFilter[] = ["focus", "keyed", "all"];
 const MIN_DOCK_HEIGHT = 190;
 const DEFAULT_ROW_HEIGHT = 30;
@@ -305,6 +307,7 @@ export class KeyframeTimelinePanel {
   private rowSearchText = loadTimelineRowSearch();
   private followPlayhead = loadTimelineFollowPlayhead();
   private layerStripCollapsed = loadLayerStripCollapsed();
+  private collapsedTimelineGroups = loadCollapsedTimelineGroups();
   private dopeSheetTool: TimelineDopeSheetTool = "selection";
   private readonly valueGraph: TimelineValueGraph;
   private resizeState: { pointerId: number; startY: number; startHeight: number } | null = null;
@@ -864,6 +867,12 @@ export class KeyframeTimelinePanel {
     this.lockTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackLock(this.selectedTrackKind()));
     this.soloTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackSolo(this.selectedTrackKind()));
     this.labels.addEventListener("click", (event) => {
+      const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
+      if (group) {
+        const targetId = group.dataset.groupTargetId;
+        if (targetId) this.toggleTimelineGroup(targetId);
+        return;
+      }
       const keyButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-key");
       const switchButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-switch");
       const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
@@ -886,6 +895,15 @@ export class KeyframeTimelinePanel {
     });
     this.labels.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
+      const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
+      if (group) {
+        const targetId = group.dataset.groupTargetId;
+        if (targetId) {
+          event.preventDefault();
+          this.toggleTimelineGroup(targetId);
+        }
+        return;
+      }
       const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
       if (!row || event.target instanceof HTMLButtonElement) return;
       const kind = row.dataset.trackKind as TimelineTrackKind | undefined;
@@ -1098,6 +1116,17 @@ export class KeyframeTimelinePanel {
     this.rowSearchInput.value = this.rowSearchText;
     storeTimelineRowSearch(this.rowSearchText);
     if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+  }
+
+  private toggleTimelineGroup(targetId: string): void {
+    if (this.collapsedTimelineGroups.has(targetId)) this.collapsedTimelineGroups.delete(targetId);
+    else this.collapsedTimelineGroups.add(targetId);
+    storeCollapsedTimelineGroups(this.collapsedTimelineGroups);
+    if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+  }
+
+  private isTimelineGroupCollapsed(targetId: string): boolean {
+    return !this.hasRowSearch() && this.collapsedTimelineGroups.has(targetId);
   }
 
   private lockDockScroll(): void {
@@ -1634,7 +1663,22 @@ export class KeyframeTimelinePanel {
         const objectTimeline = objectTimelines.get(entry.id);
         const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
         const visibleRows = this.filteredRowDescriptors(entry.name, visibleKinds, true);
-        return visibleRows.map((row) => {
+        if (visibleRows.length === 0) return [];
+        const collapsed = this.isTimelineGroupCollapsed(entry.id);
+        const groupLabel = this.renderTimelineGroupLabel({
+          targetId: entry.id,
+          targetName: entry.name,
+          targetType: "Object",
+          color: "#".concat(entry.color.getHexString()),
+          active: entry.id === selectedId,
+          collapsed,
+          rowCount: visibleRows.length,
+          keyframeCount: countTrackKeyframes(objectTimeline?.tracks)
+        });
+        if (collapsed) return [groupLabel];
+        return [
+          groupLabel,
+          ...visibleRows.map((row) => {
           const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
           return this.renderTrackLabel({
             targetId: entry.id,
@@ -1650,12 +1694,27 @@ export class KeyframeTimelinePanel {
             hasPlayheadKey: hasPlayheadKey(track, timelineDocument.currentTime),
             valueText: this.objectRowValueText(entry, row.kind, row.axis)
           });
-        });
+          })
+        ];
       })
       .join("");
     const cameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId);
     const cameraRows = this.filteredRowDescriptors("Camera", cameraKinds, true);
-    const cameraLabels = cameraRows.map((row) => {
+    const cameraCollapsed = this.isTimelineGroupCollapsed(CAMERA_TARGET_ID);
+    const cameraGroupLabel = cameraRows.length > 0
+      ? this.renderTimelineGroupLabel({
+          targetId: CAMERA_TARGET_ID,
+          targetName: "Camera",
+          targetType: "Camera",
+          color: TRACK_COLORS.cameraPosition,
+          active: isCameraTrack(activeKind),
+          collapsed: cameraCollapsed,
+          rowCount: cameraRows.length,
+          keyframeCount: countTrackKeyframes(timelineDocument.camera.tracks),
+          extraClass: "camera-track-group"
+        })
+      : "";
+    const cameraLabels = cameraCollapsed ? "" : cameraRows.map((row) => {
       const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === row.kind);
       return this.renderTrackLabel({
         targetId: CAMERA_TARGET_ID,
@@ -1675,7 +1734,21 @@ export class KeyframeTimelinePanel {
     }).join("");
     const lightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId);
     const lightRows = this.filteredRowDescriptors("Lights", lightKinds, true);
-    const lightLabels = lightRows.map((row) => {
+    const lightCollapsed = this.isTimelineGroupCollapsed(LIGHT_TARGET_ID);
+    const lightGroupLabel = lightRows.length > 0
+      ? this.renderTimelineGroupLabel({
+          targetId: LIGHT_TARGET_ID,
+          targetName: "Lights",
+          targetType: "Lights",
+          color: TRACK_COLORS.spotIntensity,
+          active: isLightTrack(activeKind),
+          collapsed: lightCollapsed,
+          rowCount: lightRows.length,
+          keyframeCount: countTrackKeyframes(timelineDocument.lights.tracks),
+          extraClass: "light-track-group"
+        })
+      : "";
+    const lightLabels = lightCollapsed ? "" : lightRows.map((row) => {
       const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === row.kind);
       return this.renderTrackLabel({
         targetId: LIGHT_TARGET_ID,
@@ -1694,7 +1767,33 @@ export class KeyframeTimelinePanel {
       });
     }).join("");
     const emptyMessage = this.hasRowSearch() ? `No rows match "${escapeHtml(this.rowSearchText)}"` : "Select an object to keyframe";
-    return `${objectLabels}${cameraLabels}${lightLabels}` || `<div class="timeline-empty">${emptyMessage}</div>`;
+    return `${objectLabels}${cameraGroupLabel}${cameraLabels}${lightGroupLabel}${lightLabels}` || `<div class="timeline-empty">${emptyMessage}</div>`;
+  }
+
+  private renderTimelineGroupLabel(options: {
+    targetId: string;
+    targetName: string;
+    targetType: string;
+    color: string;
+    active: boolean;
+    collapsed: boolean;
+    rowCount: number;
+    keyframeCount: number;
+    extraClass?: string;
+  }): string {
+    const rowText = options.rowCount === 1 ? "1 row" : `${options.rowCount} rows`;
+    const keyText = options.keyframeCount === 1 ? "1 key" : `${options.keyframeCount} keys`;
+    const stateText = options.collapsed ? "Expand" : "Collapse";
+    return `
+      <div class="${["timeline-track-group", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group">
+        <span class="timeline-group-toggle" aria-hidden="true"><span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span></span>
+        <span class="track-swatch" style="background:${options.color}"></span>
+        <span class="track-label-text">
+          <strong>${escapeHtml(options.targetName)}</strong>
+          <small>${options.targetType} | ${rowText} | ${keyText}</small>
+        </span>
+      </div>
+    `;
   }
 
   private renderTrackLabel(options: {
@@ -1818,6 +1917,10 @@ export class KeyframeTimelinePanel {
       const objectTimeline = objectTimelines.get(entry.id);
       const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
       const visibleRows = this.filteredRowDescriptors(entry.name, visibleKinds, true);
+      if (visibleRows.length === 0) return;
+      const collapsed = this.isTimelineGroupCollapsed(entry.id);
+      rows.push(this.timelineGroupRow(entry.id, rowHeight, collapsed));
+      if (collapsed) return;
       visibleRows.forEach((row, index) => {
         const track = objectTimeline?.tracks.find((candidate) => candidate.kind === row.kind);
         const locked = Boolean(track?.locked);
@@ -1859,7 +1962,9 @@ export class KeyframeTimelinePanel {
     });
     const visibleCameraKinds = this.visibleTrackKinds(CAMERA_TRACKS, timelineDocument.camera.tracks, CAMERA_TARGET_ID, selectedId);
     const visibleCameraRows = this.filteredRowDescriptors("Camera", visibleCameraKinds, true);
-    visibleCameraRows.forEach((row, index) => {
+    const cameraCollapsed = this.isTimelineGroupCollapsed(CAMERA_TARGET_ID);
+    if (visibleCameraRows.length > 0) rows.push(this.timelineGroupRow(CAMERA_TARGET_ID, rowHeight, cameraCollapsed, "rgba(238,244,255,0.9)"));
+    if (!cameraCollapsed) visibleCameraRows.forEach((row, index) => {
       const track = timelineDocument.camera.tracks.find((candidate) => candidate.kind === row.kind);
       const locked = Boolean(track?.locked);
       rows.push({
@@ -1899,7 +2004,9 @@ export class KeyframeTimelinePanel {
     });
     const visibleLightKinds = this.visibleTrackKinds(LIGHT_TRACKS, timelineDocument.lights.tracks, LIGHT_TARGET_ID, selectedId);
     const visibleLightRows = this.filteredRowDescriptors("Lights", visibleLightKinds, true);
-    visibleLightRows.forEach((row, index) => {
+    const lightCollapsed = this.isTimelineGroupCollapsed(LIGHT_TARGET_ID);
+    if (visibleLightRows.length > 0) rows.push(this.timelineGroupRow(LIGHT_TARGET_ID, rowHeight, lightCollapsed, "rgba(255,247,229,0.9)"));
+    if (!lightCollapsed) visibleLightRows.forEach((row, index) => {
       const track = timelineDocument.lights.tracks.find((candidate) => candidate.kind === row.kind);
       const locked = Boolean(track?.locked);
       rows.push({
@@ -1938,6 +2045,32 @@ export class KeyframeTimelinePanel {
       });
     });
     return { rows };
+  }
+
+  private timelineGroupRow(targetId: string, rowHeight: number, collapsed: boolean, fillColor = "rgba(225,234,238,0.78)"): TimelineUiRow {
+    return {
+      targetId,
+      group: true,
+      min: 0,
+      max: this.lastTimelineDocument?.duration ?? 8,
+      keyframesDraggable: false,
+      groupsDraggable: false,
+      style: {
+        height: rowHeight,
+        marginBottom: collapsed ? 8 : 2,
+        fillColor,
+        keyframesStyle: {
+          width: 0,
+          height: 0,
+          fillColor: "transparent",
+          selectedFillColor: "transparent",
+          strokeColor: "transparent",
+          selectedStrokeColor: "transparent",
+          strokeThickness: 0
+        }
+      },
+      keyframes: []
+    };
   }
 
   private currentInterpolation(timelineDocument: SceneTimelineDocument, selectedId: string): TimelineInterpolation {
@@ -2283,7 +2416,7 @@ export class KeyframeTimelinePanel {
 
   private scrollActiveRowIntoView(): void {
     window.requestAnimationFrame(() => {
-      this.labels.querySelector<HTMLElement>(".timeline-track-label.active")?.scrollIntoView({ block: "nearest" });
+      this.labels.querySelector<HTMLElement>(".timeline-track-label.active, .timeline-track-group.active")?.scrollIntoView({ block: "nearest" });
     });
   }
 
@@ -2473,6 +2606,26 @@ function storeLayerStripCollapsed(collapsed: boolean): void {
   }
 }
 
+function loadCollapsedTimelineGroups(): Set<string> {
+  try {
+    const value = window.localStorage.getItem(COLLAPSED_GROUPS_STORAGE_KEY);
+    const parsed = value ? JSON.parse(value) as unknown : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function storeCollapsedTimelineGroups(groups: Set<string>): void {
+  try {
+    const values = [...groups].sort();
+    if (values.length > 0) window.localStorage.setItem(COLLAPSED_GROUPS_STORAGE_KEY, JSON.stringify(values));
+    else window.localStorage.removeItem(COLLAPSED_GROUPS_STORAGE_KEY);
+  } catch {
+    // Group collapse state is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
 function parseTimelineRowFilter(value: string | null): TimelineRowFilter {
   return value === "keyed" || value === "all" || value === "focus" ? value : "focus";
 }
@@ -2485,6 +2638,10 @@ function rowFilterLabel(filter: TimelineRowFilter): string {
 
 function parseTimelineAxis(value: string | undefined): TimelineAxis | null {
   return value === "x" || value === "y" || value === "z" ? value : null;
+}
+
+function countTrackKeyframes(tracks: TimelineTrackDocument[] | undefined): number {
+  return tracks?.reduce((count, track) => count + track.keyframes.length, 0) ?? 0;
 }
 
 function isTimelineInterpolation(value: string): value is TimelineInterpolation {

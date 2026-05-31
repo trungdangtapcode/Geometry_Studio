@@ -34,7 +34,12 @@ export function timelineRowMatchesSearch(targetName: string, kind: TimelineTrack
   const query = normalizeSearch(search);
   if (!query) return true;
   const haystack = timelineRowSearchText(targetName, kind, axis);
-  return query.split(" ").every((part) => haystack.includes(part));
+  const axisTokens = timelineAxisSearchTokens(kind, axis);
+  return query.split(" ").every((part) =>
+    SINGLE_TOKEN_AXIS_QUERIES.has(part)
+      ? axisTokens.has(part)
+      : haystack.includes(part)
+  );
 }
 
 function timelineRowSearchText(targetName: string, kind: TimelineTrackKind, axis?: TimelineAxis): string {
@@ -46,6 +51,15 @@ function timelineRowSearchText(targetName: string, kind: TimelineTrackKind, axis
     ...TRACK_SEARCH_ALIASES[kind]
   ].join(" "));
 }
+
+function timelineAxisSearchTokens(kind: TimelineTrackKind, axis?: TimelineAxis): Set<string> {
+  return new Set(normalizeSearch([
+    trackLabel(kind, axis),
+    axis ?? ""
+  ].join(" ")).split(" ").filter(Boolean));
+}
+
+const SINGLE_TOKEN_AXIS_QUERIES = new Set(["x", "y", "z", "r", "g", "b", "u", "v"]);
 
 function normalizeSearch(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();

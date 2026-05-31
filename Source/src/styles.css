@@ -945,6 +945,44 @@ svg {
   text-align: left;
 }
 
+.timeline-track-group {
+  width: 100%;
+  height: var(--timeline-track-row-height);
+  display: grid;
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--grid-gap);
+  border: 0;
+  border-bottom: 1px solid rgba(26, 35, 42, 0.1);
+  background: rgba(225, 234, 238, 0.76);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0 var(--timeline-header-padding-x);
+  text-align: left;
+}
+
+.timeline-track-group:hover,
+.timeline-track-group.active {
+  background: rgba(32, 191, 169, 0.12);
+}
+
+.timeline-track-group.active {
+  box-shadow: inset 3px 0 0 var(--teal);
+}
+
+.timeline-track-group.collapsed {
+  border-bottom-color: rgba(26, 35, 42, 0.16);
+}
+
+.timeline-group-toggle {
+  width: calc(var(--icon-mini-size) - 4px);
+  height: calc(var(--timeline-track-row-height) - 4px);
+  display: grid;
+  place-items: center;
+  color: rgba(26, 35, 42, 0.62);
+}
+
 .timeline-track-label:hover,
 .timeline-track-label.active {
   background: rgba(32, 191, 169, 0.12);
