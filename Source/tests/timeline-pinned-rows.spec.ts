@@ -27,3 +27,20 @@ test("pins timeline rows and filters to pinned rows", async ({ page }) => {
   await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toBeVisible();
   await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toHaveClass(/pinned-track/);
 });
+
+test("pins the active timeline row from keyboard and command palette", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("geometry-studio-timeline-pinned-rows");
+    window.localStorage.removeItem("geometry-studio-timeline-row-filter");
+  });
+  await page.goto("/");
+
+  await page.locator("#timeline-track-kind").selectOption("rotation");
+  await page.keyboard.press("Shift+P");
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).toHaveClass(/pinned-track/);
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-search").fill("pin active timeline row");
+  await page.keyboard.press("Enter");
+  await expect(page.locator('.timeline-track-label[data-track-kind="rotation"]').first()).not.toHaveClass(/pinned-track/);
+});

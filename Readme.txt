@@ -103,6 +103,7 @@ Geometry_Studio/docs/beginner-tutorial.md
 - Shift+B: fit Work In/Out to the selected timeline keyframes.
 - Ctrl+Shift+A: select active-track keyframes inside Work In/Out.
 - U: cycle timeline row visibility through Focus, Keyed, Pinned, and All Rows.
+- Shift+P: pin or unpin the active timeline row.
 - Plus / Minus / 0: zoom the timeline in, zoom out, or fit the duration.
 - Alt+Mouse Wheel or Ctrl/Cmd+Mouse Wheel over the timeline: zoom around the cursor.
 - Shift+Mouse Wheel or horizontal trackpad wheel over the timeline: pan horizontally.

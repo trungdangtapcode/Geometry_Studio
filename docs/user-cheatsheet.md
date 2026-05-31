@@ -176,6 +176,7 @@ Scale recorded together.
 | `U` | Cycle Focus, Keyed, Pinned, All Rows |
 | `V`, `H` | Timeline selection tool, timeline pan tool |
 | `Alt+P`, `Alt+R`, `Alt+S` | Reveal Position, Rotation, Scale rows |
+| `Shift+P` | Pin or unpin the active timeline row |
 | `Alt+C`, `Alt+T`, `Alt+M`, `Alt+U` | Reveal Color, Opacity, Material, Texture rows |
 | `F9` | Easy Ease |
 | `Shift+F9` | Linear |

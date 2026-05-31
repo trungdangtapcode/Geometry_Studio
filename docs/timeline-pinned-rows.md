@@ -11,6 +11,8 @@ timeline rows and switch the row filter to `Pinned Rows`.
 - Every timeline property row has a star action beside the eye/solo/lock
   controls.
 - Clicking the star pins or unpins the whole track row.
+- `Shift+P` pins or unpins the active timeline row.
+- The command palette includes `Pin Active Timeline Row`.
 - `Pinned Rows` in the timeline row filter shows pinned rows plus the active
   row.
 - Pinned rows also remain visible in `Focus Rows` and `Keyed Rows`, so important

@@ -1102,6 +1102,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["auto scroll", "current time indicator", "timeline view"]
       }),
       command("timeline.rows", "Cycle Timeline Row Filter", "View", () => showToast(`Timeline rows: ${timelinePanel.cycleRowFilter()}`, "good"), { shortcut: "U", keywords: ["focus", "keyed", "all"] }),
+      command("timeline.pin-active-row", "Pin Active Timeline Row", "View", toggleActiveTimelineRowPin, {
+        shortcut: "Shift+P",
+        keywords: ["pin", "pinned", "star", "row", "track", "timeline"]
+      }),
       command("timeline.collapse-groups", "Collapse Timeline Groups", "View", collapseTimelineGroups, {
         keywords: ["layers", "disclosure", "twirl", "fold", "after effects"]
       }),
@@ -1867,6 +1871,11 @@ function boot(root: HTMLDivElement): void {
     if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "u") {
       event.preventDefault();
       revealTimelineRows("objectTextureSource", "texture", "Texture");
+      return;
+    }
+    if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && key === "p") {
+      event.preventDefault();
+      toggleActiveTimelineRowPin();
       return;
     }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "v") {
@@ -2756,6 +2765,11 @@ function boot(root: HTMLDivElement): void {
   function toggleTimelineFollowPlayhead(): void {
     const enabled = timelinePanel.toggleFollowPlayhead();
     showToast(`Follow playhead ${enabled ? "enabled" : "disabled"}`, "good");
+  }
+
+  function toggleActiveTimelineRowPin(): void {
+    const result = timelinePanel.toggleActiveRowPin();
+    showToast(result ? `${result.label} row ${result.pinned ? "pinned" : "unpinned"}` : "No active timeline row to pin.", result ? "good" : "bad");
   }
 
   function collapseTimelineGroups(): void {

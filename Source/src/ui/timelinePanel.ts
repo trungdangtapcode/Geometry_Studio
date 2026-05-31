@@ -595,6 +595,19 @@ export class KeyframeTimelinePanel {
     return rowFilterLabel(next);
   }
 
+  toggleActiveRowPin(): { pinned: boolean; label: string } | null {
+    const targetId = this.activeRowTargetId();
+    const kind = this.selectedTrackKind();
+    if (!targetId) return null;
+    const key = timelineRowKey(targetId, kind);
+    const pinned = !this.pinnedRows.has(key);
+    if (pinned) this.pinnedRows.add(key);
+    else this.pinnedRows.delete(key);
+    storePinnedTimelineRows(this.pinnedRows);
+    if (this.lastTimelineDocument) this.update(this.lastTimelineDocument, this.lastEntries, this.lastSelectedId, this.lastPlaying);
+    return { pinned, label: trackLabel(kind) };
+  }
+
   collapseAllTimelineGroups(): number {
     return this.setAllTimelineGroupsCollapsed(true);
   }
@@ -1350,6 +1363,13 @@ export class KeyframeTimelinePanel {
 
   private isPinnedRow(targetId: string, kind: TimelineTrackKind): boolean {
     return this.pinnedRows.has(timelineRowKey(targetId, kind));
+  }
+
+  private activeRowTargetId(): string | null {
+    const kind = this.selectedTrackKind();
+    if (isCameraTrack(kind)) return CAMERA_TARGET_ID;
+    if (isLightTrack(kind)) return LIGHT_TARGET_ID;
+    return this.lastSelectedId || null;
   }
 
   private pinnedObjectIds(): Set<string> {
