@@ -859,6 +859,7 @@ export function studioTemplate(): string {
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Retiming</h3>
               <div class="quick-help-item"><strong>Interpolation</strong><span>Dropdown / F9</span><p>Select a keyframe, then apply Linear, Easy Ease, Hold, Back In, or Back Out timing from the toolbar.</p></div>
+              <div class="quick-help-item"><strong>Copy / Paste Ease</strong><span>Command Palette</span><p>Reuse one keyframe's interpolation and In/Out ease strength on other selected keyframes.</p></div>
               <div class="quick-help-item"><strong>Move To Playhead</strong><span>Shift+Enter</span><p>Move selected key timing so the block starts at the playhead.</p></div>
               <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
               <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>

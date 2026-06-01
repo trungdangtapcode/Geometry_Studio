@@ -276,7 +276,9 @@ Interpolation options:
 `Ease %` controls both sides of the selected keyframe's interpolation: `0` makes
 the timing behave like Linear, `100` is the normal curve, and `200` exaggerates
 the curve. `In %` affects the segment ending at the keyframe. `Out %` affects
-the segment starting at the keyframe.
+the segment starting at the keyframe. Use Command Palette commands `Copy
+Keyframe Ease` and `Paste Keyframe Ease` when you want the same timing feel on
+another selected key or track.
 
 ## 16. Work Area And Playback
 

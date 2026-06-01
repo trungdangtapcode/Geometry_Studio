@@ -179,6 +179,14 @@ interface TransformPoseClipboard {
   scale: [number, number, number];
 }
 
+interface TimelineEaseClipboard {
+  sourceLabel: string;
+  interpolation: TimelineInterpolation;
+  easeStrength: number;
+  easeInStrength: number;
+  easeOutStrength: number;
+}
+
 interface CleanViewSnapshot {
   gridVisible: boolean;
   axesVisible: boolean;
@@ -254,6 +262,7 @@ function boot(root: HTMLDivElement): void {
   let previewChunks: Blob[] = [];
   let previewRecordingRange: { start: number; end: number } | null = null;
   let timelineClipboard: TimelineClipboard | null = null;
+  let timelineEaseClipboard: TimelineEaseClipboard | null = null;
   let transformPoseClipboard: TransformPoseClipboard | null = null;
   let pendingDragSnapshot: SceneDocument | null = null;
   let pendingCanvasPick: { pointerId: number; x: number; y: number } | null = null;
@@ -1363,6 +1372,14 @@ function boot(root: HTMLDivElement): void {
         shortcut: "Alt+F9",
         disabled: () => !hasTimelineKeyframeTarget()
       }),
+      command("timeline.copy-ease", "Copy Keyframe Ease", "Interpolation", copyTimelineKeyframeEase, {
+        keywords: ["copy easing", "copy velocity", "temporal interpolation", "graph editor", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.paste-ease", "Paste Keyframe Ease", "Interpolation", pasteTimelineKeyframeEase, {
+        keywords: ["paste easing", "paste velocity", "temporal interpolation", "graph editor", "after effects", "ae"],
+        disabled: () => !hasTimelineEaseClipboard() || !hasTimelineKeyframeTarget()
+      }),
 
       command("timeline.nudge-left", "Nudge Keyframes Left", "Retiming", () => nudgeTimelineKeyframes(-1), { disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.nudge-right", "Nudge Keyframes Right", "Retiming", () => nudgeTimelineKeyframes(1), { disabled: () => !hasTimelineKeyframeTarget() }),
@@ -1579,6 +1596,10 @@ function boot(root: HTMLDivElement): void {
 
   function hasTimelineClipboard(): boolean {
     return Boolean(timelineClipboard && timelineClipboard.keyframes.length > 0);
+  }
+
+  function hasTimelineEaseClipboard(): boolean {
+    return timelineEaseClipboard !== null;
   }
 
   function hasTransformPoseClipboard(): boolean {
@@ -5828,6 +5849,57 @@ function boot(root: HTMLDivElement): void {
     if (event.shiftKey) return "linear";
     if (event.altKey) return "hold";
     return "smooth";
+  }
+
+  function copyTimelineKeyframeEase(): void {
+    const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
+    if (sources.length === 0) {
+      showToast("Select a keyframe before copying ease.", "bad");
+      return;
+    }
+    const source = sources[0];
+    timelineEaseClipboard = {
+      sourceLabel: `${source.track.label} ${formatNumber(source.keyframe.time)}s`,
+      interpolation: source.keyframe.interpolation,
+      easeStrength: source.keyframe.easeStrength,
+      easeInStrength: source.keyframe.easeInStrength,
+      easeOutStrength: source.keyframe.easeOutStrength
+    };
+    showToast(
+      `Copied ${timelineInterpolationLabel(source.keyframe.interpolation)} ease from ${timelineEaseClipboard.sourceLabel}`,
+      "good"
+    );
+  }
+
+  function pasteTimelineKeyframeEase(): void {
+    if (!timelineEaseClipboard) {
+      showToast("Copy keyframe ease before pasting.", "bad");
+      return;
+    }
+    const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
+    if (sources.length === 0) {
+      showToast("Select target keyframes before pasting ease.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "pasting keyframe ease")) return;
+
+    recordHistory();
+    sources.forEach(({ keyframe }) => {
+      keyframe.interpolation = timelineEaseClipboard!.interpolation;
+      keyframe.easeStrength = timelineEaseClipboard!.easeStrength;
+      keyframe.easeInStrength = timelineEaseClipboard!.easeInStrength;
+      keyframe.easeOutStrength = timelineEaseClipboard!.easeOutStrength;
+    });
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(
+      `Pasted ${timelineInterpolationLabel(timelineEaseClipboard.interpolation)} ease to ${sources.length} keyframe${sources.length === 1 ? "" : "s"}`,
+      "good"
+    );
   }
 
   function resolveInterpolationTimelineKeyframeSources(keyframeIds: string[]) {

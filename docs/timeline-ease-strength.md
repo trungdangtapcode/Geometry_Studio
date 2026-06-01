@@ -23,6 +23,9 @@ Bezier velocity handles.
   Up/Down or drag vertically to adjust `Ease %`.
 - In Speed graph mode, choose `Both`, `In`, or `Out` before dragging/nudging to
   decide which ease side is edited.
+- Use Command Palette actions `Copy Keyframe Ease` and `Paste Keyframe Ease` to
+  reuse one keyframe's interpolation, `Ease %`, `In %`, and `Out %` on other
+  selected keyframes.
 - `0` makes the segment behave like linear timing.
 - `100` is the normal interpolation curve.
 - `200` exaggerates the selected curve.
