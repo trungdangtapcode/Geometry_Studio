@@ -264,6 +264,7 @@ function boot(root: HTMLDivElement): void {
   let timelineClipboard: TimelineClipboard | null = null;
   let timelineEaseClipboard: TimelineEaseClipboard | null = null;
   let transformPoseClipboard: TransformPoseClipboard | null = null;
+  let shuttlePauseHeld = false;
   let pendingDragSnapshot: SceneDocument | null = null;
   let pendingCanvasPick: { pointerId: number; x: number; y: number } | null = null;
   let pendingTransformAutoKeySeedValues: Record<TransformProperty, [number, number, number]> | null = null;
@@ -1056,6 +1057,10 @@ function boot(root: HTMLDivElement): void {
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     window.addEventListener("keydown", handleCommandPaletteShortcut, { capture: true });
     window.addEventListener("keydown", handleKeyboard);
+    window.addEventListener("keyup", handleKeyboardKeyUp);
+    window.addEventListener("blur", () => {
+      shuttlePauseHeld = false;
+    });
     window.addEventListener("pointerup", handlePointerEnd);
     window.addEventListener("pointercancel", handlePointerEnd);
     window.addEventListener("resize", resize);
@@ -2923,6 +2928,9 @@ function boot(root: HTMLDivElement): void {
     const key = event.key.toLowerCase();
     const code = event.code.toLowerCase();
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+    if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "k") {
+      shuttlePauseHeld = true;
+    }
     if (!event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && key === "escape" && hasSelectedTimelineKeyframes()) {
       event.preventDefault();
       deselectTimelineKeyframes();
@@ -3224,6 +3232,10 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "j") {
       event.preventDefault();
+      if (shuttlePauseHeld && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+        stepTimelineFrame(-1);
+        return;
+      }
       playTimeline(-1);
       return;
     }
@@ -3234,6 +3246,10 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "l") {
       event.preventDefault();
+      if (shuttlePauseHeld && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+        stepTimelineFrame(1);
+        return;
+      }
       playTimeline(1);
       return;
     }
@@ -3279,6 +3295,12 @@ function boot(root: HTMLDivElement): void {
         deleteTimelineKeyframes(selectedTimelineKeys);
       }
       else deleteSelected();
+    }
+  }
+
+  function handleKeyboardKeyUp(event: KeyboardEvent): void {
+    if (event.key.toLowerCase() === "k") {
+      shuttlePauseHeld = false;
     }
   }
 

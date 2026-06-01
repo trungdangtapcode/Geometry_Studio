@@ -237,6 +237,7 @@ Position, Rotation, and Scale recorded together.
 | `Space` | Play / stop |
 | `Shift+Space` | Preview selected keyframe range |
 | `J`, `K`, `L` | Play backward, stop, play forward |
+| Hold `K` + tap `J` / `L` | Step one frame backward / forward without starting playback |
 | `Left`, `Right` | Step one frame |
 | `Shift+Left`, `Shift+Right` | Previous / next keyframe on active track |
 | `Ctrl+Alt+Left`, `Ctrl+Alt+Right` | Previous / next visible-row keyframe |

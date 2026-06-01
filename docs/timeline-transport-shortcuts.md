@@ -12,6 +12,8 @@ timeline graph.
 - `J` plays the timeline backward through the active Work In/Out range.
 - `K` stops playback.
 - `L` plays the timeline forward through the active Work In/Out range.
+- Hold `K` and tap `J` or `L` to step one frame backward or forward without
+  starting playback, matching the common AE shuttle-stepping habit.
 - The timeline Speed selector can set `0.25x`, `0.5x`, `1x`, `2x`, or `4x`
   preview playback without changing FPS or keyframe timing.
 - Repeated `J` or `L` presses shuttle the current direction from slow speeds to

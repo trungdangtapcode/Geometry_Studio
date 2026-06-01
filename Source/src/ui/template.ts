@@ -851,7 +851,7 @@ export function studioTemplate(): string {
             <section class="quick-help-section" data-help-category="timeline shortcuts">
               <h3>Playback</h3>
               <div class="quick-help-item"><strong>Play / Stop</strong><span>Space</span><p>Preview the active Work In/Out range, then stop immediately from the same button.</p></div>
-              <div class="quick-help-item"><strong>Shuttle</strong><span>J / K / L</span><p>Play backward, stop, or play forward.</p></div>
+              <div class="quick-help-item"><strong>Shuttle</strong><span>J / K / L</span><p>Play backward, stop, or play forward. Hold K and tap J/L to step frames without entering playback.</p></div>
               <div class="quick-help-item"><strong>Step Frames</strong><span>Left / Right</span><p>Move the playhead one frame.</p></div>
               <div class="quick-help-item"><strong>Work In / Work Out</strong><span>B / N or I / O</span><p>Set the preview and WebM export range.</p></div>
               <div class="quick-help-item"><strong>Preview Selected</strong><span>Shift+Space</span><p>Play only the selected keyframe span.</p></div>

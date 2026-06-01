@@ -16,6 +16,8 @@ that time.
 - Selecting a speed while playing updates the active preview immediately.
 - `J` and `L` still work as shuttle controls. Repeating the current direction
   steps slow speeds up to `1x`, then to `2x`, then to `4x`.
+- Holding `K` while tapping `J` or `L` steps one frame backward or forward
+  without changing the shuttle speed or entering playback.
 - Switching direction preserves the selected speed instead of forcing the
   timeline back to `1x`.
 - `K` stops playback and resets shuttle speed to `1x`.
