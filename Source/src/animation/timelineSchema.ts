@@ -69,7 +69,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 11,
+    version: 12,
     duration: 8,
     workStart: 0,
     workEnd: 8,
@@ -105,7 +105,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 11,
+    version: 12,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     workStart: defaults.workStart,
     workEnd: defaults.workEnd,
@@ -207,7 +207,8 @@ export function createTimelineKeyframe(time: number, value: [number, number, num
     id: createTimelineId("keyframe"),
     time: roundTime(time),
     value,
-    interpolation: "linear"
+    interpolation: "linear",
+    easeStrength: 1
   };
 }
 
@@ -383,7 +384,8 @@ function normalizeKeyframe(value: unknown): TimelineKeyframeDocument | null {
       finiteNumber(keyframe.value[1], 0, -10000, 10000),
       finiteNumber(keyframe.value[2], 0, -10000, 10000)
     ],
-    interpolation: isTimelineInterpolation(keyframe.interpolation) ? keyframe.interpolation : "linear"
+    interpolation: isTimelineInterpolation(keyframe.interpolation) ? keyframe.interpolation : "linear",
+    easeStrength: finiteNumber(keyframe.easeStrength, 1, 0, 2)
   };
 }
 

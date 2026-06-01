@@ -39,6 +39,7 @@ export interface TimelineClipboardKeyframe {
   relativeTime: number;
   value: [number, number, number];
   interpolation: TimelineInterpolation;
+  easeStrength: number;
 }
 
 export interface TimelineClipboard {
@@ -112,6 +113,7 @@ export interface TimelineKeyframeEditPatch {
   time?: number;
   value?: Partial<Record<"x" | "y" | "z", number>>;
   valueDelta?: Partial<Record<"x" | "y" | "z", number>>;
+  easeStrength?: number;
 }
 
 export interface EditTimelineResult extends TimelineEditResult {
@@ -163,7 +165,8 @@ export function createTimelineClipboard(sources: TimelineKeyframeSource[], optio
       kind: track.kind,
       relativeTime: roundTime(keyframe.time - origin),
       value: [...keyframe.value] as [number, number, number],
-      interpolation: keyframe.interpolation
+      interpolation: keyframe.interpolation,
+      easeStrength: keyframe.easeStrength
     }))
   };
 }
@@ -227,10 +230,12 @@ export function pasteTimelineClipboard(
     if (existing) {
       existing.value = [...clip.value] as [number, number, number];
       existing.interpolation = clip.interpolation;
+      existing.easeStrength = clip.easeStrength;
       keyframeIds.push(existing.id);
     } else {
       const pastedKeyframe = createTimelineKeyframe(time, [...clip.value] as [number, number, number]);
       pastedKeyframe.interpolation = clip.interpolation;
+      pastedKeyframe.easeStrength = clip.easeStrength;
       track.keyframes.push(pastedKeyframe);
       keyframeIds.push(pastedKeyframe.id);
     }
@@ -260,6 +265,7 @@ export function duplicateResolvedKeyframes(
     }
     const duplicate = createTimelineKeyframe(nextTime, [...keyframe.value] as [number, number, number]);
     duplicate.interpolation = keyframe.interpolation;
+    duplicate.easeStrength = keyframe.easeStrength;
     track.keyframes.push(duplicate);
     keyframeIds.push(duplicate.id);
     sortTimelineKeyframes(track);
@@ -331,6 +337,7 @@ export function cycleResolvedKeyframesAcrossWorkArea(
 
         const cycled = createTimelineKeyframe(time, [...keyframe.value] as [number, number, number]);
         cycled.interpolation = keyframe.interpolation;
+        cycled.easeStrength = keyframe.easeStrength;
         track.enabled = true;
         track.keyframes.push(cycled);
         trackOccupancy.add(timeKey);
@@ -649,6 +656,14 @@ export function editResolvedKeyframes(
         source.keyframe.value[AXIS_INDEX[axis]] += deltaValue;
         changed = true;
       });
+    }
+
+    if (typeof patch.easeStrength === "number" && Number.isFinite(patch.easeStrength)) {
+      const nextStrength = Math.min(Math.max(patch.easeStrength, 0), 2);
+      if (Math.abs(source.keyframe.easeStrength - nextStrength) >= 0.0001) {
+        source.keyframe.easeStrength = nextStrength;
+        changed = true;
+      }
     }
 
     if (changed) {

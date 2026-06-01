@@ -236,6 +236,7 @@ export function studioTemplate(): string {
             <label><span id="timeline-key-x-label">X</span><input id="timeline-key-x" type="text" inputmode="decimal" disabled /></label>
             <label><span id="timeline-key-y-label">Y</span><input id="timeline-key-y" type="text" inputmode="decimal" disabled /></label>
             <label><span id="timeline-key-z-label">Z</span><input id="timeline-key-z" type="text" inputmode="decimal" disabled /></label>
+            <label><span>Ease %</span><input id="timeline-key-ease" type="number" min="0" max="200" step="5" disabled /></label>
             <label><span>Marker</span><input id="timeline-marker-label" type="text" maxlength="48" disabled /></label>
             <label><span>Color</span><input id="timeline-marker-color" type="color" value="#f4ad2f" disabled /></label>
             <div class="timeline-ease-preview" id="timeline-ease-preview" aria-label="Interpolation preview">

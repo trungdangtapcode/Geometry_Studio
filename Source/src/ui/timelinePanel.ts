@@ -150,6 +150,7 @@ export interface TimelineKeyframeEditPatch {
   time?: number;
   value?: Partial<Record<"x" | "y" | "z", number>>;
   valueDelta?: Partial<Record<"x" | "y" | "z", number>>;
+  easeStrength?: number;
 }
 
 type TimelineUiKeyframe = TimelineKeyframe & {
@@ -333,6 +334,7 @@ export class KeyframeTimelinePanel {
     y: query<HTMLInputElement>("#timeline-key-y"),
     z: query<HTMLInputElement>("#timeline-key-z")
   };
+  private readonly keyframeEaseInput = query<HTMLInputElement>("#timeline-key-ease");
   private readonly keyframeAxisLabels = {
     x: query<HTMLElement>("#timeline-key-x-label"),
     y: query<HTMLElement>("#timeline-key-y-label"),
@@ -1231,6 +1233,14 @@ export class KeyframeTimelinePanel {
         if (!patch) return;
         this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], patch);
       });
+    });
+    this.keyframeEaseInput.addEventListener("change", () => {
+      const value = Number(this.keyframeEaseInput.value);
+      if (!Number.isFinite(value)) {
+        this.restoreKeyframeEditor();
+        return;
+      }
+      this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { easeStrength: clamp(value / 100, 0, 2) });
     });
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
       this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);
@@ -3115,6 +3125,15 @@ export class KeyframeTimelinePanel {
     this.keyframeSpanInput.title = spanEditable
       ? "Stretch selected keyframe timing from the earliest selected key"
       : "Select keyframes at two or more different times before editing span";
+
+    this.keyframeEaseInput.disabled = sources.length === 0;
+    this.keyframeEaseInput.value = sources.length > 0
+      ? commonValue(sources.map((source) => source.keyframe.easeStrength * 100))
+      : "";
+    this.keyframeEaseInput.placeholder = sources.length > 1 ? "Mixed" : "";
+    this.keyframeEaseInput.title = sources.length > 0
+      ? "Adjust selected keyframe ease strength. 0 is linear timing, 100 is normal easing, 200 exaggerates the selected interpolation."
+      : "Select a keyframe before editing ease strength";
     if (!first) {
       this.keyframeLabel.textContent = "No keyframe selected";
     } else if (sources.length === 1) {

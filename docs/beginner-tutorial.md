@@ -271,6 +271,11 @@ Interpolation options:
 | Back In / Back Out | Overshoot style |
 | Hold | No interpolation; value jumps |
 
+`Ease %` controls the strength of the selected keyframe's interpolation:
+`0` makes that segment behave like Linear, `100` is the normal curve, and `200`
+exaggerates the curve. The segment after a keyframe uses that keyframe's
+interpolation and `Ease %`.
+
 ## 16. Work Area And Playback
 
 Work In and Work Out define the preview/export range.

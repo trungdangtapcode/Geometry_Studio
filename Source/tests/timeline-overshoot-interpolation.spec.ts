@@ -21,7 +21,13 @@ async function runCommand(page: Page, query: string): Promise<void> {
 
 async function exportedScene(page: Page): Promise<{
   selectedId: string;
-  timeline: { objects: Array<{ objectId: string; tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string }> }> }> };
+  timeline: {
+    version: number;
+    objects: Array<{
+      objectId: string;
+      tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string; easeStrength: number }> }>;
+    }>;
+  };
 }> {
   const previousCount = await page.evaluate(() => (window as unknown as { __sceneDownloads?: string[] }).__sceneDownloads?.length ?? 0);
   await page.evaluate(() => {
@@ -90,4 +96,55 @@ test("applies back out interpolation with visible overshoot playback", async ({ 
     .find((objectTimeline) => objectTimeline.objectId === scene.selectedId)
     ?.tracks.find((track) => track.kind === "position");
   expect(positionTrack?.keyframes.map((keyframe) => keyframe.interpolation)).toEqual(["backOut", "backOut"]);
+});
+
+test("edits keyframe ease strength and applies it during playback", async ({ page }) => {
+  test.setTimeout(120_000);
+  await installSceneDownloadCapture(page);
+  await page.goto("/");
+
+  await page.locator("#timeline-track-kind").selectOption("position");
+  await page.locator("#timeline-add-keyframe").click();
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator('.transform-input[data-prop="position"][data-axis="x"]').evaluate((input) => {
+    (input as HTMLInputElement).value = "2";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-add-keyframe").click();
+
+  await page.keyboard.press("Control+A");
+  await expect(page.locator("#timeline-selection")).toContainText("2 keyframes selected");
+  await page.locator("#timeline-ease-in").click();
+  await expect(page.locator("#timeline-key-ease")).toBeEnabled();
+
+  await page.locator("#timeline-key-ease").evaluate((input) => {
+    (input as HTMLInputElement).value = "0";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect.poll(async () => Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(1, 2);
+
+  await page.locator("#timeline-key-ease").evaluate((input) => {
+    (input as HTMLInputElement).value = "200";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-current-time").evaluate((input) => {
+    (input as HTMLInputElement).value = "1";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect.poll(async () => Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(0, 2);
+
+  const scene = await exportedScene(page);
+  const positionTrack = scene.timeline.objects
+    .find((objectTimeline) => objectTimeline.objectId === scene.selectedId)
+    ?.tracks.find((track) => track.kind === "position");
+  expect(scene.timeline.version).toBe(12);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.interpolation)).toEqual(["easeIn", "easeIn"]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeStrength)).toEqual([2, 2]);
 });

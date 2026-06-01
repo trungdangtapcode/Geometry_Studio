@@ -36,12 +36,12 @@ infrastructure.
 ## Data Model
 
 Light tracks were added with timeline version 4. The current timeline document
-uses version 9 after object appearance, material, texture, work-area, and marker
-features were added:
+uses version 12 after object appearance, material, texture, work-area, marker,
+graph, and ease-strength features were added:
 
 ```ts
 interface SceneTimelineDocument {
-  version: 11;
+  version: 12;
   duration: number;
   fps: number;
   currentTime: number;

@@ -17,7 +17,7 @@ export function evaluateTimelineTrack(track: TimelineTrackDocument, time: number
   if (left.interpolation === "hold") return [...left.value] as [number, number, number];
   const span = Math.max(right.time - left.time, 0.001);
   const rawT = clamp((time - left.time) / span, 0, 1);
-  const t = timelineInterpolationWeight(left.interpolation, rawT);
+  const t = timelineInterpolationWeight(left.interpolation, rawT, left.easeStrength);
   return [
     left.value[0] + (right.value[0] - left.value[0]) * t,
     left.value[1] + (right.value[1] - left.value[1]) * t,

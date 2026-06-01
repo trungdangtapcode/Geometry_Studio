@@ -21,6 +21,9 @@ Effects.
 - The vertical playhead line follows scrubbing and playback.
 - Hold, Linear, Ease In, Ease Out, and Easy Ease segments are drawn from the
   same evaluator used by runtime playback.
+- The keyframe detail editor exposes `Ease %`: `0` makes easing behave like
+  linear timing, `100` is normal easing, and `200` exaggerates the selected
+  interpolation curve.
 - Key points are drawn on top of the curves.
 - In Speed mode the graph shows velocity magnitude in units per second. The
   markers are locked because editing still happens in Value mode.
@@ -83,9 +86,11 @@ object also holds during playback.
 
 This graph version is intentionally focused:
 
-- It edits keyed channel values and keyframe time but does not yet allow Bezier
-  handle editing.
-- Speed mode is inspection-only. It does not yet edit temporal velocity handles.
+- It edits keyed channel values, keyframe time, and keyframe ease strength, but
+  does not yet allow Bezier handle editing.
+- Speed mode is inspection-only. It does not yet edit temporal velocity handles,
+  but `Ease %` provides a first durable temporal-control field that persists in
+  scene JSON.
 - It uses per-channel normalization so small changes remain visible.
 - It expands the visible value range slightly so graph keys can be dragged above
   or below the current key values without immediately hitting the panel edge.
@@ -116,3 +121,5 @@ The Playwright smoke workflow verifies that:
 - Undo restores the time and value before the graph drag.
 - Keyboard Up/Down nudges selected graph key values while preserving selected
   value spacing.
+- The keyframe `Ease %` field changes playback interpolation strength and saves
+  the `easeStrength` value into scene JSON.

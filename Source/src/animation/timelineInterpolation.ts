@@ -34,14 +34,21 @@ export function timelineInterpolationPath(interpolation: TimelineInterpolation):
   return "M4 28 L68 6";
 }
 
-export function timelineInterpolationWeight(interpolation: TimelineInterpolation, value: number): number {
+export function timelineInterpolationWeight(interpolation: TimelineInterpolation, value: number, easeStrength = 1): number {
   const t = clamp(value, 0, 1);
-  if (interpolation === "easeIn") return t * t;
-  if (interpolation === "easeOut") return 1 - (1 - t) * (1 - t);
-  if (interpolation === "smooth") return smoothstep(t);
-  if (interpolation === "backIn") return backIn(t);
-  if (interpolation === "backOut") return backOut(t);
-  return t;
+  const strength = clamp(easeStrength, 0, 2);
+  if (interpolation === "hold" || interpolation === "linear") return t;
+  const curved = interpolationCurve(interpolation, t);
+  return t + (curved - t) * strength;
+}
+
+function interpolationCurve(interpolation: TimelineInterpolation, value: number): number {
+  if (interpolation === "easeIn") return value * value;
+  if (interpolation === "easeOut") return 1 - (1 - value) * (1 - value);
+  if (interpolation === "smooth") return smoothstep(value);
+  if (interpolation === "backIn") return backIn(value);
+  if (interpolation === "backOut") return backOut(value);
+  return value;
 }
 
 function smoothstep(value: number): number {
