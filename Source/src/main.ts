@@ -353,6 +353,7 @@ function boot(root: HTMLDivElement): void {
     onDragStarted: beginTimelineDrag,
     onKeyframeMoved: moveTimelineKeyframe,
     onKeyframeValueChanged: moveTimelineKeyframeValue,
+    onKeyframeEaseChanged: moveTimelineKeyframeEase,
     onDragFinished: finishTimelineDrag,
     onSettingsChanged: updateTimelineSettings,
     onTogglePlayback: handleTransportButtonAction
@@ -6092,6 +6093,21 @@ function boot(root: HTMLDivElement): void {
     const axisIndex = axis === "x" ? 0 : axis === "y" ? 1 : 2;
     match.keyframe.value[axisIndex] = value;
     if (match.objectId && isObjectTransformTrackKind(match.track.kind)) clearPresetAnimationsForTimelineObjects([match.objectId]);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
+    syncMotionPath();
+  }
+
+  function moveTimelineKeyframeEase(keyframeId: string, easeStrength: number): void {
+    const match = findTimelineKeyframe(keyframeId);
+    if (!match || !Number.isFinite(easeStrength)) return;
+    if (match.track.locked) return;
+    if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
+    match.keyframe.easeStrength = clamp(easeStrength, 0, 2);
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();

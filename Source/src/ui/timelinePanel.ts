@@ -136,6 +136,7 @@ export interface KeyframeTimelineCallbacks {
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
   onKeyframeValueChanged(keyframeId: string, axis: TimelineAxis, value: number): void;
+  onKeyframeEaseChanged(keyframeId: string, easeStrength: number): void;
   onDragFinished(): void;
   onSettingsChanged(patch: TimelineSettingsPatch): void;
   onTogglePlayback(action: TimelineTransportButtonAction): void;
@@ -438,6 +439,7 @@ export class KeyframeTimelinePanel {
       onDragStarted: () => this.callbacks.onDragStarted(),
       onKeyframeMoved: (keyframeId, time) => this.callbacks.onKeyframeMoved(keyframeId, time),
       onKeyframeValueChanged: (keyframeId, axis, value) => this.callbacks.onKeyframeValueChanged(keyframeId, axis, value),
+      onKeyframeEaseChanged: (keyframeId, easeStrength) => this.callbacks.onKeyframeEaseChanged(keyframeId, easeStrength),
       onDragFinished: () => this.callbacks.onDragFinished()
     });
     this.timeline = new Timeline({

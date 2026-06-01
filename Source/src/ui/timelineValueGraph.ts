@@ -39,6 +39,7 @@ export interface TimelineValueGraphCallbacks {
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
   onKeyframeValueChanged(keyframeId: string, axis: TimelineAxis, value: number): void;
+  onKeyframeEaseChanged(keyframeId: string, easeStrength: number): void;
   onDragFinished(): void;
 }
 
@@ -85,6 +86,7 @@ type ValueGraphPoint = {
 };
 
 type ValueGraphDragState = {
+  mode: TimelineGraphMode;
   pointerId: number;
   startX: number;
   startY: number;
@@ -118,6 +120,7 @@ const GRAPH_MODE_STORAGE_KEY = "geometry-studio-timeline-graph-mode";
 const GRAPH_WIDTH = 520;
 const GRAPH_HEIGHT = 96;
 const GRAPH_SAMPLE_COUNT = 96;
+const EASE_STRENGTH_GRAPH_RANGE: ValueGraphRange = { min: 0, max: 2 };
 
 export class TimelineValueGraph {
   private graphVisible = loadTimelineGraphVisible();
@@ -223,7 +226,7 @@ export class TimelineValueGraph {
     this.elements.paths.x.setAttribute("d", graphPath(samples.map((sample) => ({ time: sample.time, value: sample.speed })), start, end, range));
     this.elements.paths.y.setAttribute("d", "");
     this.elements.paths.z.setAttribute("d", "");
-    this.renderSpeedKeyPoints(track, start, end, range, axisCount);
+    this.renderSpeedKeyPoints(context, start, end, range, axisCount);
     const speeds = samples.map((sample) => sample.speed);
     this.elements.range.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | Speed ${formatNumber(Math.min(...speeds))}..${formatNumber(Math.max(...speeds))}/s`;
   }
@@ -329,28 +332,52 @@ export class TimelineValueGraph {
   }
 
   private renderSpeedKeyPoints(
-    track: TimelineTrackDocument,
+    context: TimelineValueGraphRenderContext,
     start: number,
     end: number,
     range: ValueGraphRange,
     axisCount: 1 | 2 | 3
   ): void {
+    const { track } = context;
+    if (!track) return;
     this.elements.keyLayer.innerHTML = "";
+    const editable = isGraphEditableTrack(context.selectedKind) && !track.locked;
     [...track.keyframes]
       .sort((left, right) => left.time - right.time)
       .forEach((keyframe) => {
         const speed = speedAtTime(track, keyframe.time, start, end, axisCount);
+        const cx = formatNumber(graphX(keyframe.time, start, end));
+        const cy = formatNumber(graphY(speed, range));
+        const hitTarget = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        hitTarget.classList.add("timeline-graph-key-hit", "graph-x", "speed-key");
+        hitTarget.classList.toggle("locked", !editable);
+        hitTarget.dataset.keyframeId = keyframe.id;
+        hitTarget.dataset.axis = "x";
+        hitTarget.dataset.keyTime = formatNumber(keyframe.time);
+        hitTarget.setAttribute("cx", cx);
+        hitTarget.setAttribute("cy", cy);
+        hitTarget.setAttribute("r", "9");
+        hitTarget.setAttribute("aria-hidden", "true");
+        this.elements.keyLayer.appendChild(hitTarget);
+
         const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        point.classList.add("timeline-graph-key", "graph-x", "locked");
+        point.classList.add("timeline-graph-key", "graph-x", "speed-key");
+        point.classList.toggle("selected", context.selectedKeyframeIds.has(keyframe.id));
+        point.classList.toggle("locked", !editable);
         point.dataset.keyframeId = keyframe.id;
         point.dataset.axis = "x";
         point.dataset.keyTime = formatNumber(keyframe.time);
-        point.setAttribute("cx", formatNumber(graphX(keyframe.time, start, end)));
-        point.setAttribute("cy", formatNumber(graphY(speed, range)));
-        point.setAttribute("r", "4");
-        point.setAttribute("role", "img");
-        point.setAttribute("tabindex", "-1");
-        point.setAttribute("aria-label", `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second.`);
+        point.setAttribute("cx", cx);
+        point.setAttribute("cy", cy);
+        point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
+        point.setAttribute("role", editable ? "button" : "img");
+        point.setAttribute("tabindex", editable ? "0" : "-1");
+        point.setAttribute(
+          "aria-label",
+          editable
+            ? `Edit speed marker at ${formatNumber(keyframe.time)} seconds. Speed ${formatNumber(speed)} units per second. Drag horizontally to retime, drag vertically to adjust Ease %, and Up or Down nudges Ease %.`
+            : `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second.`
+        );
         this.elements.keyLayer.appendChild(point);
       });
   }
@@ -364,7 +391,8 @@ export class TimelineValueGraph {
     const keyframe = keyframeId && context?.track ? context.track.keyframes.find((candidate) => candidate.id === keyframeId) : null;
     if (!keyframeId || !axis || !context?.track || !keyframe) return;
     const axisIndex = AXIS_INDEX[axis];
-    const range = rangeForKeyframeAxis(context, axis);
+    const speedMode = this.graphMode === "speed";
+    const range = speedMode ? EASE_STRENGTH_GRAPH_RANGE : rangeForKeyframeAxis(context, axis);
     if (!range) return;
     const [timeStart, timeEnd] = graphWorkRange(context.timelineDocument);
     const selectionMode = graphSelectionMode(event, context, keyframeId);
@@ -373,15 +401,16 @@ export class TimelineValueGraph {
     const dragKeys = draggedKeyframes.map((candidate) => ({
       keyframeId: candidate.id,
       startTime: candidate.time,
-      startValue: candidate.value[axisIndex]
+      startValue: speedMode ? candidate.easeStrength : candidate.value[axisIndex]
     }));
     event.preventDefault();
     this.dragState = {
+      mode: this.graphMode,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       startTime: keyframe.time,
-      startValue: keyframe.value[axisIndex],
+      startValue: speedMode ? keyframe.easeStrength : keyframe.value[axisIndex],
       keyframeId,
       selectionMode,
       keyframes: dragKeys,
@@ -429,10 +458,27 @@ export class TimelineValueGraph {
 
     event.preventDefault();
     event.stopPropagation();
-    const axisIndex = AXIS_INDEX[axis];
     const keyframes = context.selectedKeyframeIds.has(keyframeId) && context.selectedKeyframeIds.size > 1
       ? context.track.keyframes.filter((candidate) => context.selectedKeyframeIds.has(candidate.id))
       : [keyframe];
+    if (this.graphMode === "speed") {
+      event.preventDefault();
+      event.stopPropagation();
+      const direction = event.key === "ArrowUp" ? 1 : -1;
+      const step = graphKeyboardEaseStep(event);
+      this.callbacks.onDragStarted();
+      if (keyframes.length === 1 && !context.selectedKeyframeIds.has(keyframeId)) {
+        this.callbacks.onKeyframeSelected(keyframeId, "replace");
+      }
+      keyframes.forEach((candidate) => {
+        this.callbacks.onKeyframeEaseChanged(candidate.id, candidate.easeStrength + direction * step);
+      });
+      this.callbacks.onDragFinished();
+      if (this.lastContext) this.render(this.lastContext);
+      return;
+    }
+
+    const axisIndex = AXIS_INDEX[axis];
     const range = rangeForKeyframeAxis(context, axis);
     if (!range) return;
     const direction = event.key === "ArrowUp" ? 1 : -1;
@@ -460,7 +506,11 @@ export class TimelineValueGraph {
     const constrained = this.constrainDragValues(event, drag);
     this.dragKeyUpdates(event, drag, constrained).forEach((update) => {
       this.callbacks.onKeyframeMoved(update.keyframeId, update.time);
-      this.callbacks.onKeyframeValueChanged(update.keyframeId, drag.axis, update.value);
+      if (drag.mode === "speed") {
+        this.callbacks.onKeyframeEaseChanged(update.keyframeId, update.value);
+      } else {
+        this.callbacks.onKeyframeValueChanged(update.keyframeId, drag.axis, update.value);
+      }
     });
     if (this.lastContext) this.render(this.lastContext);
   }
@@ -495,7 +545,7 @@ export class TimelineValueGraph {
   private constrainDragValues(event: PointerEvent, drag: ValueGraphDragState): { time: number; value: number } {
     const raw = {
       time: this.timeFromPointer(event, drag.timeStart, drag.timeEnd),
-      value: this.valueFromPointer(event, drag.range)
+      value: drag.mode === "speed" ? this.easeStrengthFromPointerDelta(event, drag) : this.valueFromPointer(event, drag.range)
     };
     raw.time = event.altKey ? constrainedStretchTargetTime(raw.time, drag) : constrainedGroupTime(raw.time, drag);
     if (event.altKey && drag.keyframes.length > 1) return { time: raw.time, value: drag.startValue };
@@ -538,6 +588,12 @@ export class TimelineValueGraph {
     const rect = this.elements.svg.getBoundingClientRect();
     const graphYPosition = clamp(((event.clientY - rect.top) / Math.max(rect.height, 1)) * GRAPH_HEIGHT, 0, GRAPH_HEIGHT);
     return valueFromGraphY(graphYPosition, range);
+  }
+
+  private easeStrengthFromPointerDelta(event: PointerEvent, drag: ValueGraphDragState): number {
+    const rect = this.elements.svg.getBoundingClientRect();
+    const normalizedDelta = (drag.startY - event.clientY) / Math.max(rect.height, 1);
+    return clamp(drag.startValue + normalizedDelta * 2, 0, 2);
   }
 
   private timeFromPointer(event: PointerEvent, start: number, end: number): number {
@@ -807,6 +863,12 @@ function graphKeyboardValueStep(range: ValueGraphRange, event: KeyboardEvent): n
   if (event.shiftKey) return base * 10;
   if (event.altKey) return base * 0.1;
   return base;
+}
+
+function graphKeyboardEaseStep(event: KeyboardEvent): number {
+  if (event.shiftKey) return 0.25;
+  if (event.altKey) return 0.01;
+  return 0.05;
 }
 
 function formatAxisRange(label: string, values: number[]): string {

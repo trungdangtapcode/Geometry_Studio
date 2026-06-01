@@ -255,7 +255,7 @@ PDF.
   per-keyframe transform/runtime interpolation semantics.
 - [Timeline Value And Speed Graph](timeline-value-graph.md) documents the
   active-track graph preview that samples the same runtime evaluator as
-  playback and adds a velocity inspection mode.
+  playback and adds editable velocity-graph timing controls for `Ease %`.
 - [Timeline Ease Strength](timeline-ease-strength.md) documents schema v12
   per-keyframe `Ease %` editing for linearized, normal, and exaggerated timing
   curves.

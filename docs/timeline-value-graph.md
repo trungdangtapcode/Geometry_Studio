@@ -3,16 +3,16 @@
 ## Purpose
 
 The timeline now includes a compact graph editor for the active track. Value
-mode is an editable graph-editor surface for key values. Speed mode is a
-read-only velocity graph that shows how fast the active track is changing over
-the work area, similar to the inspection workflow animators use in After
-Effects.
+mode is an editable graph-editor surface for key values. Speed mode shows how
+fast the active track is changing over the work area and lets animators adjust
+selected keyframe `Ease %`, similar to the velocity-graph workflow animators use
+in After Effects.
 
 ## Behavior
 
 - The Graph toolbar button toggles the value graph panel.
 - The `Value` / `Speed` switch changes the graph mode without changing
-  keyframes.
+  keyframes by itself.
 - The panel follows the selected timeline track and the selected object, camera,
   or light target.
 - Position, Rotation, and Scale can show X, Y, and Z curves.
@@ -25,8 +25,9 @@ Effects.
   linear timing, `100` is normal easing, and `200` exaggerates the selected
   interpolation curve.
 - Key points are drawn on top of the curves.
-- In Speed mode the graph shows velocity magnitude in units per second. The
-  markers are locked because editing still happens in Value mode.
+- In Speed mode the graph shows velocity magnitude in units per second. Key
+  markers are editable: drag horizontally to retime, drag vertically to change
+  selected keyframe `Ease %`, or press Up/Down to nudge ease strength.
 - Clicking a graph key selects it. Ctrl/Cmd-click toggles a key in or out of
   the current selection, and Shift-click selects the time range between the
   current anchor key and the clicked key.
@@ -88,9 +89,8 @@ This graph version is intentionally focused:
 
 - It edits keyed channel values, keyframe time, and keyframe ease strength, but
   does not yet allow Bezier handle editing.
-- Speed mode is inspection-only. It does not yet edit temporal velocity handles,
-  but `Ease %` provides a first durable temporal-control field that persists in
-  scene JSON.
+- Speed mode edits `Ease %`, not true incoming/outgoing Bezier velocity handles
+  yet. The saved `easeStrength` field is the migration point for those handles.
 - It uses per-channel normalization so small changes remain visible.
 - It expands the visible value range slightly so graph keys can be dragged above
   or below the current key values without immediately hitting the panel edge.
@@ -105,7 +105,8 @@ The Playwright smoke workflow verifies that:
 - The Graph toggle is visible.
 - The graph panel opens without breaking the resizable timeline dock.
 - A keyed Position track draws a non-empty X-channel SVG path.
-- The Speed graph mode draws a non-empty velocity path and reports speed range.
+- The Speed graph mode draws a non-empty velocity path, reports speed range, and
+  lets selected speed keys nudge `Ease %`.
 - The graph reports the active keyed track count.
 - Shift-clicking graph keys selects a keyframe range that can be deleted without
   deleting the scene object.
@@ -121,5 +122,5 @@ The Playwright smoke workflow verifies that:
 - Undo restores the time and value before the graph drag.
 - Keyboard Up/Down nudges selected graph key values while preserving selected
   value spacing.
-- The keyframe `Ease %` field changes playback interpolation strength and saves
-  the `easeStrength` value into scene JSON.
+- The keyframe `Ease %` field and Speed graph key nudges both change playback
+  interpolation strength and save the `easeStrength` value into scene JSON.

@@ -190,7 +190,7 @@ Position, Rotation, and Scale recorded together.
 | Interpolation dropdown | Full interpolation list; choose a keyframe first before applying a mode |
 | Ease % | Strength for selected keyframe easing: `0` = linearized, `100` = normal, `200` = exaggerated |
 | Graph | Show/hide graph editor for the active track |
-| Value / Speed | Switch between editable value curves and read-only velocity graph |
+| Value / Speed | Switch between editable value curves and velocity graph; Speed keys can retime and adjust `Ease %` |
 | Marker | Add/update or delete timeline marker |
 | Delete | Delete selected keyframes |
 | Ripple Del | Delete selected keyframes and close the timing gap |
