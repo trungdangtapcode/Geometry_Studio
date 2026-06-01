@@ -262,6 +262,8 @@ Position, Rotation, and Scale recorded together.
 | `Ctrl+Shift+A` | Select active-track keys inside Work In/Out |
 | `Ctrl+Alt+A` | Select visible-row keyframes |
 | `Ctrl+Alt+K` | Select visible-row keys at playhead |
+| Focus graph key, `Left` / `Right` | Retime selected graph keys by the snap step |
+| Focus graph key, `Up` / `Down` | Nudge selected graph values, or Speed graph ease strength |
 | Command Palette: `selected layer work area keyframes` | Select only the selected object's keys inside Work In/Out |
 | Command Palette: `selected layer keys at playhead` | Select the selected object's keyframe column at the playhead |
 | Command Palette: `selected layer keys before/after playhead` | Select only the selected object's earlier/later keyframes for tail edits |

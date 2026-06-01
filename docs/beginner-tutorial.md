@@ -251,6 +251,8 @@ or `All`.
 | Copy / cut / paste | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` |
 | Duplicate selected keys | `Ctrl+D` |
 | Move selected keys to playhead | `Shift+Enter` |
+| Retime graph keys | Focus a graph key, then press `Left` / `Right` |
+| Nudge graph values or speed ease | Focus a graph key, then press `Up` / `Down` |
 | Center selected keys on playhead | `Shift+C` |
 | Reverse timing | `Shift+R` |
 | Snap to frame | `Shift+S` |

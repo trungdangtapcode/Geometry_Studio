@@ -6,7 +6,7 @@ type SceneExport = {
       objectId: string;
       tracks: Array<{
         kind: string;
-        keyframes: Array<{ value: number[] }>;
+        keyframes: Array<{ time: number; value: number[] }>;
       }>;
     }>;
   };
@@ -50,6 +50,18 @@ test("nudges selected value graph key values from the keyboard", async ({ page }
   expect(values[0]).toBeGreaterThan(1);
   expect(values[1]).toBeGreaterThan(3);
   expect(values[1] - values[0]).toBeCloseTo(2, 3);
+
+  await firstGraphKey.evaluate((element) => (element as SVGElement).focus());
+  await page.keyboard.press("ArrowRight");
+
+  const retimedScene = await saveScene(page);
+  const retimedPositionTrack = retimedScene.timeline.objects
+    .find((object) => object.objectId === "object-1")
+    ?.tracks.find((track) => track.kind === "position");
+  const times = retimedPositionTrack?.keyframes.map((keyframe) => keyframe.time) ?? [];
+  expect(times[0]).toBeGreaterThan(0);
+  expect(times[1]).toBeGreaterThan(1);
+  expect(times[1] - times[0]).toBeCloseTo(1, 3);
   expect(errors).toEqual([]);
 });
 

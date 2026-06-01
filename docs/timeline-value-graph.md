@@ -52,8 +52,12 @@ in After Effects.
 - Graph retiming uses the timeline Snap setting and Snap Step.
 - Holding Shift constrains the drag to the dominant direction: mostly
   horizontal motion retimes only, mostly vertical motion edits value only.
+- Focusing a graph key and pressing Left or Right retimes the focused key, or
+  the selected key group, by the timeline snap step. Shift makes the retime
+  nudge larger, and Alt makes it smaller.
 - Focusing a graph key and pressing Up or Down nudges selected key values on
-  that graph channel. Shift makes the nudge larger, and Alt makes it smaller.
+  that graph channel. In Speed mode Up/Down nudges the selected `Both`, `In`,
+  or `Out` ease side. Shift makes the nudge larger, and Alt makes it smaller.
 - A graph drag is stored as one undoable edit through the same drag snapshot
   mechanism used by dope-sheet keyframe dragging.
 - Visibility tracks are drawn as value curves but remain locked because they are
@@ -130,6 +134,8 @@ The Playwright smoke workflow verifies that:
 - Undo restores the time and value before the graph drag.
 - Keyboard Up/Down nudges selected graph key values while preserving selected
   value spacing.
+- Keyboard Left/Right retimes selected graph keys while preserving selected key
+  spacing and clamping the group inside the timeline duration.
 - The keyframe `Ease %`, `In %`, `Out %` fields and Speed graph key nudges all
   change playback interpolation strength and save the side-specific ease values
   into scene JSON.

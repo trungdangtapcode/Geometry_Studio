@@ -1,6 +1,6 @@
 import { evaluateTimelineTrack } from "../animation/interpolation";
 import { hasSoloTimelineTracks, isTimelineTrackRuntimeActive } from "../animation/timelineSchema";
-import type { SceneTimelineDocument, TimelineTrackDocument, TimelineTrackKind } from "../editor/types";
+import type { SceneTimelineDocument, TimelineKeyframeDocument, TimelineTrackDocument, TimelineTrackKind } from "../editor/types";
 import { clamp, formatNumber } from "../utils/dom";
 
 export type TimelineAxis = "x" | "y" | "z";
@@ -360,7 +360,7 @@ export class TimelineValueGraph {
           point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
           point.setAttribute("role", editable ? "button" : "img");
           point.setAttribute("tabindex", editable ? "0" : "-1");
-          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, Alt drag stretches selected keys, dragging retimes or edits values, and Up or Down nudges selected key values.`);
+          point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, Alt drag stretches selected keys, dragging retimes or edits values, Left or Right retimes selected keys, and Up or Down nudges selected key values.`);
           this.elements.keyLayer.appendChild(point);
         });
       });
@@ -411,7 +411,7 @@ export class TimelineValueGraph {
         point.setAttribute(
           "aria-label",
           editable
-            ? `Edit speed marker at ${formatNumber(keyframe.time)} seconds. Speed ${formatNumber(speed)} units per second. ${easeLabel}. Drag horizontally to retime, drag vertically to adjust ${speedGraphEaseSideLabel(this.easeEditSide)}, and Up or Down nudges it.`
+            ? `Edit speed marker at ${formatNumber(keyframe.time)} seconds. Speed ${formatNumber(speed)} units per second. ${easeLabel}. Drag horizontally or press Left or Right to retime, drag vertically to adjust ${speedGraphEaseSideLabel(this.easeEditSide)}, and Up or Down nudges it.`
             : `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second. ${easeLabel}.`
         );
         this.elements.keyLayer.appendChild(point);
@@ -483,7 +483,9 @@ export class TimelineValueGraph {
   }
 
   private nudgeGraphKeyFromKeyboard(event: KeyboardEvent): void {
-    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    const verticalNudge = event.key === "ArrowUp" || event.key === "ArrowDown";
+    const horizontalNudge = event.key === "ArrowLeft" || event.key === "ArrowRight";
+    if (!verticalNudge && !horizontalNudge) return;
     const target = (event.target as Element | null)?.closest<SVGCircleElement>(".timeline-graph-key");
     if (!target || target.classList.contains("locked")) return;
     const keyframeId = target.dataset.keyframeId;
@@ -498,6 +500,23 @@ export class TimelineValueGraph {
     const keyframes = context.selectedKeyframeIds.has(keyframeId) && context.selectedKeyframeIds.size > 1
       ? context.track.keyframes.filter((candidate) => context.selectedKeyframeIds.has(candidate.id))
       : [keyframe];
+    if (horizontalNudge) {
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      const step = graphKeyboardTimeStep(context.timelineDocument, event);
+      const delta = constrainedKeyboardTimeDelta(keyframes, direction * step, context.timelineDocument.duration);
+      if (Math.abs(delta) < 0.0005) return;
+      this.callbacks.onDragStarted();
+      if (keyframes.length === 1 && !context.selectedKeyframeIds.has(keyframeId)) {
+        this.callbacks.onKeyframeSelected(keyframeId, "replace");
+      }
+      keyframes.forEach((candidate) => {
+        this.callbacks.onKeyframeMoved(candidate.id, candidate.time + delta);
+      });
+      this.callbacks.onDragFinished();
+      if (this.lastContext) this.render(this.lastContext);
+      return;
+    }
+
     if (this.graphMode === "speed") {
       event.preventDefault();
       event.stopPropagation();
@@ -921,6 +940,22 @@ function graphKeyboardEaseStep(event: KeyboardEvent): number {
   if (event.shiftKey) return 0.25;
   if (event.altKey) return 0.01;
   return 0.05;
+}
+
+function graphKeyboardTimeStep(timelineDocument: SceneTimelineDocument, event: KeyboardEvent): number {
+  const frameStep = 1 / Math.max(timelineDocument.fps, 1);
+  const baseStep = timelineDocument.snapEnabled
+    ? Math.max(timelineDocument.snapStep, 0.001)
+    : frameStep;
+  const multiplier = event.shiftKey ? 10 : event.altKey ? 0.1 : 1;
+  return Math.max(baseStep * multiplier, 0.001);
+}
+
+function constrainedKeyboardTimeDelta(keyframes: TimelineKeyframeDocument[], requestedDelta: number, duration: number): number {
+  if (keyframes.length === 0) return 0;
+  const minTime = Math.min(...keyframes.map((keyframe) => keyframe.time));
+  const maxTime = Math.max(...keyframes.map((keyframe) => keyframe.time));
+  return clamp(requestedDelta, -minTime, Math.max(duration - maxTime, 0));
 }
 
 function keyframeEaseValue(keyframe: { easeStrength: number; easeInStrength: number; easeOutStrength: number }, side: TimelineEaseEditSide): number {
