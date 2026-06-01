@@ -415,6 +415,8 @@ export class KeyframeTimelinePanel {
       panel: query<HTMLDivElement>("#timeline-graph-panel"),
       title: query<HTMLElement>("#timeline-graph-title"),
       range: query<HTMLElement>("#timeline-graph-range"),
+      modeValueButton: query<HTMLButtonElement>("#timeline-graph-mode-value"),
+      modeSpeedButton: query<HTMLButtonElement>("#timeline-graph-mode-speed"),
       svg: query<SVGSVGElement>("#timeline-value-graph"),
       marquee: query<SVGRectElement>("#timeline-graph-marquee"),
       keyLayer: query<SVGGElement>("#timeline-graph-keys"),

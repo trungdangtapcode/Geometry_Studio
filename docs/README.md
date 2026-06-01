@@ -253,8 +253,9 @@ PDF.
   Hold timing controls.
 - [Timeline Runtime Interpolation](timeline-runtime-interpolation.md) documents
   per-keyframe transform/runtime interpolation semantics.
-- [Timeline Value Graph](timeline-value-graph.md) documents the active-track
-  graph preview that samples the same runtime evaluator as playback.
+- [Timeline Value And Speed Graph](timeline-value-graph.md) documents the
+  active-track graph preview that samples the same runtime evaluator as
+  playback and adds a velocity inspection mode.
 - [Timeline Graph Marquee Selection](timeline-graph-marquee-selection.md)
   documents drag-box selection for graph keys.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus,
@@ -384,12 +385,13 @@ animation runtime where it fits:
 - Linear, Ease In, Ease Out, Easy Ease, and Hold interpolation have direct
   toolbar controls, synchronized dropdown state, keyboard shortcuts, and a
   compact curve preview.
-- The active track can be inspected in a value graph that samples the same
-  per-keyframe evaluator as runtime playback and motion-path preview. Graph key
-  points can be dragged horizontally and vertically to retime keys and edit
-  channel values with snap-aware time movement, Ctrl/Cmd toggle selection,
+- The active track can be inspected in a Value/Speed graph that samples the same
+  per-keyframe evaluator as runtime playback and motion-path preview. Value
+  graph key points can be dragged horizontally and vertically to retime keys and
+  edit channel values with snap-aware time movement, Ctrl/Cmd toggle selection,
   Shift range selection, selected-key group dragging, Alt-drag proportional time
-  stretching, Shift drag constraints, and one undo step per drag.
+  stretching, Shift drag constraints, and one undo step per drag. Speed mode
+  shows velocity magnitude for diagnosing flat, sudden, or uneven motion.
 - Row filtering keeps dense scenes manageable through Focus, Selected Layer,
   Selected Keyed, Keyed, Pinned, and All timeline views, with `U` cycling row
   visibility from the keyboard.

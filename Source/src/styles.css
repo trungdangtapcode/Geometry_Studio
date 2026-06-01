@@ -842,6 +842,39 @@ svg {
   font-weight: 800;
 }
 
+.timeline-graph-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  min-width: 0;
+}
+
+.timeline-graph-mode-button {
+  min-width: 0;
+  height: calc(var(--control-height) - 6px);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--control-radius) - 2px);
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--muted);
+  font-size: var(--ui-tiny-font);
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.timeline-graph-mode-button:hover,
+.timeline-graph-mode-button:focus-visible {
+  border-color: rgba(32, 191, 169, 0.55);
+  color: var(--charcoal);
+  outline: none;
+}
+
+.timeline-graph-mode-button.active {
+  border-color: rgba(32, 191, 169, 0.48);
+  background: rgba(213, 245, 240, 0.94);
+  color: var(--charcoal);
+}
+
 .timeline-graph-panel svg {
   width: 100%;
   height: var(--timeline-graph-height);

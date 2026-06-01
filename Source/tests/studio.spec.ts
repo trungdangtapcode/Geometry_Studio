@@ -2908,7 +2908,7 @@ test("records grouped position rotation and scale keyframes", async ({ page }) =
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position");
   await expect(page.locator("#timeline-graph-range")).toContainText("3 keys");
   await expect(page.locator("#timeline-graph-x")).not.toHaveAttribute("d", "");
-  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click({ position: { x: 18, y: 10 } });
   if ((await page.locator("#timeline-toggle-track").textContent())?.includes("Track Off")) {
     await page.locator("#timeline-toggle-track").click();
   }
@@ -3053,7 +3053,7 @@ test("marquee selects value graph keyframes", async ({ page }) => {
   if (!(await page.locator("#timeline-graph-panel").isVisible())) {
     await page.locator("#timeline-graph-toggle").click();
   }
-  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click({ position: { x: 18, y: 10 } });
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
   const firstKey = page.locator('.timeline-graph-key.graph-x[data-key-time="0.5"]').first();
   const secondKey = page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first();
@@ -3109,7 +3109,7 @@ test("locks timeline tracks against keyframe edits", async ({ page }) => {
   if (!(await page.locator("#timeline-graph-panel").isVisible())) {
     await page.locator("#timeline-graph-toggle").click();
   }
-  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click({ position: { x: 18, y: 10 } });
   await page.locator("#timeline-lock-track").click();
   await expect(page.locator("#timeline-lock-track")).toContainText("Locked");
   await expect(page.locator('.timeline-track-label[data-track-kind="position"]').first()).toHaveClass(/locked-track/);
@@ -3215,7 +3215,7 @@ test("solos timeline tracks for focused playback filtering", async ({ page }) =>
     await page.locator("#timeline-graph-toggle").click();
   }
 
-  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click({ position: { x: 18, y: 10 } });
   await expect(page.locator("#timeline-graph-title")).toContainText("Cube | Position X");
   await expect(page.locator("#timeline-graph-range")).toContainText("2 keys");
   await page.locator("#timeline-solo-track").click();
@@ -4200,7 +4200,7 @@ test("ripple deletes selected timeline keyframe spans", async ({ page }) => {
   if (!(await page.locator("#timeline-graph-panel").isVisible())) {
     await page.locator("#timeline-graph-toggle").click();
   }
-  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click({ position: { x: 18, y: 10 } });
   await page.locator('.timeline-graph-key.graph-x[data-key-time^="2"]').first().click();
   await page.keyboard.down("Shift");
   await page.locator('.timeline-graph-key.graph-x[data-key-time="4"]').first().click();
@@ -4363,7 +4363,7 @@ test("handles visible timeline gap edit shortcuts", async ({ page }) => {
   if (!(await page.locator("#timeline-graph-panel").isVisible())) {
     await page.locator("#timeline-graph-toggle").click();
   }
-  await page.getByRole("button", { name: "Cube Position X", exact: true }).click();
+  await page.getByRole("button", { name: "Cube Position X", exact: true }).click({ position: { x: 18, y: 10 } });
   await page.locator("#timeline-work-start").evaluate((input) => {
     (input as HTMLInputElement).value = "0";
     input.dispatchEvent(new Event("change", { bubbles: true }));

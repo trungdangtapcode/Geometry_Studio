@@ -259,8 +259,8 @@ Action:
 Say:
 
 > The animation is editable after creation. I can retime keys, change
-> interpolation, inspect the value graph, and use motion design tools like fit,
-> reverse, distribute, and cycle.
+> interpolation, inspect the value graph, switch to Speed to check velocity,
+> and use motion design tools like fit, reverse, distribute, and cycle.
 
 ### 12. Camera Or Light Animation
 

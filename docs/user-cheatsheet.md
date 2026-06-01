@@ -188,7 +188,8 @@ Position, Rotation, and Scale recorded together.
 | Sequence | Sequence object layer ranges from the playhead |
 | Linear / Ease In / Ease Out / Ease / Back In / Back Out / Hold | Change selected key interpolation |
 | Interpolation dropdown | Full interpolation list; choose a keyframe first before applying a mode |
-| Graph | Show/hide value graph for the active track |
+| Graph | Show/hide graph editor for the active track |
+| Value / Speed | Switch between editable value curves and read-only velocity graph |
 | Marker | Add/update or delete timeline marker |
 | Delete | Delete selected keyframes |
 | Ripple Del | Delete selected keyframes and close the timing gap |

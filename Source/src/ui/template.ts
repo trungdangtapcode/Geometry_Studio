@@ -266,6 +266,10 @@ export function studioTemplate(): string {
             <div class="timeline-graph-header">
               <strong id="timeline-graph-title">Value Graph</strong>
               <span id="timeline-graph-range">No keyed track</span>
+              <div class="timeline-graph-mode" role="group" aria-label="Timeline graph mode">
+                <button class="timeline-graph-mode-button active" id="timeline-graph-mode-value" type="button" aria-pressed="true" title="Show editable keyframe values">Value</button>
+                <button class="timeline-graph-mode-button" id="timeline-graph-mode-speed" type="button" aria-pressed="false" title="Show read-only velocity per second">Speed</button>
+              </div>
             </div>
             <svg id="timeline-value-graph" viewBox="0 0 520 96" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               <path class="timeline-graph-grid" d="M0 16 H520 M0 48 H520 M0 80 H520 M104 0 V96 M208 0 V96 M312 0 V96 M416 0 V96" />

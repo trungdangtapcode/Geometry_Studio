@@ -5,6 +5,7 @@ import { clamp, formatNumber } from "../utils/dom";
 
 export type TimelineAxis = "x" | "y" | "z";
 export type TimelineKeySelectionMode = "replace" | "toggle" | "range" | "preserve";
+type TimelineGraphMode = "value" | "speed";
 
 export const TIMELINE_AXES: TimelineAxis[] = ["x", "y", "z"];
 export const AXIS_INDEX: Record<TimelineAxis, number> = { x: 0, y: 1, z: 2 };
@@ -15,6 +16,8 @@ export interface TimelineValueGraphElements {
   panel: HTMLElement;
   title: HTMLElement;
   range: HTMLElement;
+  modeValueButton: HTMLButtonElement;
+  modeSpeedButton: HTMLButtonElement;
   svg: SVGSVGElement;
   marquee: SVGRectElement;
   keyLayer: SVGGElement;
@@ -52,6 +55,11 @@ export interface TimelineValueGraphRenderContext {
 type ValueGraphSample = {
   time: number;
   value: [number, number, number];
+};
+
+type SpeedGraphSample = {
+  time: number;
+  speed: number;
 };
 
 type ValueGraphRange = {
@@ -106,12 +114,14 @@ type ValueGraphMarqueeState = {
 };
 
 const GRAPH_VISIBLE_STORAGE_KEY = "geometry-studio-timeline-graph-visible";
+const GRAPH_MODE_STORAGE_KEY = "geometry-studio-timeline-graph-mode";
 const GRAPH_WIDTH = 520;
 const GRAPH_HEIGHT = 96;
 const GRAPH_SAMPLE_COUNT = 96;
 
 export class TimelineValueGraph {
   private graphVisible = loadTimelineGraphVisible();
+  private graphMode: TimelineGraphMode = loadTimelineGraphMode();
   private lastContext: TimelineValueGraphRenderContext | null = null;
   private dragState: ValueGraphDragState | null = null;
   private marqueeState: ValueGraphMarqueeState | null = null;
@@ -137,8 +147,8 @@ export class TimelineValueGraph {
     this.lastContext = context;
     if (!this.graphVisible) return;
 
-    const { timelineDocument, selectedKind, targetName, trackLabel, selectedAxis, track } = context;
-    this.elements.title.textContent = `${targetName} | ${trackLabel}`;
+    const { timelineDocument, selectedKind, targetName, trackLabel, track } = context;
+    this.elements.title.textContent = `${targetName} | ${trackLabel}${this.graphMode === "speed" ? " Speed" : ""}`;
     const [start, end] = graphWorkRange(timelineDocument);
     this.positionPlayhead(timelineDocument.currentTime, start, end);
 
@@ -160,6 +170,17 @@ export class TimelineValueGraph {
       return;
     }
 
+    if (this.graphMode === "speed") {
+      this.renderSpeedGraph(context, start, end);
+      return;
+    }
+
+    this.renderValueGraph(context, start, end);
+  }
+
+  private renderValueGraph(context: TimelineValueGraphRenderContext, start: number, end: number): void {
+    const { selectedKind, selectedAxis, track } = context;
+    if (!track) return;
     const samples = sampleTrack(track, start, end, GRAPH_SAMPLE_COUNT);
     if (!samples.length) {
       this.clearGraph("No graph samples");
@@ -189,6 +210,24 @@ export class TimelineValueGraph {
     this.elements.range.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | ${activeRanges.join(" | ")}`;
   }
 
+  private renderSpeedGraph(context: TimelineValueGraphRenderContext, start: number, end: number): void {
+    const { selectedKind, track } = context;
+    if (!track) return;
+    const axisCount = trackAxisConfig(selectedKind).enabledAxes;
+    const samples = sampleTrackSpeed(track, start, end, GRAPH_SAMPLE_COUNT, axisCount);
+    if (!samples.length) {
+      this.clearGraph("No speed samples");
+      return;
+    }
+    const range = expandedRange(samples.map((sample) => sample.speed));
+    this.elements.paths.x.setAttribute("d", graphPath(samples.map((sample) => ({ time: sample.time, value: sample.speed })), start, end, range));
+    this.elements.paths.y.setAttribute("d", "");
+    this.elements.paths.z.setAttribute("d", "");
+    this.renderSpeedKeyPoints(track, start, end, range, axisCount);
+    const speeds = samples.map((sample) => sample.speed);
+    this.elements.range.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | Speed ${formatNumber(Math.min(...speeds))}..${formatNumber(Math.max(...speeds))}/s`;
+  }
+
   private bindEvents(): void {
     this.elements.toggleButton.addEventListener("click", () => {
       this.graphVisible = !this.graphVisible;
@@ -196,6 +235,8 @@ export class TimelineValueGraph {
       this.syncVisibility();
       this.callbacks.onToggle();
     });
+    this.elements.modeValueButton.addEventListener("click", () => this.setGraphMode("value"));
+    this.elements.modeSpeedButton.addEventListener("click", () => this.setGraphMode("speed"));
     this.elements.keyLayer.addEventListener("pointerdown", (event) => this.startGraphKeyDrag(event));
     this.elements.keyLayer.addEventListener("keydown", (event) => this.nudgeGraphKeyFromKeyboard(event));
     this.elements.svg.addEventListener("pointerdown", (event) => this.startGraphMarquee(event));
@@ -218,6 +259,22 @@ export class TimelineValueGraph {
     this.elements.panel.setAttribute("aria-hidden", String(!this.graphVisible));
     this.elements.toggleButton.classList.toggle("active", this.graphVisible);
     this.elements.toggleButton.setAttribute("aria-pressed", String(this.graphVisible));
+    this.syncGraphModeButtons();
+  }
+
+  private setGraphMode(mode: TimelineGraphMode): void {
+    if (this.graphMode === mode) return;
+    this.graphMode = mode;
+    storeTimelineGraphMode(mode);
+    this.syncGraphModeButtons();
+    if (this.lastContext) this.render(this.lastContext);
+  }
+
+  private syncGraphModeButtons(): void {
+    this.elements.modeValueButton.classList.toggle("active", this.graphMode === "value");
+    this.elements.modeSpeedButton.classList.toggle("active", this.graphMode === "speed");
+    this.elements.modeValueButton.setAttribute("aria-pressed", String(this.graphMode === "value"));
+    this.elements.modeSpeedButton.setAttribute("aria-pressed", String(this.graphMode === "speed"));
   }
 
   private renderKeyPoints(
@@ -268,6 +325,33 @@ export class TimelineValueGraph {
           point.setAttribute("aria-label", `${editable ? "Edit" : "View"} ${axisConfig.labels[index]} key at ${formatNumber(keyframe.time)} seconds. Ctrl click toggles selection, Shift click selects a time range, Alt drag stretches selected keys, dragging retimes or edits values, and Up or Down nudges selected key values.`);
           this.elements.keyLayer.appendChild(point);
         });
+      });
+  }
+
+  private renderSpeedKeyPoints(
+    track: TimelineTrackDocument,
+    start: number,
+    end: number,
+    range: ValueGraphRange,
+    axisCount: 1 | 2 | 3
+  ): void {
+    this.elements.keyLayer.innerHTML = "";
+    [...track.keyframes]
+      .sort((left, right) => left.time - right.time)
+      .forEach((keyframe) => {
+        const speed = speedAtTime(track, keyframe.time, start, end, axisCount);
+        const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        point.classList.add("timeline-graph-key", "graph-x", "locked");
+        point.dataset.keyframeId = keyframe.id;
+        point.dataset.axis = "x";
+        point.dataset.keyTime = formatNumber(keyframe.time);
+        point.setAttribute("cx", formatNumber(graphX(keyframe.time, start, end)));
+        point.setAttribute("cy", formatNumber(graphY(speed, range)));
+        point.setAttribute("r", "4");
+        point.setAttribute("role", "img");
+        point.setAttribute("tabindex", "-1");
+        point.setAttribute("aria-label", `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second.`);
+        this.elements.keyLayer.appendChild(point);
       });
   }
 
@@ -561,6 +645,45 @@ function sampleTrack(track: TimelineTrackDocument, start: number, end: number, c
   return samples;
 }
 
+function sampleTrackSpeed(
+  track: TimelineTrackDocument,
+  start: number,
+  end: number,
+  count: number,
+  axisCount: 1 | 2 | 3
+): SpeedGraphSample[] {
+  const safeCount = Math.max(2, Math.round(count));
+  const step = Math.max((end - start) / Math.max(safeCount - 1, 1), 0.001);
+  const samples: SpeedGraphSample[] = [];
+  for (let index = 0; index < safeCount; index += 1) {
+    const time = start + ((end - start) * index) / (safeCount - 1);
+    samples.push({ time, speed: speedAtTime(track, time, start, end, axisCount, step) });
+  }
+  return samples;
+}
+
+function speedAtTime(
+  track: TimelineTrackDocument,
+  time: number,
+  start: number,
+  end: number,
+  axisCount: 1 | 2 | 3,
+  sampleStep = Math.max((end - start) / Math.max(GRAPH_SAMPLE_COUNT - 1, 1), 0.001)
+): number {
+  const leftTime = clamp(time - sampleStep, start, end);
+  const rightTime = clamp(time + sampleStep, start, end);
+  const left = evaluateTimelineTrack(track, leftTime);
+  const right = evaluateTimelineTrack(track, rightTime);
+  if (!left || !right) return 0;
+  const duration = Math.max(rightTime - leftTime, 0.001);
+  let sum = 0;
+  for (let axis = 0; axis < axisCount; axis += 1) {
+    const velocity = (right[axis] - left[axis]) / duration;
+    sum += velocity * velocity;
+  }
+  return Math.sqrt(sum);
+}
+
 function graphPath(samples: { time: number; value: number }[], start: number, end: number, range: ValueGraphRange): string {
   if (!samples.length) return "";
   return samples.map((sample, index) => {
@@ -711,10 +834,26 @@ function loadTimelineGraphVisible(): boolean {
   }
 }
 
+function loadTimelineGraphMode(): TimelineGraphMode {
+  try {
+    return window.localStorage.getItem(GRAPH_MODE_STORAGE_KEY) === "speed" ? "speed" : "value";
+  } catch {
+    return "value";
+  }
+}
+
 function storeTimelineGraphVisible(visible: boolean): void {
   try {
     window.localStorage.setItem(GRAPH_VISIBLE_STORAGE_KEY, String(visible));
   } catch {
     // Graph visibility is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function storeTimelineGraphMode(mode: TimelineGraphMode): void {
+  try {
+    window.localStorage.setItem(GRAPH_MODE_STORAGE_KEY, mode);
+  } catch {
+    // Graph mode is an editor preference; blocked storage should not affect timeline editing.
   }
 }
