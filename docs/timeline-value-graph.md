@@ -28,6 +28,8 @@ in After Effects.
 - In Speed mode the graph shows velocity magnitude in units per second. Key
   markers are editable: drag horizontally to retime, drag vertically to change
   selected keyframe `Ease %`, or press Up/Down to nudge ease strength.
+- The Speed graph status line reports selected-key `Ease %`; when no key is
+  selected it shows the `Time / Ease %` drag hint.
 - Clicking a graph key selects it. Ctrl/Cmd-click toggles a key in or out of
   the current selection, and Shift-click selects the time range between the
   current anchor key and the clicked key.
@@ -106,7 +108,7 @@ The Playwright smoke workflow verifies that:
 - The graph panel opens without breaking the resizable timeline dock.
 - A keyed Position track draws a non-empty X-channel SVG path.
 - The Speed graph mode draws a non-empty velocity path, reports speed range, and
-  lets selected speed keys nudge `Ease %`.
+  lets selected speed keys nudge `Ease %` while updating the status readout.
 - The graph reports the active keyed track count.
 - Shift-clicking graph keys selects a keyframe range that can be deleted without
   deleting the scene object.

@@ -1,7 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 test("shows editable speed graph for active keyed track", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const errors: string[] = [];
   await installSceneDownloadCapture(page);
   page.on("console", (message) => {
@@ -35,6 +35,7 @@ test("shows editable speed graph for active keyed track", async ({ page }) => {
   await page.locator(".timeline-graph-key.graph-x.speed-key").first().focus();
   await page.keyboard.press("ArrowUp");
   await expect(page.locator("#timeline-key-ease")).toHaveValue("105");
+  await expect(page.locator("#timeline-graph-range")).toContainText("Ease 105%");
 
   const scene = await saveScene(page);
   const positionTrack = scene.timeline.objects
@@ -42,6 +43,23 @@ test("shows editable speed graph for active keyed track", async ({ page }) => {
     ?.tracks.find((track) => track.kind === "position");
   expect(positionTrack?.keyframes.map((keyframe) => keyframe.interpolation)).toEqual(["easeIn", "easeIn"]);
   expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeStrength)).toEqual([1.05, 1.05]);
+
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#timeline-selection")).toContainText("keyframe active");
+
+  await dragGraphKey(page, page.locator(".timeline-graph-key.graph-x.speed-key:not(.locked)").first(), 0, -30);
+  await expect(page.locator("#timeline-key-ease")).toBeEnabled();
+
+  await dragGraphKey(page, page.locator(".timeline-graph-key.graph-x.speed-key:not(.locked)").first(), 80, 0);
+  const draggedScene = await saveScene(page);
+  const draggedPositionTrack = draggedScene.timeline.objects
+    .find((objectTimeline) => objectTimeline.objectId === draggedScene.selectedId)
+    ?.tracks.find((track) => track.kind === "position");
+  expect(draggedPositionTrack?.keyframes[0].time).toBeGreaterThan(0.2);
+  expect(draggedPositionTrack?.keyframes[0].easeStrength).toBeGreaterThan(1.2);
+  expect(draggedPositionTrack?.keyframes[1].time).toBeCloseTo(2, 2);
+  expect(draggedPositionTrack?.keyframes[1].easeStrength).toBeCloseTo(1.05, 2);
 
   await page.locator("#timeline-graph-mode-value").click();
   await expect(page.locator("#timeline-graph-mode-value")).toHaveAttribute("aria-pressed", "true");
@@ -80,12 +98,24 @@ async function setTransformValue(
   }, value);
 }
 
+async function dragGraphKey(page: Page, locator: Locator, dx: number, dy: number): Promise<void> {
+  await locator.scrollIntoViewIfNeeded();
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("Graph key is not visible");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 8 });
+  await page.mouse.up();
+}
+
 async function saveScene(page: Page): Promise<{
   selectedId: string;
   timeline: {
     objects: Array<{
       objectId: string;
-      tracks: Array<{ kind: string; keyframes: Array<{ interpolation: string; easeStrength: number }> }>;
+      tracks: Array<{ kind: string; keyframes: Array<{ time: number; interpolation: string; easeStrength: number }> }>;
     }>;
   };
 }> {

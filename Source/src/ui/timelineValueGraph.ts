@@ -228,7 +228,7 @@ export class TimelineValueGraph {
     this.elements.paths.z.setAttribute("d", "");
     this.renderSpeedKeyPoints(context, start, end, range, axisCount);
     const speeds = samples.map((sample) => sample.speed);
-    this.elements.range.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | Speed ${formatNumber(Math.min(...speeds))}..${formatNumber(Math.max(...speeds))}/s`;
+    this.elements.range.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | Speed ${formatNumber(Math.min(...speeds))}..${formatNumber(Math.max(...speeds))}/s | ${speedGraphEaseSummary(track, context.selectedKeyframeIds)}`;
   }
 
   private bindEvents(): void {
@@ -375,8 +375,8 @@ export class TimelineValueGraph {
         point.setAttribute(
           "aria-label",
           editable
-            ? `Edit speed marker at ${formatNumber(keyframe.time)} seconds. Speed ${formatNumber(speed)} units per second. Drag horizontally to retime, drag vertically to adjust Ease %, and Up or Down nudges Ease %.`
-            : `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second.`
+            ? `Edit speed marker at ${formatNumber(keyframe.time)} seconds. Speed ${formatNumber(speed)} units per second. Ease ${formatNumber(keyframe.easeStrength * 100)} percent. Drag horizontally to retime, drag vertically to adjust Ease %, and Up or Down nudges Ease %.`
+            : `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second. Ease ${formatNumber(keyframe.easeStrength * 100)} percent.`
         );
         this.elements.keyLayer.appendChild(point);
       });
@@ -869,6 +869,17 @@ function graphKeyboardEaseStep(event: KeyboardEvent): number {
   if (event.shiftKey) return 0.25;
   if (event.altKey) return 0.01;
   return 0.05;
+}
+
+function speedGraphEaseSummary(track: TimelineTrackDocument, selectedKeyframeIds: Set<string>): string {
+  const selected = track.keyframes.filter((keyframe) => selectedKeyframeIds.has(keyframe.id));
+  if (selected.length === 0) return "Drag keys: Time / Ease %";
+  const values = selected.map((keyframe) => keyframe.easeStrength * 100);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return Math.abs(max - min) < 0.001
+    ? `Ease ${formatNumber(min)}%`
+    : `Ease ${formatNumber(min)}..${formatNumber(max)}%`;
 }
 
 function formatAxisRange(label: string, values: number[]): string {
