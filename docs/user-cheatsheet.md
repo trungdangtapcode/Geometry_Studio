@@ -188,7 +188,7 @@ Position, Rotation, and Scale recorded together.
 | Sequence | Sequence object layer ranges from the playhead |
 | Linear / Ease In / Ease Out / Ease / Back In / Back Out / Hold | Change selected key interpolation |
 | Interpolation dropdown | Full interpolation list; choose a keyframe first before applying a mode |
-| Ease % | Strength for selected keyframe easing: `0` = linearized, `100` = normal, `200` = exaggerated |
+| Ease % / In % / Out % | Strength for selected keyframe easing: `Ease %` sets both sides, `In %` affects the segment ending at the key, `Out %` affects the segment starting at the key |
 | Graph | Show/hide graph editor for the active track |
 | Value / Speed | Switch between editable value curves and velocity graph; Speed keys can retime and adjust `Ease %` |
 | Marker | Add/update or delete timeline marker |

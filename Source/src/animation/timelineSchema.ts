@@ -69,7 +69,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 12,
+    version: 13,
     duration: 8,
     workStart: 0,
     workEnd: 8,
@@ -105,7 +105,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 12,
+    version: 13,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     workStart: defaults.workStart,
     workEnd: defaults.workEnd,
@@ -208,7 +208,9 @@ export function createTimelineKeyframe(time: number, value: [number, number, num
     time: roundTime(time),
     value,
     interpolation: "linear",
-    easeStrength: 1
+    easeStrength: 1,
+    easeInStrength: 1,
+    easeOutStrength: 1
   };
 }
 
@@ -376,6 +378,12 @@ function normalizeKeyframe(value: unknown): TimelineKeyframeDocument | null {
   if (!value || typeof value !== "object") return null;
   const keyframe = value as Partial<TimelineKeyframeDocument>;
   if (!Array.isArray(keyframe.value) || keyframe.value.length !== 3) return null;
+  const legacyEaseStrength = finiteNumber(keyframe.easeStrength, 1, 0, 2);
+  const easeInStrength = finiteNumber(keyframe.easeInStrength, legacyEaseStrength, 0, 2);
+  const easeOutStrength = finiteNumber(keyframe.easeOutStrength, legacyEaseStrength, 0, 2);
+  const easeStrength = typeof keyframe.easeStrength === "number" && Number.isFinite(keyframe.easeStrength)
+    ? legacyEaseStrength
+    : (easeInStrength + easeOutStrength) / 2;
   return {
     id: typeof keyframe.id === "string" ? keyframe.id : createTimelineId("keyframe"),
     time: roundTime(finiteNumber(keyframe.time, 0, 0, 120)),
@@ -385,7 +393,9 @@ function normalizeKeyframe(value: unknown): TimelineKeyframeDocument | null {
       finiteNumber(keyframe.value[2], 0, -10000, 10000)
     ],
     interpolation: isTimelineInterpolation(keyframe.interpolation) ? keyframe.interpolation : "linear",
-    easeStrength: finiteNumber(keyframe.easeStrength, 1, 0, 2)
+    easeStrength,
+    easeInStrength,
+    easeOutStrength
   };
 }
 

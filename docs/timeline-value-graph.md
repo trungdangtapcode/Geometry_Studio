@@ -21,9 +21,10 @@ in After Effects.
 - The vertical playhead line follows scrubbing and playback.
 - Hold, Linear, Ease In, Ease Out, and Easy Ease segments are drawn from the
   same evaluator used by runtime playback.
-- The keyframe detail editor exposes `Ease %`: `0` makes easing behave like
-  linear timing, `100` is normal easing, and `200` exaggerates the selected
-  interpolation curve.
+- The keyframe detail editor exposes `Ease %`, `In %`, and `Out %`: `0` makes
+  easing behave like linear timing, `100` is normal easing, and `200`
+  exaggerates the selected interpolation curve. `In %` affects the segment
+  ending at the key; `Out %` affects the segment starting at the key.
 - Key points are drawn on top of the curves.
 - In Speed mode the graph shows velocity magnitude in units per second. Key
   markers are editable: drag horizontally to retime, drag vertically to change
@@ -91,8 +92,9 @@ This graph version is intentionally focused:
 
 - It edits keyed channel values, keyframe time, and keyframe ease strength, but
   does not yet allow Bezier handle editing.
-- Speed mode edits `Ease %`, not true incoming/outgoing Bezier velocity handles
-  yet. The saved `easeStrength` field is the migration point for those handles.
+- Speed mode edits both-side `Ease %`, not true draggable Bezier velocity
+  handles yet. The saved `easeInStrength` and `easeOutStrength` fields are the
+  migration point for those handles.
 - It uses per-channel normalization so small changes remain visible.
 - It expands the visible value range slightly so graph keys can be dragged above
   or below the current key values without immediately hitting the panel edge.
@@ -124,5 +126,6 @@ The Playwright smoke workflow verifies that:
 - Undo restores the time and value before the graph drag.
 - Keyboard Up/Down nudges selected graph key values while preserving selected
   value spacing.
-- The keyframe `Ease %` field and Speed graph key nudges both change playback
-  interpolation strength and save the `easeStrength` value into scene JSON.
+- The keyframe `Ease %`, `In %`, `Out %` fields and Speed graph key nudges all
+  change playback interpolation strength and save the side-specific ease values
+  into scene JSON.

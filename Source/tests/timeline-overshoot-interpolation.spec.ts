@@ -25,7 +25,7 @@ async function exportedScene(page: Page): Promise<{
     version: number;
     objects: Array<{
       objectId: string;
-      tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string; easeStrength: number }> }>;
+      tracks: Array<{ kind: string; keyframes: Array<{ time: number; value: number[]; interpolation: string; easeStrength: number; easeInStrength: number; easeOutStrength: number }> }>;
     }>;
   };
 }> {
@@ -140,11 +140,22 @@ test("edits keyframe ease strength and applies it during playback", async ({ pag
   });
   await expect.poll(async () => Number(await page.locator('.transform-input[data-prop="position"][data-axis="x"]').inputValue())).toBeCloseTo(0, 2);
 
+  await page.locator("#timeline-key-ease-in").evaluate((input) => {
+    (input as HTMLInputElement).value = "50";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.locator("#timeline-key-ease-out").evaluate((input) => {
+    (input as HTMLInputElement).value = "150";
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
   const scene = await exportedScene(page);
   const positionTrack = scene.timeline.objects
     .find((objectTimeline) => objectTimeline.objectId === scene.selectedId)
     ?.tracks.find((track) => track.kind === "position");
-  expect(scene.timeline.version).toBe(12);
+  expect(scene.timeline.version).toBe(13);
   expect(positionTrack?.keyframes.map((keyframe) => keyframe.interpolation)).toEqual(["easeIn", "easeIn"]);
-  expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeStrength)).toEqual([2, 2]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeStrength)).toEqual([1, 1]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeInStrength)).toEqual([0.5, 0.5]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeOutStrength)).toEqual([1.5, 1.5]);
 });

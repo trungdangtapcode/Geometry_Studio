@@ -184,7 +184,7 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -230,6 +230,8 @@ export interface TimelineKeyframeDocument {
   value: [number, number, number];
   interpolation: TimelineInterpolation;
   easeStrength: number;
+  easeInStrength: number;
+  easeOutStrength: number;
 }
 
 export interface TimelineMarkerDocument {

@@ -256,9 +256,9 @@ PDF.
 - [Timeline Value And Speed Graph](timeline-value-graph.md) documents the
   active-track graph preview that samples the same runtime evaluator as
   playback and adds editable velocity-graph timing controls for `Ease %`.
-- [Timeline Ease Strength](timeline-ease-strength.md) documents schema v12
-  per-keyframe `Ease %` editing for linearized, normal, and exaggerated timing
-  curves.
+- [Timeline Ease Strength](timeline-ease-strength.md) documents schema v13
+  per-keyframe `Ease %`, `In %`, and `Out %` editing for linearized, normal,
+  exaggerated, and asymmetric timing curves.
 - [Timeline Graph Marquee Selection](timeline-graph-marquee-selection.md)
   documents drag-box selection for graph keys.
 - [Timeline Row Filtering](timeline-row-filtering.md) documents Focus,

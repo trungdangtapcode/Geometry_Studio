@@ -152,6 +152,8 @@ export interface TimelineKeyframeEditPatch {
   value?: Partial<Record<"x" | "y" | "z", number>>;
   valueDelta?: Partial<Record<"x" | "y" | "z", number>>;
   easeStrength?: number;
+  easeInStrength?: number;
+  easeOutStrength?: number;
 }
 
 type TimelineUiKeyframe = TimelineKeyframe & {
@@ -336,6 +338,8 @@ export class KeyframeTimelinePanel {
     z: query<HTMLInputElement>("#timeline-key-z")
   };
   private readonly keyframeEaseInput = query<HTMLInputElement>("#timeline-key-ease");
+  private readonly keyframeEaseInInput = query<HTMLInputElement>("#timeline-key-ease-in");
+  private readonly keyframeEaseOutInput = query<HTMLInputElement>("#timeline-key-ease-out");
   private readonly keyframeAxisLabels = {
     x: query<HTMLElement>("#timeline-key-x-label"),
     y: query<HTMLElement>("#timeline-key-y-label"),
@@ -1243,6 +1247,22 @@ export class KeyframeTimelinePanel {
         return;
       }
       this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { easeStrength: clamp(value / 100, 0, 2) });
+    });
+    this.keyframeEaseInInput.addEventListener("change", () => {
+      const value = Number(this.keyframeEaseInInput.value);
+      if (!Number.isFinite(value)) {
+        this.restoreKeyframeEditor();
+        return;
+      }
+      this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { easeInStrength: clamp(value / 100, 0, 2) });
+    });
+    this.keyframeEaseOutInput.addEventListener("change", () => {
+      const value = Number(this.keyframeEaseOutInput.value);
+      if (!Number.isFinite(value)) {
+        this.restoreKeyframeEditor();
+        return;
+      }
+      this.callbacks.onEditKeyframes([...this.selectedKeyframeIds], { easeOutStrength: clamp(value / 100, 0, 2) });
     });
     query<HTMLButtonElement>("#timeline-duplicate-keyframe").addEventListener("click", () => {
       this.callbacks.onDuplicateKeyframes([...this.selectedKeyframeIds]);
@@ -3134,8 +3154,24 @@ export class KeyframeTimelinePanel {
       : "";
     this.keyframeEaseInput.placeholder = sources.length > 1 ? "Mixed" : "";
     this.keyframeEaseInput.title = sources.length > 0
-      ? "Adjust selected keyframe ease strength. 0 is linear timing, 100 is normal easing, 200 exaggerates the selected interpolation."
+      ? "Adjust both incoming and outgoing ease strength. 0 is linear timing, 100 is normal easing, 200 exaggerates the selected interpolation."
       : "Select a keyframe before editing ease strength";
+    this.keyframeEaseInInput.disabled = sources.length === 0;
+    this.keyframeEaseInInput.value = sources.length > 0
+      ? commonValue(sources.map((source) => source.keyframe.easeInStrength * 100))
+      : "";
+    this.keyframeEaseInInput.placeholder = sources.length > 1 ? "Mixed" : "";
+    this.keyframeEaseInInput.title = sources.length > 0
+      ? "Adjust selected keyframe incoming ease strength for the segment ending at this keyframe."
+      : "Select a keyframe before editing incoming ease strength";
+    this.keyframeEaseOutInput.disabled = sources.length === 0;
+    this.keyframeEaseOutInput.value = sources.length > 0
+      ? commonValue(sources.map((source) => source.keyframe.easeOutStrength * 100))
+      : "";
+    this.keyframeEaseOutInput.placeholder = sources.length > 1 ? "Mixed" : "";
+    this.keyframeEaseOutInput.title = sources.length > 0
+      ? "Adjust selected keyframe outgoing ease strength for the segment starting at this keyframe."
+      : "Select a keyframe before editing outgoing ease strength";
     if (!first) {
       this.keyframeLabel.textContent = "No keyframe selected";
     } else if (sources.length === 1) {

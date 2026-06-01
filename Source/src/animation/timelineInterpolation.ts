@@ -34,9 +34,9 @@ export function timelineInterpolationPath(interpolation: TimelineInterpolation):
   return "M4 28 L68 6";
 }
 
-export function timelineInterpolationWeight(interpolation: TimelineInterpolation, value: number, easeStrength = 1): number {
+export function timelineInterpolationWeight(interpolation: TimelineInterpolation, value: number, easeOutStrength = 1, easeInStrength = easeOutStrength): number {
   const t = clamp(value, 0, 1);
-  const strength = clamp(easeStrength, 0, 2);
+  const strength = clamp(easeOutStrength + (easeInStrength - easeOutStrength) * t, 0, 2);
   if (interpolation === "hold" || interpolation === "linear") return t;
   const curved = interpolationCurve(interpolation, t);
   return t + (curved - t) * strength;

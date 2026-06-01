@@ -40,6 +40,8 @@ export interface TimelineClipboardKeyframe {
   value: [number, number, number];
   interpolation: TimelineInterpolation;
   easeStrength: number;
+  easeInStrength: number;
+  easeOutStrength: number;
 }
 
 export interface TimelineClipboard {
@@ -114,6 +116,8 @@ export interface TimelineKeyframeEditPatch {
   value?: Partial<Record<"x" | "y" | "z", number>>;
   valueDelta?: Partial<Record<"x" | "y" | "z", number>>;
   easeStrength?: number;
+  easeInStrength?: number;
+  easeOutStrength?: number;
 }
 
 export interface EditTimelineResult extends TimelineEditResult {
@@ -166,7 +170,9 @@ export function createTimelineClipboard(sources: TimelineKeyframeSource[], optio
       relativeTime: roundTime(keyframe.time - origin),
       value: [...keyframe.value] as [number, number, number],
       interpolation: keyframe.interpolation,
-      easeStrength: keyframe.easeStrength
+      easeStrength: keyframe.easeStrength,
+      easeInStrength: keyframe.easeInStrength,
+      easeOutStrength: keyframe.easeOutStrength
     }))
   };
 }
@@ -231,11 +237,15 @@ export function pasteTimelineClipboard(
       existing.value = [...clip.value] as [number, number, number];
       existing.interpolation = clip.interpolation;
       existing.easeStrength = clip.easeStrength;
+      existing.easeInStrength = clip.easeInStrength;
+      existing.easeOutStrength = clip.easeOutStrength;
       keyframeIds.push(existing.id);
     } else {
       const pastedKeyframe = createTimelineKeyframe(time, [...clip.value] as [number, number, number]);
       pastedKeyframe.interpolation = clip.interpolation;
       pastedKeyframe.easeStrength = clip.easeStrength;
+      pastedKeyframe.easeInStrength = clip.easeInStrength;
+      pastedKeyframe.easeOutStrength = clip.easeOutStrength;
       track.keyframes.push(pastedKeyframe);
       keyframeIds.push(pastedKeyframe.id);
     }
@@ -266,6 +276,8 @@ export function duplicateResolvedKeyframes(
     const duplicate = createTimelineKeyframe(nextTime, [...keyframe.value] as [number, number, number]);
     duplicate.interpolation = keyframe.interpolation;
     duplicate.easeStrength = keyframe.easeStrength;
+    duplicate.easeInStrength = keyframe.easeInStrength;
+    duplicate.easeOutStrength = keyframe.easeOutStrength;
     track.keyframes.push(duplicate);
     keyframeIds.push(duplicate.id);
     sortTimelineKeyframes(track);
@@ -338,6 +350,8 @@ export function cycleResolvedKeyframesAcrossWorkArea(
         const cycled = createTimelineKeyframe(time, [...keyframe.value] as [number, number, number]);
         cycled.interpolation = keyframe.interpolation;
         cycled.easeStrength = keyframe.easeStrength;
+        cycled.easeInStrength = keyframe.easeInStrength;
+        cycled.easeOutStrength = keyframe.easeOutStrength;
         track.enabled = true;
         track.keyframes.push(cycled);
         trackOccupancy.add(timeKey);
@@ -658,13 +672,7 @@ export function editResolvedKeyframes(
       });
     }
 
-    if (typeof patch.easeStrength === "number" && Number.isFinite(patch.easeStrength)) {
-      const nextStrength = Math.min(Math.max(patch.easeStrength, 0), 2);
-      if (Math.abs(source.keyframe.easeStrength - nextStrength) >= 0.0001) {
-        source.keyframe.easeStrength = nextStrength;
-        changed = true;
-      }
-    }
+    changed = applyKeyframeEasePatch(source.keyframe, patch) || changed;
 
     if (changed) {
       changedTracks.add(source.track);
@@ -1111,6 +1119,50 @@ function selectedKeyframeRepeatGap(timeline: SceneTimelineDocument, selectedTime
     .filter((gap) => gap > 0.001);
   if (positiveGaps.length === 0) return fallback;
   return roundTime(Math.max(Math.min(...positiveGaps), 0.001));
+}
+
+function applyKeyframeEasePatch(keyframe: TimelineKeyframeDocument, patch: TimelineKeyframeEditPatch): boolean {
+  let changed = false;
+  if (typeof patch.easeStrength === "number" && Number.isFinite(patch.easeStrength)) {
+    const nextStrength = clampEaseStrength(patch.easeStrength);
+    if (Math.abs(keyframe.easeStrength - nextStrength) >= 0.0001) {
+      keyframe.easeStrength = nextStrength;
+      changed = true;
+    }
+    if (Math.abs(keyframe.easeInStrength - nextStrength) >= 0.0001) {
+      keyframe.easeInStrength = nextStrength;
+      changed = true;
+    }
+    if (Math.abs(keyframe.easeOutStrength - nextStrength) >= 0.0001) {
+      keyframe.easeOutStrength = nextStrength;
+      changed = true;
+    }
+    return changed;
+  }
+
+  if (typeof patch.easeInStrength === "number" && Number.isFinite(patch.easeInStrength)) {
+    const nextStrength = clampEaseStrength(patch.easeInStrength);
+    if (Math.abs(keyframe.easeInStrength - nextStrength) >= 0.0001) {
+      keyframe.easeInStrength = nextStrength;
+      changed = true;
+    }
+  }
+  if (typeof patch.easeOutStrength === "number" && Number.isFinite(patch.easeOutStrength)) {
+    const nextStrength = clampEaseStrength(patch.easeOutStrength);
+    if (Math.abs(keyframe.easeOutStrength - nextStrength) >= 0.0001) {
+      keyframe.easeOutStrength = nextStrength;
+      changed = true;
+    }
+  }
+  if (changed) {
+    const nextSummary = (keyframe.easeInStrength + keyframe.easeOutStrength) / 2;
+    if (Math.abs(keyframe.easeStrength - nextSummary) >= 0.0001) keyframe.easeStrength = nextSummary;
+  }
+  return changed;
+}
+
+function clampEaseStrength(value: number): number {
+  return Math.min(Math.max(value, 0), 2);
 }
 
 function timelineGapDuration(timeline: SceneTimelineDocument, duration: number): number {

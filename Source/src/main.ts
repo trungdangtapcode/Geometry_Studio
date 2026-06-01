@@ -6107,7 +6107,10 @@ function boot(root: HTMLDivElement): void {
     if (!match || !Number.isFinite(easeStrength)) return;
     if (match.track.locked) return;
     if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
-    match.keyframe.easeStrength = clamp(easeStrength, 0, 2);
+    const nextStrength = clamp(easeStrength, 0, 2);
+    match.keyframe.easeStrength = nextStrength;
+    match.keyframe.easeInStrength = nextStrength;
+    match.keyframe.easeOutStrength = nextStrength;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();

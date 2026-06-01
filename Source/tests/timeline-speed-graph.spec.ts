@@ -43,6 +43,8 @@ test("shows editable speed graph for active keyed track", async ({ page }) => {
     ?.tracks.find((track) => track.kind === "position");
   expect(positionTrack?.keyframes.map((keyframe) => keyframe.interpolation)).toEqual(["easeIn", "easeIn"]);
   expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeStrength)).toEqual([1.05, 1.05]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeInStrength)).toEqual([1.05, 1.05]);
+  expect(positionTrack?.keyframes.map((keyframe) => keyframe.easeOutStrength)).toEqual([1.05, 1.05]);
 
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("Escape");
@@ -58,6 +60,8 @@ test("shows editable speed graph for active keyed track", async ({ page }) => {
     ?.tracks.find((track) => track.kind === "position");
   expect(draggedPositionTrack?.keyframes[0].time).toBeGreaterThan(0.2);
   expect(draggedPositionTrack?.keyframes[0].easeStrength).toBeGreaterThan(1.2);
+  expect(draggedPositionTrack?.keyframes[0].easeInStrength).toBeGreaterThan(1.2);
+  expect(draggedPositionTrack?.keyframes[0].easeOutStrength).toBeGreaterThan(1.2);
   expect(draggedPositionTrack?.keyframes[1].time).toBeCloseTo(2, 2);
   expect(draggedPositionTrack?.keyframes[1].easeStrength).toBeCloseTo(1.05, 2);
 
@@ -115,7 +119,7 @@ async function saveScene(page: Page): Promise<{
   timeline: {
     objects: Array<{
       objectId: string;
-      tracks: Array<{ kind: string; keyframes: Array<{ time: number; interpolation: string; easeStrength: number }> }>;
+      tracks: Array<{ kind: string; keyframes: Array<{ time: number; interpolation: string; easeStrength: number; easeInStrength: number; easeOutStrength: number }> }>;
     }>;
   };
 }> {

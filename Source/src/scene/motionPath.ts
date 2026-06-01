@@ -136,7 +136,7 @@ export function updateObjectOnionSkins(
     ]);
     const ghost = createPoseGhost(
       basis,
-      { id: `onion-${timeKey}`, time, value: position, interpolation: "linear", easeStrength: 1 },
+      { id: `onion-${timeKey}`, time, value: position, interpolation: "linear", easeStrength: 1, easeInStrength: 1, easeOutStrength: 1 },
       rotationTrack,
       scaleTrack,
       selectedEntry,

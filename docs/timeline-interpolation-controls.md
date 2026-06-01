@@ -21,9 +21,9 @@ a hidden data field.
 - `Hold` keeps the previous value until the next keyframe.
 - The compact keyframe editor includes a curve preview that updates with the
   active interpolation mode.
-- The compact keyframe editor also includes `Ease %`, a per-keyframe strength
-  control. `0` linearizes the selected interpolation, `100` keeps the normal
-  curve, and `200` exaggerates the curve.
+- The compact keyframe editor also includes `Ease %`, `In %`, and `Out %`
+  strength controls. `Ease %` sets both sides together; `In %` and `Out %`
+  allow asymmetric timing around the selected keyframe.
 - The dope-sheet key markers use distinct styling for Hold, Ease In, Ease Out,
   Easy Ease, Back In/Out, and Linear so timing intent is visible without opening
   the editor.
@@ -65,8 +65,10 @@ The feature stays inside the existing timeline command boundary:
 - The timeline schema keeps the same interpolation field but now accepts the
   expanded value set: `linear`, `easeIn`, `easeOut`, `smooth`, `backIn`,
   `backOut`, and `hold`.
-- Timeline schema v12 adds `easeStrength` to each keyframe so temporal strength
-  persists in scene JSON and can later migrate to editable velocity handles.
+- Timeline schema v13 adds `easeInStrength` and `easeOutStrength` to each
+  keyframe so temporal strength persists in scene JSON and can later migrate to
+  editable velocity handles. The older `easeStrength` field remains as a
+  migration summary.
 
 ## Testing
 
@@ -82,6 +84,7 @@ The browser suite verifies that:
   midpoint.
 - Applying Back Out creates visible overshoot during playback and persists
   `backOut` in scene JSON.
-- Editing `Ease %` changes the shared runtime evaluator and persists
-  `easeStrength` in scene JSON.
+- Editing `Ease %`, `In %`, or `Out %` changes the shared runtime evaluator and
+  persists `easeStrength`, `easeInStrength`, and `easeOutStrength` in scene
+  JSON.
 - Saved scene JSON persists the resulting `smooth` interpolation value.

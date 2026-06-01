@@ -23,9 +23,10 @@ light, material, texture, visibility, and motion-path sampling.
   exact authored value.
 - Scrubbing exactly onto a keyframe always returns that keyframe's authored
   value, even when the previous segment uses Hold interpolation.
-- Each non-hold segment also reads the left keyframe's `easeStrength` value.
-  `0` blends fully back to linear timing, `1` uses the normal curve, and `2`
-  doubles the selected curve's deviation from linear timing.
+- Each non-hold segment also reads the left keyframe's `easeOutStrength` and
+  the right keyframe's `easeInStrength`. `0` blends fully back to linear timing,
+  `1` uses the normal curve, and `2` doubles the selected curve's deviation
+  from linear timing.
 - Mixed tracks are supported. For example, a Position track can hold from
   \(t_0\) to \(t_1\), then interpolate linearly from \(t_1\) to \(t_2\).
 
@@ -61,5 +62,6 @@ The grouped transform Playwright workflow verifies mixed interpolation by:
    key, and verifying different midpoint values from the shared evaluator.
 7. Applying Back Out and verifying that midpoint playback overshoots the target
    value while exact keyframe time still lands on the authored endpoint.
-8. Editing `Ease %` and verifying that the same Ease In segment can be
-   linearized or exaggerated without changing the authored keyframe values.
+8. Editing `Ease %`, `In %`, and `Out %`, then verifying that the same Ease In
+   segment can be linearized, exaggerated, or made asymmetric without changing
+   the authored keyframe values.
