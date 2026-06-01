@@ -21,6 +21,8 @@ Bezier velocity handles.
   influence.
 - Or open the Graph panel, switch to `Speed`, select speed keys, and press
   Up/Down or drag vertically to adjust `Ease %`.
+- In Speed graph mode, choose `Both`, `In`, or `Out` before dragging/nudging to
+  decide which ease side is edited.
 - `0` makes the segment behave like linear timing.
 - `100` is the normal interpolation curve.
 - `200` exaggerates the selected curve.
@@ -70,8 +72,8 @@ safe for every existing track type.
 Speed graph markers are no longer inspection-only. For editable track types:
 
 - Horizontal drag retimes the keyframe.
-- Vertical drag adjusts both-side `Ease %` between `0` and `200`.
-- Up/Down nudges both-side `Ease %` by `5`.
+- Vertical drag adjusts the selected ease side between `0` and `200`.
+- Up/Down nudges the selected ease side by `5`.
 - Shift+Up/Down nudges by `25`.
 - Alt+Up/Down nudges by `1`.
 

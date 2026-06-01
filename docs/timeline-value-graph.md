@@ -29,6 +29,9 @@ in After Effects.
 - In Speed mode the graph shows velocity magnitude in units per second. Key
   markers are editable: drag horizontally to retime, drag vertically to change
   selected keyframe `Ease %`, or press Up/Down to nudge ease strength.
+- The Speed graph `Both` / `In` / `Out` selector controls which ease side the
+  graph edits. `Both` edits the shared `Ease %`, `In` edits incoming ease, and
+  `Out` edits outgoing ease.
 - The Speed graph status line reports selected-key `Ease %`; when no key is
   selected it shows the `Time / Ease %` drag hint.
 - Clicking a graph key selects it. Ctrl/Cmd-click toggles a key in or out of
@@ -92,9 +95,9 @@ This graph version is intentionally focused:
 
 - It edits keyed channel values, keyframe time, and keyframe ease strength, but
   does not yet allow Bezier handle editing.
-- Speed mode edits both-side `Ease %`, not true draggable Bezier velocity
-  handles yet. The saved `easeInStrength` and `easeOutStrength` fields are the
-  migration point for those handles.
+- Speed mode edits numeric `Ease %`, `In %`, and `Out %`, not true draggable
+  Bezier velocity handles yet. The saved `easeInStrength` and `easeOutStrength`
+  fields are the migration point for those handles.
 - It uses per-channel normalization so small changes remain visible.
 - It expands the visible value range slightly so graph keys can be dragged above
   or below the current key values without immediately hitting the panel edge.
@@ -110,7 +113,8 @@ The Playwright smoke workflow verifies that:
 - The graph panel opens without breaking the resizable timeline dock.
 - A keyed Position track draws a non-empty X-channel SVG path.
 - The Speed graph mode draws a non-empty velocity path, reports speed range, and
-  lets selected speed keys nudge `Ease %` while updating the status readout.
+  lets selected speed keys nudge `Ease %`, `In %`, or `Out %` while updating the
+  status readout.
 - The graph reports the active keyed track count.
 - Shift-clicking graph keys selects a keyframe range that can be deleted without
   deleting the scene object.

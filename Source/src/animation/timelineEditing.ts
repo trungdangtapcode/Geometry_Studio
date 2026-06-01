@@ -1155,7 +1155,7 @@ function applyKeyframeEasePatch(keyframe: TimelineKeyframeDocument, patch: Timel
     }
   }
   if (changed) {
-    const nextSummary = (keyframe.easeInStrength + keyframe.easeOutStrength) / 2;
+    const nextSummary = Math.round(((keyframe.easeInStrength + keyframe.easeOutStrength) / 2) * 1000) / 1000;
     if (Math.abs(keyframe.easeStrength - nextSummary) >= 0.0001) keyframe.easeStrength = nextSummary;
   }
   return changed;

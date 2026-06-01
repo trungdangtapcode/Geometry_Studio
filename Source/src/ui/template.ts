@@ -273,6 +273,11 @@ export function studioTemplate(): string {
                 <button class="timeline-graph-mode-button active" id="timeline-graph-mode-value" type="button" aria-pressed="true" title="Show editable keyframe values">Value</button>
                 <button class="timeline-graph-mode-button" id="timeline-graph-mode-speed" type="button" aria-pressed="false" title="Show velocity per second; drag speed keys vertically to edit Ease %">Speed</button>
               </div>
+              <div class="timeline-graph-mode timeline-graph-ease-side" role="group" aria-label="Speed graph ease side">
+                <button class="timeline-graph-mode-button active" id="timeline-graph-ease-both" type="button" aria-pressed="true" title="Speed graph edits both incoming and outgoing ease">Both</button>
+                <button class="timeline-graph-mode-button" id="timeline-graph-ease-in" type="button" aria-pressed="false" title="Speed graph edits incoming ease only">In</button>
+                <button class="timeline-graph-mode-button" id="timeline-graph-ease-out" type="button" aria-pressed="false" title="Speed graph edits outgoing ease only">Out</button>
+              </div>
             </div>
             <svg id="timeline-value-graph" viewBox="0 0 520 96" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               <path class="timeline-graph-grid" d="M0 16 H520 M0 48 H520 M0 80 H520 M104 0 V96 M208 0 V96 M312 0 V96 M416 0 V96" />

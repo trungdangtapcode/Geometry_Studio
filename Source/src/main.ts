@@ -153,6 +153,7 @@ import {
   type TimelineTransportButtonAction,
   type TimelineVisibleRowTarget
 } from "./ui/timelinePanel";
+import type { TimelineEaseEditSide } from "./ui/timelineValueGraph";
 import { AssetBrowser } from "./ui/assetBrowser";
 import { AssetSourcePanel } from "./ui/assetSourcePanel";
 import { CommandPalette, type CommandPaletteCommand } from "./ui/commandPalette";
@@ -6102,15 +6103,21 @@ function boot(root: HTMLDivElement): void {
     syncMotionPath();
   }
 
-  function moveTimelineKeyframeEase(keyframeId: string, easeStrength: number): void {
+  function moveTimelineKeyframeEase(keyframeId: string, easeStrength: number, side: TimelineEaseEditSide): void {
     const match = findTimelineKeyframe(keyframeId);
     if (!match || !Number.isFinite(easeStrength)) return;
     if (match.track.locked) return;
     if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     const nextStrength = clamp(easeStrength, 0, 2);
-    match.keyframe.easeStrength = nextStrength;
-    match.keyframe.easeInStrength = nextStrength;
-    match.keyframe.easeOutStrength = nextStrength;
+    if (side === "in") {
+      match.keyframe.easeInStrength = nextStrength;
+    } else if (side === "out") {
+      match.keyframe.easeOutStrength = nextStrength;
+    } else {
+      match.keyframe.easeInStrength = nextStrength;
+      match.keyframe.easeOutStrength = nextStrength;
+    }
+    match.keyframe.easeStrength = Math.round(((match.keyframe.easeInStrength + match.keyframe.easeOutStrength) / 2) * 1000) / 1000;
     rebuildTimelineRuntime();
     timelinePlayer.setTime(sceneTimeline.currentTime);
     applyCameraTimeline();

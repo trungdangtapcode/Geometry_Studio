@@ -6,6 +6,7 @@ import { clamp, formatNumber } from "../utils/dom";
 export type TimelineAxis = "x" | "y" | "z";
 export type TimelineKeySelectionMode = "replace" | "toggle" | "range" | "preserve";
 type TimelineGraphMode = "value" | "speed";
+export type TimelineEaseEditSide = "both" | "in" | "out";
 
 export const TIMELINE_AXES: TimelineAxis[] = ["x", "y", "z"];
 export const AXIS_INDEX: Record<TimelineAxis, number> = { x: 0, y: 1, z: 2 };
@@ -18,6 +19,9 @@ export interface TimelineValueGraphElements {
   range: HTMLElement;
   modeValueButton: HTMLButtonElement;
   modeSpeedButton: HTMLButtonElement;
+  easeBothButton: HTMLButtonElement;
+  easeInButton: HTMLButtonElement;
+  easeOutButton: HTMLButtonElement;
   svg: SVGSVGElement;
   marquee: SVGRectElement;
   keyLayer: SVGGElement;
@@ -39,7 +43,7 @@ export interface TimelineValueGraphCallbacks {
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
   onKeyframeValueChanged(keyframeId: string, axis: TimelineAxis, value: number): void;
-  onKeyframeEaseChanged(keyframeId: string, easeStrength: number): void;
+  onKeyframeEaseChanged(keyframeId: string, easeStrength: number, side: TimelineEaseEditSide): void;
   onDragFinished(): void;
 }
 
@@ -87,6 +91,7 @@ type ValueGraphPoint = {
 
 type ValueGraphDragState = {
   mode: TimelineGraphMode;
+  easeSide: TimelineEaseEditSide;
   pointerId: number;
   startX: number;
   startY: number;
@@ -117,6 +122,7 @@ type ValueGraphMarqueeState = {
 
 const GRAPH_VISIBLE_STORAGE_KEY = "geometry-studio-timeline-graph-visible";
 const GRAPH_MODE_STORAGE_KEY = "geometry-studio-timeline-graph-mode";
+const GRAPH_EASE_SIDE_STORAGE_KEY = "geometry-studio-timeline-graph-ease-side";
 const GRAPH_WIDTH = 520;
 const GRAPH_HEIGHT = 96;
 const GRAPH_SAMPLE_COUNT = 96;
@@ -125,6 +131,7 @@ const EASE_STRENGTH_GRAPH_RANGE: ValueGraphRange = { min: 0, max: 2 };
 export class TimelineValueGraph {
   private graphVisible = loadTimelineGraphVisible();
   private graphMode: TimelineGraphMode = loadTimelineGraphMode();
+  private easeEditSide: TimelineEaseEditSide = loadTimelineEaseEditSide();
   private lastContext: TimelineValueGraphRenderContext | null = null;
   private dragState: ValueGraphDragState | null = null;
   private marqueeState: ValueGraphMarqueeState | null = null;
@@ -228,7 +235,7 @@ export class TimelineValueGraph {
     this.elements.paths.z.setAttribute("d", "");
     this.renderSpeedKeyPoints(context, start, end, range, axisCount);
     const speeds = samples.map((sample) => sample.speed);
-    this.elements.range.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | Speed ${formatNumber(Math.min(...speeds))}..${formatNumber(Math.max(...speeds))}/s | ${speedGraphEaseSummary(track, context.selectedKeyframeIds)}`;
+    this.elements.range.textContent = `${formatKeyCount(track.keyframes.length)} | ${formatNumber(start)}-${formatNumber(end)}s | Speed ${formatNumber(Math.min(...speeds))}..${formatNumber(Math.max(...speeds))}/s | ${speedGraphEaseSummary(track, context.selectedKeyframeIds, this.easeEditSide)}`;
   }
 
   private bindEvents(): void {
@@ -240,6 +247,9 @@ export class TimelineValueGraph {
     });
     this.elements.modeValueButton.addEventListener("click", () => this.setGraphMode("value"));
     this.elements.modeSpeedButton.addEventListener("click", () => this.setGraphMode("speed"));
+    this.elements.easeBothButton.addEventListener("click", () => this.setEaseEditSide("both"));
+    this.elements.easeInButton.addEventListener("click", () => this.setEaseEditSide("in"));
+    this.elements.easeOutButton.addEventListener("click", () => this.setEaseEditSide("out"));
     this.elements.keyLayer.addEventListener("pointerdown", (event) => this.startGraphKeyDrag(event));
     this.elements.keyLayer.addEventListener("keydown", (event) => this.nudgeGraphKeyFromKeyboard(event));
     this.elements.svg.addEventListener("pointerdown", (event) => this.startGraphMarquee(event));
@@ -263,6 +273,7 @@ export class TimelineValueGraph {
     this.elements.toggleButton.classList.toggle("active", this.graphVisible);
     this.elements.toggleButton.setAttribute("aria-pressed", String(this.graphVisible));
     this.syncGraphModeButtons();
+    this.syncEaseSideButtons();
   }
 
   private setGraphMode(mode: TimelineGraphMode): void {
@@ -278,6 +289,30 @@ export class TimelineValueGraph {
     this.elements.modeSpeedButton.classList.toggle("active", this.graphMode === "speed");
     this.elements.modeValueButton.setAttribute("aria-pressed", String(this.graphMode === "value"));
     this.elements.modeSpeedButton.setAttribute("aria-pressed", String(this.graphMode === "speed"));
+    this.syncEaseSideButtons();
+  }
+
+  private setEaseEditSide(side: TimelineEaseEditSide): void {
+    if (this.easeEditSide === side) return;
+    this.easeEditSide = side;
+    storeTimelineEaseEditSide(side);
+    this.syncEaseSideButtons();
+    if (this.lastContext) this.render(this.lastContext);
+  }
+
+  private syncEaseSideButtons(): void {
+    const disabled = this.graphMode !== "speed";
+    const buttons: Array<[HTMLButtonElement, TimelineEaseEditSide]> = [
+      [this.elements.easeBothButton, "both"],
+      [this.elements.easeInButton, "in"],
+      [this.elements.easeOutButton, "out"]
+    ];
+    buttons.forEach(([button, side]) => {
+      button.classList.toggle("active", this.easeEditSide === side);
+      button.disabled = disabled;
+      button.setAttribute("aria-pressed", String(this.easeEditSide === side));
+      button.setAttribute("aria-disabled", String(disabled));
+    });
   }
 
   private renderKeyPoints(
@@ -372,11 +407,12 @@ export class TimelineValueGraph {
         point.setAttribute("r", context.selectedKeyframeIds.has(keyframe.id) ? "5" : "4");
         point.setAttribute("role", editable ? "button" : "img");
         point.setAttribute("tabindex", editable ? "0" : "-1");
+        const easeLabel = speedGraphEasePointLabel(keyframe, this.easeEditSide);
         point.setAttribute(
           "aria-label",
           editable
-            ? `Edit speed marker at ${formatNumber(keyframe.time)} seconds. Speed ${formatNumber(speed)} units per second. Ease ${formatNumber(keyframe.easeStrength * 100)} percent. Drag horizontally to retime, drag vertically to adjust Ease %, and Up or Down nudges Ease %.`
-            : `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second. Ease ${formatNumber(keyframe.easeStrength * 100)} percent.`
+            ? `Edit speed marker at ${formatNumber(keyframe.time)} seconds. Speed ${formatNumber(speed)} units per second. ${easeLabel}. Drag horizontally to retime, drag vertically to adjust ${speedGraphEaseSideLabel(this.easeEditSide)}, and Up or Down nudges it.`
+            : `View speed marker at ${formatNumber(keyframe.time)} seconds: ${formatNumber(speed)} units per second. ${easeLabel}.`
         );
         this.elements.keyLayer.appendChild(point);
       });
@@ -401,16 +437,17 @@ export class TimelineValueGraph {
     const dragKeys = draggedKeyframes.map((candidate) => ({
       keyframeId: candidate.id,
       startTime: candidate.time,
-      startValue: speedMode ? candidate.easeStrength : candidate.value[axisIndex]
+      startValue: speedMode ? keyframeEaseValue(candidate, this.easeEditSide) : candidate.value[axisIndex]
     }));
     event.preventDefault();
     this.dragState = {
       mode: this.graphMode,
+      easeSide: this.easeEditSide,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       startTime: keyframe.time,
-      startValue: speedMode ? keyframe.easeStrength : keyframe.value[axisIndex],
+      startValue: speedMode ? keyframeEaseValue(keyframe, this.easeEditSide) : keyframe.value[axisIndex],
       keyframeId,
       selectionMode,
       keyframes: dragKeys,
@@ -471,7 +508,7 @@ export class TimelineValueGraph {
         this.callbacks.onKeyframeSelected(keyframeId, "replace");
       }
       keyframes.forEach((candidate) => {
-        this.callbacks.onKeyframeEaseChanged(candidate.id, candidate.easeStrength + direction * step);
+        this.callbacks.onKeyframeEaseChanged(candidate.id, keyframeEaseValue(candidate, this.easeEditSide) + direction * step, this.easeEditSide);
       });
       this.callbacks.onDragFinished();
       if (this.lastContext) this.render(this.lastContext);
@@ -505,11 +542,19 @@ export class TimelineValueGraph {
     }
     const constrained = this.constrainDragValues(event, drag);
     this.dragKeyUpdates(event, drag, constrained).forEach((update) => {
-      this.callbacks.onKeyframeMoved(update.keyframeId, update.time);
+      const startKey = drag.keyframes.find((keyframe) => keyframe.keyframeId === update.keyframeId);
+      if (!startKey) return;
+      if (Math.abs(update.time - startKey.startTime) >= 0.0005) {
+        this.callbacks.onKeyframeMoved(update.keyframeId, update.time);
+      }
       if (drag.mode === "speed") {
-        this.callbacks.onKeyframeEaseChanged(update.keyframeId, update.value);
+        if (Math.abs(update.value - startKey.startValue) >= 0.0005) {
+          this.callbacks.onKeyframeEaseChanged(update.keyframeId, update.value, drag.easeSide);
+        }
       } else {
-        this.callbacks.onKeyframeValueChanged(update.keyframeId, drag.axis, update.value);
+        if (Math.abs(update.value - startKey.startValue) >= 0.0005) {
+          this.callbacks.onKeyframeValueChanged(update.keyframeId, drag.axis, update.value);
+        }
       }
     });
     if (this.lastContext) this.render(this.lastContext);
@@ -549,6 +594,13 @@ export class TimelineValueGraph {
     };
     raw.time = event.altKey ? constrainedStretchTargetTime(raw.time, drag) : constrainedGroupTime(raw.time, drag);
     if (event.altKey && drag.keyframes.length > 1) return { time: raw.time, value: drag.startValue };
+    if (drag.mode === "speed" && !event.shiftKey && !this.shiftPressed) {
+      const deltaX = Math.abs(event.clientX - drag.startX);
+      const deltaY = Math.abs(event.clientY - drag.startY);
+      return deltaX > deltaY
+        ? { time: raw.time, value: drag.startValue }
+        : { time: drag.startTime, value: raw.value };
+    }
     if (!event.shiftKey && !this.shiftPressed) return raw;
     const deltaX = Math.abs(event.clientX - drag.startX);
     const deltaY = Math.abs(event.clientY - drag.startY);
@@ -871,15 +923,33 @@ function graphKeyboardEaseStep(event: KeyboardEvent): number {
   return 0.05;
 }
 
-function speedGraphEaseSummary(track: TimelineTrackDocument, selectedKeyframeIds: Set<string>): string {
+function keyframeEaseValue(keyframe: { easeStrength: number; easeInStrength: number; easeOutStrength: number }, side: TimelineEaseEditSide): number {
+  if (side === "in") return keyframe.easeInStrength;
+  if (side === "out") return keyframe.easeOutStrength;
+  return keyframe.easeStrength;
+}
+
+function speedGraphEaseSummary(track: TimelineTrackDocument, selectedKeyframeIds: Set<string>, side: TimelineEaseEditSide): string {
   const selected = track.keyframes.filter((keyframe) => selectedKeyframeIds.has(keyframe.id));
-  if (selected.length === 0) return "Drag keys: Time / Ease %";
-  const values = selected.map((keyframe) => keyframe.easeStrength * 100);
+  const label = speedGraphEaseSideLabel(side);
+  if (selected.length === 0) return `Drag keys: Time / ${label}`;
+  const values = selected.map((keyframe) => keyframeEaseValue(keyframe, side) * 100);
   const min = Math.min(...values);
   const max = Math.max(...values);
   return Math.abs(max - min) < 0.001
-    ? `Ease ${formatNumber(min)}%`
-    : `Ease ${formatNumber(min)}..${formatNumber(max)}%`;
+    ? `${label} ${formatNumber(min)}%`
+    : `${label} ${formatNumber(min)}..${formatNumber(max)}%`;
+}
+
+function speedGraphEasePointLabel(keyframe: { easeStrength: number; easeInStrength: number; easeOutStrength: number }, side: TimelineEaseEditSide): string {
+  const label = speedGraphEaseSideLabel(side);
+  return `${label} ${formatNumber(keyframeEaseValue(keyframe, side) * 100)} percent`;
+}
+
+function speedGraphEaseSideLabel(side: TimelineEaseEditSide): string {
+  if (side === "in") return "In %";
+  if (side === "out") return "Out %";
+  return "Ease %";
 }
 
 function formatAxisRange(label: string, values: number[]): string {
@@ -915,6 +985,18 @@ function loadTimelineGraphMode(): TimelineGraphMode {
   }
 }
 
+function loadTimelineEaseEditSide(): TimelineEaseEditSide {
+  try {
+    return parseTimelineEaseEditSide(window.localStorage.getItem(GRAPH_EASE_SIDE_STORAGE_KEY));
+  } catch {
+    return "both";
+  }
+}
+
+function parseTimelineEaseEditSide(value: string | null): TimelineEaseEditSide {
+  return value === "in" || value === "out" ? value : "both";
+}
+
 function storeTimelineGraphVisible(visible: boolean): void {
   try {
     window.localStorage.setItem(GRAPH_VISIBLE_STORAGE_KEY, String(visible));
@@ -928,5 +1010,13 @@ function storeTimelineGraphMode(mode: TimelineGraphMode): void {
     window.localStorage.setItem(GRAPH_MODE_STORAGE_KEY, mode);
   } catch {
     // Graph mode is an editor preference; blocked storage should not affect timeline editing.
+  }
+}
+
+function storeTimelineEaseEditSide(side: TimelineEaseEditSide): void {
+  try {
+    window.localStorage.setItem(GRAPH_EASE_SIDE_STORAGE_KEY, side);
+  } catch {
+    // Graph ease-side mode is an editor preference; blocked storage should not affect timeline editing.
   }
 }

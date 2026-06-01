@@ -28,6 +28,7 @@ import {
   TIMELINE_AXES,
   trackAxisConfig,
   type TimelineAxis,
+  type TimelineEaseEditSide,
   type TimelineGraphKeySelection,
   type TimelineGraphSelectionMode,
   type TimelineKeySelectionMode
@@ -136,7 +137,7 @@ export interface KeyframeTimelineCallbacks {
   onDragStarted(): void;
   onKeyframeMoved(keyframeId: string, time: number): void;
   onKeyframeValueChanged(keyframeId: string, axis: TimelineAxis, value: number): void;
-  onKeyframeEaseChanged(keyframeId: string, easeStrength: number): void;
+  onKeyframeEaseChanged(keyframeId: string, easeStrength: number, side: TimelineEaseEditSide): void;
   onDragFinished(): void;
   onSettingsChanged(patch: TimelineSettingsPatch): void;
   onTogglePlayback(action: TimelineTransportButtonAction): void;
@@ -424,6 +425,9 @@ export class KeyframeTimelinePanel {
       range: query<HTMLElement>("#timeline-graph-range"),
       modeValueButton: query<HTMLButtonElement>("#timeline-graph-mode-value"),
       modeSpeedButton: query<HTMLButtonElement>("#timeline-graph-mode-speed"),
+      easeBothButton: query<HTMLButtonElement>("#timeline-graph-ease-both"),
+      easeInButton: query<HTMLButtonElement>("#timeline-graph-ease-in"),
+      easeOutButton: query<HTMLButtonElement>("#timeline-graph-ease-out"),
       svg: query<SVGSVGElement>("#timeline-value-graph"),
       marquee: query<SVGRectElement>("#timeline-graph-marquee"),
       keyLayer: query<SVGGElement>("#timeline-graph-keys"),
@@ -443,7 +447,7 @@ export class KeyframeTimelinePanel {
       onDragStarted: () => this.callbacks.onDragStarted(),
       onKeyframeMoved: (keyframeId, time) => this.callbacks.onKeyframeMoved(keyframeId, time),
       onKeyframeValueChanged: (keyframeId, axis, value) => this.callbacks.onKeyframeValueChanged(keyframeId, axis, value),
-      onKeyframeEaseChanged: (keyframeId, easeStrength) => this.callbacks.onKeyframeEaseChanged(keyframeId, easeStrength),
+      onKeyframeEaseChanged: (keyframeId, easeStrength, side) => this.callbacks.onKeyframeEaseChanged(keyframeId, easeStrength, side),
       onDragFinished: () => this.callbacks.onDragFinished()
     });
     this.timeline = new Timeline({

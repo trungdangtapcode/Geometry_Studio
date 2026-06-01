@@ -191,6 +191,7 @@ Position, Rotation, and Scale recorded together.
 | Ease % / In % / Out % | Strength for selected keyframe easing: `Ease %` sets both sides, `In %` affects the segment ending at the key, `Out %` affects the segment starting at the key |
 | Graph | Show/hide graph editor for the active track |
 | Value / Speed | Switch between editable value curves and velocity graph; Speed keys can retime and adjust `Ease %` |
+| Both / In / Out | Speed graph ease-side selector; choose which side vertical speed-key drags and Up/Down nudges edit |
 | Marker | Add/update or delete timeline marker |
 | Delete | Delete selected keyframes |
 | Ripple Del | Delete selected keyframes and close the timing gap |
