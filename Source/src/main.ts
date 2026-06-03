@@ -354,6 +354,7 @@ function boot(root: HTMLDivElement): void {
     onSnapKeyframesToFrames: snapTimelineKeyframesToFrames,
     onDistributeKeyframes: distributeTimelineKeyframes,
     onFitKeyframesToWorkArea: fitTimelineKeyframesToWorkArea,
+    onScaleKeyframeTiming: scaleTimelineKeyframeTiming,
     onStaggerKeyframesFromPlayhead: staggerTimelineKeyframesFromPlayhead,
     onCascadeKeyframesFromPlayhead: cascadeTimelineKeyframesFromPlayhead,
     onCycleKeyframesAcrossWorkArea: cycleTimelineKeyframesAcrossWorkArea,
@@ -1465,6 +1466,14 @@ function boot(root: HTMLDivElement): void {
       command("timeline.snap-frames", "Snap Keyframes To Frames", "Retiming", () => snapTimelineKeyframesToFrames(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+S", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.distribute", "Distribute Keyframes Across Work Area", "Retiming", () => distributeTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+D", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.fit-work", "Fit Keyframes To Work Area", "Retiming", () => fitTimelineKeyframesToWorkArea(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+F", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.compress-50", "Compress Selected Keyframes To 50%", "Retiming", () => scaleTimelineKeyframeTiming(0.5, timelinePanel.selectedKeyframeIdsList()), {
+        keywords: ["time stretch", "compress", "speed up", "faster", "50 percent", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.stretch-200", "Stretch Selected Keyframes To 200%", "Retiming", () => scaleTimelineKeyframeTiming(2, timelinePanel.selectedKeyframeIdsList()), {
+        keywords: ["time stretch", "slow down", "slower", "200 percent", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
       command("timeline.stagger", "Stagger Keyframes From Playhead", "Retiming", () => staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.cascade", "Cascade Target Keyframes From Playhead", "Retiming", () => cascadeTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Alt+Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.select-layer-keys", "Select Selected Layer Keyframes", "Retiming", selectSelectedLayerKeyframes, {
@@ -1633,6 +1642,8 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-snap-keyframes", commandId: "timeline.snap-frames" },
       { selector: "#timeline-distribute-keyframes", commandId: "timeline.distribute" },
       { selector: "#timeline-fit-keyframes", commandId: "timeline.fit-work" },
+      { selector: "#timeline-compress-keyframes", commandId: "timeline.compress-50" },
+      { selector: "#timeline-stretch-keyframes", commandId: "timeline.stretch-200" },
       { selector: "#timeline-stagger-keyframes", commandId: "timeline.stagger" },
       { selector: "#timeline-cascade-keyframes", commandId: "timeline.cascade" },
       { selector: "#timeline-layer-in", label: "Trim Layer In At Playhead", shortcut: "Alt+[" },
@@ -6007,6 +6018,39 @@ function boot(root: HTMLDivElement): void {
       result,
       (editResult) => editResult.skipped ? `No keyframe span changed, ${editResult.skipped} skipped.` : "Selected keyframes already match that span.",
       (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} stretched to ${formatNumber(span)}s span${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
+  }
+
+  function scaleTimelineKeyframeTiming(factor: number, keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before scaling timing.", "bad");
+      return;
+    }
+    if (!Number.isFinite(factor) || factor <= 0) {
+      showToast("Enter a positive timing scale.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "scaling selected keyframe timing")) return;
+
+    const times = sources.map((source) => source.keyframe.time);
+    const start = Math.min(...times);
+    const end = Math.max(...times);
+    const span = end - start;
+    if (span <= 0.001) {
+      showToast("Select keyframes with different times before scaling timing.", "bad");
+      return;
+    }
+
+    const targetSpan = Math.min(Math.max(span * factor, 0.001), Math.max(0.001, sceneTimeline.duration - start));
+    recordHistory();
+    const result = stretchResolvedKeyframesToSpan(sceneTimeline, sources, targetSpan);
+    const label = factor < 1 ? "compressed to 50%" : "stretched to 200%";
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      (editResult) => editResult.skipped ? `No keyframe timing scaled, ${editResult.skipped} skipped.` : `Selected keyframes already match ${label}.`,
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} ${label}${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
     );
   }
 

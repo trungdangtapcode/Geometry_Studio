@@ -221,6 +221,7 @@ Position, Rotation, and Scale recorded together.
 | Snap | Snap selected keys to frame boundaries |
 | Distribute | Evenly distribute selected keys across Work In/Out |
 | Fit Keys | Stretch selected keys into Work In/Out |
+| 50% / 200% | Compress or stretch selected key timing around the first selected key |
 | Stagger | Offset selected timing columns by snap step |
 | Cascade | Sequence selected object/camera/light target key blocks |
 | Cycle | Repeat selected keyframe blocks forward until Work Out |
@@ -294,6 +295,7 @@ Position, Rotation, and Scale recorded together.
 | `Shift+S` | Snap selected keys to frames |
 | `Shift+D` | Distribute selected keys across Work In/Out |
 | `Shift+F` | Fit selected keys into Work In/Out |
+| `50%` / `200%` buttons | Make selected timing twice as fast or twice as slow |
 | `Shift+G` | Stagger selected keys |
 | `Alt+Shift+G` | Cascade selected target key blocks |
 | `Shift+Y` | Cycle selected keyframe blocks to Work Out |

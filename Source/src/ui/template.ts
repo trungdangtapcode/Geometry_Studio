@@ -181,6 +181,8 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-snap-keyframes" type="button"><span data-icon="Magnet"></span><span>Snap</span></button>
               <button class="mini-button" id="timeline-distribute-keyframes" type="button"><span data-icon="AlignHorizontalSpaceAround"></span><span>Distribute</span></button>
               <button class="mini-button" id="timeline-fit-keyframes" type="button"><span data-icon="StretchHorizontal"></span><span>Fit Keys</span></button>
+              <button class="mini-button" id="timeline-compress-keyframes" type="button" title="Compress selected key timing to 50% from the first selected key"><span data-icon="Minimize2"></span><span>50%</span></button>
+              <button class="mini-button" id="timeline-stretch-keyframes" type="button" title="Stretch selected key timing to 200% from the first selected key"><span data-icon="Maximize2"></span><span>200%</span></button>
               <button class="mini-button" id="timeline-stagger-keyframes" type="button" title="Stagger selected keyframe columns from the playhead by the snap step"><span data-icon="ListOrdered"></span><span>Stagger</span></button>
               <button class="mini-button" id="timeline-cascade-keyframes" type="button" title="Cascade selected target keyframes from the playhead by the snap step"><span data-icon="Layers3"></span><span>Cascade</span></button>
               <button class="mini-button" id="timeline-cycle-keyframes" type="button" title="Repeat the selected keyframe block until Work Out (Shift+Y)"><span data-icon="Repeat2"></span><span>Cycle</span></button>
@@ -867,6 +869,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Move To Playhead</strong><span>Shift+Enter</span><p>Move selected key timing so the block starts at the playhead.</p></div>
               <div class="quick-help-item"><strong>Reverse</strong><span>Shift+R</span><p>Reverse selected key timing.</p></div>
               <div class="quick-help-item"><strong>Distribute / Fit Keys</strong><span>Shift+D / Shift+F</span><p>Space keys across Work In/Out or stretch them into the range.</p></div>
+              <div class="quick-help-item"><strong>Timing Scale</strong><span>50% / 200%</span><p>Compress or stretch selected key timing around the first selected key.</p></div>
               <div class="quick-help-item"><strong>Cycle Keys</strong><span>Shift+Y</span><p>Repeat a selected keyframe block forward until Work Out.</p></div>
               <div class="quick-help-item"><strong>Layer Gap Edit</strong><span>Layer Gap / Lift / Extract</span><p>Insert, lift, or extract Work In/Out timing only on the selected object's tracks.</p></div>
               <div class="quick-help-item"><strong>Layer Key Navigation</strong><span>Alt+Shift+Left/Right</span><p>Jump to the selected object's previous or next key time and select that destination key column.</p></div>

@@ -170,6 +170,8 @@ PDF.
   evenly spacing selected keyframe timing columns across Work In/Out.
 - [Timeline Keyframe Fit](timeline-keyframe-fit.md) documents proportional
   time-stretching of selected keyframe timing columns into Work In/Out.
+- [Timeline 50% / 200% Timing Scale Buttons](timeline-time-scale-buttons.md)
+  documents quick selected-key timing compression and stretch controls.
 - [Timeline Keyframe Stagger](timeline-keyframe-stagger.md) documents
   sequencing selected keyframe timing columns from the playhead by the snap
   step.
