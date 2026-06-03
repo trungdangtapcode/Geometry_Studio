@@ -197,6 +197,7 @@ Position, Rotation, and Scale recorded together.
 | Ripple Del | Delete selected keyframes and close the timing gap |
 | Copy / Cut / Paste | Clipboard for selected keyframes |
 | Paste Insert | Paste and push later keys forward |
+| Paste Reversed | Paste copied keyframes with their timing flipped inside the copied span |
 | Select Work | Select active-track keys inside Work In/Out |
 | Select Visible | Select keys on visible rows |
 | Select Pinned | Select keys on pinned rows |
@@ -275,6 +276,7 @@ Position, Rotation, and Scale recorded together.
 | Command Palette: `select visible before` / `select visible after` | Select visible-row keys before or after playhead |
 | `Escape` | Deselect selected timeline keyframes |
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | Copy, cut, paste keyframes |
+| Command Palette: `paste reversed keyframes` | Paste copied keys backward from the playhead |
 | `Ctrl+D` | Duplicate selected keyframes |
 | `Delete` / `Backspace` | Delete selected keys, otherwise selected object |
 | `Shift+Delete` | Ripple delete selected keyframes |

@@ -177,6 +177,20 @@ export function createTimelineClipboard(sources: TimelineKeyframeSource[], optio
   };
 }
 
+export function reverseTimelineClipboard(clipboard: TimelineClipboard): TimelineClipboard {
+  const span = clipboard.keyframes.length
+    ? Math.max(...clipboard.keyframes.map((keyframe) => keyframe.relativeTime))
+    : 0;
+  return {
+    preserveObjectTargets: clipboard.preserveObjectTargets,
+    keyframes: clipboard.keyframes.map((keyframe) => ({
+      ...keyframe,
+      value: [...keyframe.value] as [number, number, number],
+      relativeTime: roundTime(span - keyframe.relativeTime)
+    }))
+  };
+}
+
 export function pasteTimelineClipboard(
   timeline: SceneTimelineDocument,
   clipboard: TimelineClipboard,

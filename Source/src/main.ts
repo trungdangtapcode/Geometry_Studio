@@ -21,6 +21,7 @@ import {
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
   resolveTimelineKeyframeSources,
+  reverseTimelineClipboard,
   reverseResolvedKeyframes,
   rippleDeleteResolvedKeyframes,
   roveResolvedKeyframesAcrossTime,
@@ -1300,6 +1301,10 @@ function boot(root: HTMLDivElement): void {
       command("timeline.paste-insert", "Paste Insert Keyframes", "Keyframes", pasteInsertTimelineKeyframes, {
         shortcut: "Ctrl+Shift+V",
         keywords: ["insert edit", "shift"],
+        disabled: () => !hasTimelineClipboard()
+      }),
+      command("timeline.paste-reverse", "Paste Reversed Keyframes", "Keyframes", pasteReverseTimelineKeyframes, {
+        keywords: ["reverse paste", "time reverse", "paste backward", "after effects", "ae"],
         disabled: () => !hasTimelineClipboard()
       }),
       command("timeline.insert-layer-gap", "Insert Gap On Selected Layer", "Keyframes", insertSelectedLayerTimelineTimeGap, {
@@ -5282,15 +5287,16 @@ function boot(root: HTMLDivElement): void {
     cutTimelineKeyframes(selection.keyframeIds, { preserveObjectTargets: true });
   }
 
-  function pasteTimelineKeyframes(options: { insert?: boolean } = {}): void {
+  function pasteTimelineKeyframes(options: { insert?: boolean; reverse?: boolean } = {}): void {
     if (!timelineClipboard || timelineClipboard.keyframes.length === 0) {
       showToast("Copy timeline keyframes before pasting.", "bad");
       return;
     }
 
     const baseTime = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const clipboard = options.reverse ? reverseTimelineClipboard(timelineClipboard) : timelineClipboard;
     recordHistory();
-    const result = pasteTimelineClipboard(sceneTimeline, timelineClipboard, selectedEntry()?.id ?? null, baseTime, {
+    const result = pasteTimelineClipboard(sceneTimeline, clipboard, selectedEntry()?.id ?? null, baseTime, {
       validObjectIds: new Set(entries.keys()),
       insertBeforePaste: options.insert
     });
@@ -5311,11 +5317,16 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     timelinePanel.selectKeyframes(result.keyframeIds);
     const insertText = options.insert ? `, ${result.shifted} shifted` : "";
-    showToast(`${result.pasted} keyframe${result.pasted === 1 ? "" : "s"} pasted${insertText}${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
+    const reverseText = options.reverse ? " reversed" : "";
+    showToast(`${result.pasted} keyframe${result.pasted === 1 ? "" : "s"} pasted${reverseText}${insertText}${result.skipped ? `, ${result.skipped} skipped` : ""}`, "good");
   }
 
   function pasteInsertTimelineKeyframes(): void {
     pasteTimelineKeyframes({ insert: true });
+  }
+
+  function pasteReverseTimelineKeyframes(): void {
+    pasteTimelineKeyframes({ reverse: true });
   }
 
   function duplicateTimelineKeyframes(keyframeIds: string[]): void {

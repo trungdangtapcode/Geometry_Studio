@@ -249,6 +249,7 @@ or `All`.
 | Move a key in time | Drag it |
 | Delete selected keys | `Delete` |
 | Copy / cut / paste | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` |
+| Paste copied keys backward | Command Palette: `Paste Reversed Keyframes` |
 | Duplicate selected keys | `Ctrl+D` |
 | Copy one key's value only | Command Palette: `Copy Keyframe Value` |
 | Paste that value onto matching keys | Command Palette: `Paste Keyframe Value` |
@@ -294,6 +295,11 @@ Use `Copy Pose Keys At Playhead` and `Paste Pose Keys At Playhead` when you want
 to reuse a complete Position/Rotation/Scale pose from timeline keys. Copy
 requires all three transform keys at the current playhead time. Paste writes all
 three keys together at the target time or onto another selected object.
+
+Use `Paste Reversed Keyframes` when you want the same copied motion to play
+backward from the playhead. Example: copy keys at `0s` and `2s`, move the
+playhead to `5s`, run reverse paste, and the copied `2s` pose lands at `5s`
+while the copied `0s` pose lands at `7s`.
 
 ## 16. Work Area And Playback
 
