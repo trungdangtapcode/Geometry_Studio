@@ -155,6 +155,8 @@ Position, Rotation, and Scale recorded together.
 | Search rows | Filter dense object/camera/light/material rows |
 | Pin visible rows | Pins every row currently visible after search/filtering |
 | Clear pinned rows | Removes every pinned-row preference |
+| Shy | Mark or unmark the selected object layer as shy |
+| Hide Shy / Show Shy | Hide or reveal shy object layers in the timeline |
 
 ## Timeline Buttons
 
@@ -178,6 +180,7 @@ Position, Rotation, and Scale recorded together.
 | Set Pose / Set Pose Key | Record Position, Rotation, and Scale together for the selected object |
 | Set Visible | Record all currently visible timeline rows at the playhead |
 | Set Pinned | Record every pinned timeline row at the playhead |
+| Shy / Hide Shy | Hide object layer clutter without muting tracks or hiding viewport objects |
 | Showcase | Build the reference-style wire sphere, grid floor, shadow, and editable timeline demo |
 | Layer In / Layer Out | Trim selected object layer range |
 | Split | Split selected object layer at the playhead |

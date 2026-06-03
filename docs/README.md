@@ -236,6 +236,8 @@ PDF.
   rows, the Pinned Rows filter, pinned-row keying sets, pinned-row navigation,
   and pinned-row range preview/work-area/fitting commands for dense AE-style
   editing.
+- [Timeline Shy Rows](timeline-shy-rows.md) documents AE-style object layer
+  shy switches and the `Hide Shy` timeline clutter toggle.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
   enable, solo, lock, and key controls.
 - [Timeline Row Value Readouts](timeline-row-value-readouts.md) documents live
@@ -361,6 +363,8 @@ animation runtime where it fits:
   frame keys for smooth zoom-style animation.
 - `Commands`, `Ctrl/Cmd+K`, and `F3` open a searchable command palette for
   timeline, playback, retiming, interpolation, tool, and scene commands.
+- `Shy` and `Hide Shy` hide marked object layers from the timeline while
+  preserving viewport visibility, playback, and saved animation tracks.
 - Track enable/disable controls mute individual property tracks without deleting
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation

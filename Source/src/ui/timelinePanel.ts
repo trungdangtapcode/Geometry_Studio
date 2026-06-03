@@ -19,7 +19,7 @@ import type {
   TimelineTrackDocument,
   TimelineTrackKind
 } from "../editor/types";
-import { hasSoloTimelineTracks } from "../animation/timelineSchema";
+import { hasSoloTimelineTracks, isTimelineObjectShy } from "../animation/timelineSchema";
 import { timelineValueForEntry } from "../animation/timelineTracks";
 import { clamp, formatNumber, hydrateIcons, query } from "../utils/dom";
 import {
@@ -137,6 +137,8 @@ export interface KeyframeTimelineCallbacks {
   onFitSelectedRange(): void;
   onPinVisibleRows(): void;
   onClearPinnedRows(): void;
+  onToggleObjectShy(objectId: string): void;
+  onToggleHideShyRows(): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
   onStepKeyframe(direction: -1 | 1): void;
@@ -274,6 +276,8 @@ export class KeyframeTimelinePanel {
   private readonly rowSearchInput = query<HTMLInputElement>("#timeline-row-search");
   private readonly pinVisibleRowsButton = query<HTMLButtonElement>("#timeline-pin-visible-rows");
   private readonly clearPinnedRowsButton = query<HTMLButtonElement>("#timeline-clear-pinned-rows");
+  private readonly shySelectedButton = query<HTMLButtonElement>("#timeline-shy-selected");
+  private readonly hideShyButton = query<HTMLButtonElement>("#timeline-hide-shy");
   private readonly playButton = query<HTMLButtonElement>("#timeline-play-toggle");
   private readonly addKeyframeButton = query<HTMLButtonElement>("#timeline-add-keyframe");
   private readonly setTransformButton = query<HTMLButtonElement>("#timeline-set-transform");
@@ -537,12 +541,14 @@ export class KeyframeTimelinePanel {
     this.syncSoloTrackButton(timelineDocument, selectedId);
     this.syncBakeTrackButton(timelineDocument, selectedId);
     this.syncClearTrackButton(timelineDocument, selectedId);
+    this.syncShyButtons(timelineDocument, entryList, selectedId);
     this.syncPinnedKeyingButton();
 
-    const visibleEntries = this.visibleEntries(timelineDocument, entryList, selectedId);
+    const timelineEntries = this.shyFilteredEntries(timelineDocument, entryList, selectedId);
+    const visibleEntries = this.visibleEntries(timelineDocument, timelineEntries, selectedId);
     const rowHeight = this.timelineRowHeight();
     const headerHeight = this.timelineHeaderHeight();
-    this.renderLayerStrip(timelineDocument, entryList, selectedId);
+    this.renderLayerStrip(timelineDocument, timelineEntries, selectedId);
     this.labels.innerHTML = this.renderLabels(timelineDocument, visibleEntries, selectedId);
     hydrateIcons(this.labels);
     this.syncTimecode(timelineDocument);
@@ -1362,6 +1368,7 @@ export class KeyframeTimelinePanel {
     this.labels.addEventListener("click", (event) => {
       const groupToggle = (event.target as HTMLElement).closest<HTMLElement>(".timeline-group-toggle");
       const groupPoseKey = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-pose-key");
+      const groupShy = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-shy");
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
         const targetId = group.dataset.groupTargetId;
@@ -1372,6 +1379,8 @@ export class KeyframeTimelinePanel {
           } else if (groupPoseKey) {
             if (event.altKey && groupPoseKey.classList.contains("keyed-track")) this.callbacks.onClearTransformKeyframes(targetId);
             else this.callbacks.onSetObjectTransformKeyframes(targetId);
+          } else if (groupShy) {
+            this.callbacks.onToggleObjectShy(targetId);
           } else if (event.detail >= 2) {
             this.startTimelineGroupRename(group);
           } else {
@@ -1406,7 +1415,7 @@ export class KeyframeTimelinePanel {
     });
     this.labels.addEventListener("dblclick", (event) => {
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
-      if (!group || (event.target as HTMLElement).closest(".timeline-group-toggle")) return;
+      if (!group || (event.target as HTMLElement).closest(".timeline-group-toggle, .timeline-group-pose-key, .timeline-group-shy")) return;
       event.preventDefault();
       this.startTimelineGroupRename(group);
     });
@@ -1500,6 +1509,10 @@ export class KeyframeTimelinePanel {
     });
     this.pinVisibleRowsButton.addEventListener("click", () => this.callbacks.onPinVisibleRows());
     this.clearPinnedRowsButton.addEventListener("click", () => this.callbacks.onClearPinnedRows());
+    this.shySelectedButton.addEventListener("click", () => {
+      if (this.lastSelectedId) this.callbacks.onToggleObjectShy(this.lastSelectedId);
+    });
+    this.hideShyButton.addEventListener("click", () => this.callbacks.onToggleHideShyRows());
     this.rowSearchInput.addEventListener("input", () => {
       this.applyRowSearch(this.rowSearchInput.value);
     });
@@ -1922,6 +1935,27 @@ export class KeyframeTimelinePanel {
       : "Pin timeline rows before selecting pinned keys";
   }
 
+  private syncShyButtons(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string): void {
+    const hasSelectedObject = entries.some((entry) => entry.id === selectedId);
+    const selectedShy = hasSelectedObject && isTimelineObjectShy(timelineDocument, selectedId);
+    const shyCount = timelineDocument.shyObjectIds.length;
+    this.shySelectedButton.disabled = !hasSelectedObject;
+    this.shySelectedButton.classList.toggle("active", selectedShy);
+    this.shySelectedButton.innerHTML = `<span data-icon="${selectedShy ? "Eye" : "EyeOff"}"></span><span>${selectedShy ? "Unshy" : "Shy"}</span>`;
+    this.shySelectedButton.title = hasSelectedObject
+      ? `${selectedShy ? "Remove shy flag from" : "Mark"} the selected object layer${selectedShy ? "" : " as shy"}`
+      : "Select an object before marking a layer shy";
+
+    this.hideShyButton.classList.toggle("active", timelineDocument.hideShyObjects);
+    this.hideShyButton.setAttribute("aria-pressed", String(timelineDocument.hideShyObjects));
+    this.hideShyButton.innerHTML = `<span data-icon="${timelineDocument.hideShyObjects ? "Eye" : "ListFilter"}"></span><span>${timelineDocument.hideShyObjects ? "Show Shy" : "Hide Shy"}</span>`;
+    this.hideShyButton.title = shyCount > 0
+      ? `${timelineDocument.hideShyObjects ? "Show" : "Hide"} ${shyCount} shy object layer${shyCount === 1 ? "" : "s"} in the timeline`
+      : "No object layers are marked shy yet";
+    hydrateIcons(this.shySelectedButton);
+    hydrateIcons(this.hideShyButton);
+  }
+
   private timelineGroupIds(): string[] {
     return [
       ...this.lastEntries.map((entry) => entry.id),
@@ -2030,6 +2064,12 @@ export class KeyframeTimelinePanel {
       ];
     }
     return selected ? [selected, ...keyed] : keyed;
+  }
+
+  private shyFilteredEntries(timelineDocument: SceneTimelineDocument, entries: SceneEntry[], selectedId: string): SceneEntry[] {
+    if (!timelineDocument.hideShyObjects || timelineDocument.shyObjectIds.length === 0) return entries;
+    const shyIds = new Set(timelineDocument.shyObjectIds);
+    return entries.filter((entry) => entry.id === selectedId || !shyIds.has(entry.id));
   }
 
   private renderMarkers(timelineDocument: SceneTimelineDocument): void {
@@ -2505,6 +2545,7 @@ export class KeyframeTimelinePanel {
           collapsed,
           rowCount: visibleRows.length,
           keyframeCount: countTrackKeyframes(objectTimeline?.tracks),
+          shy: isTimelineObjectShy(timelineDocument, entry.id),
           poseKey: true,
           poseKeyed: hasTransformPoseTracks(objectTimeline?.tracks)
         });
@@ -2615,6 +2656,7 @@ export class KeyframeTimelinePanel {
     collapsed: boolean;
     rowCount: number;
     keyframeCount: number;
+    shy?: boolean;
     poseKey?: boolean;
     poseKeyed?: boolean;
     extraClass?: string;
@@ -2622,8 +2664,9 @@ export class KeyframeTimelinePanel {
     const rowText = options.rowCount === 1 ? "1 row" : `${options.rowCount} rows`;
     const keyText = options.keyframeCount === 1 ? "1 key" : `${options.keyframeCount} keys`;
     const stateText = options.collapsed ? "Expand" : "Collapse";
+    const shyText = options.shy ? "Remove shy flag" : "Mark layer shy";
     return `
-      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
+      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
         <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
           <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
         </button>
@@ -2632,6 +2675,9 @@ export class KeyframeTimelinePanel {
           <strong>${escapeHtml(options.targetName)}</strong>
           <small>${options.targetType} | ${rowText} | ${keyText}</small>
         </span>
+        ${typeof options.shy === "boolean"
+          ? `<button class="timeline-group-shy${options.shy ? " active" : ""}" type="button" aria-label="${shyText}: ${escapeHtml(options.targetName)}" title="${shyText}"><span data-icon="${options.shy ? "Eye" : "EyeOff"}"></span></button>`
+          : ""}
         ${options.poseKey
           ? `<button class="timeline-group-pose-key${options.poseKeyed ? " keyed-track" : ""}" type="button" aria-label="Set Position, Rotation, and Scale keys for ${escapeHtml(options.targetName)}" title="${options.poseKeyed ? "Set pose keys at the playhead. Alt-click to clear Position, Rotation, and Scale tracks." : "Set Position, Rotation, and Scale keys at the playhead"}"><span data-icon="Box"></span></button>`
           : ""}

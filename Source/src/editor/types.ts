@@ -184,7 +184,7 @@ export interface SceneDocument {
 }
 
 export interface SceneTimelineDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
   duration: number;
   workStart: number;
   workEnd: number;
@@ -195,6 +195,8 @@ export interface SceneTimelineDocument {
   snapStep: number;
   autoKey: boolean;
   autoKeyPose: boolean;
+  hideShyObjects: boolean;
+  shyObjectIds: string[];
   camera: CameraTimelineDocument;
   lights: LightTimelineDocument;
   objects: ObjectTimelineDocument[];

@@ -121,6 +121,8 @@ export function studioTemplate(): string {
               </label>
               <button class="mini-button icon-mini" id="timeline-pin-visible-rows" type="button" title="Pin every currently visible timeline row" aria-label="Pin visible timeline rows"><span data-icon="Pin"></span></button>
               <button class="mini-button icon-mini" id="timeline-clear-pinned-rows" type="button" title="Clear all pinned timeline rows" aria-label="Clear pinned timeline rows"><span data-icon="PinOff"></span></button>
+              <button class="mini-button" id="timeline-shy-selected" type="button" title="Mark the selected object layer as shy"><span data-icon="EyeOff"></span><span>Shy</span></button>
+              <button class="mini-button" id="timeline-hide-shy" type="button" aria-pressed="false" title="Hide shy object layers from the timeline"><span data-icon="ListFilter"></span><span>Hide Shy</span></button>
               <button class="mini-button" id="timeline-add-keyframe" type="button" title="For Position, Rotation, or Scale tracks this records a full transform pose. For other tracks it records the active property."><span data-icon="DiamondPlus"></span><span>Set Pose</span></button>
               <button class="mini-button" id="timeline-set-transform" type="button" title="Record Position, Rotation, and Scale at the playhead"><span data-icon="Box"></span><span>Set Pose</span></button>
               <button class="mini-button" id="timeline-set-visible" type="button" title="Set keys on every currently visible timeline row"><span data-icon="ListChecks"></span><span>Set Visible</span></button>

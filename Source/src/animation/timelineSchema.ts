@@ -69,7 +69,7 @@ const LIGHT_TRACK_KINDS = new Set<TimelineTrackKind>([
 
 export function createDefaultTimeline(): SceneTimelineDocument {
   return {
-    version: 13,
+    version: 14,
     duration: 8,
     workStart: 0,
     workEnd: 8,
@@ -80,6 +80,8 @@ export function createDefaultTimeline(): SceneTimelineDocument {
     snapStep: 1 / 30,
     autoKey: false,
     autoKeyPose: false,
+    hideShyObjects: false,
+    shyObjectIds: [],
     camera: { tracks: [] },
     lights: { tracks: [] },
     objects: [],
@@ -90,6 +92,7 @@ export function createDefaultTimeline(): SceneTimelineDocument {
 export function cloneTimelineDocument(timeline: SceneTimelineDocument): SceneTimelineDocument {
   return {
     ...timeline,
+    shyObjectIds: [...(timeline.shyObjectIds ?? [])],
     markers: (timeline.markers ?? []).map((marker) => ({ ...marker })),
     camera: cloneTrackCollection(timeline.camera ?? { tracks: [] }),
     lights: cloneTrackCollection(timeline.lights ?? { tracks: [] }),
@@ -105,7 +108,7 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
   if (!value || typeof value !== "object") return defaults;
   const source = value as Partial<SceneTimelineDocument>;
   const timeline: SceneTimelineDocument = {
-    version: 13,
+    version: 14,
     duration: finiteNumber(source.duration, defaults.duration, 0.5, 120),
     workStart: defaults.workStart,
     workEnd: defaults.workEnd,
@@ -116,6 +119,8 @@ export function normalizeTimelineDocument(value: unknown, validObjectIds?: Set<s
     snapStep: finiteNumber(source.snapStep, defaults.snapStep, 0.001, 10),
     autoKey: typeof source.autoKey === "boolean" ? source.autoKey : defaults.autoKey,
     autoKeyPose: typeof source.autoKeyPose === "boolean" ? source.autoKeyPose : defaults.autoKeyPose,
+    hideShyObjects: typeof source.hideShyObjects === "boolean" ? source.hideShyObjects : defaults.hideShyObjects,
+    shyObjectIds: normalizeShyObjectIds(source.shyObjectIds, validObjectIds),
     camera: normalizeTrackCollection(source.camera, CAMERA_TRACK_KINDS),
     lights: normalizeTrackCollection(source.lights, LIGHT_TRACK_KINDS),
     objects: [],
@@ -261,6 +266,20 @@ export function pruneEmptyTimelineTracks(timeline: SceneTimelineDocument): void 
 
 export function removeTimelineObject(timeline: SceneTimelineDocument, objectId: string): void {
   timeline.objects = timeline.objects.filter((object) => object.objectId !== objectId);
+  timeline.shyObjectIds = timeline.shyObjectIds.filter((id) => id !== objectId);
+}
+
+export function isTimelineObjectShy(timeline: SceneTimelineDocument, objectId: string): boolean {
+  return timeline.shyObjectIds.includes(objectId);
+}
+
+export function toggleTimelineObjectShy(timeline: SceneTimelineDocument, objectId: string): boolean {
+  if (isTimelineObjectShy(timeline, objectId)) {
+    timeline.shyObjectIds = timeline.shyObjectIds.filter((id) => id !== objectId);
+    return false;
+  }
+  timeline.shyObjectIds = [...timeline.shyObjectIds, objectId];
+  return true;
 }
 
 export function copyTimelineObject(timeline: SceneTimelineDocument, sourceObjectId: string, targetObjectId: string): void {
@@ -364,6 +383,17 @@ function normalizeTrack(value: unknown): TimelineTrackDocument | null {
       ? track.keyframes.map(normalizeKeyframe).filter((keyframe): keyframe is TimelineKeyframeDocument => Boolean(keyframe))
       : []
   };
+}
+
+function normalizeShyObjectIds(value: unknown, validObjectIds?: Set<string>): string[] {
+  if (!Array.isArray(value)) return [];
+  const ids = new Set<string>();
+  value.forEach((item) => {
+    if (typeof item !== "string" || item.length === 0) return;
+    if (validObjectIds && !validObjectIds.has(item)) return;
+    ids.add(item);
+  });
+  return [...ids];
 }
 
 function allTimelineTracks(timeline: SceneTimelineDocument): TimelineTrackDocument[] {

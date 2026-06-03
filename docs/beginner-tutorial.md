@@ -223,6 +223,11 @@ Recommended beginner workflow:
 | Pinned | Show only pinned rows |
 | All | Show all available rows |
 
+Use `Shy` when an object layer is not relevant to the current animation edit but
+should remain in the scene. Mark the selected object as shy, then click
+`Hide Shy`. This cleans the timeline without muting tracks or hiding objects in
+the viewport.
+
 Useful row shortcuts:
 
 | Action | Shortcut |

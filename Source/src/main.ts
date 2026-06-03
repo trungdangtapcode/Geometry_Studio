@@ -93,6 +93,7 @@ import {
   snapTimelineTime,
   sortTimelineKeyframes,
   sortTimelineMarkers,
+  toggleTimelineObjectShy,
   upsertTimelineKeyframe
 } from "./animation/timelineSchema";
 import {
@@ -383,6 +384,8 @@ function boot(root: HTMLDivElement): void {
     onFitSelectedRange: fitTimelineViewToSelectedKeyRange,
     onPinVisibleRows: pinVisibleTimelineRows,
     onClearPinnedRows: clearPinnedTimelineRows,
+    onToggleObjectShy: toggleTimelineObjectShyState,
+    onToggleHideShyRows: toggleTimelineHideShyRows,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
     onStepKeyframe: stepTimelineKeyframe,
@@ -1589,6 +1592,15 @@ function boot(root: HTMLDivElement): void {
       command("timeline.clear-pinned-rows", "Clear Pinned Timeline Rows", "View", clearPinnedTimelineRows, {
         keywords: ["unpin", "clear", "pinned", "star", "rows", "tracks", "timeline"]
       }),
+      command("timeline.shy-selected-layer", "Toggle Selected Layer Shy", "View", () => {
+        if (selectedId) toggleTimelineObjectShyState(selectedId);
+      }, {
+        keywords: ["shy", "hide shy", "layer", "timeline", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
+        keywords: ["shy", "hide", "show shy", "layer", "timeline", "after effects", "ae"]
+      }),
       command("timeline.collapse-groups", "Collapse Timeline Groups", "View", collapseTimelineGroups, {
         keywords: ["layers", "disclosure", "twirl", "fold", "after effects"]
       }),
@@ -1695,6 +1707,8 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-row-filter", commandId: "timeline.rows" },
       { selector: "#timeline-pin-visible-rows", commandId: "timeline.pin-visible-rows" },
       { selector: "#timeline-clear-pinned-rows", commandId: "timeline.clear-pinned-rows" },
+      { selector: "#timeline-shy-selected", commandId: "timeline.shy-selected-layer" },
+      { selector: "#timeline-hide-shy", commandId: "timeline.hide-shy-rows" },
       { selector: "#timeline-graph-toggle", commandId: "timeline.graph" },
       { selector: "#save-scene", commandId: "scene.save" },
       { selector: ".file-action", commandId: "scene.load" },
@@ -4398,6 +4412,29 @@ function boot(root: HTMLDivElement): void {
   function clearPinnedTimelineRows(): void {
     const count = timelinePanel.clearPinnedRows();
     showToast(count ? `${count} pinned row${count === 1 ? "" : "s"} cleared` : "No pinned timeline rows to clear.", count ? "good" : "bad");
+  }
+
+  function toggleTimelineObjectShyState(objectId: string): void {
+    const entry = entries.get(objectId);
+    if (!entry) {
+      showToast("Select an object layer before changing shy state.", "bad");
+      return;
+    }
+    recordHistory();
+    const shy = toggleTimelineObjectShy(sceneTimeline, objectId);
+    updateAllUI();
+    showToast(`${entry.name} ${shy ? "marked shy" : "removed from shy layers"}`, "good");
+  }
+
+  function toggleTimelineHideShyRows(): void {
+    recordHistory();
+    sceneTimeline.hideShyObjects = !sceneTimeline.hideShyObjects;
+    updateAllUI();
+    const count = sceneTimeline.shyObjectIds.length;
+    showToast(sceneTimeline.hideShyObjects
+      ? `Hiding ${count} shy object layer${count === 1 ? "" : "s"}`
+      : "Showing shy object layers",
+      "good");
   }
 
   function setTimelineRowFilter(filter: TimelineRowFilter, options: { clearSearch?: boolean } = {}): void {

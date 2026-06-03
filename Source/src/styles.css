@@ -1061,7 +1061,7 @@ svg {
 }
 
 .timeline-track-group.pose-keyable {
-  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size);
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size) var(--icon-mini-size);
 }
 
 .timeline-track-group:hover,
@@ -1075,6 +1075,10 @@ svg {
 
 .timeline-track-group.collapsed {
   border-bottom-color: rgba(26, 35, 42, 0.16);
+}
+
+.timeline-track-group.shy-layer {
+  color: rgba(26, 35, 42, 0.64);
 }
 
 .timeline-group-toggle {
@@ -1219,6 +1223,7 @@ svg {
 
 .timeline-row-switch,
 .timeline-row-key,
+.timeline-group-shy,
 .timeline-group-pose-key {
   width: calc(var(--icon-mini-size) - 4px);
   height: calc(var(--timeline-track-row-height) - 4px);
@@ -1232,12 +1237,14 @@ svg {
 }
 
 .timeline-row-key,
+.timeline-group-shy,
 .timeline-group-pose-key {
   justify-self: end;
 }
 
 .timeline-row-switch:disabled,
 .timeline-row-key:disabled,
+.timeline-group-shy:disabled,
 .timeline-group-pose-key:disabled {
   opacity: 0.42;
   cursor: not-allowed;
@@ -1260,6 +1267,8 @@ svg {
 .timeline-row-key:focus-visible,
 .timeline-row-switch:hover,
 .timeline-row-switch:focus-visible,
+.timeline-group-shy:hover,
+.timeline-group-shy:focus-visible,
 .timeline-group-pose-key:hover,
 .timeline-group-pose-key:focus-visible {
   border-color: var(--teal);
@@ -1269,6 +1278,17 @@ svg {
 
 .timeline-group-pose-key {
   color: rgba(26, 35, 42, 0.62);
+}
+
+.timeline-track-group.shy-layer .track-swatch {
+  background: transparent !important;
+  border: 1px dashed currentColor;
+}
+
+.timeline-group-shy.active {
+  color: var(--teal);
+  border-color: rgba(32, 191, 169, 0.34);
+  background: rgba(32, 191, 169, 0.1);
 }
 
 .timeline-track-label.has-keyframes .timeline-row-key {
@@ -2284,7 +2304,9 @@ svg {
 #timeline-graph-toggle.active,
 #timeline-selection-tool.active,
 #timeline-pan-tool.active,
-#timeline-follow-playhead.active {
+#timeline-follow-playhead.active,
+#timeline-shy-selected.active,
+#timeline-hide-shy.active {
   color: #ffffff;
   background: #20272c;
   border-color: #20272c;
