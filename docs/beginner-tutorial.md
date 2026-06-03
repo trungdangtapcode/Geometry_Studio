@@ -266,6 +266,7 @@ or `All`.
 | Snap to frame | `Shift+S` |
 | Distribute across Work In/Out | `Shift+D` |
 | Fit into Work In/Out | `Shift+F` |
+| Fit selected keys to the playhead | `Fit CTI` button or Command Palette: `Fit Keyframes To Playhead` |
 | Compress or stretch around first selected key | `50%` / `200%` buttons |
 | Stagger from playhead | `Shift+G` |
 | Cascade target keys | `Alt+Shift+G` |
@@ -316,6 +317,11 @@ Use marker alignment when you have demo beats. Add markers with `M`, select a
 key block, put the playhead near the target beat, then run `Move Keyframes To
 Nearest Marker`. The first selected key moves to that marker and the rest of the
 selected block keeps its spacing.
+
+Use `Fit CTI` when you want to retime a selected motion block to end exactly at
+the playhead/current time indicator. The first selected key stays fixed, the
+last selected key moves to the playhead, and intermediate selected keys scale
+proportionally.
 
 Use `Fit Keyframes Between Neighbor Markers` when the motion must fill a beat
 span. Put the playhead between two markers, select at least two keys, and run

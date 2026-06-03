@@ -115,6 +115,7 @@ export interface KeyframeTimelineCallbacks {
   onSnapKeyframesToFrames(keyframeIds: string[]): void;
   onDistributeKeyframes(keyframeIds: string[]): void;
   onFitKeyframesToWorkArea(keyframeIds: string[]): void;
+  onFitKeyframesToPlayhead(keyframeIds: string[]): void;
   onScaleKeyframeTiming(factor: number, keyframeIds: string[]): void;
   onStaggerKeyframesFromPlayhead(keyframeIds: string[]): void;
   onCascadeKeyframesFromPlayhead(keyframeIds: string[]): void;
@@ -309,6 +310,7 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-snap-keyframes"),
     query<HTMLButtonElement>("#timeline-distribute-keyframes"),
     query<HTMLButtonElement>("#timeline-fit-keyframes"),
+    query<HTMLButtonElement>("#timeline-fit-playhead-keyframes"),
     query<HTMLButtonElement>("#timeline-stagger-keyframes"),
     query<HTMLButtonElement>("#timeline-cascade-keyframes"),
     query<HTMLButtonElement>("#timeline-cycle-keyframes"),
@@ -1194,6 +1196,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-fit-keyframes").addEventListener("click", () => {
       this.callbacks.onFitKeyframesToWorkArea([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-fit-playhead-keyframes").addEventListener("click", () => {
+      this.callbacks.onFitKeyframesToPlayhead([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-compress-keyframes").addEventListener("click", () => {
       this.callbacks.onScaleKeyframeTiming(0.5, [...this.selectedKeyframeIds]);

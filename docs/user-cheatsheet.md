@@ -223,6 +223,7 @@ Position, Rotation, and Scale recorded together.
 | Snap | Snap selected keys to frame boundaries |
 | Distribute | Evenly distribute selected keys across Work In/Out |
 | Fit Keys | Stretch selected keys into Work In/Out |
+| Fit CTI | Stretch selected keys so the last selected key lands on the playhead/current time indicator |
 | 50% / 200% | Compress or stretch selected key timing around the first selected key |
 | Stagger | Offset selected timing columns by snap step |
 | Cascade | Sequence selected object/camera/light target key blocks |
@@ -299,6 +300,7 @@ Position, Rotation, and Scale recorded together.
 | `Shift+S` | Snap selected keys to frames |
 | `Shift+D` | Distribute selected keys across Work In/Out |
 | `Shift+F` | Fit selected keys into Work In/Out |
+| `Fit CTI` button / Command Palette: `fit keyframes to playhead` | Stretch selected timing from the first selected key to the playhead |
 | `50%` / `200%` buttons | Make selected timing twice as fast or twice as slow |
 | `Shift+G` | Stagger selected keys |
 | `Alt+Shift+G` | Cascade selected target key blocks |

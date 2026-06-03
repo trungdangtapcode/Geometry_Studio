@@ -162,6 +162,8 @@ PDF.
   documents selected timing-span removal that closes gaps on affected tracks.
 - [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step
   retiming controls for selected or playhead keyframes.
+- [Timeline Fit To Playhead](timeline-fit-to-playhead.md) documents the
+  playhead-based selected keyframe retime workflow.
 - [Timeline Keyframe Alignment](timeline-keyframe-align.md) documents moving
   selected keyframe blocks to the playhead while preserving relative timing.
 - [Timeline Keyframe Center](timeline-keyframe-center.md) documents centering
@@ -347,6 +349,8 @@ animation runtime where it fits:
   value edits, and selection-only timeline actions are disabled when no
   selected or playhead keyframe can be edited. Interpolation controls follow
   the same availability rule.
+- `Fit CTI` stretches selected keyframes from their first selected key to the
+  current time indicator, adding a direct playhead-driven retime operation.
 - `Commands`, `Ctrl/Cmd+K`, and `F3` open a searchable command palette for
   timeline, playback, retiming, interpolation, tool, and scene commands.
 - Track enable/disable controls mute individual property tracks without deleting

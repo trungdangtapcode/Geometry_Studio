@@ -357,6 +357,7 @@ function boot(root: HTMLDivElement): void {
     onSnapKeyframesToFrames: snapTimelineKeyframesToFrames,
     onDistributeKeyframes: distributeTimelineKeyframes,
     onFitKeyframesToWorkArea: fitTimelineKeyframesToWorkArea,
+    onFitKeyframesToPlayhead: fitTimelineKeyframesToPlayhead,
     onScaleKeyframeTiming: scaleTimelineKeyframeTiming,
     onStaggerKeyframesFromPlayhead: staggerTimelineKeyframesFromPlayhead,
     onCascadeKeyframesFromPlayhead: cascadeTimelineKeyframesFromPlayhead,
@@ -1473,6 +1474,10 @@ function boot(root: HTMLDivElement): void {
       command("timeline.snap-frames", "Snap Keyframes To Frames", "Retiming", () => snapTimelineKeyframesToFrames(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+S", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.distribute", "Distribute Keyframes Across Work Area", "Retiming", () => distributeTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+D", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.fit-work", "Fit Keyframes To Work Area", "Retiming", () => fitTimelineKeyframesToWorkArea(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+F", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.fit-playhead", "Fit Keyframes To Playhead", "Retiming", () => fitTimelineKeyframesToPlayhead(timelinePanel.selectedKeyframeIdsList()), {
+        keywords: ["current time indicator", "cti", "playhead", "stretch", "retime", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
       command("timeline.compress-50", "Compress Selected Keyframes To 50%", "Retiming", () => scaleTimelineKeyframeTiming(0.5, timelinePanel.selectedKeyframeIdsList()), {
         keywords: ["time stretch", "compress", "speed up", "faster", "50 percent", "after effects", "ae"],
         disabled: () => !hasTimelineKeyframeTarget()
@@ -1657,6 +1662,7 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-snap-keyframes", commandId: "timeline.snap-frames" },
       { selector: "#timeline-distribute-keyframes", commandId: "timeline.distribute" },
       { selector: "#timeline-fit-keyframes", commandId: "timeline.fit-work" },
+      { selector: "#timeline-fit-playhead-keyframes", commandId: "timeline.fit-playhead" },
       { selector: "#timeline-compress-keyframes", commandId: "timeline.compress-50" },
       { selector: "#timeline-stretch-keyframes", commandId: "timeline.stretch-200" },
       { selector: "#timeline-stagger-keyframes", commandId: "timeline.stagger" },
@@ -6015,6 +6021,32 @@ function boot(root: HTMLDivElement): void {
       result,
       (editResult) => editResult.skipped ? `No keyframe fitted, ${editResult.skipped} skipped.` : "Selected keyframes already fit Work In/Out.",
       (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} fitted to Work In/Out${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
+  }
+
+  function fitTimelineKeyframesToPlayhead(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before fitting timing to the playhead.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "fitting keyframes to the playhead")) return;
+
+    const times = sources.map((source) => source.keyframe.time);
+    const start = Math.min(...times);
+    const targetEnd = sceneTimeline.currentTime;
+    if (targetEnd <= start + 0.001) {
+      showToast("Move the playhead after the first selected keyframe before fitting timing.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = fitResolvedKeyframesToRange(sceneTimeline, sources, start, targetEnd);
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      (editResult) => editResult.skipped ? `No keyframe fitted to playhead, ${editResult.skipped} skipped.` : "Selected keyframes already end at the playhead.",
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} fitted to playhead at ${formatNumber(targetEnd)}s${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
     );
   }
 

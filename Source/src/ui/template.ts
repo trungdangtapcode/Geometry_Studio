@@ -184,6 +184,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-snap-keyframes" type="button"><span data-icon="Magnet"></span><span>Snap</span></button>
               <button class="mini-button" id="timeline-distribute-keyframes" type="button"><span data-icon="AlignHorizontalSpaceAround"></span><span>Distribute</span></button>
               <button class="mini-button" id="timeline-fit-keyframes" type="button"><span data-icon="StretchHorizontal"></span><span>Fit Keys</span></button>
+              <button class="mini-button" id="timeline-fit-playhead-keyframes" type="button" title="Stretch selected keys so the last selected key lands on the playhead"><span data-icon="CornerDownRight"></span><span>Fit CTI</span></button>
               <button class="mini-button" id="timeline-compress-keyframes" type="button" title="Compress selected key timing to 50% from the first selected key"><span data-icon="Minimize2"></span><span>50%</span></button>
               <button class="mini-button" id="timeline-stretch-keyframes" type="button" title="Stretch selected key timing to 200% from the first selected key"><span data-icon="Maximize2"></span><span>200%</span></button>
               <button class="mini-button" id="timeline-stagger-keyframes" type="button" title="Stagger selected keyframe columns from the playhead by the snap step"><span data-icon="ListOrdered"></span><span>Stagger</span></button>
