@@ -91,6 +91,8 @@ PDF.
 - [Timeline Work Area](timeline-work-area.md) documents schema v8 Work In/Out
   playback range behavior, keyboard shortcuts, and direct draggable range
   editing.
+- [Timeline Work Sel Button](timeline-work-selection-button.md) documents the
+  visible selected-keyframe range to Work In/Out workflow.
 - [Timeline Markers](timeline-markers.md) documents schema v9 marker cue
   points, marker colors, marker navigation, and draggable marker retiming.
 - [Timeline Preset Baking](timeline-preset-baking.md) documents why preset

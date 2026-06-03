@@ -259,6 +259,7 @@ or `All`.
 | Retime graph keys | Focus a graph key, then press `Left` / `Right` |
 | Nudge graph values or speed ease | Focus a graph key, then press `Up` / `Down` |
 | Center selected keys on playhead | `Shift+C` |
+| Set Work In/Out to selected keys | `Work Sel` button or `Shift+B` |
 | Move selected keys to marker beats | Command Palette: `Move Keyframes To Previous/Nearest/Next Marker` |
 | Reverse timing | `Shift+R` |
 | Snap to frame | `Shift+S` |

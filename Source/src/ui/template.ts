@@ -172,6 +172,7 @@ export function studioTemplate(): string {
               <button class="mini-button danger" id="timeline-lift-layer-work" type="button" title="Delete selected-layer keyframes inside Work In/Out without closing the gap"><span data-icon="Scissors"></span><span>Layer Lift</span></button>
               <button class="mini-button danger" id="timeline-extract-layer-work" type="button" title="Delete selected-layer keyframes inside Work In/Out and close the gap on that layer"><span data-icon="ListX"></span><span>Layer Extract</span></button>
               <button class="mini-button" id="timeline-preview-selection" type="button" title="Preview selected keyframe range (Shift+Space)"><span data-icon="Play"></span><span>Preview Sel</span></button>
+              <button class="mini-button" id="timeline-work-selection" type="button" title="Set Work In/Out to selected keyframe range (Shift+B)"><span data-icon="StretchHorizontal"></span><span>Work Sel</span></button>
               <button class="mini-button icon-mini" id="timeline-nudge-left" type="button" aria-label="Nudge keyframe left" title="Nudge keyframe left"><span data-icon="MoveLeft"></span></button>
               <button class="mini-button icon-mini" id="timeline-nudge-right" type="button" aria-label="Nudge keyframe right" title="Nudge keyframe right"><span data-icon="MoveRight"></span></button>
               <button class="mini-button" id="timeline-move-to-playhead" type="button"><span data-icon="Crosshair"></span><span>To Playhead</span></button>
@@ -860,6 +861,7 @@ export function studioTemplate(): string {
               <div class="quick-help-item"><strong>Shuttle</strong><span>J / K / L</span><p>Play backward, stop, or play forward. Hold K and tap J/L to step frames without entering playback.</p></div>
               <div class="quick-help-item"><strong>Step Frames</strong><span>Left / Right</span><p>Move the playhead one frame.</p></div>
               <div class="quick-help-item"><strong>Work In / Work Out</strong><span>B / N or I / O</span><p>Set the preview and WebM export range.</p></div>
+              <div class="quick-help-item"><strong>Work Sel</strong><span>Shift+B</span><p>Set Work In/Out to the selected keyframe range.</p></div>
               <div class="quick-help-item"><strong>Preview Selected</strong><span>Shift+Space</span><p>Play only the selected keyframe span.</p></div>
             </section>
             <section class="quick-help-section" data-help-category="timeline shortcuts">

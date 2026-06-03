@@ -90,6 +90,7 @@ export interface KeyframeTimelineCallbacks {
   onSelectVisibleKeyframes(workAreaOnly: boolean): void;
   onSelectPinnedKeyframes(workAreaOnly: boolean): void;
   onSelectVisibleTimeKeyframes(): void;
+  onSetWorkAreaToSelectedKeyframes(): void;
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onCycleKeyframesAcrossWorkArea(keyframeIds: string[]): void;
@@ -294,6 +295,7 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-ripple-delete-keyframes"),
     query<HTMLButtonElement>("#timeline-copy-keyframes"),
     query<HTMLButtonElement>("#timeline-preview-selection"),
+    query<HTMLButtonElement>("#timeline-work-selection"),
     query<HTMLButtonElement>("#timeline-nudge-left"),
     query<HTMLButtonElement>("#timeline-nudge-right"),
     query<HTMLButtonElement>("#timeline-move-to-playhead"),
@@ -1144,6 +1146,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-preview-selection").addEventListener("click", () => {
       this.callbacks.onPreviewSelectedRange();
+    });
+    query<HTMLButtonElement>("#timeline-work-selection").addEventListener("click", () => {
+      this.callbacks.onSetWorkAreaToSelectedKeyframes();
     });
     query<HTMLButtonElement>("#timeline-nudge-left").addEventListener("click", () => {
       this.callbacks.onNudgeKeyframes(-1, [...this.selectedKeyframeIds]);

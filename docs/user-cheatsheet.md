@@ -212,6 +212,7 @@ Position, Rotation, and Scale recorded together.
 | Layer Gap / Layer Lift / Layer Extract | Toolbar buttons and Command Palette actions to insert, lift, or extract only the selected object's Work In/Out keys |
 | Selected Layer Work Clipboard | Command Palette actions to copy, cut, or duplicate only the selected object's Work In/Out keys |
 | Preview Sel | Play only the selected keyframe range |
+| Work Sel | Set Work In/Out to the selected keyframe range |
 | To Playhead | Move selected key block so it begins at playhead |
 | Center | Center selected key block around playhead |
 | Marker Align | Command Palette actions move selected key blocks to previous, nearest, or next marker |
@@ -243,6 +244,7 @@ Position, Rotation, and Scale recorded together.
 | `F` or `Numpad .` | Frame selected object |
 | `Space` | Play / stop |
 | `Shift+Space` | Preview selected keyframe range |
+| `Shift+B` | Set Work In/Out to selected keyframe range |
 | `J`, `K`, `L` | Play backward, stop, play forward |
 | Hold `K` + tap `J` / `L` | Step one frame backward / forward without starting playback |
 | `Left`, `Right` | Step one frame |

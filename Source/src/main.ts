@@ -336,6 +336,7 @@ function boot(root: HTMLDivElement): void {
     onSelectVisibleKeyframes: selectVisibleTimelineKeyframes,
     onSelectPinnedKeyframes: selectPinnedTimelineKeyframes,
     onSelectVisibleTimeKeyframes: selectVisibleTimelineTimeKeyframes,
+    onSetWorkAreaToSelectedKeyframes: setTimelineWorkAreaToSelectedKeys,
     onPreviewSelectedRange: previewSelectedTimelineKeyRange,
     onDuplicateKeyframes: duplicateTimelineKeyframes,
     onDuplicateVisibleTimeKeyframes: duplicateVisibleTimelineTimeKeyframes,
@@ -1522,6 +1523,11 @@ function boot(root: HTMLDivElement): void {
         keywords: ["pin", "pinned", "favorite", "keying set", "work in", "work out", "range"],
         disabled: () => timelinePanel.pinnedRowKeyframeTimes().length === 0
       }),
+      command("timeline.work-area-selection", "Set Work Area To Selected Keyframes", "View", setTimelineWorkAreaToSelectedKeys, {
+        shortcut: "Shift+B",
+        keywords: ["work area", "work in", "work out", "selected keyframes", "range", "preview", "export", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
       command("timeline.work-area-layer-keys", "Set Work Area To Selected Layer Keyframes", "View", setTimelineWorkAreaToSelectedLayerKeys, {
         keywords: ["selected object", "selected layer", "work in", "work out", "range", "after effects", "ae"],
         disabled: () => !selectedEntry()
@@ -1620,6 +1626,7 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-copy-keyframes", commandId: "timeline.copy" },
       { selector: "#timeline-paste-keyframes", commandId: "timeline.paste" },
       { selector: "#timeline-paste-insert-keyframes", commandId: "timeline.paste-insert" },
+      { selector: "#timeline-work-selection", commandId: "timeline.work-area-selection" },
       { selector: "#timeline-delete-keyframe", commandId: "timeline.delete" },
       { selector: "#timeline-ripple-delete-keyframes", commandId: "timeline.ripple-delete" },
       { selector: "#timeline-duplicate-keyframe", commandId: "timeline.duplicate" },
