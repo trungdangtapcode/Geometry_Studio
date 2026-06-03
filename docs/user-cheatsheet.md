@@ -198,6 +198,7 @@ Position, Rotation, and Scale recorded together.
 | Copy / Cut / Paste | Clipboard for selected keyframes |
 | Paste Insert | Paste and push later keys forward |
 | Paste Rev | Paste copied keyframes with their timing flipped inside the copied span |
+| Rev Insert | Paste copied keyframes backward and push later destination keys forward |
 | Select Work | Select active-track keys inside Work In/Out |
 | Select Visible | Select keys on visible rows |
 | Select Pinned | Select keys on pinned rows |
@@ -285,6 +286,7 @@ Position, Rotation, and Scale recorded together.
 | `Escape` | Deselect selected timeline keyframes |
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | Copy, cut, paste keyframes |
 | `Paste Rev` button / Command Palette: `paste reversed keyframes` | Paste copied keys backward from the playhead |
+| `Rev Insert` button / Command Palette: `paste reversed insert keyframes` | Paste copied keys backward while shifting later destination keys forward |
 | `Ctrl+D` | Duplicate selected keyframes |
 | `Delete` / `Backspace` | Delete selected keys, otherwise selected object |
 | `Shift+Delete` | Ripple delete selected keyframes |

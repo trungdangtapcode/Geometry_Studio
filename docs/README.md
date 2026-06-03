@@ -156,6 +156,8 @@ PDF.
   clipboard paste that shifts later destination keys before pasting.
 - [Timeline Paste Rev Button](timeline-paste-reverse-button.md) documents
   visible reverse-timing paste beside normal paste controls.
+- [Timeline Paste Rev Insert](timeline-paste-reverse-insert.md) documents
+  reverse-timing paste that also shifts later destination keys forward.
 - [Timeline Keyframe Ripple Delete](timeline-keyframe-ripple-delete.md)
   documents selected timing-span removal that closes gaps on affected tracks.
 - [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step
@@ -338,6 +340,9 @@ animation runtime where it fits:
 - `Paste Insert` and `Ctrl/Cmd+Shift+V` paste copied keyframes after shifting
   later destination keys by the copied timing span, with Paste controls enabled
   only when copied keyframes are available.
+- `Rev Insert` reverse-pastes copied keyframes and shifts later destination
+  keys forward, so a backwards motion can be inserted without overwriting the
+  existing tail.
 - A compact keyframe editor allows precise selected/playhead keyframe time and
   value edits, and selection-only timeline actions are disabled when no
   selected or playhead keyframe can be edited. Interpolation controls follow

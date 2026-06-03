@@ -333,6 +333,7 @@ function boot(root: HTMLDivElement): void {
     onPasteKeyframes: pasteTimelineKeyframes,
     onPasteInsertKeyframes: pasteInsertTimelineKeyframes,
     onPasteReverseKeyframes: pasteReverseTimelineKeyframes,
+    onPasteReverseInsertKeyframes: pasteReverseInsertTimelineKeyframes,
     onSelectWorkAreaKeyframes: selectTimelineWorkAreaKeyframes,
     onSelectVisibleKeyframes: selectVisibleTimelineKeyframes,
     onSelectPinnedKeyframes: selectPinnedTimelineKeyframes,
@@ -1317,6 +1318,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["reverse paste", "time reverse", "paste backward", "after effects", "ae"],
         disabled: () => !hasTimelineClipboard()
       }),
+      command("timeline.paste-reverse-insert", "Paste Reversed Insert Keyframes", "Keyframes", pasteReverseInsertTimelineKeyframes, {
+        keywords: ["reverse paste", "insert edit", "time reverse", "paste backward", "shift", "after effects", "ae"],
+        disabled: () => !hasTimelineClipboard()
+      }),
       command("timeline.insert-layer-gap", "Insert Gap On Selected Layer", "Keyframes", insertSelectedLayerTimelineTimeGap, {
         keywords: ["selected object", "selected layer", "work area", "insert edit", "shift", "after effects", "ae"],
         disabled: () => !selectedEntry()
@@ -1628,6 +1633,7 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-paste-keyframes", commandId: "timeline.paste" },
       { selector: "#timeline-paste-insert-keyframes", commandId: "timeline.paste-insert" },
       { selector: "#timeline-paste-reverse-keyframes", commandId: "timeline.paste-reverse" },
+      { selector: "#timeline-paste-reverse-insert-keyframes", commandId: "timeline.paste-reverse-insert" },
       { selector: "#timeline-work-selection", commandId: "timeline.work-area-selection" },
       { selector: "#timeline-delete-keyframe", commandId: "timeline.delete" },
       { selector: "#timeline-ripple-delete-keyframes", commandId: "timeline.ripple-delete" },
@@ -5385,6 +5391,10 @@ function boot(root: HTMLDivElement): void {
 
   function pasteReverseTimelineKeyframes(): void {
     pasteTimelineKeyframes({ reverse: true });
+  }
+
+  function pasteReverseInsertTimelineKeyframes(): void {
+    pasteTimelineKeyframes({ insert: true, reverse: true });
   }
 
   function duplicateTimelineKeyframes(keyframeIds: string[]): void {

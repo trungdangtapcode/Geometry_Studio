@@ -87,6 +87,7 @@ export interface KeyframeTimelineCallbacks {
   onPasteKeyframes(): void;
   onPasteInsertKeyframes(): void;
   onPasteReverseKeyframes(): void;
+  onPasteReverseInsertKeyframes(): void;
   onSelectWorkAreaKeyframes(): void;
   onSelectVisibleKeyframes(workAreaOnly: boolean): void;
   onSelectPinnedKeyframes(workAreaOnly: boolean): void;
@@ -283,6 +284,7 @@ export class KeyframeTimelinePanel {
   private readonly pasteButton = query<HTMLButtonElement>("#timeline-paste-keyframes");
   private readonly pasteInsertButton = query<HTMLButtonElement>("#timeline-paste-insert-keyframes");
   private readonly pasteReverseButton = query<HTMLButtonElement>("#timeline-paste-reverse-keyframes");
+  private readonly pasteReverseInsertButton = query<HTMLButtonElement>("#timeline-paste-reverse-insert-keyframes");
   private readonly selectPinnedButton = query<HTMLButtonElement>("#timeline-select-pinned");
   private readonly duplicateTimeButton = query<HTMLButtonElement>("#timeline-duplicate-time");
   private readonly deleteTimeButton = query<HTMLButtonElement>("#timeline-delete-time");
@@ -893,6 +895,7 @@ export class KeyframeTimelinePanel {
     this.pasteButton.disabled = disabled;
     this.pasteInsertButton.disabled = disabled;
     this.pasteReverseButton.disabled = disabled;
+    this.pasteReverseInsertButton.disabled = disabled;
     this.pasteButton.title = disabled
       ? "Copy keyframes before pasting"
       : `Paste ${keyText} at the playhead`;
@@ -902,6 +905,9 @@ export class KeyframeTimelinePanel {
     this.pasteReverseButton.title = disabled
       ? "Copy keyframes before reverse-pasting"
       : `Paste ${keyText} with reversed timing over ${formatNumber(summary.duration)}s`;
+    this.pasteReverseInsertButton.title = disabled
+      ? "Copy keyframes before reverse insert-pasting"
+      : `Paste ${keyText} reversed and shift later destination keys by ${formatNumber(summary.duration)}s`;
   }
 
   setPlaybackTime(timelineDocument: SceneTimelineDocument, playing: boolean): void {
@@ -1140,6 +1146,9 @@ export class KeyframeTimelinePanel {
     });
     this.pasteReverseButton.addEventListener("click", () => {
       this.callbacks.onPasteReverseKeyframes();
+    });
+    this.pasteReverseInsertButton.addEventListener("click", () => {
+      this.callbacks.onPasteReverseInsertKeyframes();
     });
     query<HTMLButtonElement>("#timeline-select-workarea").addEventListener("click", () => {
       this.callbacks.onSelectWorkAreaKeyframes();

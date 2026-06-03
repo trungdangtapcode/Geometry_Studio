@@ -250,6 +250,7 @@ or `All`.
 | Delete selected keys | `Delete` |
 | Copy / cut / paste | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` |
 | Paste copied keys backward | `Paste Rev` button or Command Palette: `Paste Reversed Keyframes` |
+| Paste copied keys backward and preserve later keys | `Rev Insert` button or Command Palette: `Paste Reversed Insert Keyframes` |
 | Duplicate selected keys | `Ctrl+D` |
 | Copy one key's value only | Command Palette: `Copy Keyframe Value` |
 | Paste that value onto matching keys | Command Palette: `Paste Keyframe Value` |
@@ -306,6 +307,10 @@ Use `Paste Reversed Keyframes` when you want the same copied motion to play
 backward from the playhead. Example: copy keys at `0s` and `2s`, move the
 playhead to `5s`, run reverse paste, and the copied `2s` pose lands at `5s`
 while the copied `0s` pose lands at `7s`.
+
+Use `Rev Insert` when the destination track already has later keyframes that
+must stay intact. It reverse-pastes the copied block, then shifts later
+destination keys forward by the copied block length, like an insert edit.
 
 Use marker alignment when you have demo beats. Add markers with `M`, select a
 key block, put the playhead near the target beat, then run `Move Keyframes To
