@@ -187,6 +187,12 @@ interface TimelineEaseClipboard {
   easeOutStrength: number;
 }
 
+interface TimelineValueClipboard {
+  sourceLabel: string;
+  kind: TimelineTrackKind;
+  value: [number, number, number];
+}
+
 interface CleanViewSnapshot {
   gridVisible: boolean;
   axesVisible: boolean;
@@ -263,6 +269,7 @@ function boot(root: HTMLDivElement): void {
   let previewRecordingRange: { start: number; end: number } | null = null;
   let timelineClipboard: TimelineClipboard | null = null;
   let timelineEaseClipboard: TimelineEaseClipboard | null = null;
+  let timelineValueClipboard: TimelineValueClipboard | null = null;
   let transformPoseClipboard: TransformPoseClipboard | null = null;
   let shuttlePauseHeld = false;
   let pendingDragSnapshot: SceneDocument | null = null;
@@ -1267,6 +1274,14 @@ function boot(root: HTMLDivElement): void {
         shortcut: "Ctrl+V",
         disabled: () => !hasTimelineClipboard()
       }),
+      command("timeline.copy-value", "Copy Keyframe Value", "Keyframes", copyTimelineKeyframeValue, {
+        keywords: ["copy value", "copy property value", "pose value", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.paste-value", "Paste Keyframe Value", "Keyframes", pasteTimelineKeyframeValue, {
+        keywords: ["paste value", "paste property value", "pose value", "after effects", "ae"],
+        disabled: () => !hasTimelineValueClipboard() || !hasTimelineKeyframeTarget()
+      }),
       command("timeline.paste-insert", "Paste Insert Keyframes", "Keyframes", pasteInsertTimelineKeyframes, {
         shortcut: "Ctrl+Shift+V",
         keywords: ["insert edit", "shift"],
@@ -1605,6 +1620,10 @@ function boot(root: HTMLDivElement): void {
 
   function hasTimelineEaseClipboard(): boolean {
     return timelineEaseClipboard !== null;
+  }
+
+  function hasTimelineValueClipboard(): boolean {
+    return timelineValueClipboard !== null;
   }
 
   function hasTransformPoseClipboard(): boolean {
@@ -5920,6 +5939,61 @@ function boot(root: HTMLDivElement): void {
     updateAllUI();
     showToast(
       `Pasted ${timelineInterpolationLabel(timelineEaseClipboard.interpolation)} ease to ${sources.length} keyframe${sources.length === 1 ? "" : "s"}`,
+      "good"
+    );
+  }
+
+  function copyTimelineKeyframeValue(): void {
+    const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
+    if (sources.length === 0) {
+      showToast("Select a keyframe before copying its value.", "bad");
+      return;
+    }
+    const source = sources[0];
+    timelineValueClipboard = {
+      sourceLabel: `${source.track.label} ${formatNumber(source.keyframe.time)}s`,
+      kind: source.track.kind,
+      value: [...source.keyframe.value] as [number, number, number]
+    };
+    showToast(`Copied ${source.track.label} value from ${timelineValueClipboard.sourceLabel}`, "good");
+  }
+
+  function pasteTimelineKeyframeValue(): void {
+    if (!timelineValueClipboard) {
+      showToast("Copy a keyframe value before pasting.", "bad");
+      return;
+    }
+    const sources = resolveActiveTimelineKeyframeSources(timelinePanel.selectedKeyframeIdsList());
+    if (sources.length === 0) {
+      showToast("Select target keyframes before pasting a value.", "bad");
+      return;
+    }
+    const matchingSources = sources.filter((source) => source.track.kind === timelineValueClipboard!.kind);
+    if (matchingSources.length === 0) {
+      showToast("No selected keyframes match the copied value's track type.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(matchingSources, "pasting keyframe values")) return;
+
+    recordHistory();
+    const changedTransformObjectIds = new Set<string>();
+    matchingSources.forEach((source) => {
+      source.keyframe.value = [...timelineValueClipboard!.value] as [number, number, number];
+      if (source.scope === "object" && isObjectTransformTrackKind(source.track.kind)) {
+        changedTransformObjectIds.add(source.objectId);
+      }
+    });
+    clearPresetAnimationsForTimelineObjects([...changedTransformObjectIds]);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    const skipped = sources.length - matchingSources.length;
+    const skippedText = skipped > 0 ? ` (${skipped} different-track target${skipped === 1 ? "" : "s"} skipped)` : "";
+    showToast(
+      `Pasted value to ${matchingSources.length} keyframe${matchingSources.length === 1 ? "" : "s"}${skippedText}`,
       "good"
     );
   }

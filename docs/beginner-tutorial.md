@@ -250,6 +250,8 @@ or `All`.
 | Delete selected keys | `Delete` |
 | Copy / cut / paste | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` |
 | Duplicate selected keys | `Ctrl+D` |
+| Copy one key's value only | Command Palette: `Copy Keyframe Value` |
+| Paste that value onto matching keys | Command Palette: `Paste Keyframe Value` |
 | Move selected keys to playhead | `Shift+Enter` |
 | Retime graph keys | Focus a graph key, then press `Left` / `Right` |
 | Nudge graph values or speed ease | Focus a graph key, then press `Up` / `Down` |
@@ -279,6 +281,12 @@ the curve. `In %` affects the segment ending at the keyframe. `Out %` affects
 the segment starting at the keyframe. Use Command Palette commands `Copy
 Keyframe Ease` and `Paste Keyframe Ease` when you want the same timing feel on
 another selected key or track.
+
+Use `Copy Keyframe Value` and `Paste Keyframe Value` when you want an exact
+pose/property value duplicated without moving the target keyframes or changing
+their interpolation. The paste command only affects matching track types, so a
+copied Position value will not overwrite Rotation, Scale, opacity, camera, or
+light keys by mistake.
 
 ## 16. Work Area And Playback
 

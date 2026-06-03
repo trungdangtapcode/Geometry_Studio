@@ -260,6 +260,7 @@ Position, Rotation, and Scale recorded together.
 | `Alt+F9` | Hold |
 | Command Palette: `back in`, `back out`, or `overshoot` | Apply anticipation or overshoot interpolation |
 | Command Palette: `copy keyframe ease` / `paste keyframe ease` | Reuse interpolation and `Ease %` / `In %` / `Out %` on other selected keys |
+| Command Palette: `copy keyframe value` / `paste keyframe value` | Reuse the selected key's exact property value on other keys of the same track type without changing their time or easing |
 | `Ctrl+A` | Select active-track keyframes |
 | `Ctrl+Shift+A` | Select active-track keys inside Work In/Out |
 | `Ctrl+Alt+A` | Select visible-row keyframes |
