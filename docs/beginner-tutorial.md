@@ -269,6 +269,7 @@ or `All`.
 | Fit selected keys to the playhead | `Fit CTI` button or Command Palette: `Fit Keyframes To Playhead` |
 | Bake active track to frame keys | `Bake` button or Command Palette: `Bake Active Track To Frame Keys` |
 | Compress or stretch around first selected key | `50%` / `200%` buttons |
+| Convert Scale keys to smooth zoom keys | `Expo Scale` button or Command Palette: `Apply Exponential Scale` |
 | Stagger from playhead | `Shift+G` |
 | Cascade target keys | `Alt+Shift+G` |
 | Repeat key block | `Shift+Y` |
@@ -338,6 +339,11 @@ Use `50%` and `200%` when the motion shape is correct but the timing is wrong.
 Select a block of keys, click `50%` to make the block twice as fast, or click
 `200%` to make it twice as slow. The first selected key stays anchored and the
 remaining timing columns scale proportionally.
+
+Use `Expo Scale` when a Scale animation should feel like a smooth zoom rather
+than a linear size change. Select the first and last Scale keyframes, then run
+the assistant. It creates editable frame keys between them using multiplicative
+scale steps.
 
 Use `Ping-Pong Selected Keyframes To Work Out` when a motion should bounce back
 and forth. Select the source keys, set Work Out after the block, and run the

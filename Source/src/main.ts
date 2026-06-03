@@ -359,6 +359,7 @@ function boot(root: HTMLDivElement): void {
     onFitKeyframesToWorkArea: fitTimelineKeyframesToWorkArea,
     onFitKeyframesToPlayhead: fitTimelineKeyframesToPlayhead,
     onScaleKeyframeTiming: scaleTimelineKeyframeTiming,
+    onExponentialScaleKeyframes: exponentialScaleTimelineKeyframes,
     onStaggerKeyframesFromPlayhead: staggerTimelineKeyframesFromPlayhead,
     onCascadeKeyframesFromPlayhead: cascadeTimelineKeyframesFromPlayhead,
     onCycleKeyframesAcrossWorkArea: cycleTimelineKeyframesAcrossWorkArea,
@@ -1491,6 +1492,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["time stretch", "slow down", "slower", "200 percent", "after effects", "ae"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
+      command("timeline.exponential-scale", "Apply Exponential Scale", "Retiming", () => exponentialScaleTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), {
+        keywords: ["scale", "exponential scale", "keyframe assistant", "smooth zoom", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
       command("timeline.stagger", "Stagger Keyframes From Playhead", "Retiming", () => staggerTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.cascade", "Cascade Target Keyframes From Playhead", "Retiming", () => cascadeTimelineKeyframesFromPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Alt+Shift+G", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.select-layer-keys", "Select Selected Layer Keyframes", "Retiming", selectSelectedLayerKeyframes, {
@@ -1670,6 +1675,7 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-fit-playhead-keyframes", commandId: "timeline.fit-playhead" },
       { selector: "#timeline-compress-keyframes", commandId: "timeline.compress-50" },
       { selector: "#timeline-stretch-keyframes", commandId: "timeline.stretch-200" },
+      { selector: "#timeline-exponential-scale", commandId: "timeline.exponential-scale" },
       { selector: "#timeline-stagger-keyframes", commandId: "timeline.stagger" },
       { selector: "#timeline-cascade-keyframes", commandId: "timeline.cascade" },
       { selector: "#timeline-layer-in", label: "Trim Layer In At Playhead", shortcut: "Alt+[" },
@@ -6116,6 +6122,75 @@ function boot(root: HTMLDivElement): void {
     );
   }
 
+  function exponentialScaleTimelineKeyframes(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two Scale keyframes before applying Exponential Scale.", "bad");
+      return;
+    }
+
+    if (sources.some((source) => source.track.kind !== "scale")) {
+      showToast("Exponential Scale only works on selected Scale keyframes.", "bad");
+      return;
+    }
+
+    const track = sources[0].track;
+    const objectId = sources[0].objectId;
+    if (sources.some((source) => source.track !== track || source.objectId !== objectId)) {
+      showToast("Select Scale keyframes from one object before applying Exponential Scale.", "bad");
+      return;
+    }
+    if (!assertTimelineTrackUnlocked(track, "applying Exponential Scale")) return;
+
+    const sortedSources = [...sources].sort((left, right) => left.keyframe.time - right.keyframe.time);
+    const startSource = sortedSources[0];
+    const endSource = sortedSources[sortedSources.length - 1];
+    const start = startSource.keyframe.time;
+    const end = endSource.keyframe.time;
+    if (end <= start + 0.001) {
+      showToast("Select Scale keyframes with different times before applying Exponential Scale.", "bad");
+      return;
+    }
+
+    const times = timelineFrameTimesForRange(start, end, "Exponential Scale");
+    if (!times) return;
+    const startValue = startSource.keyframe.value;
+    const endValue = endSource.keyframe.value;
+    const span = Math.max(end - start, 0.001);
+    const generated = times.map((time) => {
+      const progress = clamp((time - start) / span, 0, 1);
+      const keyframe = createTimelineKeyframe(time, exponentialScaleValue(startValue, endValue, progress));
+      keyframe.interpolation = "linear";
+      return keyframe;
+    });
+
+    recordHistory();
+    track.keyframes = [
+      ...track.keyframes.filter((keyframe) => keyframe.time < start - 0.001 || keyframe.time > end + 0.001),
+      ...generated
+    ];
+    track.enabled = true;
+    sortTimelineKeyframes(track);
+    clearPresetAnimationsForTimelineObjects([objectId]);
+    sceneTimeline.currentTime = start;
+    query<HTMLSelectElement>("#timeline-track-kind").value = "scale";
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(generated.map((keyframe) => keyframe.id));
+    showToast(`${generated.length} exponential Scale key${generated.length === 1 ? "" : "s"} created`, "good");
+  }
+
+  function exponentialScaleValue(start: [number, number, number], end: [number, number, number], progress: number): [number, number, number] {
+    return start.map((value, index) => exponentialScaleAxis(value, end[index], progress)) as [number, number, number];
+  }
+
+  function exponentialScaleAxis(start: number, end: number, progress: number): number {
+    if (start > 0 && end > 0) return start * Math.pow(end / start, progress);
+    return start + (end - start) * progress;
+  }
+
   function staggerTimelineKeyframesFromPlayhead(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
     const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
     if (keyframeIds.length < 2 || sources.length < 2) {
@@ -6511,29 +6586,35 @@ function boot(root: HTMLDivElement): void {
   function timelineFrameBakeRange(): { start: number; end: number; times: number[] } | null {
     const start = roundTime(clamp(Math.min(sceneTimeline.workStart, sceneTimeline.workEnd), 0, sceneTimeline.duration));
     const end = roundTime(clamp(Math.max(sceneTimeline.workStart, sceneTimeline.workEnd), 0, sceneTimeline.duration));
-    if (end <= start + 0.001) {
-      showToast("Set a non-empty Work In/Out range before baking a track.", "bad");
+    const times = timelineFrameTimesForRange(start, end, "Work In/Out");
+    return times ? { start, end, times } : null;
+  }
+
+  function timelineFrameTimesForRange(start: number, end: number, label: string): number[] | null {
+    const safeStart = roundTime(clamp(Math.min(start, end), 0, sceneTimeline.duration));
+    const safeEnd = roundTime(clamp(Math.max(start, end), 0, sceneTimeline.duration));
+    if (safeEnd <= safeStart + 0.001) {
+      showToast(`Set a non-empty ${label} range before creating frame keys.`, "bad");
       return null;
     }
-
     const fps = Math.max(Math.round(sceneTimeline.fps), 1);
     const step = 1 / fps;
-    const frameCount = Math.floor((end - start) / step) + 1;
+    const frameCount = Math.floor((safeEnd - safeStart) / step) + 1;
     const maxFrameKeys = 720;
     if (frameCount > maxFrameKeys) {
-      showToast(`Work In/Out would create ${frameCount} keys. Shorten the range before baking.`, "bad");
+      showToast(`${label} would create ${frameCount} keys. Shorten the range first.`, "bad");
       return null;
     }
 
     const times: number[] = [];
     for (let index = 0; index < frameCount; index += 1) {
-      const time = roundTime(start + index * step);
-      if (time <= end + 0.001) times.push(time);
+      const time = roundTime(safeStart + index * step);
+      if (time <= safeEnd + 0.001) times.push(time);
     }
-    if (times.length === 0 || Math.abs(times[times.length - 1] - end) > 0.001) {
-      times.push(end);
+    if (times.length === 0 || Math.abs(times[times.length - 1] - safeEnd) > 0.001) {
+      times.push(safeEnd);
     }
-    return { start, end, times };
+    return times;
   }
 
   function toggleTimelineTrack(kind: TimelineTrackKind, targetId?: string): void {

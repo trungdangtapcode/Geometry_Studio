@@ -225,6 +225,7 @@ Position, Rotation, and Scale recorded together.
 | Fit Keys | Stretch selected keys into Work In/Out |
 | Fit CTI | Stretch selected keys so the last selected key lands on the playhead/current time indicator |
 | 50% / 200% | Compress or stretch selected key timing around the first selected key |
+| Expo Scale | Convert selected Scale endpoints into exponential frame keys |
 | Stagger | Offset selected timing columns by snap step |
 | Cascade | Sequence selected object/camera/light target key blocks |
 | Cycle | Repeat selected keyframe blocks forward until Work Out |
@@ -303,6 +304,7 @@ Position, Rotation, and Scale recorded together.
 | `Shift+F` | Fit selected keys into Work In/Out |
 | `Fit CTI` button / Command Palette: `fit keyframes to playhead` | Stretch selected timing from the first selected key to the playhead |
 | `Bake` button / Command Palette: `bake active track to frame keys` | Sample the active track over Work In/Out and replace it with frame keys |
+| `Expo Scale` button / Command Palette: `apply exponential scale` | Build frame keys for smooth multiplicative scale changes |
 | `50%` / `200%` buttons | Make selected timing twice as fast or twice as slow |
 | `Shift+G` | Stagger selected keys |
 | `Alt+Shift+G` | Cascade selected target key blocks |

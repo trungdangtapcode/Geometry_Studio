@@ -117,6 +117,7 @@ export interface KeyframeTimelineCallbacks {
   onFitKeyframesToWorkArea(keyframeIds: string[]): void;
   onFitKeyframesToPlayhead(keyframeIds: string[]): void;
   onScaleKeyframeTiming(factor: number, keyframeIds: string[]): void;
+  onExponentialScaleKeyframes(keyframeIds: string[]): void;
   onStaggerKeyframesFromPlayhead(keyframeIds: string[]): void;
   onCascadeKeyframesFromPlayhead(keyframeIds: string[]): void;
   onEditKeyframes(keyframeIds: string[], patch: TimelineKeyframeEditPatch): void;
@@ -313,6 +314,7 @@ export class KeyframeTimelinePanel {
     query<HTMLButtonElement>("#timeline-fit-keyframes"),
     query<HTMLButtonElement>("#timeline-fit-playhead-keyframes"),
     query<HTMLButtonElement>("#timeline-stagger-keyframes"),
+    query<HTMLButtonElement>("#timeline-exponential-scale"),
     query<HTMLButtonElement>("#timeline-cascade-keyframes"),
     query<HTMLButtonElement>("#timeline-cycle-keyframes"),
     query<HTMLButtonElement>("#timeline-duplicate-keyframe"),
@@ -1208,6 +1210,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-stretch-keyframes").addEventListener("click", () => {
       this.callbacks.onScaleKeyframeTiming(2, [...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-exponential-scale").addEventListener("click", () => {
+      this.callbacks.onExponentialScaleKeyframes([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-stagger-keyframes").addEventListener("click", () => {
       this.callbacks.onStaggerKeyframesFromPlayhead([...this.selectedKeyframeIds]);
