@@ -1438,6 +1438,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["marker", "beat", "sync", "align", "next marker", "after effects", "ae"],
         disabled: () => !hasSelectedTimelineKeyframes() || sceneTimeline.markers.length === 0
       }),
+      command("timeline.fit-between-markers", "Fit Keyframes Between Neighbor Markers", "Retiming", fitTimelineKeyframesBetweenNeighborMarkers, {
+        keywords: ["marker", "beat", "sync", "fit", "stretch", "previous marker", "next marker", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget() || sceneTimeline.markers.length < 2
+      }),
       command("timeline.rove", "Rove Keyframes Across Time", "Retiming", () => roveTimelineKeyframesAcrossTime(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+V", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.reverse-keys", "Reverse Keyframe Timing", "Retiming", () => reverseTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+R", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.snap-frames", "Snap Keyframes To Frames", "Retiming", () => snapTimelineKeyframesToFrames(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+S", disabled: () => !hasTimelineKeyframeTarget() }),
@@ -5749,6 +5753,40 @@ function boot(root: HTMLDivElement): void {
       .slice()
       .sort((left, right) => Math.abs(left.time - current) - Math.abs(right.time - current))
       .at(0) ?? null;
+  }
+
+  function timelineNeighborMarkerSpan(): { start: TimelineMarkerDocument; end: TimelineMarkerDocument } | null {
+    const markers = [...sceneTimeline.markers].sort((left, right) => left.time - right.time);
+    const current = sceneTimeline.currentTime;
+    const epsilon = 0.001;
+    const previous = markers.filter((marker) => marker.time <= current + epsilon).at(-1) ?? null;
+    const next = markers.find((marker) => marker.time > current + epsilon) ?? null;
+    if (!previous || !next || next.time <= previous.time + epsilon) return null;
+    return { start: previous, end: next };
+  }
+
+  function fitTimelineKeyframesBetweenNeighborMarkers(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before fitting them between markers.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "fitting keyframes between markers")) return;
+
+    const span = timelineNeighborMarkerSpan();
+    if (!span) {
+      showToast("Move the playhead between two markers before fitting selected keyframes.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = fitResolvedKeyframesToRange(sceneTimeline, sources, span.start.time, span.end.time);
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      "Selected keyframes already fit the neighboring markers.",
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} fitted between ${span.start.label} and ${span.end.label}${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
   }
 
   function roveTimelineKeyframesAcrossTime(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {

@@ -307,6 +307,11 @@ key block, put the playhead near the target beat, then run `Move Keyframes To
 Nearest Marker`. The first selected key moves to that marker and the rest of the
 selected block keeps its spacing.
 
+Use `Fit Keyframes Between Neighbor Markers` when the motion must fill a beat
+span. Put the playhead between two markers, select at least two keys, and run
+the command. The first selected key lands on the previous marker, the last
+selected key lands on the next marker, and interior keys stretch proportionally.
+
 ## 16. Work Area And Playback
 
 Work In and Work Out define the preview/export range.
