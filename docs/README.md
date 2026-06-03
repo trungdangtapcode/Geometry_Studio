@@ -179,6 +179,8 @@ PDF.
   selected keyframe block forward until Work Out.
 - [Timeline Freeze / Hold To Work Out](timeline-freeze-hold.md) documents
   freezing selected key values through Work Out with Hold interpolation.
+- [Timeline Loop Assistant Buttons](timeline-loop-assistant-buttons.md)
+  documents the visible Cycle, Ping-Pong, Offset, and Freeze assistant buttons.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track

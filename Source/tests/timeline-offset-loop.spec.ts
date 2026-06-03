@@ -16,7 +16,7 @@ type SceneExport = {
   };
 };
 
-test("offset-loops selected keyframes to Work Out", async ({ page }) => {
+test("offset-loops selected keyframes to Work Out through the timeline button", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
   await installSceneDownloadCapture(page);
@@ -36,7 +36,7 @@ test("offset-loops selected keyframes to Work Out", async ({ page }) => {
   await page.locator("#timeline-add-keyframe").click();
 
   await page.keyboard.press("Control+A");
-  await runCommand(page, "offset loop selected keyframes", "timeline.offset-loop-keys");
+  await page.locator("#timeline-offset-loop-keyframes").click();
 
   const scene = await saveScene(page);
   const positionTrack = scene.timeline.objects
@@ -61,15 +61,6 @@ async function installSceneDownloadCapture(page: Page): Promise<void> {
       return createObjectURL(object);
     };
   });
-}
-
-async function runCommand(page: Page, query: string, commandId: string): Promise<void> {
-  await page.keyboard.press("Control+K");
-  await expect(page.locator("#command-palette-search")).toBeVisible();
-  await page.locator("#command-palette-search").fill(query);
-  await expect(page.locator(`[data-command-id="${commandId}"]`)).toBeVisible();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#command-palette")).toHaveAttribute("aria-hidden", "true");
 }
 
 async function setTimelineTime(page: Page, time: number): Promise<void> {

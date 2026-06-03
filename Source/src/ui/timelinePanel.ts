@@ -93,6 +93,8 @@ export interface KeyframeTimelineCallbacks {
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onCycleKeyframesAcrossWorkArea(keyframeIds: string[]): void;
+  onPingPongKeyframesAcrossWorkArea(keyframeIds: string[]): void;
+  onOffsetLoopKeyframesAcrossWorkArea(keyframeIds: string[]): void;
   onHoldKeyframesToWorkOut(keyframeIds: string[]): void;
   onDuplicateVisibleTimeKeyframes(): void;
   onDeleteVisibleTimeKeyframes(): void;
@@ -1177,6 +1179,12 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-cycle-keyframes").addEventListener("click", () => {
       this.callbacks.onCycleKeyframesAcrossWorkArea([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-ping-pong-keyframes").addEventListener("click", () => {
+      this.callbacks.onPingPongKeyframesAcrossWorkArea([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-offset-loop-keyframes").addEventListener("click", () => {
+      this.callbacks.onOffsetLoopKeyframesAcrossWorkArea([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-hold-keyframes").addEventListener("click", () => {
       this.callbacks.onHoldKeyframesToWorkOut([...this.selectedKeyframeIds]);

@@ -267,8 +267,8 @@ or `All`.
 | Stagger from playhead | `Shift+G` |
 | Cascade target keys | `Alt+Shift+G` |
 | Repeat key block | `Shift+Y` |
-| Ping-pong repeat key block | Command Palette: `Ping-Pong Selected Keyframes To Work Out` |
-| Offset-loop key block | Command Palette: `Offset Loop Selected Keyframes To Work Out` |
+| Ping-pong repeat key block | `Ping-Pong` button or Command Palette: `Ping-Pong Selected Keyframes To Work Out` |
+| Offset-loop key block | `Offset` button or Command Palette: `Offset Loop Selected Keyframes To Work Out` |
 | Freeze selected values to Work Out | `Freeze` button or Command Palette: `Hold Selected Keyframes To Work Out` |
 
 Interpolation options:

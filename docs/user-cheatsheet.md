@@ -297,8 +297,8 @@ Position, Rotation, and Scale recorded together.
 | `Shift+G` | Stagger selected keys |
 | `Alt+Shift+G` | Cascade selected target key blocks |
 | `Shift+Y` | Cycle selected keyframe blocks to Work Out |
-| Command Palette: `ping-pong selected keyframes` | Alternate forward/reversed repeats to Work Out |
-| Command Palette: `offset loop selected keyframes` | Repeat selected keys while accumulating motion/value deltas |
+| Button / Command Palette: `ping-pong selected keyframes` | Alternate forward/reversed repeats to Work Out |
+| Button / Command Palette: `offset loop selected keyframes` | Repeat selected keys while accumulating motion/value deltas |
 | Button / Command Palette: `hold selected keyframes to work out` | Freeze selected values through Work Out |
 | `M` | Add/update marker |
 | `Alt+M`, `Shift+M` | Previous / next marker |
