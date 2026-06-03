@@ -252,6 +252,8 @@ or `All`.
 | Duplicate selected keys | `Ctrl+D` |
 | Copy one key's value only | Command Palette: `Copy Keyframe Value` |
 | Paste that value onto matching keys | Command Palette: `Paste Keyframe Value` |
+| Copy complete pose keys | Command Palette: `Copy Pose Keys At Playhead` |
+| Paste complete pose keys | Command Palette: `Paste Pose Keys At Playhead` |
 | Move selected keys to playhead | `Shift+Enter` |
 | Retime graph keys | Focus a graph key, then press `Left` / `Right` |
 | Nudge graph values or speed ease | Focus a graph key, then press `Up` / `Down` |
@@ -287,6 +289,11 @@ pose/property value duplicated without moving the target keyframes or changing
 their interpolation. The paste command only affects matching track types, so a
 copied Position value will not overwrite Rotation, Scale, opacity, camera, or
 light keys by mistake.
+
+Use `Copy Pose Keys At Playhead` and `Paste Pose Keys At Playhead` when you want
+to reuse a complete Position/Rotation/Scale pose from timeline keys. Copy
+requires all three transform keys at the current playhead time. Paste writes all
+three keys together at the target time or onto another selected object.
 
 ## 16. Work Area And Playback
 

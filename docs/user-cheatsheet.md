@@ -261,6 +261,7 @@ Position, Rotation, and Scale recorded together.
 | Command Palette: `back in`, `back out`, or `overshoot` | Apply anticipation or overshoot interpolation |
 | Command Palette: `copy keyframe ease` / `paste keyframe ease` | Reuse interpolation and `Ease %` / `In %` / `Out %` on other selected keys |
 | Command Palette: `copy keyframe value` / `paste keyframe value` | Reuse the selected key's exact property value on other keys of the same track type without changing their time or easing |
+| Command Palette: `copy pose keys at playhead` / `paste pose keys at playhead` | Reuse a complete Position/Rotation/Scale keyframe pose at another time or on another object |
 | `Ctrl+A` | Select active-track keyframes |
 | `Ctrl+Shift+A` | Select active-track keys inside Work In/Out |
 | `Ctrl+Alt+A` | Select visible-row keyframes |
@@ -313,6 +314,16 @@ Position, Rotation, and Scale recorded together.
 6. Move, rotate, and scale the object to the second pose.
 7. Existing Position, Rotation, and Scale tracks behave like AE stopwatches: changing those values updates/creates playhead keys. Press `Shift+K` or click `Set Pose` again when you want to force all three transform tracks at once.
 8. Scrub the playhead or press `Play`.
+
+### Reuse A Complete Timeline Pose
+
+1. Select an object that already has Position, Rotation, and Scale keys at the
+   playhead.
+2. Open Commands and run `Copy Pose Keys At Playhead`.
+3. Select the target object or move to the target time.
+4. Run `Paste Pose Keys At Playhead`.
+5. The app writes Position, Rotation, and Scale keys together and preserves the
+   copied interpolation/ease settings.
 
 ### Auto-Key Full Transform Poses
 

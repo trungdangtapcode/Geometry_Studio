@@ -830,6 +830,7 @@ export function studioTemplate(): string {
               <h3>Keyframing</h3>
               <div class="quick-help-item"><strong>Set Key</strong><span>Timeline toolbar</span><p>Add or update one key on non-transform tracks. Use row diamonds for one transform row.</p></div>
               <div class="quick-help-item"><strong>Set Pose</strong><span>Shift+K / toolbar</span><p>Record Position, Rotation, and Scale together for the selected object.</p></div>
+              <div class="quick-help-item"><strong>Pose Key Clipboard</strong><span>Commands</span><p>Copy or paste complete Position, Rotation, and Scale keys at the playhead.</p></div>
               <div class="quick-help-item"><strong>Deselect Keys</strong><span>Escape</span><p>Clear selected timeline keyframes without changing object selection or playback time.</p></div>
               <div class="quick-help-item"><strong>Offset Values</strong><span>+= / -=</span><p>Type +=1 or -=1 in a key value field to offset selected keys without flattening them.</p></div>
               <div class="quick-help-item"><strong>Stopwatch Keying</strong><span>Existing transform keys</span><p>After Position, Rotation, or Scale has keys, edits at another time update or create the playhead key even with Auto-Key off.</p></div>

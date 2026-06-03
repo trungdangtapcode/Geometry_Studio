@@ -58,6 +58,12 @@ import {
   type TimelineLayerRange
 } from "./animation/timelineLayers";
 import { TimelinePlayer } from "./animation/timelinePlayer";
+import {
+  createTimelinePoseKeyClipboard,
+  hasCompleteTimelinePoseKeys,
+  pasteTimelinePoseKeyClipboard,
+  type TimelinePoseKeyClipboard
+} from "./animation/timelinePoseKeys";
 import { dedupeTimelineRowTargets, resolveTimelineRowTrackTargets } from "./animation/timelineTargets";
 import { formatPlaybackRate, TimelineTransport, type PlaybackDirection } from "./animation/timelineTransport";
 import {
@@ -270,6 +276,7 @@ function boot(root: HTMLDivElement): void {
   let timelineClipboard: TimelineClipboard | null = null;
   let timelineEaseClipboard: TimelineEaseClipboard | null = null;
   let timelineValueClipboard: TimelineValueClipboard | null = null;
+  let timelinePoseKeyClipboard: TimelinePoseKeyClipboard | null = null;
   let transformPoseClipboard: TransformPoseClipboard | null = null;
   let shuttlePauseHeld = false;
   let pendingDragSnapshot: SceneDocument | null = null;
@@ -1181,6 +1188,14 @@ function boot(root: HTMLDivElement): void {
 
       command("timeline.set-key", "Set Key On Active Track", "Keyframes", () => addTimelineKeyframe(timelinePanel.selectedTrackKind()), { keywords: ["diamond", "update"] }),
       command("timeline.set-transform", "Set Pose Key (Position Rotation Scale)", "Keyframes", setTransformTimelineKeyframes, { shortcut: "Shift+K", keywords: ["trs", "position", "rotation", "scale", "pose"] }),
+      command("timeline.copy-pose-keys", "Copy Pose Keys At Playhead", "Keyframes", copyTimelinePoseKeysAtPlayhead, {
+        keywords: ["pose", "position", "rotation", "scale", "copy pose keys", "after effects", "ae"],
+        disabled: () => !hasTimelinePoseKeyTarget()
+      }),
+      command("timeline.paste-pose-keys", "Paste Pose Keys At Playhead", "Keyframes", pasteTimelinePoseKeysAtPlayhead, {
+        keywords: ["pose", "position", "rotation", "scale", "paste pose keys", "after effects", "ae"],
+        disabled: () => !selectedEntry() || !hasTimelinePoseKeyClipboard()
+      }),
       command("transform.copy-pose", "Copy Transform Pose", "Keyframes", copySelectedTransformPose, {
         keywords: ["pose", "position", "rotation", "scale", "clipboard"],
         disabled: () => !selectedEntry()
@@ -1626,6 +1641,16 @@ function boot(root: HTMLDivElement): void {
     return timelineValueClipboard !== null;
   }
 
+  function hasTimelinePoseKeyClipboard(): boolean {
+    return timelinePoseKeyClipboard !== null;
+  }
+
+  function hasTimelinePoseKeyTarget(): boolean {
+    const entry = selectedEntry();
+    const objectTimeline = entry ? sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id) : null;
+    return Boolean(objectTimeline && hasCompleteTimelinePoseKeys(objectTimeline, sceneTimeline.currentTime));
+  }
+
   function hasTransformPoseClipboard(): boolean {
     return transformPoseClipboard !== null;
   }
@@ -1846,6 +1871,59 @@ function boot(root: HTMLDivElement): void {
       sceneTimeline.autoKey
         ? `Pasted ${transformPoseClipboard.sourceName} pose to ${entry.name} and keyed it`
         : `Pasted ${transformPoseClipboard.sourceName} pose to ${entry.name}`,
+      "good"
+    );
+  }
+
+  function copyTimelinePoseKeysAtPlayhead(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before copying pose keys.", "bad");
+      return;
+    }
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id);
+    if (!objectTimeline) {
+      showToast(`${entry.name} has no timeline keys to copy.`, "bad");
+      return;
+    }
+    const clipboard = createTimelinePoseKeyClipboard(objectTimeline, entry.name, sceneTimeline.currentTime);
+    if (!clipboard) {
+      showToast("Park the playhead on complete Position, Rotation, and Scale keys before copying pose keys.", "bad");
+      return;
+    }
+    timelinePoseKeyClipboard = clipboard;
+    showToast(`Copied ${entry.name} pose keys at ${formatNumber(clipboard.sourceTime)}s`, "good");
+  }
+
+  function pasteTimelinePoseKeysAtPlayhead(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before pasting pose keys.", "bad");
+      return;
+    }
+    if (!timelinePoseKeyClipboard) {
+      showToast("Copy pose keys before pasting.", "bad");
+      return;
+    }
+
+    const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
+    const lockedTransformTrack = objectTimeline.tracks.find((track) => isObjectTransformTrackKind(track.kind) && track.locked);
+    if (!assertTimelineTrackUnlocked(lockedTransformTrack, "pasting pose keys")) return;
+
+    recordHistory();
+    const time = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    const keyframeIds = pasteTimelinePoseKeyClipboard(objectTimeline, timelinePoseKeyClipboard, time);
+    entry.animation = "none";
+    sceneTimeline.currentTime = time;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    syncSelectedBases();
+    updateAllUI();
+    timelinePanel.setRowFilter("selectedKeyed", { clearSearch: true });
+    timelinePanel.selectKeyframes(keyframeIds);
+    showToast(
+      `Pasted ${timelinePoseKeyClipboard.sourceName} pose keys to ${entry.name} at ${formatNumber(time)}s`,
       "good"
     );
   }
