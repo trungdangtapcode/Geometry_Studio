@@ -16,7 +16,7 @@ type SceneExport = {
   };
 };
 
-test("pastes copied keyframes with reversed timing", async ({ page }) => {
+test("pastes copied keyframes with reversed timing through the toolbar button", async ({ page }) => {
   test.setTimeout(120_000);
   const errors: string[] = [];
   await installSceneDownloadCapture(page);
@@ -38,7 +38,8 @@ test("pastes copied keyframes with reversed timing", async ({ page }) => {
   await page.keyboard.press("Control+A");
   await page.keyboard.press("Control+C");
   await setTimelineTime(page, 4);
-  await runCommand(page, "paste reversed keyframes", "timeline.paste-reverse");
+  await expect(page.locator("#timeline-paste-reverse-keyframes")).toBeEnabled();
+  await page.locator("#timeline-paste-reverse-keyframes").click();
 
   const scene = await saveScene(page);
   const positionTrack = scene.timeline.objects
@@ -65,15 +66,6 @@ async function installSceneDownloadCapture(page: Page): Promise<void> {
       return createObjectURL(object);
     };
   });
-}
-
-async function runCommand(page: Page, query: string, commandId: string): Promise<void> {
-  await page.keyboard.press("Control+K");
-  await expect(page.locator("#command-palette-search")).toBeVisible();
-  await page.locator("#command-palette-search").fill(query);
-  await expect(page.locator(`[data-command-id="${commandId}"]`)).toBeVisible();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#command-palette")).toHaveAttribute("aria-hidden", "true");
 }
 
 async function setTimelineTime(page: Page, time: number): Promise<void> {

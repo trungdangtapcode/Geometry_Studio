@@ -154,6 +154,8 @@ PDF.
   keyframe copy/paste behavior for object, camera, and light tracks.
 - [Timeline Paste Insert](timeline-paste-insert.md) documents insert-style
   clipboard paste that shifts later destination keys before pasting.
+- [Timeline Paste Rev Button](timeline-paste-reverse-button.md) documents
+  visible reverse-timing paste beside normal paste controls.
 - [Timeline Keyframe Ripple Delete](timeline-keyframe-ripple-delete.md)
   documents selected timing-span removal that closes gaps on affected tracks.
 - [Timeline Keyframe Nudge](timeline-keyframe-nudge.md) documents frame-step

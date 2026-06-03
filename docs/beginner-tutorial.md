@@ -249,7 +249,7 @@ or `All`.
 | Move a key in time | Drag it |
 | Delete selected keys | `Delete` |
 | Copy / cut / paste | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` |
-| Paste copied keys backward | Command Palette: `Paste Reversed Keyframes` |
+| Paste copied keys backward | `Paste Rev` button or Command Palette: `Paste Reversed Keyframes` |
 | Duplicate selected keys | `Ctrl+D` |
 | Copy one key's value only | Command Palette: `Copy Keyframe Value` |
 | Paste that value onto matching keys | Command Palette: `Paste Keyframe Value` |
