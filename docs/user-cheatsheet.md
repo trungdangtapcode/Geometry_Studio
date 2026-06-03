@@ -214,6 +214,7 @@ Position, Rotation, and Scale recorded together.
 | Preview Sel | Play only the selected keyframe range |
 | To Playhead | Move selected key block so it begins at playhead |
 | Center | Center selected key block around playhead |
+| Marker Align | Command Palette actions move selected key blocks to previous, nearest, or next marker |
 | Rove | Redistribute interior selected keys between fixed endpoints |
 | Reverse | Reverse selected key timing |
 | Snap | Snap selected keys to frame boundaries |
@@ -282,6 +283,7 @@ Position, Rotation, and Scale recorded together.
 | `Shift+Delete` | Ripple delete selected keyframes |
 | `Shift+Enter` | Move selected keys to playhead |
 | `Shift+C` | Center selected keys around playhead |
+| Command Palette: `move keyframes to nearest marker` | Align selected key block to the closest marker from the playhead |
 | `Shift+V` | Rove selected interior keys |
 | `Shift+R` | Reverse selected key timing |
 | `Shift+S` | Snap selected keys to frames |

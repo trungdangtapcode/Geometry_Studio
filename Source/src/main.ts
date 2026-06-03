@@ -126,6 +126,7 @@ import type {
   ShadowQuality,
   TimelineInterpolation,
   TimelineKeyframeDocument,
+  TimelineMarkerDocument,
   TimelineTrackDocument,
   TimelineTrackKind,
   ToastTone
@@ -1425,6 +1426,18 @@ function boot(root: HTMLDivElement): void {
       command("timeline.nudge-right", "Nudge Keyframes Right", "Retiming", () => nudgeTimelineKeyframes(1), { disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.move-to-playhead", "Move Keyframes To Playhead", "Retiming", () => moveTimelineKeyframesToPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+Enter", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.center-on-playhead", "Center Keyframes On Playhead", "Retiming", () => centerTimelineKeyframesOnPlayhead(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+C", disabled: () => !hasTimelineKeyframeTarget() }),
+      command("timeline.move-to-previous-marker", "Move Keyframes To Previous Marker", "Retiming", () => moveTimelineKeyframesToMarker("previous"), {
+        keywords: ["marker", "beat", "sync", "align", "previous marker", "after effects", "ae"],
+        disabled: () => !hasSelectedTimelineKeyframes() || sceneTimeline.markers.length === 0
+      }),
+      command("timeline.move-to-nearest-marker", "Move Keyframes To Nearest Marker", "Retiming", () => moveTimelineKeyframesToMarker("nearest"), {
+        keywords: ["marker", "beat", "sync", "align", "nearest marker", "after effects", "ae"],
+        disabled: () => !hasSelectedTimelineKeyframes() || sceneTimeline.markers.length === 0
+      }),
+      command("timeline.move-to-next-marker", "Move Keyframes To Next Marker", "Retiming", () => moveTimelineKeyframesToMarker("next"), {
+        keywords: ["marker", "beat", "sync", "align", "next marker", "after effects", "ae"],
+        disabled: () => !hasSelectedTimelineKeyframes() || sceneTimeline.markers.length === 0
+      }),
       command("timeline.rove", "Rove Keyframes Across Time", "Retiming", () => roveTimelineKeyframesAcrossTime(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+V", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.reverse-keys", "Reverse Keyframe Timing", "Retiming", () => reverseTimelineKeyframes(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+R", disabled: () => !hasTimelineKeyframeTarget() }),
       command("timeline.snap-frames", "Snap Keyframes To Frames", "Retiming", () => snapTimelineKeyframesToFrames(timelinePanel.selectedKeyframeIdsList()), { shortcut: "Shift+S", disabled: () => !hasTimelineKeyframeTarget() }),
@@ -5691,6 +5704,51 @@ function boot(root: HTMLDivElement): void {
       "No keyframe timing changed.",
       (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} centered on ${formatNumber(playheadTime)}s${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
     );
+  }
+
+  function moveTimelineKeyframesToMarker(mode: "previous" | "nearest" | "next", keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    if (sceneTimeline.markers.length === 0) {
+      showToast("Add a marker before aligning keyframes to markers.", "bad");
+      return;
+    }
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length === 0 || sources.length === 0) {
+      showToast("Select keyframes before moving them to a marker.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "moving keyframes to a marker")) return;
+
+    const target = timelineMarkerTarget(mode);
+    if (!target) {
+      const label = mode === "previous" ? "previous" : "next";
+      showToast(`No ${label} marker from the playhead.`, "bad");
+      return;
+    }
+
+    recordHistory();
+    const result = moveResolvedKeyframesToTime(sceneTimeline, sources, target.time);
+    finishTimelineKeyframeEdit(
+      sources,
+      result,
+      "No keyframe timing changed.",
+      (editResult) => `${editResult.edited} keyframe${editResult.edited === 1 ? "" : "s"} moved to marker ${target.label} at ${formatNumber(target.time)}s${editResult.skipped ? `, ${editResult.skipped} skipped` : ""}`
+    );
+  }
+
+  function timelineMarkerTarget(mode: "previous" | "nearest" | "next"): TimelineMarkerDocument | null {
+    const markers = [...sceneTimeline.markers].sort((left, right) => left.time - right.time);
+    const current = sceneTimeline.currentTime;
+    const epsilon = 0.001;
+    if (mode === "previous") {
+      return markers.filter((marker) => marker.time < current - epsilon).at(-1) ?? null;
+    }
+    if (mode === "next") {
+      return markers.find((marker) => marker.time > current + epsilon) ?? null;
+    }
+    return markers
+      .slice()
+      .sort((left, right) => Math.abs(left.time - current) - Math.abs(right.time - current))
+      .at(0) ?? null;
   }
 
   function roveTimelineKeyframesAcrossTime(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {

@@ -259,6 +259,7 @@ or `All`.
 | Retime graph keys | Focus a graph key, then press `Left` / `Right` |
 | Nudge graph values or speed ease | Focus a graph key, then press `Up` / `Down` |
 | Center selected keys on playhead | `Shift+C` |
+| Move selected keys to marker beats | Command Palette: `Move Keyframes To Previous/Nearest/Next Marker` |
 | Reverse timing | `Shift+R` |
 | Snap to frame | `Shift+S` |
 | Distribute across Work In/Out | `Shift+D` |
@@ -300,6 +301,11 @@ Use `Paste Reversed Keyframes` when you want the same copied motion to play
 backward from the playhead. Example: copy keys at `0s` and `2s`, move the
 playhead to `5s`, run reverse paste, and the copied `2s` pose lands at `5s`
 while the copied `0s` pose lands at `7s`.
+
+Use marker alignment when you have demo beats. Add markers with `M`, select a
+key block, put the playhead near the target beat, then run `Move Keyframes To
+Nearest Marker`. The first selected key moves to that marker and the rest of the
+selected block keeps its spacing.
 
 ## 16. Work Area And Playback
 
