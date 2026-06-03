@@ -138,6 +138,7 @@ export interface KeyframeTimelineCallbacks {
   onPinVisibleRows(): void;
   onClearPinnedRows(): void;
   onToggleObjectShy(objectId: string): void;
+  onToggleObjectTrackLocks(objectId: string): void;
   onToggleHideShyRows(): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
@@ -396,6 +397,7 @@ export class KeyframeTimelinePanel {
   private suppressMarkerClick = false;
   private suppressLayerClick = false;
   private suppressTransportClick = false;
+  private lastTimelineGroupClick: { targetId: string; time: number } | null = null;
   private timelineScroller: HTMLElement | null = null;
   private syncingScroll = false;
   private layerStretchModifierActive = false;
@@ -1369,26 +1371,34 @@ export class KeyframeTimelinePanel {
       const groupToggle = (event.target as HTMLElement).closest<HTMLElement>(".timeline-group-toggle");
       const groupPoseKey = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-pose-key");
       const groupShy = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-shy");
+      const groupLock = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-lock");
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
         const targetId = group.dataset.groupTargetId;
         if (targetId) {
+          this.lastTimelineGroupClick = { targetId, time: performance.now() };
           if (groupToggle) {
             if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
             else this.toggleTimelineGroup(targetId);
+          } else if (event.detail >= 2) {
+            this.startTimelineGroupRename(group);
           } else if (groupPoseKey) {
+            this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
             if (event.altKey && groupPoseKey.classList.contains("keyed-track")) this.callbacks.onClearTransformKeyframes(targetId);
             else this.callbacks.onSetObjectTransformKeyframes(targetId);
           } else if (groupShy) {
-            this.callbacks.onToggleObjectShy(targetId);
-          } else if (event.detail >= 2) {
-            this.startTimelineGroupRename(group);
-          } else {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
+            this.callbacks.onToggleObjectShy(targetId);
+          } else if (groupLock) {
+            this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
+            this.callbacks.onToggleObjectTrackLocks(targetId);
+          } else {
+            if (targetId !== this.lastSelectedId) this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
           }
         }
         return;
       }
+      if (event.detail >= 2 && this.startRecentTimelineGroupRename()) return;
       const keyButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-key");
       const switchButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-row-switch");
       const row = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-label");
@@ -1415,7 +1425,7 @@ export class KeyframeTimelinePanel {
     });
     this.labels.addEventListener("dblclick", (event) => {
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
-      if (!group || (event.target as HTMLElement).closest(".timeline-group-toggle, .timeline-group-pose-key, .timeline-group-shy")) return;
+      if (!group || (event.target as HTMLElement).closest(".timeline-group-toggle")) return;
       event.preventDefault();
       this.startTimelineGroupRename(group);
     });
@@ -1839,6 +1849,15 @@ export class KeyframeTimelinePanel {
     nameLabel.replaceWith(input);
     input.focus();
     input.select();
+  }
+
+  private startRecentTimelineGroupRename(): boolean {
+    const recentClick = this.lastTimelineGroupClick;
+    if (!recentClick || performance.now() - recentClick.time > 800) return false;
+    const group = this.labels.querySelector<HTMLElement>(`.timeline-track-group[data-group-target-id="${recentClick.targetId}"]`);
+    if (!group) return false;
+    this.startTimelineGroupRename(group);
+    return true;
   }
 
   private setAllTimelineGroupsCollapsed(collapsed: boolean): number {
@@ -2536,6 +2555,7 @@ export class KeyframeTimelinePanel {
         const visibleRows = this.filteredRowDescriptors(entry.name, visibleKinds, true);
         if (visibleRows.length === 0) return [];
         const collapsed = this.isTimelineGroupCollapsed(entry.id);
+        const keyedTracks = objectTimeline?.tracks.filter((track) => track.keyframes.length > 0) ?? [];
         const groupLabel = this.renderTimelineGroupLabel({
           targetId: entry.id,
           targetName: entry.name,
@@ -2545,6 +2565,8 @@ export class KeyframeTimelinePanel {
           collapsed,
           rowCount: visibleRows.length,
           keyframeCount: countTrackKeyframes(objectTimeline?.tracks),
+          lockable: keyedTracks.length > 0,
+          locked: keyedTracks.length > 0 && keyedTracks.every((track) => track.locked),
           shy: isTimelineObjectShy(timelineDocument, entry.id),
           poseKey: true,
           poseKeyed: hasTransformPoseTracks(objectTimeline?.tracks)
@@ -2656,6 +2678,8 @@ export class KeyframeTimelinePanel {
     collapsed: boolean;
     rowCount: number;
     keyframeCount: number;
+    lockable?: boolean;
+    locked?: boolean;
     shy?: boolean;
     poseKey?: boolean;
     poseKeyed?: boolean;
@@ -2665,8 +2689,9 @@ export class KeyframeTimelinePanel {
     const keyText = options.keyframeCount === 1 ? "1 key" : `${options.keyframeCount} keys`;
     const stateText = options.collapsed ? "Expand" : "Collapse";
     const shyText = options.shy ? "Remove shy flag" : "Mark layer shy";
+    const lockText = options.locked ? "Unlock layer tracks" : "Lock layer tracks";
     return `
-      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
+      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.lockable ? "lockable-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
         <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
           <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
         </button>
@@ -2675,6 +2700,9 @@ export class KeyframeTimelinePanel {
           <strong>${escapeHtml(options.targetName)}</strong>
           <small>${options.targetType} | ${rowText} | ${keyText}</small>
         </span>
+        ${options.lockable && typeof options.locked === "boolean"
+          ? `<button class="timeline-group-lock${options.locked ? " active" : ""}" type="button" aria-label="${lockText}: ${escapeHtml(options.targetName)}" title="${lockText}"><span data-icon="${options.locked ? "Lock" : "Unlock"}"></span></button>`
+          : ""}
         ${typeof options.shy === "boolean"
           ? `<button class="timeline-group-shy${options.shy ? " active" : ""}" type="button" aria-label="${shyText}: ${escapeHtml(options.targetName)}" title="${shyText}"><span data-icon="${options.shy ? "Eye" : "EyeOff"}"></span></button>`
           : ""}

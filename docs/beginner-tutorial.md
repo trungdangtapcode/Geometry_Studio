@@ -228,6 +228,10 @@ should remain in the scene. Mark the selected object as shy, then click
 `Hide Shy`. This cleans the timeline without muting tracks or hiding objects in
 the viewport.
 
+Use the lock switch on an object group row when you want to protect every keyed
+track on that layer from accidental edits. It is different from hiding or shy:
+the animation still plays, but key editing is blocked until you unlock it.
+
 Useful row shortcuts:
 
 | Action | Shortcut |

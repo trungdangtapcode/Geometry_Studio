@@ -157,6 +157,7 @@ Position, Rotation, and Scale recorded together.
 | Clear pinned rows | Removes every pinned-row preference |
 | Shy | Mark or unmark the selected object layer as shy |
 | Hide Shy / Show Shy | Hide or reveal shy object layers in the timeline |
+| Layer lock switch | Lock or unlock every keyed track on that object layer |
 
 ## Timeline Buttons
 
@@ -181,6 +182,7 @@ Position, Rotation, and Scale recorded together.
 | Set Visible | Record all currently visible timeline rows at the playhead |
 | Set Pinned | Record every pinned timeline row at the playhead |
 | Shy / Hide Shy | Hide object layer clutter without muting tracks or hiding viewport objects |
+| Layer lock switch | Protect all keyed tracks on an object layer from edits |
 | Showcase | Build the reference-style wire sphere, grid floor, shadow, and editable timeline demo |
 | Layer In / Layer Out | Trim selected object layer range |
 | Split | Split selected object layer at the playhead |

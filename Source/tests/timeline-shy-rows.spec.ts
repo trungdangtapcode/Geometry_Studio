@@ -19,31 +19,29 @@ test("marks object layers shy and hides them from timeline rows", async ({ page 
   await page.goto("/");
   await expect(page.locator("#timeline-row-filter")).toBeVisible();
   await page.locator("#timeline-row-filter").selectOption("all");
-  await expect.poll(() => timelineGroupNames(page)).toContain("Cube");
+  const cubeGroup = page.locator('.timeline-track-group[data-group-target-id="object-1"]');
+  const sphereGroup = page.locator('.timeline-track-group[data-group-target-id="object-3"]');
+  await expect(cubeGroup).toHaveCount(1, { timeout: 30_000 });
+  await expect(sphereGroup).toHaveCount(1, { timeout: 30_000 });
 
   await page.locator("#timeline-shy-selected").click();
   await expect(page.locator("#timeline-shy-selected")).toContainText("Unshy");
 
-  await page.locator('.primitive-btn[data-primitive="sphere"]').click();
-  await page.locator("#timeline-row-filter").selectOption("all");
-  await expect.poll(() => timelineGroupNames(page)).toEqual(expect.arrayContaining(["Cube", "Sphere"]));
+  await sphereGroup.click();
+  await expect(page.locator("#selection-summary")).toContainText("Sphere");
 
   await page.locator("#timeline-hide-shy").click();
   await expect(page.locator("#timeline-hide-shy")).toContainText("Show Shy");
-  await expect.poll(() => timelineGroupNames(page)).toContain("Sphere");
-  await expect.poll(() => timelineGroupNames(page)).not.toContain("Cube");
+  await expect(sphereGroup).toHaveCount(1);
+  await expect(cubeGroup).toHaveCount(0);
 
   const scene = await saveScene(page);
-  const cube = scene.objects.find((object) => object.name === "Cube");
+  const cube = scene.objects.find((object) => object.id === "object-1");
   expect(cube).toBeTruthy();
   expect(scene.timeline.hideShyObjects).toBe(true);
   expect(scene.timeline.shyObjectIds).toContain(cube!.id);
   expect(errors).toEqual([]);
 });
-
-async function timelineGroupNames(page: Page): Promise<string[]> {
-  return page.locator(".timeline-track-group .track-label-text strong").allTextContents();
-}
 
 async function installSceneDownloadCapture(page: Page): Promise<void> {
   await page.addInitScript(() => {

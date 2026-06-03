@@ -385,6 +385,7 @@ function boot(root: HTMLDivElement): void {
     onPinVisibleRows: pinVisibleTimelineRows,
     onClearPinnedRows: clearPinnedTimelineRows,
     onToggleObjectShy: toggleTimelineObjectShyState,
+    onToggleObjectTrackLocks: toggleTimelineObjectTrackLocks,
     onToggleHideShyRows: toggleTimelineHideShyRows,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
@@ -1601,6 +1602,12 @@ function boot(root: HTMLDivElement): void {
       command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
         keywords: ["shy", "hide", "show shy", "layer", "timeline", "after effects", "ae"]
       }),
+      command("timeline.lock-selected-layer", "Toggle Selected Layer Lock", "View", () => {
+        if (selectedId) toggleTimelineObjectTrackLocks(selectedId);
+      }, {
+        keywords: ["lock layer", "unlock layer", "layer switch", "protect keys", "timeline", "after effects", "ae"],
+        disabled: () => !hasSelectedLayerKeyedTracks()
+      }),
       command("timeline.collapse-groups", "Collapse Timeline Groups", "View", collapseTimelineGroups, {
         keywords: ["layers", "disclosure", "twirl", "fold", "after effects"]
       }),
@@ -1772,6 +1779,12 @@ function boot(root: HTMLDivElement): void {
   function hasBakeableTimelineTrack(): boolean {
     const track = activeTimelineTrack(timelinePanel.selectedTrackKind());
     return Boolean(track && track.keyframes.length > 0 && !track.locked && track.enabled);
+  }
+
+  function hasSelectedLayerKeyedTracks(): boolean {
+    const entry = selectedEntry();
+    const objectTimeline = entry ? sceneTimeline.objects.find((object) => object.objectId === entry.id) : null;
+    return Boolean(objectTimeline?.tracks.some((track) => track.keyframes.length > 0));
   }
 
   function hasAutoOrientPathTarget(): boolean {
@@ -4424,6 +4437,24 @@ function boot(root: HTMLDivElement): void {
     const shy = toggleTimelineObjectShy(sceneTimeline, objectId);
     updateAllUI();
     showToast(`${entry.name} ${shy ? "marked shy" : "removed from shy layers"}`, "good");
+  }
+
+  function toggleTimelineObjectTrackLocks(objectId: string): void {
+    const entry = entries.get(objectId);
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === objectId);
+    const keyedTracks = objectTimeline?.tracks.filter((track) => track.keyframes.length > 0) ?? [];
+    if (!entry || keyedTracks.length === 0) {
+      showToast("Add keyframes to this layer before locking it.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const locked = !keyedTracks.every((track) => track.locked);
+    keyedTracks.forEach((track) => {
+      track.locked = locked;
+    });
+    updateAllUI();
+    showToast(`${entry.name} layer tracks ${locked ? "locked" : "unlocked"}`, "good");
   }
 
   function toggleTimelineHideShyRows(): void {

@@ -238,6 +238,8 @@ PDF.
   editing.
 - [Timeline Shy Rows](timeline-shy-rows.md) documents AE-style object layer
   shy switches and the `Hide Shy` timeline clutter toggle.
+- [Timeline Layer Lock](timeline-layer-lock.md) documents the object group
+  switch that locks or unlocks all keyed tracks for one layer.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
   enable, solo, lock, and key controls.
 - [Timeline Row Value Readouts](timeline-row-value-readouts.md) documents live
@@ -365,6 +367,8 @@ animation runtime where it fits:
   timeline, playback, retiming, interpolation, tool, and scene commands.
 - `Shy` and `Hide Shy` hide marked object layers from the timeline while
   preserving viewport visibility, playback, and saved animation tracks.
+- Object layer lock switches protect every keyed track on a layer in one action
+  while reusing the existing per-track lock behavior.
 - Track enable/disable controls mute individual property tracks without deleting
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation

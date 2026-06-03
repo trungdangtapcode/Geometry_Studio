@@ -1064,6 +1064,10 @@ svg {
   grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size) var(--icon-mini-size);
 }
 
+.timeline-track-group.pose-keyable.lockable-layer {
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size) var(--icon-mini-size) var(--icon-mini-size);
+}
+
 .timeline-track-group:hover,
 .timeline-track-group.active {
   background: rgba(32, 191, 169, 0.12);
@@ -1223,6 +1227,7 @@ svg {
 
 .timeline-row-switch,
 .timeline-row-key,
+.timeline-group-lock,
 .timeline-group-shy,
 .timeline-group-pose-key {
   width: calc(var(--icon-mini-size) - 4px);
@@ -1237,6 +1242,7 @@ svg {
 }
 
 .timeline-row-key,
+.timeline-group-lock,
 .timeline-group-shy,
 .timeline-group-pose-key {
   justify-self: end;
@@ -1244,6 +1250,7 @@ svg {
 
 .timeline-row-switch:disabled,
 .timeline-row-key:disabled,
+.timeline-group-lock:disabled,
 .timeline-group-shy:disabled,
 .timeline-group-pose-key:disabled {
   opacity: 0.42;
@@ -1251,6 +1258,10 @@ svg {
 }
 
 .timeline-row-switch:disabled {
+  pointer-events: none;
+}
+
+.timeline-group-lock:disabled {
   pointer-events: none;
 }
 
@@ -1267,6 +1278,8 @@ svg {
 .timeline-row-key:focus-visible,
 .timeline-row-switch:hover,
 .timeline-row-switch:focus-visible,
+.timeline-group-lock:hover,
+.timeline-group-lock:focus-visible,
 .timeline-group-shy:hover,
 .timeline-group-shy:focus-visible,
 .timeline-group-pose-key:hover,
@@ -1289,6 +1302,12 @@ svg {
   color: var(--teal);
   border-color: rgba(32, 191, 169, 0.34);
   background: rgba(32, 191, 169, 0.1);
+}
+
+.timeline-group-lock.active {
+  color: var(--amber);
+  border-color: rgba(244, 173, 47, 0.42);
+  background: rgba(244, 173, 47, 0.13);
 }
 
 .timeline-track-label.has-keyframes .timeline-row-key {
