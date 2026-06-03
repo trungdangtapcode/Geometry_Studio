@@ -268,6 +268,7 @@ or `All`.
 | Cascade target keys | `Alt+Shift+G` |
 | Repeat key block | `Shift+Y` |
 | Ping-pong repeat key block | Command Palette: `Ping-Pong Selected Keyframes To Work Out` |
+| Offset-loop key block | Command Palette: `Offset Loop Selected Keyframes To Work Out` |
 
 Interpolation options:
 
@@ -317,6 +318,10 @@ Use `Ping-Pong Selected Keyframes To Work Out` when a motion should bounce back
 and forth. Select the source keys, set Work Out after the block, and run the
 command. The app repeats the block while alternating reversed copies, similar to
 an AE ping-pong loop.
+
+Use `Offset Loop Selected Keyframes To Work Out` when motion should keep moving
+instead of restarting. The app repeats the selected block and adds the
+end-minus-start value delta on every repeat, similar to AE `loopOut("offset")`.
 
 ## 16. Work Area And Playback
 

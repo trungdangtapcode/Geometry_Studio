@@ -460,6 +460,92 @@ export function pingPongResolvedKeyframesAcrossWorkArea(
   return { created, cycles, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
+export function offsetResolvedKeyframesAcrossWorkArea(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): CycleTimelineResult {
+  if (sources.length < 2) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const selectedTimes = uniqueSortedSourceTimes(sources);
+  if (selectedTimes.length < 2) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const start = selectedTimes[0];
+  const end = selectedTimes[selectedTimes.length - 1];
+  const span = roundTime(end - start);
+  if (span <= 0) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const repeatGap = selectedKeyframeRepeatGap(timeline, selectedTimes);
+  const period = roundTime(span + repeatGap);
+  const repeatEnd = Math.min(timeline.workEnd, timeline.duration);
+  const cycles = Math.max(0, Math.floor((repeatEnd - end + 0.001) / period));
+  if (cycles <= 0) {
+    return { created: 0, cycles: 0, skipped: 0, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const trackDeltas = offsetDeltasByTrack(sources);
+  let created = 0;
+  let skipped = 0;
+  const keyframeIds: string[] = [];
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+
+  sources.forEach((source) => {
+    if (occupiedTimes.has(source.track)) return;
+    occupiedTimes.set(source.track, new Set(source.track.keyframes.map((keyframe) => timelineTimeKey(keyframe.time))));
+  });
+
+  for (let cycle = 1; cycle <= cycles; cycle += 1) {
+    const offset = period * cycle;
+    const offsetMultiplier = offset / span;
+    sources
+      .slice()
+      .sort((left, right) => left.keyframe.time - right.keyframe.time)
+      .forEach(({ scope, objectId, track, keyframe }) => {
+        if (track.locked) {
+          skipped += 1;
+          return;
+        }
+        const delta = trackDeltas.get(track);
+        if (!delta) {
+          skipped += 1;
+          return;
+        }
+
+        const time = snapTimelineTime(timeline, keyframe.time + offset);
+        const trackOccupancy = occupiedTimes.get(track)!;
+        const timeKey = timelineTimeKey(time);
+        if (time > repeatEnd + 0.001 || trackOccupancy.has(timeKey)) {
+          skipped += 1;
+          return;
+        }
+
+        const offsetValue = keyframe.value.map((value, index) => value + delta[index] * offsetMultiplier) as [number, number, number];
+        const looped = createTimelineKeyframe(time, offsetValue);
+        looped.interpolation = keyframe.interpolation;
+        looped.easeStrength = keyframe.easeStrength;
+        looped.easeInStrength = keyframe.easeInStrength;
+        looped.easeOutStrength = keyframe.easeOutStrength;
+        track.enabled = true;
+        track.keyframes.push(looped);
+        trackOccupancy.add(timeKey);
+        keyframeIds.push(looped.id);
+        changedTracks.add(track);
+        if (scope === "object" && isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+        created += 1;
+      });
+  }
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return { created, cycles, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
+}
+
 export function nudgeResolvedKeyframes(
   timeline: SceneTimelineDocument,
   sources: TimelineKeyframeSource[],
@@ -1213,6 +1299,29 @@ function selectedKeyframeRepeatGap(timeline: SceneTimelineDocument, selectedTime
     .filter((gap) => gap > 0.001);
   if (positiveGaps.length === 0) return fallback;
   return roundTime(Math.max(Math.min(...positiveGaps), 0.001));
+}
+
+function offsetDeltasByTrack(sources: TimelineKeyframeSource[]): Map<TimelineTrackDocument, [number, number, number]> {
+  const byTrack = new Map<TimelineTrackDocument, TimelineKeyframeSource[]>();
+  sources.forEach((source) => {
+    const trackSources = byTrack.get(source.track) ?? [];
+    trackSources.push(source);
+    byTrack.set(source.track, trackSources);
+  });
+
+  const deltas = new Map<TimelineTrackDocument, [number, number, number]>();
+  byTrack.forEach((trackSources, track) => {
+    const sorted = trackSources.slice().sort((left, right) => left.keyframe.time - right.keyframe.time);
+    const first = sorted.at(0);
+    const last = sorted.at(-1);
+    if (!first || !last || Math.abs(first.keyframe.time - last.keyframe.time) < 0.001) return;
+    deltas.set(track, [
+      last.keyframe.value[0] - first.keyframe.value[0],
+      last.keyframe.value[1] - first.keyframe.value[1],
+      last.keyframe.value[2] - first.keyframe.value[2]
+    ]);
+  });
+  return deltas;
 }
 
 function applyKeyframeEasePatch(keyframe: TimelineKeyframeDocument, patch: TimelineKeyframeEditPatch): boolean {

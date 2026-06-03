@@ -19,6 +19,7 @@ import {
   liftTimelineRangeOnTracks,
   moveResolvedKeyframesToTime,
   nudgeResolvedKeyframes,
+  offsetResolvedKeyframesAcrossWorkArea,
   pasteTimelineClipboard,
   pingPongResolvedKeyframesAcrossWorkArea,
   resolveTimelineKeyframeSources,
@@ -1345,6 +1346,10 @@ function boot(root: HTMLDivElement): void {
       }),
       command("timeline.ping-pong-keys", "Ping-Pong Selected Keyframes To Work Out", "Keyframes", () => pingPongTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList()), {
         keywords: ["repeat", "loop", "ping pong", "cycle", "yoyo", "keyframe assistant", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.offset-loop-keys", "Offset Loop Selected Keyframes To Work Out", "Keyframes", () => offsetLoopTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList()), {
+        keywords: ["repeat", "loop", "offset", "loop out offset", "accumulate", "keyframe assistant", "after effects", "ae"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
 
@@ -5434,6 +5439,35 @@ function boot(root: HTMLDivElement): void {
     timelinePanel.selectKeyframes(result.keyframeIds);
     const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
     showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} ping-ponged across ${result.cycles} repeat${result.cycles === 1 ? "" : "s"}${skipped}`, "good");
+  }
+
+  function offsetLoopTimelineKeyframesAcrossWorkArea(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before offset looping a timing block.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "offset looping keyframes")) return;
+
+    recordHistory();
+    const result = offsetResolvedKeyframesAcrossWorkArea(sceneTimeline, sources);
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+
+    if (result.created === 0) {
+      updateAllUI();
+      showToast("Move Work Out after the selected block before offset looping keyframes.", "bad");
+      return;
+    }
+
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} offset-looped across ${result.cycles} repeat${result.cycles === 1 ? "" : "s"}${skipped}`, "good");
   }
 
   function duplicateVisibleTimelineTimeKeyframes(): void {

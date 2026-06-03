@@ -225,6 +225,7 @@ Position, Rotation, and Scale recorded together.
 | Cascade | Sequence selected object/camera/light target key blocks |
 | Cycle | Repeat selected keyframe blocks forward until Work Out |
 | Ping-Pong | Repeat selected keyframe blocks to Work Out while alternating reversed copies |
+| Offset Loop | Repeat selected keyframe blocks to Work Out while accumulating the end-minus-start value delta |
 | Duplicate | Duplicate selected keyframes |
 | Track On / Solo / Lock | Enable, isolate, or lock active track |
 | Clear Track | Delete every key on active track |
@@ -296,6 +297,7 @@ Position, Rotation, and Scale recorded together.
 | `Alt+Shift+G` | Cascade selected target key blocks |
 | `Shift+Y` | Cycle selected keyframe blocks to Work Out |
 | Command Palette: `ping-pong selected keyframes` | Alternate forward/reversed repeats to Work Out |
+| Command Palette: `offset loop selected keyframes` | Repeat selected keys while accumulating motion/value deltas |
 | `M` | Add/update marker |
 | `Alt+M`, `Shift+M` | Previous / next marker |
 | `Alt+Shift+M` | Delete marker at playhead |
