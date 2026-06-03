@@ -197,6 +197,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-toggle-track" type="button"><span data-icon="Eye"></span><span>Track On</span></button>
               <button class="mini-button" id="timeline-solo-track" type="button"><span data-icon="Circle"></span><span>Solo Off</span></button>
               <button class="mini-button" id="timeline-lock-track" type="button"><span data-icon="Unlock"></span><span>Unlocked</span></button>
+              <button class="mini-button" id="timeline-bake-track" type="button" title="Bake the active track over Work In/Out to frame keys"><span data-icon="ScanLine"></span><span>Bake</span></button>
               <button class="mini-button danger" id="timeline-clear-track" type="button"><span data-icon="Eraser"></span><span>Clear Track</span></button>
               <button class="mini-button icon-mini" id="timeline-selection-tool" type="button" aria-label="Timeline selection tool" title="Timeline selection tool (V)" aria-pressed="true"><span data-icon="MousePointer2"></span></button>
               <button class="mini-button icon-mini" id="timeline-pan-tool" type="button" aria-label="Timeline pan tool" title="Timeline pan tool (H)" aria-pressed="false"><span data-icon="Hand"></span></button>

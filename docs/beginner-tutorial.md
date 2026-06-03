@@ -267,6 +267,7 @@ or `All`.
 | Distribute across Work In/Out | `Shift+D` |
 | Fit into Work In/Out | `Shift+F` |
 | Fit selected keys to the playhead | `Fit CTI` button or Command Palette: `Fit Keyframes To Playhead` |
+| Bake active track to frame keys | `Bake` button or Command Palette: `Bake Active Track To Frame Keys` |
 | Compress or stretch around first selected key | `50%` / `200%` buttons |
 | Stagger from playhead | `Shift+G` |
 | Cascade target keys | `Alt+Shift+G` |
@@ -322,6 +323,11 @@ Use `Fit CTI` when you want to retime a selected motion block to end exactly at
 the playhead/current time indicator. The first selected key stays fixed, the
 last selected key moves to the playhead, and intermediate selected keys scale
 proportionally.
+
+Use `Bake` when an interpolated active track should become explicit frame
+keys. Set Work In/Out around the section, select the track kind, then click
+`Bake`. The app samples the track at the current FPS and replaces that track
+with editable per-frame keys.
 
 Use `Fit Keyframes Between Neighbor Markers` when the motion must fill a beat
 span. Put the playhead between two markers, select at least two keys, and run

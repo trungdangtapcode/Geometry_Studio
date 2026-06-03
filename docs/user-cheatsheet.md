@@ -233,6 +233,7 @@ Position, Rotation, and Scale recorded together.
 | Freeze | Copy the latest selected key value to Work Out and set the source key to Hold |
 | Duplicate | Duplicate selected keyframes |
 | Track On / Solo / Lock | Enable, isolate, or lock active track |
+| Bake | Convert the active track over Work In/Out into one editable key per frame |
 | Clear Track | Delete every key on active track |
 | Arrow / Hand | Timeline selection tool or pan tool |
 | Zoom buttons | Zoom out, fit, fit selected, follow playhead, zoom in |
@@ -301,6 +302,7 @@ Position, Rotation, and Scale recorded together.
 | `Shift+D` | Distribute selected keys across Work In/Out |
 | `Shift+F` | Fit selected keys into Work In/Out |
 | `Fit CTI` button / Command Palette: `fit keyframes to playhead` | Stretch selected timing from the first selected key to the playhead |
+| `Bake` button / Command Palette: `bake active track to frame keys` | Sample the active track over Work In/Out and replace it with frame keys |
 | `50%` / `200%` buttons | Make selected timing twice as fast or twice as slow |
 | `Shift+G` | Stagger selected keys |
 | `Alt+Shift+G` | Cascade selected target key blocks |

@@ -374,6 +374,7 @@ function boot(root: HTMLDivElement): void {
     onMoveMarker: moveTimelineMarker,
     onStepMarker: stepTimelineMarker,
     onClearTrack: clearTimelineTrack,
+    onBakeActiveTrack: bakeActiveTimelineTrackToFrames,
     onToggleTrack: toggleTimelineTrack,
     onToggleTrackLock: toggleTimelineTrackLock,
     onToggleTrackSolo: toggleTimelineTrackSolo,
@@ -1343,6 +1344,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["delete track keys", "remove all keyframes", "property"],
         disabled: () => !hasClearableTimelineTrack()
       }),
+      command("timeline.bake-track", "Bake Active Track To Frame Keys", "Keyframes", () => bakeActiveTimelineTrackToFrames(timelinePanel.selectedTrackKind()), {
+        keywords: ["bake", "sample", "convert to keyframes", "frame keys", "work area", "after effects", "ae"],
+        disabled: () => !hasBakeableTimelineTrack()
+      }),
       command("timeline.ripple-delete", "Ripple Delete Selected Keyframes", "Keyframes", () => rippleDeleteTimelineKeyframes(), {
         shortcut: "Shift+Delete",
         keywords: ["close gap"],
@@ -1674,6 +1679,7 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-select-layer-keys", commandId: "timeline.select-layer-keys" },
       { selector: "#timeline-fit-layer-keys", commandId: "timeline.fit-layer-keys" },
       { selector: "#timeline-sequence-layers", commandId: "timeline.sequence-layers" },
+      { selector: "#timeline-bake-track", commandId: "timeline.bake-track" },
       { selector: "#timeline-selection-tool", commandId: "timeline.selection-tool" },
       { selector: "#timeline-pan-tool", commandId: "timeline.pan-tool" },
       { selector: "#timeline-zoom-in", commandId: "timeline.zoom-in" },
@@ -1741,6 +1747,11 @@ function boot(root: HTMLDivElement): void {
   function hasClearableTimelineTrack(): boolean {
     const track = activeTimelineTrack(timelinePanel.selectedTrackKind());
     return Boolean(track && track.keyframes.length > 0 && !track.locked);
+  }
+
+  function hasBakeableTimelineTrack(): boolean {
+    const track = activeTimelineTrack(timelinePanel.selectedTrackKind());
+    return Boolean(track && track.keyframes.length > 0 && !track.locked && track.enabled);
   }
 
   function hasAutoOrientPathTarget(): boolean {
@@ -6447,6 +6458,82 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     updateAllUI();
     showToast(`${objectTrackLabel(kind)} track cleared`, "good");
+  }
+
+  function bakeActiveTimelineTrackToFrames(kind: TimelineTrackKind): void {
+    const track = activeTimelineTrack(kind);
+    if (!track || track.keyframes.length === 0) {
+      showToast("Add keyframes to the active track before baking it.", "bad");
+      return;
+    }
+    if (!assertTimelineTrackUnlocked(track, "baking it")) return;
+    if (!track.enabled) {
+      showToast("Enable the active track before baking it.", "bad");
+      return;
+    }
+
+    const range = timelineFrameBakeRange();
+    if (!range) return;
+    const { start, end, times } = range;
+    const baked = times.flatMap((time) => {
+      const value = evaluateTimelineTrack(track, time);
+      if (!value) return [];
+      const keyframe = createTimelineKeyframe(time, value);
+      keyframe.interpolation = "linear";
+      return [keyframe];
+    });
+
+    if (baked.length < 2) {
+      showToast("The active track has no sampled values inside Work In/Out.", "bad");
+      return;
+    }
+
+    const changedTransformObjectIds = new Set<string>();
+    const entry = selectedEntry();
+    if (entry && isObjectTransformTrackKind(kind)) changedTransformObjectIds.add(entry.id);
+
+    recordHistory();
+    track.keyframes = baked;
+    track.enabled = true;
+    sortTimelineKeyframes(track);
+    clearPresetAnimationsForTimelineObjects([...changedTransformObjectIds]);
+    sceneTimeline.currentTime = start;
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(track.keyframes.map((keyframe) => keyframe.id));
+    showToast(`${track.label} baked to ${baked.length} frame keys over ${formatNumber(start)}-${formatNumber(end)}s`, "good");
+  }
+
+  function timelineFrameBakeRange(): { start: number; end: number; times: number[] } | null {
+    const start = roundTime(clamp(Math.min(sceneTimeline.workStart, sceneTimeline.workEnd), 0, sceneTimeline.duration));
+    const end = roundTime(clamp(Math.max(sceneTimeline.workStart, sceneTimeline.workEnd), 0, sceneTimeline.duration));
+    if (end <= start + 0.001) {
+      showToast("Set a non-empty Work In/Out range before baking a track.", "bad");
+      return null;
+    }
+
+    const fps = Math.max(Math.round(sceneTimeline.fps), 1);
+    const step = 1 / fps;
+    const frameCount = Math.floor((end - start) / step) + 1;
+    const maxFrameKeys = 720;
+    if (frameCount > maxFrameKeys) {
+      showToast(`Work In/Out would create ${frameCount} keys. Shorten the range before baking.`, "bad");
+      return null;
+    }
+
+    const times: number[] = [];
+    for (let index = 0; index < frameCount; index += 1) {
+      const time = roundTime(start + index * step);
+      if (time <= end + 0.001) times.push(time);
+    }
+    if (times.length === 0 || Math.abs(times[times.length - 1] - end) > 0.001) {
+      times.push(end);
+    }
+    return { start, end, times };
   }
 
   function toggleTimelineTrack(kind: TimelineTrackKind, targetId?: string): void {

@@ -164,6 +164,8 @@ PDF.
   retiming controls for selected or playhead keyframes.
 - [Timeline Fit To Playhead](timeline-fit-to-playhead.md) documents the
   playhead-based selected keyframe retime workflow.
+- [Timeline Bake Track](timeline-bake-track.md) documents converting an active
+  track into editable frame keys over Work In/Out.
 - [Timeline Keyframe Alignment](timeline-keyframe-align.md) documents moving
   selected keyframe blocks to the playhead while preserving relative timing.
 - [Timeline Keyframe Center](timeline-keyframe-center.md) documents centering
@@ -351,6 +353,8 @@ animation runtime where it fits:
   the same availability rule.
 - `Fit CTI` stretches selected keyframes from their first selected key to the
   current time indicator, adding a direct playhead-driven retime operation.
+- `Bake` samples the active track over Work In/Out at the timeline FPS and
+  replaces it with explicit frame keys.
 - `Commands`, `Ctrl/Cmd+K`, and `F3` open a searchable command palette for
   timeline, playback, retiming, interpolation, tool, and scene commands.
 - Track enable/disable controls mute individual property tracks without deleting

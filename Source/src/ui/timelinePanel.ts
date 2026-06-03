@@ -128,6 +128,7 @@ export interface KeyframeTimelineCallbacks {
   onMoveMarker(markerId: string, time: number): void;
   onStepMarker(direction: -1 | 1): void;
   onClearTrack(kind: TimelineTrackKind): void;
+  onBakeActiveTrack(kind: TimelineTrackKind): void;
   onToggleTrack(kind: TimelineTrackKind, targetId?: string): void;
   onToggleTrackLock(kind: TimelineTrackKind, targetId?: string): void;
   onToggleTrackSolo(kind: TimelineTrackKind, targetId?: string): void;
@@ -320,6 +321,7 @@ export class KeyframeTimelinePanel {
   private readonly toggleTrackButton = query<HTMLButtonElement>("#timeline-toggle-track");
   private readonly lockTrackButton = query<HTMLButtonElement>("#timeline-lock-track");
   private readonly soloTrackButton = query<HTMLButtonElement>("#timeline-solo-track");
+  private readonly bakeTrackButton = query<HTMLButtonElement>("#timeline-bake-track");
   private readonly clearTrackButton = query<HTMLButtonElement>("#timeline-clear-track");
   private readonly selectionToolButton = query<HTMLButtonElement>("#timeline-selection-tool");
   private readonly panToolButton = query<HTMLButtonElement>("#timeline-pan-tool");
@@ -531,6 +533,7 @@ export class KeyframeTimelinePanel {
     this.syncToggleTrackButton(timelineDocument, selectedId);
     this.syncLockTrackButton(timelineDocument, selectedId);
     this.syncSoloTrackButton(timelineDocument, selectedId);
+    this.syncBakeTrackButton(timelineDocument, selectedId);
     this.syncClearTrackButton(timelineDocument, selectedId);
     this.syncPinnedKeyingButton();
 
@@ -1344,6 +1347,9 @@ export class KeyframeTimelinePanel {
     });
     this.clearTrackButton.addEventListener("click", () => {
       this.callbacks.onClearTrack(this.selectedTrackKind());
+    });
+    this.bakeTrackButton.addEventListener("click", () => {
+      this.callbacks.onBakeActiveTrack(this.selectedTrackKind());
     });
     this.toggleTrackButton.addEventListener("click", () => this.callbacks.onToggleTrack(this.selectedTrackKind()));
     this.lockTrackButton.addEventListener("click", () => this.callbacks.onToggleTrackLock(this.selectedTrackKind()));
@@ -2962,6 +2968,18 @@ export class KeyframeTimelinePanel {
       : state.locked
         ? "Unlock the active track before clearing it"
         : "Clear all keyframes from the active track";
+  }
+
+  private syncBakeTrackButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
+    const state = this.selectedTrackState(timelineDocument, selectedId);
+    this.bakeTrackButton.disabled = !state.hasKeyframes || state.locked || !state.enabled;
+    this.bakeTrackButton.title = !state.hasKeyframes
+      ? "Add keyframes before baking the active track"
+      : state.locked
+        ? "Unlock the active track before baking it"
+        : !state.enabled
+          ? "Enable the active track before baking it"
+          : "Bake the active track over Work In/Out to one key per frame";
   }
 
   private syncAddKeyframeButton(timelineDocument: SceneTimelineDocument, selectedId: string): void {
