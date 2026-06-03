@@ -93,6 +93,7 @@ export interface KeyframeTimelineCallbacks {
   onPreviewSelectedRange(): void;
   onDuplicateKeyframes(keyframeIds: string[]): void;
   onCycleKeyframesAcrossWorkArea(keyframeIds: string[]): void;
+  onHoldKeyframesToWorkOut(keyframeIds: string[]): void;
   onDuplicateVisibleTimeKeyframes(): void;
   onDeleteVisibleTimeKeyframes(): void;
   onInsertVisibleTimeGap(rows: TimelineVisibleRowTarget[]): void;
@@ -1176,6 +1177,9 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-cycle-keyframes").addEventListener("click", () => {
       this.callbacks.onCycleKeyframesAcrossWorkArea([...this.selectedKeyframeIds]);
+    });
+    query<HTMLButtonElement>("#timeline-hold-keyframes").addEventListener("click", () => {
+      this.callbacks.onHoldKeyframesToWorkOut([...this.selectedKeyframeIds]);
     });
     query<HTMLButtonElement>("#timeline-add-marker").addEventListener("click", () => {
       this.callbacks.onAddMarker(this.markerLabelInput.value.trim(), this.markerColorInput.value);

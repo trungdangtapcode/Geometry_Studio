@@ -177,6 +177,8 @@ PDF.
   sequencing selected target keyframe blocks from the playhead by the snap step.
 - [Timeline Keyframe Cycle](timeline-keyframe-cycle.md) documents repeating a
   selected keyframe block forward until Work Out.
+- [Timeline Freeze / Hold To Work Out](timeline-freeze-hold.md) documents
+  freezing selected key values through Work Out with Hold interpolation.
 - [Timeline Keyframe Editor](timeline-keyframe-editor.md) documents numeric
   keyframe time and value editing.
 - [Timeline Track Controls](timeline-track-controls.md) documents active-track

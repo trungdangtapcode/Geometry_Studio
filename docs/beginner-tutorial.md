@@ -269,6 +269,7 @@ or `All`.
 | Repeat key block | `Shift+Y` |
 | Ping-pong repeat key block | Command Palette: `Ping-Pong Selected Keyframes To Work Out` |
 | Offset-loop key block | Command Palette: `Offset Loop Selected Keyframes To Work Out` |
+| Freeze selected values to Work Out | `Freeze` button or Command Palette: `Hold Selected Keyframes To Work Out` |
 
 Interpolation options:
 
@@ -322,6 +323,11 @@ an AE ping-pong loop.
 Use `Offset Loop Selected Keyframes To Work Out` when motion should keep moving
 instead of restarting. The app repeats the selected block and adds the
 end-minus-start value delta on every repeat, similar to AE `loopOut("offset")`.
+
+Use `Hold Selected Keyframes To Work Out` when an object should stop on a pose.
+Select the key that should become the still pose, move Work Out to the end of
+the still section, and click `Freeze`. The app creates or updates a Work Out key
+with the same value and changes the source key to `Hold`.
 
 ## 16. Work Area And Playback
 

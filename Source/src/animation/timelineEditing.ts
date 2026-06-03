@@ -87,6 +87,13 @@ export interface CycleTimelineResult extends TimelineEditResult {
   keyframeIds: string[];
 }
 
+export interface HoldTimelineResult extends TimelineEditResult {
+  created: number;
+  updated: number;
+  held: number;
+  keyframeIds: string[];
+}
+
 export interface NudgeTimelineResult extends TimelineEditResult {
   nudged: number;
   currentTime: number;
@@ -544,6 +551,81 @@ export function offsetResolvedKeyframesAcrossWorkArea(
 
   changedTracks.forEach(sortTimelineKeyframes);
   return { created, cycles, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
+}
+
+export function holdResolvedKeyframesToWorkOut(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): HoldTimelineResult {
+  if (sources.length === 0) {
+    return { created: 0, updated: 0, held: 0, skipped: 0, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const targetTime = snapTimelineTime(timeline, Math.min(timeline.workEnd, timeline.duration));
+  const byTrack = new Map<TimelineTrackDocument, TimelineKeyframeSource[]>();
+  sources.forEach((source) => {
+    const group = byTrack.get(source.track) ?? [];
+    group.push(source);
+    byTrack.set(source.track, group);
+  });
+
+  let created = 0;
+  let updated = 0;
+  let held = 0;
+  let skipped = 0;
+  const keyframeIds: string[] = [];
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+
+  byTrack.forEach((trackSources, track) => {
+    if (track.locked) {
+      skipped += trackSources.length;
+      return;
+    }
+
+    const source = trackSources
+      .slice()
+      .sort((left, right) => right.keyframe.time - left.keyframe.time)
+      .at(0);
+    if (!source || source.keyframe.time > targetTime + 0.001) {
+      skipped += trackSources.length;
+      return;
+    }
+
+    let changed = false;
+    if (source.keyframe.interpolation !== "hold") {
+      source.keyframe.interpolation = "hold";
+      held += 1;
+      changed = true;
+    }
+
+    const value = [...source.keyframe.value] as [number, number, number];
+    const existing = track.keyframes.find((keyframe) => Math.abs(keyframe.time - targetTime) < 0.001);
+    if (existing) {
+      const existingChanged = applyFrozenKeyframeValue(existing, source.keyframe, value);
+      if (existingChanged) updated += 1;
+      changed = changed || existingChanged;
+      keyframeIds.push(existing.id);
+    } else {
+      const frozen = createTimelineKeyframe(targetTime, value);
+      frozen.interpolation = "hold";
+      frozen.easeStrength = source.keyframe.easeStrength;
+      frozen.easeInStrength = source.keyframe.easeInStrength;
+      frozen.easeOutStrength = source.keyframe.easeOutStrength;
+      track.enabled = true;
+      track.keyframes.push(frozen);
+      keyframeIds.push(frozen.id);
+      created += 1;
+      changed = true;
+    }
+
+    if (!changed) return;
+    changedTracks.add(track);
+    if (source.scope === "object" && isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(source.objectId);
+  });
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return { created, updated, held, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
 export function nudgeResolvedKeyframes(
@@ -1322,6 +1404,36 @@ function offsetDeltasByTrack(sources: TimelineKeyframeSource[]): Map<TimelineTra
     ]);
   });
   return deltas;
+}
+
+function applyFrozenKeyframeValue(
+  target: TimelineKeyframeDocument,
+  source: TimelineKeyframeDocument,
+  value: [number, number, number]
+): boolean {
+  let changed = false;
+  value.forEach((component, index) => {
+    if (Math.abs(target.value[index] - component) < 0.0001) return;
+    target.value[index] = component;
+    changed = true;
+  });
+  if (target.interpolation !== "hold") {
+    target.interpolation = "hold";
+    changed = true;
+  }
+  if (Math.abs(target.easeStrength - source.easeStrength) >= 0.0001) {
+    target.easeStrength = source.easeStrength;
+    changed = true;
+  }
+  if (Math.abs(target.easeInStrength - source.easeInStrength) >= 0.0001) {
+    target.easeInStrength = source.easeInStrength;
+    changed = true;
+  }
+  if (Math.abs(target.easeOutStrength - source.easeOutStrength) >= 0.0001) {
+    target.easeOutStrength = source.easeOutStrength;
+    changed = true;
+  }
+  return changed;
 }
 
 function applyKeyframeEasePatch(keyframe: TimelineKeyframeDocument, patch: TimelineKeyframeEditPatch): boolean {

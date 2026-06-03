@@ -15,6 +15,7 @@ import {
   editResolvedKeyframes,
   extractTimelineRangeOnTracks,
   fitResolvedKeyframesToRange,
+  holdResolvedKeyframesToWorkOut,
   insertTimelineGapOnTracks,
   liftTimelineRangeOnTracks,
   moveResolvedKeyframesToTime,
@@ -356,6 +357,7 @@ function boot(root: HTMLDivElement): void {
     onStaggerKeyframesFromPlayhead: staggerTimelineKeyframesFromPlayhead,
     onCascadeKeyframesFromPlayhead: cascadeTimelineKeyframesFromPlayhead,
     onCycleKeyframesAcrossWorkArea: cycleTimelineKeyframesAcrossWorkArea,
+    onHoldKeyframesToWorkOut: holdTimelineKeyframesToWorkOut,
     onEditKeyframes: editTimelineKeyframes,
     onStretchKeyframesToSpan: stretchTimelineKeyframesToSpan,
     onAddMarker: addTimelineMarker,
@@ -1352,6 +1354,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["repeat", "loop", "offset", "loop out offset", "accumulate", "keyframe assistant", "after effects", "ae"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
+      command("timeline.hold-to-work-out", "Hold Selected Keyframes To Work Out", "Keyframes", () => holdTimelineKeyframesToWorkOut(timelinePanel.selectedKeyframeIdsList()), {
+        keywords: ["freeze", "freeze frame", "hold", "still", "extend pose", "work out", "keyframe assistant", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
 
       command("timeline.select-active", "Select Active Track Keyframes", "Selection", selectAllActiveTimelineKeyframes, { shortcut: "Ctrl+A" }),
       command("timeline.select-work", "Select Active Track Work Area Keyframes", "Selection", selectTimelineWorkAreaKeyframes, { shortcut: "Ctrl+Shift+A" }),
@@ -1607,6 +1613,7 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-ripple-delete-keyframes", commandId: "timeline.ripple-delete" },
       { selector: "#timeline-duplicate-keyframe", commandId: "timeline.duplicate" },
       { selector: "#timeline-cycle-keyframes", commandId: "timeline.cycle-keys" },
+      { selector: "#timeline-hold-keyframes", commandId: "timeline.hold-to-work-out" },
       { selector: "#timeline-select-workarea", commandId: "timeline.select-work" },
       { selector: "#timeline-select-visible", commandId: "timeline.select-visible" },
       { selector: "#timeline-select-time", commandId: "timeline.select-time" },
@@ -5468,6 +5475,36 @@ function boot(root: HTMLDivElement): void {
     timelinePanel.selectKeyframes(result.keyframeIds);
     const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
     showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} offset-looped across ${result.cycles} repeat${result.cycles === 1 ? "" : "s"}${skipped}`, "good");
+  }
+
+  function holdTimelineKeyframesToWorkOut(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (sources.length === 0) {
+      showToast("Select at least one keyframe before holding to Work Out.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "holding keyframes to Work Out")) return;
+
+    recordHistory();
+    const result = holdResolvedKeyframesToWorkOut(sceneTimeline, sources);
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+
+    if (result.created + result.updated + result.held === 0) {
+      updateAllUI();
+      showToast("Move Work Out after the selected keyframe before holding the pose.", "bad");
+      return;
+    }
+
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+    const edited = result.created + result.updated;
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${edited} Work Out key${edited === 1 ? "" : "s"} frozen, ${result.held} source key${result.held === 1 ? "" : "s"} set to Hold${skipped}`, "good");
   }
 
   function duplicateVisibleTimelineTimeKeyframes(): void {

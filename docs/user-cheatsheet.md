@@ -226,6 +226,7 @@ Position, Rotation, and Scale recorded together.
 | Cycle | Repeat selected keyframe blocks forward until Work Out |
 | Ping-Pong | Repeat selected keyframe blocks to Work Out while alternating reversed copies |
 | Offset Loop | Repeat selected keyframe blocks to Work Out while accumulating the end-minus-start value delta |
+| Freeze | Copy the latest selected key value to Work Out and set the source key to Hold |
 | Duplicate | Duplicate selected keyframes |
 | Track On / Solo / Lock | Enable, isolate, or lock active track |
 | Clear Track | Delete every key on active track |
@@ -298,6 +299,7 @@ Position, Rotation, and Scale recorded together.
 | `Shift+Y` | Cycle selected keyframe blocks to Work Out |
 | Command Palette: `ping-pong selected keyframes` | Alternate forward/reversed repeats to Work Out |
 | Command Palette: `offset loop selected keyframes` | Repeat selected keys while accumulating motion/value deltas |
+| Button / Command Palette: `hold selected keyframes to work out` | Freeze selected values through Work Out |
 | `M` | Add/update marker |
 | `Alt+M`, `Shift+M` | Previous / next marker |
 | `Alt+Shift+M` | Delete marker at playhead |
