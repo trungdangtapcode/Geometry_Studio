@@ -380,6 +380,86 @@ export function cycleResolvedKeyframesAcrossWorkArea(
   return { created, cycles, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
 }
 
+export function pingPongResolvedKeyframesAcrossWorkArea(
+  timeline: SceneTimelineDocument,
+  sources: TimelineKeyframeSource[]
+): CycleTimelineResult {
+  if (sources.length < 2) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const selectedTimes = uniqueSortedSourceTimes(sources);
+  if (selectedTimes.length < 2) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const start = selectedTimes[0];
+  const end = selectedTimes[selectedTimes.length - 1];
+  const span = roundTime(end - start);
+  if (span <= 0) {
+    return { created: 0, cycles: 0, skipped: sources.length, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  const repeatGap = selectedKeyframeRepeatGap(timeline, selectedTimes);
+  const period = roundTime(span + repeatGap);
+  const repeatEnd = Math.min(timeline.workEnd, timeline.duration);
+  const cycles = Math.max(0, Math.floor((repeatEnd - end + 0.001) / period));
+  if (cycles <= 0) {
+    return { created: 0, cycles: 0, skipped: 0, keyframeIds: [], changedTransformObjectIds: [] };
+  }
+
+  let created = 0;
+  let skipped = 0;
+  const keyframeIds: string[] = [];
+  const changedTracks = new Set<TimelineTrackDocument>();
+  const changedTransformObjectIds = new Set<string>();
+  const occupiedTimes = new Map<TimelineTrackDocument, Set<number>>();
+
+  sources.forEach((source) => {
+    if (occupiedTimes.has(source.track)) return;
+    occupiedTimes.set(source.track, new Set(source.track.keyframes.map((keyframe) => timelineTimeKey(keyframe.time))));
+  });
+
+  for (let cycle = 1; cycle <= cycles; cycle += 1) {
+    const offset = period * cycle;
+    const reverseCycle = cycle % 2 === 1;
+    sources
+      .slice()
+      .sort((left, right) => left.keyframe.time - right.keyframe.time)
+      .forEach(({ scope, objectId, track, keyframe }) => {
+        if (track.locked) {
+          skipped += 1;
+          return;
+        }
+
+        const relativeTime = reverseCycle ? end - keyframe.time : keyframe.time - start;
+        const time = snapTimelineTime(timeline, start + offset + relativeTime);
+        const trackOccupancy = occupiedTimes.get(track)!;
+        const timeKey = timelineTimeKey(time);
+        if (time > repeatEnd + 0.001 || trackOccupancy.has(timeKey)) {
+          skipped += 1;
+          return;
+        }
+
+        const pingPong = createTimelineKeyframe(time, [...keyframe.value] as [number, number, number]);
+        pingPong.interpolation = keyframe.interpolation;
+        pingPong.easeStrength = keyframe.easeStrength;
+        pingPong.easeInStrength = keyframe.easeInStrength;
+        pingPong.easeOutStrength = keyframe.easeOutStrength;
+        track.enabled = true;
+        track.keyframes.push(pingPong);
+        trackOccupancy.add(timeKey);
+        keyframeIds.push(pingPong.id);
+        changedTracks.add(track);
+        if (scope === "object" && isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+        created += 1;
+      });
+  }
+
+  changedTracks.forEach(sortTimelineKeyframes);
+  return { created, cycles, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
+}
+
 export function nudgeResolvedKeyframes(
   timeline: SceneTimelineDocument,
   sources: TimelineKeyframeSource[],

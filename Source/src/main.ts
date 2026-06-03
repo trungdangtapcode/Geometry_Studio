@@ -20,6 +20,7 @@ import {
   moveResolvedKeyframesToTime,
   nudgeResolvedKeyframes,
   pasteTimelineClipboard,
+  pingPongResolvedKeyframesAcrossWorkArea,
   resolveTimelineKeyframeSources,
   reverseTimelineClipboard,
   reverseResolvedKeyframes,
@@ -1340,6 +1341,10 @@ function boot(root: HTMLDivElement): void {
       command("timeline.cycle-keys", "Cycle Selected Keyframes To Work Out", "Keyframes", () => cycleTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList()), {
         shortcut: "Shift+Y",
         keywords: ["repeat", "loop", "cycle", "keyframe assistant", "after effects", "ae"],
+        disabled: () => !hasTimelineKeyframeTarget()
+      }),
+      command("timeline.ping-pong-keys", "Ping-Pong Selected Keyframes To Work Out", "Keyframes", () => pingPongTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList()), {
+        keywords: ["repeat", "loop", "ping pong", "cycle", "yoyo", "keyframe assistant", "after effects", "ae"],
         disabled: () => !hasTimelineKeyframeTarget()
       }),
 
@@ -5400,6 +5405,35 @@ function boot(root: HTMLDivElement): void {
     timelinePanel.selectKeyframes(result.keyframeIds);
     const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
     showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} cycled across ${result.cycles} repeat${result.cycles === 1 ? "" : "s"}${skipped}`, "good");
+  }
+
+  function pingPongTimelineKeyframesAcrossWorkArea(keyframeIds: string[] = timelinePanel.selectedKeyframeIdsList()): void {
+    const sources = resolveActiveTimelineKeyframeSources(keyframeIds);
+    if (keyframeIds.length < 2 || sources.length < 2) {
+      showToast("Select at least two keyframes before ping-pong looping a timing block.", "bad");
+      return;
+    }
+    if (!assertTimelineSourcesUnlocked(sources, "ping-pong looping keyframes")) return;
+
+    recordHistory();
+    const result = pingPongResolvedKeyframesAcrossWorkArea(sceneTimeline, sources);
+    clearPresetAnimationsForTimelineObjects(result.changedTransformObjectIds);
+
+    if (result.created === 0) {
+      updateAllUI();
+      showToast("Move Work Out after the selected block before ping-pong looping keyframes.", "bad");
+      return;
+    }
+
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    timelinePanel.selectKeyframes(result.keyframeIds);
+    const skipped = result.skipped ? `, ${result.skipped} skipped` : "";
+    showToast(`${result.created} keyframe${result.created === 1 ? "" : "s"} ping-ponged across ${result.cycles} repeat${result.cycles === 1 ? "" : "s"}${skipped}`, "good");
   }
 
   function duplicateVisibleTimelineTimeKeyframes(): void {

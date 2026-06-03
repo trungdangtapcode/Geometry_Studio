@@ -267,6 +267,7 @@ or `All`.
 | Stagger from playhead | `Shift+G` |
 | Cascade target keys | `Alt+Shift+G` |
 | Repeat key block | `Shift+Y` |
+| Ping-pong repeat key block | Command Palette: `Ping-Pong Selected Keyframes To Work Out` |
 
 Interpolation options:
 
@@ -311,6 +312,11 @@ Use `Fit Keyframes Between Neighbor Markers` when the motion must fill a beat
 span. Put the playhead between two markers, select at least two keys, and run
 the command. The first selected key lands on the previous marker, the last
 selected key lands on the next marker, and interior keys stretch proportionally.
+
+Use `Ping-Pong Selected Keyframes To Work Out` when a motion should bounce back
+and forth. Select the source keys, set Work Out after the block, and run the
+command. The app repeats the block while alternating reversed copies, similar to
+an AE ping-pong loop.
 
 ## 16. Work Area And Playback
 

@@ -224,6 +224,7 @@ Position, Rotation, and Scale recorded together.
 | Stagger | Offset selected timing columns by snap step |
 | Cascade | Sequence selected object/camera/light target key blocks |
 | Cycle | Repeat selected keyframe blocks forward until Work Out |
+| Ping-Pong | Repeat selected keyframe blocks to Work Out while alternating reversed copies |
 | Duplicate | Duplicate selected keyframes |
 | Track On / Solo / Lock | Enable, isolate, or lock active track |
 | Clear Track | Delete every key on active track |
@@ -294,6 +295,7 @@ Position, Rotation, and Scale recorded together.
 | `Shift+G` | Stagger selected keys |
 | `Alt+Shift+G` | Cascade selected target key blocks |
 | `Shift+Y` | Cycle selected keyframe blocks to Work Out |
+| Command Palette: `ping-pong selected keyframes` | Alternate forward/reversed repeats to Work Out |
 | `M` | Add/update marker |
 | `Alt+M`, `Shift+M` | Previous / next marker |
 | `Alt+Shift+M` | Delete marker at playhead |
