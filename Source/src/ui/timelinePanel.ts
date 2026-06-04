@@ -141,6 +141,7 @@ export interface KeyframeTimelineCallbacks {
   onClearPinnedRows(): void;
   onToggleObjectShy(objectId: string): void;
   onCycleObjectLayerLabel(objectId: string): void;
+  onToggleObjectLayerLock(objectId: string): void;
   onToggleObjectTracks(objectId: string): void;
   onToggleObjectTrackLocks(objectId: string): void;
   onToggleObjectTrackSolo(objectId: string): void;
@@ -1377,6 +1378,7 @@ export class KeyframeTimelinePanel {
       const groupToggle = (event.target as HTMLElement).closest<HTMLElement>(".timeline-group-toggle");
       const groupPoseKey = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-pose-key");
       const groupShy = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-shy");
+      const groupObjectLock = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-object-lock");
       const groupEnable = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-enable");
       const groupLock = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-lock");
       const groupSolo = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-solo");
@@ -1401,6 +1403,9 @@ export class KeyframeTimelinePanel {
           } else if (groupShy) {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
             this.callbacks.onToggleObjectShy(targetId);
+          } else if (groupObjectLock) {
+            this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
+            this.callbacks.onToggleObjectLayerLock(targetId);
           } else if (groupEnable) {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
             this.callbacks.onToggleObjectTracks(targetId);
@@ -2724,6 +2729,7 @@ export class KeyframeTimelinePanel {
     const keyText = options.keyframeCount === 1 ? "1 key" : `${options.keyframeCount} keys`;
     const stateText = options.collapsed ? "Expand" : "Collapse";
     const shyText = options.shy ? "Remove shy flag" : "Mark layer shy";
+    const objectLockText = options.objectLocked ? "Unlock object layer" : "Lock object layer";
     const enableText = options.enabled ? "Mute layer tracks" : "Enable layer tracks";
     const lockText = options.locked ? "Unlock layer tracks" : "Lock layer tracks";
     const soloText = options.solo ? "Unsolo layer tracks" : "Solo layer tracks";
@@ -2755,6 +2761,9 @@ export class KeyframeTimelinePanel {
           : ""}
         ${typeof options.shy === "boolean"
           ? `<button class="timeline-group-shy${options.shy ? " active" : ""}" type="button" aria-label="${shyText}: ${escapeHtml(options.targetName)}" title="${shyText}"><span data-icon="${options.shy ? "Eye" : "EyeOff"}"></span></button>`
+          : ""}
+        ${typeof options.objectLocked === "boolean"
+          ? `<button class="timeline-group-object-lock${options.objectLocked ? " active" : ""}" type="button" aria-label="${objectLockText}: ${escapeHtml(options.targetName)}" title="${objectLockText}"><span data-icon="${options.objectLocked ? "ShieldCheck" : "Shield"}"></span></button>`
           : ""}
         ${options.poseKey
           ? `<button class="timeline-group-pose-key${options.poseKeyed ? " keyed-track" : ""}" type="button" aria-label="Set Position, Rotation, and Scale keys for ${escapeHtml(options.targetName)}" title="${options.poseKeyed ? "Set pose keys at the playhead. Alt-click to clear Position, Rotation, and Scale tracks." : "Set Position, Rotation, and Scale keys at the playhead"}"><span data-icon="Box"></span></button>`

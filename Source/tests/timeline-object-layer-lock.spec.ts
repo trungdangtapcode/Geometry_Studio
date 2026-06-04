@@ -16,10 +16,14 @@ test("locks selected object layer against destructive object edits", async ({ pa
   await page.goto("/");
   const cubeGroup = page.locator('.timeline-track-group[data-group-target-id="object-1"]');
   const cubeOutliner = page.locator('.outliner-item[data-id="object-1"]');
+  const objectLockSwitch = cubeGroup.locator(".timeline-group-object-lock");
   const nameInput = page.locator("#object-name");
 
-  await runCommand(page, "toggle selected object layer lock", "timeline.toggle-object-layer-lock");
+  await expect(objectLockSwitch).toBeVisible();
+  await objectLockSwitch.click();
   await expect(cubeGroup).toHaveClass(/locked-object-layer/);
+  await expect(objectLockSwitch).toHaveClass(/active/);
+  await expect(objectLockSwitch).toHaveAttribute("title", "Unlock object layer");
   await expect(cubeGroup.locator(".track-label-text small")).toContainText("Locked");
   await expect(cubeOutliner).toHaveClass(/locked-object/);
   await expect(page.locator("#selection-summary")).toContainText("Locked");
@@ -36,8 +40,9 @@ test("locks selected object layer against destructive object edits", async ({ pa
   await expect(cubeOutliner).toBeVisible();
   await expect(page.locator("#selection-summary")).toContainText("Cube");
 
-  await runCommand(page, "toggle selected object layer lock", "timeline.toggle-object-layer-lock");
+  await objectLockSwitch.click();
   await expect(cubeGroup).not.toHaveClass(/locked-object-layer/);
+  await expect(objectLockSwitch).not.toHaveClass(/active/);
   await expect(cubeOutliner).not.toHaveClass(/locked-object/);
 
   await nameInput.fill("Unlocked Cube");
@@ -50,13 +55,6 @@ test("locks selected object layer against destructive object edits", async ({ pa
   expect(selectedObject?.locked).toBe(false);
   expect(errors).toEqual([]);
 });
-
-async function runCommand(page: Page, query: string, commandId: string): Promise<void> {
-  await page.keyboard.press("Control+K");
-  await page.locator("#command-palette-search").fill(query);
-  await expect(page.locator(`[data-command-id="${commandId}"]`)).toBeEnabled();
-  await page.locator(`[data-command-id="${commandId}"]`).click({ force: true });
-}
 
 async function installSceneDownloadCapture(page: Page): Promise<void> {
   await page.addInitScript(() => {

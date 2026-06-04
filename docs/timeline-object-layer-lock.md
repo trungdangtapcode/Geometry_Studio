@@ -12,13 +12,15 @@ nearby objects, keyframes, lights, or camera moves.
 
 | Action | Control |
 | --- | --- |
+| Toggle object layer lock from timeline | Shield button on the object timeline group row |
 | Toggle object layer lock | Command Palette `Toggle Selected Object Layer Lock` |
 | Unlock a locked layer | Run the same command again |
 | Track/key lock | Timeline object group lock switch |
 
 Locked object layers remain selectable from the Outliner and Timeline so they
 can be unlocked. They show `Locked` in the selection summary, Outliner, and
-Timeline group row.
+Timeline group row. The shield button is intentionally separate from the lock
+button: shield protects the object layer, while lock protects keyed tracks.
 
 ## Behavior
 
@@ -53,6 +55,7 @@ while keeping the object editable.
 `Source/tests/timeline-object-layer-lock.spec.ts` verifies:
 
 - Command Palette toggles object-layer lock.
+- Timeline group shield toggles object-layer lock.
 - Outliner, timeline, and selection summary show locked state.
 - Saved scene JSON includes `locked: true`.
 - Rename and delete are blocked while locked.

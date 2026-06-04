@@ -398,6 +398,7 @@ function boot(root: HTMLDivElement): void {
     onClearPinnedRows: clearPinnedTimelineRows,
     onToggleObjectShy: toggleTimelineObjectShyState,
     onCycleObjectLayerLabel: cycleTimelineObjectLayerLabel,
+    onToggleObjectLayerLock: toggleSelectedObjectLayerLock,
     onToggleObjectTracks: toggleTimelineObjectTracks,
     onToggleObjectTrackLocks: toggleTimelineObjectTrackLocks,
     onToggleObjectTrackSolo: toggleTimelineObjectTrackSolo,
@@ -1663,7 +1664,7 @@ function boot(root: HTMLDivElement): void {
         keywords: ["comment", "note", "memo", "layer note", "organize layer", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
-      command("timeline.toggle-object-layer-lock", "Toggle Selected Object Layer Lock", "View", toggleSelectedObjectLayerLock, {
+      command("timeline.toggle-object-layer-lock", "Toggle Selected Object Layer Lock", "View", () => toggleSelectedObjectLayerLock(), {
         keywords: ["lock object", "unlock object", "layer lock", "protect object", "prevent edits", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
@@ -4747,8 +4748,8 @@ function boot(root: HTMLDivElement): void {
     showToast(nextComment ? `${entry.name} layer comment saved` : `${entry.name} layer comment cleared`, "good");
   }
 
-  function toggleSelectedObjectLayerLock(): void {
-    const entry = selectedEntry();
+  function toggleSelectedObjectLayerLock(objectId = selectedId): void {
+    const entry = entries.get(objectId) ?? null;
     if (!entry) {
       showToast("Select an object layer before changing its lock state.", "bad");
       return;
@@ -4756,6 +4757,11 @@ function boot(root: HTMLDivElement): void {
 
     recordHistory();
     entry.locked = !entry.locked;
+    if (entry.id !== selectedId) {
+      selectedId = entry.id;
+      transformControls.attach(entry.root);
+      syncOutline();
+    }
     updateAllUI();
     showToast(`${entry.name} object layer ${entry.locked ? "locked" : "unlocked"}`, "good");
   }
