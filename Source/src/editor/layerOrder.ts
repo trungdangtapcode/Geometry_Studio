@@ -1,4 +1,5 @@
 export type LayerOrderMove = "up" | "down" | "top" | "bottom";
+export type LayerSelectDirection = "previous" | "next";
 
 export interface LayerOrderResult<T> {
   items: T[];
@@ -22,6 +23,13 @@ export function reorderLayerItems<T extends { id: string }>(items: T[], id: stri
   const [item] = nextItems.splice(fromIndex, 1);
   nextItems.splice(toIndex, 0, item);
   return { items: nextItems, moved: true, fromIndex, toIndex };
+}
+
+export function adjacentLayerId<T extends { id: string }>(items: T[], id: string, direction: LayerSelectDirection): string | null {
+  const index = items.findIndex((item) => item.id === id);
+  if (index === -1 || items.length < 2) return null;
+  const nextIndex = direction === "previous" ? index - 1 : index + 1;
+  return items[nextIndex]?.id ?? null;
 }
 
 function targetLayerIndex(index: number, count: number, move: LayerOrderMove): number {

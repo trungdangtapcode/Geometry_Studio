@@ -244,6 +244,8 @@ PDF.
   AE-style object-layer notes for dense scene organization.
 - [Timeline Layer Order](timeline-layer-order.md) documents AE-style layer stack
   movement for the outliner, timeline, and saved scene object order.
+- [Timeline Layer Selection](timeline-layer-selection.md) documents keyboard
+  navigation through the current object layer stack.
 - [Timeline Layer Enable](timeline-layer-enable.md) documents the object group
   switch that enables or mutes all keyed tracks for one layer.
 - [Timeline Layer Solo](timeline-layer-solo.md) documents the object group

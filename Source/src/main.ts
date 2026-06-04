@@ -116,7 +116,7 @@ import { CommandHistory } from "./editor/commands";
 import { createSceneDocument, validateSceneDocument } from "./editor/documents";
 import { normalizeLayerComment } from "./editor/layerComments";
 import { layerLabelName, nextLayerLabel, normalizeLayerLabel } from "./editor/layerLabels";
-import { reorderLayerItems, type LayerOrderMove } from "./editor/layerOrder";
+import { adjacentLayerId, reorderLayerItems, type LayerOrderMove, type LayerSelectDirection } from "./editor/layerOrder";
 import type {
   AnimationMode,
   LightKind,
@@ -1657,6 +1657,16 @@ function boot(root: HTMLDivElement): void {
       command("timeline.move-layer-bottom", "Move Selected Layer To Bottom", "View", () => moveSelectedLayerInStack("bottom"), {
         keywords: ["layer order", "move layer", "stack", "arrange", "bottom", "timeline", "after effects", "ae"],
         disabled: () => !canMoveSelectedLayer("bottom")
+      }),
+      command("timeline.select-previous-layer", "Select Previous Layer", "View", () => selectAdjacentLayer("previous"), {
+        shortcut: "Alt+ArrowUp",
+        keywords: ["select layer", "previous layer", "layer stack", "above", "timeline", "after effects", "ae"],
+        disabled: () => !hasAdjacentLayer("previous")
+      }),
+      command("timeline.select-next-layer", "Select Next Layer", "View", () => selectAdjacentLayer("next"), {
+        shortcut: "Alt+ArrowDown",
+        keywords: ["select layer", "next layer", "layer stack", "below", "timeline", "after effects", "ae"],
+        disabled: () => !hasAdjacentLayer("next")
       }),
       command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
         keywords: ["shy", "hide", "show shy", "layer", "timeline", "after effects", "ae"]
@@ -3366,6 +3376,16 @@ function boot(root: HTMLDivElement): void {
       moveSelectedLayerInStack("down");
       return;
     }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && key === "arrowup") {
+      event.preventDefault();
+      selectAdjacentLayer("previous");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && key === "arrowdown") {
+      event.preventDefault();
+      selectAdjacentLayer("next");
+      return;
+    }
     if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && key === "y") {
       event.preventDefault();
       cycleTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList());
@@ -4663,6 +4683,28 @@ function boot(root: HTMLDivElement): void {
     });
     updateAllUI();
     showToast(`${entry.name} moved ${layerOrderMoveLabel(move)}`, "good");
+  }
+
+  function hasAdjacentLayer(direction: LayerSelectDirection): boolean {
+    return Boolean(selectedId && adjacentLayerId([...entries.values()], selectedId, direction));
+  }
+
+  function selectAdjacentLayer(direction: LayerSelectDirection): void {
+    if (!selectedId) {
+      showToast("Select an object layer before stepping through layers.", "bad");
+      return;
+    }
+
+    const nextId = adjacentLayerId([...entries.values()], selectedId, direction);
+    if (!nextId) {
+      const entry = selectedEntry();
+      showToast(`${entry?.name ?? "Selected layer"} is already ${direction === "previous" ? "at the top" : "at the bottom"}.`, "bad");
+      return;
+    }
+
+    setSelected(nextId);
+    const entry = selectedEntry();
+    showToast(entry ? `Selected ${entry.name}` : "Layer selected", "good");
   }
 
   function toggleTimelineObjectTracks(objectId: string): void {
