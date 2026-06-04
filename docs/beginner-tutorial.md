@@ -249,6 +249,11 @@ Use `Set Selected Layer Comment` from the Command Palette when you need a
 longer note on a layer. Comments appear beside the object group metadata and can
 be found with the timeline row search field.
 
+Use `Move Selected Layer Up`, `Move Selected Layer Down`, `Move Selected Layer
+To Top`, and `Move Selected Layer To Bottom` when a scene becomes crowded. These
+commands reorder the outliner and timeline stack without changing object
+position, keyframes, or parent links.
+
 Use `Layer Dup` when you want a second copy of the selected object with the same
 animation. This is different from duplicating selected keyframes: the whole
 object layer is cloned, selected, offset in the scene, and given copied timeline

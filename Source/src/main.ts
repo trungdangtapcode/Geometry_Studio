@@ -116,6 +116,7 @@ import { CommandHistory } from "./editor/commands";
 import { createSceneDocument, validateSceneDocument } from "./editor/documents";
 import { normalizeLayerComment } from "./editor/layerComments";
 import { layerLabelName, nextLayerLabel, normalizeLayerLabel } from "./editor/layerLabels";
+import { reorderLayerItems, type LayerOrderMove } from "./editor/layerOrder";
 import type {
   AnimationMode,
   LightKind,
@@ -1128,6 +1129,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function updateAllUI(): void {
+    syncEntryRenderOrder();
     renderOutliner();
     syncTransformUI();
     syncTransformPoseClipboardUI();
@@ -1145,6 +1147,12 @@ function boot(root: HTMLDivElement): void {
     updatePlayButton();
     syncMotionPath();
     updateTelemetry();
+  }
+
+  function syncEntryRenderOrder(): void {
+    [...entries.values()].forEach((entry, index) => {
+      entry.root.renderOrder = index;
+    });
   }
 
   function syncTimelineClipboardUI(): void {
@@ -1631,6 +1639,24 @@ function boot(root: HTMLDivElement): void {
       command("timeline.set-layer-comment", "Set Selected Layer Comment", "View", setSelectedLayerComment, {
         keywords: ["comment", "note", "memo", "layer note", "organize layer", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
+      }),
+      command("timeline.move-layer-up", "Move Selected Layer Up", "View", () => moveSelectedLayerInStack("up"), {
+        shortcut: "Alt+PageUp",
+        keywords: ["layer order", "move layer", "stack", "arrange", "up", "timeline", "after effects", "ae"],
+        disabled: () => !canMoveSelectedLayer("up")
+      }),
+      command("timeline.move-layer-down", "Move Selected Layer Down", "View", () => moveSelectedLayerInStack("down"), {
+        shortcut: "Alt+PageDown",
+        keywords: ["layer order", "move layer", "stack", "arrange", "down", "timeline", "after effects", "ae"],
+        disabled: () => !canMoveSelectedLayer("down")
+      }),
+      command("timeline.move-layer-top", "Move Selected Layer To Top", "View", () => moveSelectedLayerInStack("top"), {
+        keywords: ["layer order", "move layer", "stack", "arrange", "top", "timeline", "after effects", "ae"],
+        disabled: () => !canMoveSelectedLayer("top")
+      }),
+      command("timeline.move-layer-bottom", "Move Selected Layer To Bottom", "View", () => moveSelectedLayerInStack("bottom"), {
+        keywords: ["layer order", "move layer", "stack", "arrange", "bottom", "timeline", "after effects", "ae"],
+        disabled: () => !canMoveSelectedLayer("bottom")
       }),
       command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
         keywords: ["shy", "hide", "show shy", "layer", "timeline", "after effects", "ae"]
@@ -3330,6 +3356,16 @@ function boot(root: HTMLDivElement): void {
       duplicateTimelineKeyframes(timelinePanel.selectedKeyframeIdsList());
       return;
     }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && key === "pageup") {
+      event.preventDefault();
+      moveSelectedLayerInStack("up");
+      return;
+    }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && key === "pagedown") {
+      event.preventDefault();
+      moveSelectedLayerInStack("down");
+      return;
+    }
     if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && key === "y") {
       event.preventDefault();
       cycleTimelineKeyframesAcrossWorkArea(timelinePanel.selectedKeyframeIdsList());
@@ -4599,6 +4635,34 @@ function boot(root: HTMLDivElement): void {
     entry.layerComment = nextComment;
     updateAllUI();
     showToast(nextComment ? `${entry.name} layer comment saved` : `${entry.name} layer comment cleared`, "good");
+  }
+
+  function canMoveSelectedLayer(move: LayerOrderMove): boolean {
+    if (!selectedId || entries.size < 2) return false;
+    return reorderLayerItems([...entries.values()], selectedId, move).moved;
+  }
+
+  function moveSelectedLayerInStack(move: LayerOrderMove): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object layer before changing layer order.", "bad");
+      return;
+    }
+
+    const result = reorderLayerItems([...entries.values()], entry.id, move);
+    if (!result.moved) {
+      showToast(`${entry.name} is already ${layerOrderBoundaryLabel(move)}.`, "bad");
+      return;
+    }
+
+    recordHistory();
+    entries.clear();
+    result.items.forEach((item, index) => {
+      entries.set(item.id, item);
+      item.root.renderOrder = index;
+    });
+    updateAllUI();
+    showToast(`${entry.name} moved ${layerOrderMoveLabel(move)}`, "good");
   }
 
   function toggleTimelineObjectTracks(objectId: string): void {
@@ -7601,6 +7665,18 @@ function accentColor(index: number): string {
 function markerColor(index: number): string {
   const colors = ["#f4ad2f", "#df6b80", "#4f8df7", "#20bfa9", "#7c70f4"];
   return colors[index % colors.length];
+}
+
+function layerOrderMoveLabel(move: LayerOrderMove): string {
+  if (move === "up") return "up";
+  if (move === "down") return "down";
+  if (move === "top") return "to top";
+  return "to bottom";
+}
+
+function layerOrderBoundaryLabel(move: LayerOrderMove): string {
+  if (move === "up" || move === "top") return "at the top";
+  return "at the bottom";
 }
 
 function normalizeMarkerColor(value: string | undefined): string | null {
