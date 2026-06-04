@@ -114,6 +114,7 @@ import {
 } from "./animation/timelineTracks";
 import { CommandHistory } from "./editor/commands";
 import { createSceneDocument, validateSceneDocument } from "./editor/documents";
+import { normalizeLayerComment } from "./editor/layerComments";
 import { layerLabelName, nextLayerLabel, normalizeLayerLabel } from "./editor/layerLabels";
 import type {
   AnimationMode,
@@ -443,7 +444,7 @@ function boot(root: HTMLDivElement): void {
   function addPrimitive(
     primitiveType: PrimitiveType,
     position = nextSpawnPosition(),
-    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity" | "roughness" | "metalness" | "layerLabel">> & { color?: string; name?: string; id?: string } = {},
+    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity" | "roughness" | "metalness" | "layerLabel" | "layerComment">> & { color?: string; name?: string; id?: string } = {},
     record = true
   ): SceneEntry {
     if (record) recordHistory();
@@ -462,7 +463,8 @@ function boot(root: HTMLDivElement): void {
       opacity: options.opacity ?? 1,
       roughness: options.roughness ?? 0.42,
       metalness: options.metalness ?? 0.08,
-      layerLabel: normalizeLayerLabel(options.layerLabel)
+      layerLabel: normalizeLayerLabel(options.layerLabel),
+      layerComment: normalizeLayerComment(options.layerComment)
     });
 
     entry.root.position.copy(position);
@@ -521,6 +523,7 @@ function boot(root: HTMLDivElement): void {
     metalness?: number;
     assetSource?: SceneEntry["assetSource"];
     layerLabel?: SceneEntry["layerLabel"];
+    layerComment?: string;
   }): SceneEntry {
     const id = config.id ?? `object-${idCounter++}`;
     idCounter = Math.max(idCounter, numericObjectId(id) + 1);
@@ -534,6 +537,7 @@ function boot(root: HTMLDivElement): void {
       root,
       parentId: null,
       layerLabel: normalizeLayerLabel(config.layerLabel),
+      layerComment: normalizeLayerComment(config.layerComment),
       kind: config.kind,
       type: config.type,
       name: config.name,
@@ -1622,6 +1626,10 @@ function boot(root: HTMLDivElement): void {
         if (selectedId) cycleTimelineObjectLayerLabel(selectedId);
       }, {
         keywords: ["label color", "layer color", "organize layer", "timeline", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.set-layer-comment", "Set Selected Layer Comment", "View", setSelectedLayerComment, {
+        keywords: ["comment", "note", "memo", "layer note", "organize layer", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
       command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
@@ -4172,7 +4180,8 @@ function boot(root: HTMLDivElement): void {
         opacity: object.opacity ?? 1,
         roughness: object.roughness ?? 0.42,
         metalness: object.metalness ?? 0.08,
-        layerLabel: normalizeLayerLabel(object.layerLabel)
+        layerLabel: normalizeLayerLabel(object.layerLabel),
+        layerComment: normalizeLayerComment(object.layerComment)
       }, false);
     } else {
       entry = makeEntry({
@@ -4191,7 +4200,8 @@ function boot(root: HTMLDivElement): void {
         opacity: object.opacity ?? 1,
         roughness: object.roughness ?? 0.42,
         metalness: object.metalness ?? 0.08,
-        layerLabel: normalizeLayerLabel(object.layerLabel)
+        layerLabel: normalizeLayerLabel(object.layerLabel),
+        layerComment: normalizeLayerComment(object.layerComment)
       });
       entry.root.position.fromArray(object.position);
       rebuildEntryVisual(entry);
@@ -4568,6 +4578,27 @@ function boot(root: HTMLDivElement): void {
     entry.layerLabel = nextLayerLabel(normalizeLayerLabel(entry.layerLabel));
     updateAllUI();
     showToast(`${entry.name} layer label: ${layerLabelName(entry.layerLabel)}`, "good");
+  }
+
+  function setSelectedLayerComment(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object layer before editing its comment.", "bad");
+      return;
+    }
+
+    const value = window.prompt("Layer comment", entry.layerComment);
+    if (value === null) return;
+    const nextComment = normalizeLayerComment(value);
+    if (nextComment === entry.layerComment) {
+      showToast(nextComment ? `${entry.name} comment unchanged` : `${entry.name} has no layer comment`, "bad");
+      return;
+    }
+
+    recordHistory();
+    entry.layerComment = nextComment;
+    updateAllUI();
+    showToast(nextComment ? `${entry.name} layer comment saved` : `${entry.name} layer comment cleared`, "good");
   }
 
   function toggleTimelineObjectTracks(objectId: string): void {
@@ -7538,6 +7569,7 @@ function boot(root: HTMLDivElement): void {
       name: entry.name,
       parentId: entry.parentId,
       layerLabel: normalizeLayerLabel(entry.layerLabel),
+      layerComment: normalizeLayerComment(entry.layerComment),
       kind: entry.kind,
       type: entry.type,
       renderMode: entry.renderMode,

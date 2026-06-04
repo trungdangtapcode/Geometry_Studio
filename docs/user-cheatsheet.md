@@ -214,6 +214,7 @@ Position, Rotation, and Scale recorded together.
 | Selected Layer Time Commands | Command Palette actions to copy, cut, duplicate, or delete only the selected object's keys at the playhead |
 | Pinned Time Commands | Command Palette actions for select/copy/cut/duplicate/delete pinned-row keys at the playhead |
 | Layer Label Swatch | Click the colored dot on an object group row, or run `Cycle Selected Layer Label Color`, to cycle AE-style organization colors |
+| Layer Comment | Command Palette `Set Selected Layer Comment`; notes appear on object group rows and are searchable |
 | Layer Dup | Duplicate the selected object layer and copy its animation tracks |
 | Duplicate Layer At Playhead | `Ctrl+Alt+Shift+D`; copy the selected layer and shift the copied layer start to the playhead |
 | Dup Time / Del Time | Duplicate or delete visible-row keys at the playhead |

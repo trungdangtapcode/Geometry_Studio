@@ -2570,7 +2570,8 @@ export class KeyframeTimelinePanel {
       .flatMap((entry) => {
         const objectTimeline = objectTimelines.get(entry.id);
         const visibleKinds = this.visibleTrackKinds(OBJECT_TRACKS, objectTimeline?.tracks ?? [], entry.id, selectedId);
-        const visibleRows = this.filteredRowDescriptors(entry.name, visibleKinds, true);
+        const labelName = layerLabelName(entry.layerLabel);
+        const visibleRows = this.filteredRowDescriptors([entry.name, labelName, entry.layerComment].join(" "), visibleKinds, true);
         if (visibleRows.length === 0) return [];
         const collapsed = this.isTimelineGroupCollapsed(entry.id);
         const keyedTracks = objectTimeline?.tracks.filter((track) => track.keyframes.length > 0) ?? [];
@@ -2579,7 +2580,8 @@ export class KeyframeTimelinePanel {
           targetName: entry.name,
           targetType: "Object",
           color: layerLabelColor(entry.layerLabel, "#".concat(entry.color.getHexString())),
-          labelName: layerLabelName(entry.layerLabel),
+          labelName,
+          comment: entry.layerComment,
           active: entry.id === selectedId,
           collapsed,
           rowCount: visibleRows.length,
@@ -2698,6 +2700,7 @@ export class KeyframeTimelinePanel {
     targetType: string;
     color: string;
     labelName?: string;
+    comment?: string;
     active: boolean;
     collapsed: boolean;
     rowCount: number;
@@ -2721,8 +2724,10 @@ export class KeyframeTimelinePanel {
     const lockText = options.locked ? "Unlock layer tracks" : "Lock layer tracks";
     const soloText = options.solo ? "Unsolo layer tracks" : "Solo layer tracks";
     const layerLabelText = options.labelName ? `Layer label: ${options.labelName}. Click to cycle.` : "Track color";
+    const commentText = options.comment?.trim() ? ` | ${escapeHtml(options.comment)}` : "";
+    const commentTitle = options.comment?.trim() ? `Layer comment: ${escapeHtml(options.comment)}` : "";
     return `
-      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.switchable ? "switchable-layer" : "", options.enabled === false ? "disabled-layer" : "", options.lockable ? "lockable-layer" : "", options.soloable ? "soloable-layer" : "", options.solo ? "solo-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
+      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.switchable ? "switchable-layer" : "", options.enabled === false ? "disabled-layer" : "", options.lockable ? "lockable-layer" : "", options.soloable ? "soloable-layer" : "", options.solo ? "solo-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" data-layer-comment="${escapeHtml(options.comment ?? "")}" aria-label="Select ${options.targetName} timeline group" title="${commentTitle}">
         <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
           <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
         </button>
@@ -2731,7 +2736,7 @@ export class KeyframeTimelinePanel {
           : `<span class="track-swatch" style="background:${options.color}" title="${layerLabelText}"></span>`}
         <span class="track-label-text">
           <strong>${escapeHtml(options.targetName)}</strong>
-          <small>${options.targetType} | ${rowText} | ${keyText}</small>
+          <small>${options.targetType} | ${rowText} | ${keyText}${commentText}</small>
         </span>
         ${options.switchable && typeof options.enabled === "boolean"
           ? `<button class="timeline-group-enable${options.enabled ? "" : " active"}" type="button" aria-label="${enableText}: ${escapeHtml(options.targetName)}" title="${enableText}"><span data-icon="${options.enabled ? "Eye" : "EyeOff"}"></span></button>`

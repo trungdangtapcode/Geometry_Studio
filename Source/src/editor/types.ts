@@ -88,6 +88,7 @@ export interface SceneEntry {
   name: string;
   parentId: string | null;
   layerLabel: LayerLabelId;
+  layerComment: string;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   root: THREE.Group;
@@ -151,7 +152,7 @@ export interface LoadingStatus {
 }
 
 export interface SceneDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   savedAt: string;
   selectedId: string | null;
   playing: boolean;
@@ -256,6 +257,7 @@ export interface SerializedObject {
   name: string;
   parentId?: string | null;
   layerLabel?: LayerLabelId;
+  layerComment?: string;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   renderMode: RenderMode;

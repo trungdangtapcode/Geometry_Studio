@@ -245,6 +245,10 @@ These labels are timeline organization colors, not material colors, so they are
 safe to use for presenter notes such as hero object, background object, camera
 helper, or imported asset.
 
+Use `Set Selected Layer Comment` from the Command Palette when you need a
+longer note on a layer. Comments appear beside the object group metadata and can
+be found with the timeline row search field.
+
 Use `Layer Dup` when you want a second copy of the selected object with the same
 animation. This is different from duplicating selected keyframes: the whole
 object layer is cloned, selected, offset in the scene, and given copied timeline

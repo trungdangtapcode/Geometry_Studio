@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { cloneTimelineDocument, createDefaultTimeline, normalizeTimelineDocument } from "../animation/timelineSchema";
 import { normalizeRenderSettings } from "../renderer/renderSettings";
+import { normalizeLayerComment } from "./layerComments";
 import { normalizeLayerLabel } from "./layerLabels";
 import type { LightRig, RenderSettings, SceneDocument, SceneEntry, SerializedLight, SerializedObject, StageRig } from "./types";
 
@@ -22,7 +23,7 @@ export interface DocumentContext {
 
 export function createSceneDocument(context: DocumentContext): SceneDocument {
   return {
-    version: 7,
+    version: 8,
     savedAt: new Date().toISOString(),
     selectedId: context.selectedId,
     playing: context.playing,
@@ -60,11 +61,11 @@ export function createSceneDocument(context: DocumentContext): SceneDocument {
 export function validateSceneDocument(value: unknown): SceneDocument {
   if (!value || typeof value !== "object") throw new Error("Scene file is not an object.");
   const document = value as SceneDocument & { timeline?: unknown };
-  if (document.version !== 1 && document.version !== 2 && document.version !== 3 && document.version !== 4 && document.version !== 5 && document.version !== 6 && document.version !== 7) throw new Error("Unsupported scene document version.");
+  if (document.version !== 1 && document.version !== 2 && document.version !== 3 && document.version !== 4 && document.version !== 5 && document.version !== 6 && document.version !== 7 && document.version !== 8) throw new Error("Unsupported scene document version.");
   if (!Array.isArray(document.objects)) throw new Error("Scene file is missing objects.");
   return {
     ...document,
-    version: 7,
+    version: 8,
     rendering: normalizeRenderSettings(document.rendering),
     timeline: normalizeTimelineDocument(document.timeline, new Set(document.objects.map((object) => object.id)))
   };
@@ -76,6 +77,7 @@ function serializeEntry(entry: SceneEntry): SerializedObject {
     name: entry.name,
     parentId: entry.parentId,
     layerLabel: normalizeLayerLabel(entry.layerLabel),
+    layerComment: normalizeLayerComment(entry.layerComment),
     kind: entry.kind,
     type: entry.type,
     renderMode: entry.renderMode,

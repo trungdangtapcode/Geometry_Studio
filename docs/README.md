@@ -240,6 +240,8 @@ PDF.
   shy switches and the `Hide Shy` timeline clutter toggle.
 - [Timeline Layer Labels](timeline-layer-labels.md) documents AE-style layer
   color labels for timeline organization without changing material color.
+- [Timeline Layer Comments](timeline-layer-comments.md) documents searchable
+  AE-style object-layer notes for dense scene organization.
 - [Timeline Layer Enable](timeline-layer-enable.md) documents the object group
   switch that enables or mutes all keyed tracks for one layer.
 - [Timeline Layer Solo](timeline-layer-solo.md) documents the object group
