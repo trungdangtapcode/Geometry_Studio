@@ -100,6 +100,7 @@ test("renders the studio and core controls", async ({ page }) => {
   await expect(page.locator("#timeline-set-visible")).toBeVisible();
   await expect(page.locator("#timeline-layer-in")).toBeVisible();
   await expect(page.locator("#timeline-layer-out")).toBeVisible();
+  await expect(page.locator("#timeline-duplicate-layer")).toBeVisible();
   await expect(page.locator("#timeline-split-layer")).toBeVisible();
   await expect(page.locator("#timeline-layer-work")).toBeVisible();
   await expect(page.locator("#timeline-select-layer-keys")).toBeVisible();

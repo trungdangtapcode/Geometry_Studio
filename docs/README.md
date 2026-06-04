@@ -244,6 +244,8 @@ PDF.
   switch that solos or unsolos all keyed tracks for one layer.
 - [Timeline Layer Lock](timeline-layer-lock.md) documents the object group
   switch that locks or unlocks all keyed tracks for one layer.
+- [Timeline Layer Duplicate](timeline-layer-duplicate.md) documents selected
+  layer duplication with copied object animation tracks.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
   enable, solo, lock, and key controls.
 - [Timeline Row Value Readouts](timeline-row-value-readouts.md) documents live
@@ -377,6 +379,8 @@ animation runtime where it fits:
   while reusing the existing per-track solo runtime behavior.
 - Object layer lock switches protect every keyed track on a layer in one action
   while reusing the existing per-track lock behavior.
+- `Layer Dup` duplicates the selected object layer and copies its animation
+  tracks with fresh object, track, and keyframe IDs.
 - Track enable/disable controls mute individual property tracks without deleting
   saved keyframes.
 - Row-label selection makes the left timeline column a direct track navigation

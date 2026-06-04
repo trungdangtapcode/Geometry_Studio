@@ -72,6 +72,7 @@ export interface KeyframeTimelineCallbacks {
   onSetPinnedKeyframes(rows: TimelineVisibleRowTarget[]): void;
   onTrimLayerIn(): void;
   onTrimLayerOut(): void;
+  onDuplicateLayer(): void;
   onSplitLayer(): void;
   onSetWorkAreaToLayer(): void;
   onSelectLayerKeyframes(): void;
@@ -1125,6 +1126,7 @@ export class KeyframeTimelinePanel {
     });
     query<HTMLButtonElement>("#timeline-layer-in").addEventListener("click", () => this.callbacks.onTrimLayerIn());
     query<HTMLButtonElement>("#timeline-layer-out").addEventListener("click", () => this.callbacks.onTrimLayerOut());
+    query<HTMLButtonElement>("#timeline-duplicate-layer").addEventListener("click", () => this.callbacks.onDuplicateLayer());
     query<HTMLButtonElement>("#timeline-split-layer").addEventListener("click", () => this.callbacks.onSplitLayer());
     query<HTMLButtonElement>("#timeline-layer-work").addEventListener("click", () => this.callbacks.onSetWorkAreaToLayer());
     query<HTMLButtonElement>("#timeline-select-layer-keys").addEventListener("click", () => this.callbacks.onSelectLayerKeyframes());

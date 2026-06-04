@@ -319,6 +319,7 @@ function boot(root: HTMLDivElement): void {
     onSetPinnedKeyframes: setPinnedTimelineKeyframes,
     onTrimLayerIn: trimSelectedLayerInPoint,
     onTrimLayerOut: trimSelectedLayerOutPoint,
+    onDuplicateLayer: duplicateSelected,
     onSplitLayer: splitSelectedLayerAtPlayhead,
     onSetWorkAreaToLayer: setTimelineWorkAreaToSelectedLayer,
     onSelectLayerKeyframes: selectSelectedLayerKeyframes,
@@ -1514,6 +1515,11 @@ function boot(root: HTMLDivElement): void {
         keywords: ["time stretch", "retime layer", "after effects"],
         disabled: () => !selectedEntry()
       }),
+      command("timeline.duplicate-layer", "Duplicate Selected Layer", "Retiming", duplicateSelected, {
+        shortcut: "Ctrl+Alt+D",
+        keywords: ["duplicate layer", "copy layer", "clone layer", "copy object animation", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.sequence-layers", "Sequence Object Layers", "Retiming", sequenceTimelineObjectLayers, {
         shortcut: "Alt+Shift+L",
         keywords: ["layer timing", "after effects", "sequence layers"],
@@ -1713,6 +1719,7 @@ function boot(root: HTMLDivElement): void {
       { selector: "#timeline-cascade-keyframes", commandId: "timeline.cascade" },
       { selector: "#timeline-layer-in", label: "Trim Layer In At Playhead", shortcut: "Alt+[" },
       { selector: "#timeline-layer-out", label: "Trim Layer Out At Playhead", shortcut: "Alt+]" },
+      { selector: "#timeline-duplicate-layer", commandId: "timeline.duplicate-layer" },
       { selector: "#timeline-split-layer", label: "Split Selected Layer", shortcut: "Ctrl+Shift+D" },
       { selector: "#timeline-layer-work", label: "Set Work Area To Selected Layer", shortcut: "Alt+Shift+B" },
       { selector: "#timeline-select-layer-keys", commandId: "timeline.select-layer-keys" },
@@ -3276,6 +3283,11 @@ function boot(root: HTMLDivElement): void {
     if ((event.ctrlKey || event.metaKey) && key === "v") {
       event.preventDefault();
       pasteTimelineKeyframes();
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.altKey && key === "d") {
+      event.preventDefault();
+      duplicateSelected();
       return;
     }
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === "d") {

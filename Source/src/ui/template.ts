@@ -129,6 +129,7 @@ export function studioTemplate(): string {
               <button class="mini-button" id="timeline-set-pinned" type="button" title="Set keys on every pinned timeline row"><span data-icon="Pin"></span><span>Set Pinned</span></button>
               <button class="mini-button" id="timeline-layer-in" type="button" title="Trim selected layer in at the playhead (Alt+[)"><span data-icon="LogIn"></span><span>Layer In</span></button>
               <button class="mini-button" id="timeline-layer-out" type="button" title="Trim selected layer out at the playhead (Alt+])"><span data-icon="LogOut"></span><span>Layer Out</span></button>
+              <button class="mini-button" id="timeline-duplicate-layer" type="button" title="Duplicate selected layer with its animation tracks (Ctrl+Alt+D)"><span data-icon="Copy"></span><span>Layer Dup</span></button>
               <button class="mini-button" id="timeline-split-layer" type="button" title="Split selected layer at the playhead (Ctrl+Shift+D)"><span data-icon="Scissors"></span><span>Split</span></button>
               <button class="mini-button" id="timeline-layer-work" type="button" title="Set work area to selected layer range (Alt+Shift+B)"><span data-icon="StretchHorizontal"></span><span>Layer Work</span></button>
               <button class="mini-button" id="timeline-select-layer-keys" type="button" title="Select keyframes inside the selected layer range (Alt+Shift+K)"><span data-icon="KeyRound"></span><span>Layer Keys</span></button>
