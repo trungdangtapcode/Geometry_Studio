@@ -1374,6 +1374,19 @@ svg {
   border-radius: 99px;
 }
 
+.timeline-layer-label-swatch {
+  appearance: none;
+  border: 1px solid rgba(26, 35, 42, 0.18);
+  cursor: pointer;
+  padding: 0;
+}
+
+.timeline-layer-label-swatch:hover,
+.timeline-layer-label-swatch:focus-visible {
+  box-shadow: 0 0 0 2px rgba(32, 191, 169, 0.24);
+  outline: 0;
+}
+
 .timeline-empty {
   padding: 12px;
   color: var(--muted);

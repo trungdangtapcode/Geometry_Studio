@@ -240,6 +240,11 @@ Use the lock switch on an object group row when you want to protect every keyed
 track on that layer from accidental edits. It is different from hiding or shy:
 the animation still plays, but key editing is blocked until you unlock it.
 
+Click the colored dot on an object group row to cycle that layer's label color.
+These labels are timeline organization colors, not material colors, so they are
+safe to use for presenter notes such as hero object, background object, camera
+helper, or imported asset.
+
 Use `Layer Dup` when you want a second copy of the selected object with the same
 animation. This is different from duplicating selected keyframes: the whole
 object layer is cloned, selected, offset in the scene, and given copied timeline

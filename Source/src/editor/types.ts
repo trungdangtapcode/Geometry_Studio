@@ -22,6 +22,7 @@ export type AnimationMode = "none" | "spin" | "orbit" | "bounce" | "pulse";
 export type LightKind = "directional" | "point" | "spot";
 export type ObjectKind = "primitive" | "model" | "sampleModel";
 export type ToastTone = "good" | "bad";
+export type LayerLabelId = "none" | "red" | "orange" | "yellow" | "green" | "cyan" | "blue" | "purple" | "pink";
 export type TimelineTrackKind =
   | "position"
   | "rotation"
@@ -86,6 +87,7 @@ export interface SceneEntry {
   id: string;
   name: string;
   parentId: string | null;
+  layerLabel: LayerLabelId;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   root: THREE.Group;
@@ -149,7 +151,7 @@ export interface LoadingStatus {
 }
 
 export interface SceneDocument {
-  version: 1 | 2 | 3 | 4 | 5 | 6;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   savedAt: string;
   selectedId: string | null;
   playing: boolean;
@@ -253,6 +255,7 @@ export interface SerializedObject {
   id: string;
   name: string;
   parentId?: string | null;
+  layerLabel?: LayerLabelId;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   renderMode: RenderMode;

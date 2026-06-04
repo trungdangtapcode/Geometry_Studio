@@ -114,6 +114,7 @@ import {
 } from "./animation/timelineTracks";
 import { CommandHistory } from "./editor/commands";
 import { createSceneDocument, validateSceneDocument } from "./editor/documents";
+import { layerLabelName, nextLayerLabel, normalizeLayerLabel } from "./editor/layerLabels";
 import type {
   AnimationMode,
   LightKind,
@@ -387,6 +388,7 @@ function boot(root: HTMLDivElement): void {
     onPinVisibleRows: pinVisibleTimelineRows,
     onClearPinnedRows: clearPinnedTimelineRows,
     onToggleObjectShy: toggleTimelineObjectShyState,
+    onCycleObjectLayerLabel: cycleTimelineObjectLayerLabel,
     onToggleObjectTracks: toggleTimelineObjectTracks,
     onToggleObjectTrackLocks: toggleTimelineObjectTrackLocks,
     onToggleObjectTrackSolo: toggleTimelineObjectTrackSolo,
@@ -441,7 +443,7 @@ function boot(root: HTMLDivElement): void {
   function addPrimitive(
     primitiveType: PrimitiveType,
     position = nextSpawnPosition(),
-    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity" | "roughness" | "metalness">> & { color?: string; name?: string; id?: string } = {},
+    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity" | "roughness" | "metalness" | "layerLabel">> & { color?: string; name?: string; id?: string } = {},
     record = true
   ): SceneEntry {
     if (record) recordHistory();
@@ -459,7 +461,8 @@ function boot(root: HTMLDivElement): void {
       textureName: options.textureName ?? "none",
       opacity: options.opacity ?? 1,
       roughness: options.roughness ?? 0.42,
-      metalness: options.metalness ?? 0.08
+      metalness: options.metalness ?? 0.08,
+      layerLabel: normalizeLayerLabel(options.layerLabel)
     });
 
     entry.root.position.copy(position);
@@ -517,6 +520,7 @@ function boot(root: HTMLDivElement): void {
     roughness?: number;
     metalness?: number;
     assetSource?: SceneEntry["assetSource"];
+    layerLabel?: SceneEntry["layerLabel"];
   }): SceneEntry {
     const id = config.id ?? `object-${idCounter++}`;
     idCounter = Math.max(idCounter, numericObjectId(id) + 1);
@@ -529,6 +533,7 @@ function boot(root: HTMLDivElement): void {
       id,
       root,
       parentId: null,
+      layerLabel: normalizeLayerLabel(config.layerLabel),
       kind: config.kind,
       type: config.type,
       name: config.name,
@@ -1611,6 +1616,12 @@ function boot(root: HTMLDivElement): void {
         if (selectedId) toggleTimelineObjectShyState(selectedId);
       }, {
         keywords: ["shy", "hide shy", "layer", "timeline", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.cycle-layer-label", "Cycle Selected Layer Label Color", "View", () => {
+        if (selectedId) cycleTimelineObjectLayerLabel(selectedId);
+      }, {
+        keywords: ["label color", "layer color", "organize layer", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
       command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
@@ -4160,7 +4171,8 @@ function boot(root: HTMLDivElement): void {
         textureName: object.textureName,
         opacity: object.opacity ?? 1,
         roughness: object.roughness ?? 0.42,
-        metalness: object.metalness ?? 0.08
+        metalness: object.metalness ?? 0.08,
+        layerLabel: normalizeLayerLabel(object.layerLabel)
       }, false);
     } else {
       entry = makeEntry({
@@ -4178,7 +4190,8 @@ function boot(root: HTMLDivElement): void {
         textureName: object.textureName,
         opacity: object.opacity ?? 1,
         roughness: object.roughness ?? 0.42,
-        metalness: object.metalness ?? 0.08
+        metalness: object.metalness ?? 0.08,
+        layerLabel: normalizeLayerLabel(object.layerLabel)
       });
       entry.root.position.fromArray(object.position);
       rebuildEntryVisual(entry);
@@ -4542,6 +4555,19 @@ function boot(root: HTMLDivElement): void {
     const shy = toggleTimelineObjectShy(sceneTimeline, objectId);
     updateAllUI();
     showToast(`${entry.name} ${shy ? "marked shy" : "removed from shy layers"}`, "good");
+  }
+
+  function cycleTimelineObjectLayerLabel(objectId: string): void {
+    const entry = entries.get(objectId);
+    if (!entry) {
+      showToast("Select an object layer before changing label color.", "bad");
+      return;
+    }
+
+    recordHistory();
+    entry.layerLabel = nextLayerLabel(normalizeLayerLabel(entry.layerLabel));
+    updateAllUI();
+    showToast(`${entry.name} layer label: ${layerLabelName(entry.layerLabel)}`, "good");
   }
 
   function toggleTimelineObjectTracks(objectId: string): void {
@@ -7511,6 +7537,7 @@ function boot(root: HTMLDivElement): void {
       id: entry.id,
       name: entry.name,
       parentId: entry.parentId,
+      layerLabel: normalizeLayerLabel(entry.layerLabel),
       kind: entry.kind,
       type: entry.type,
       renderMode: entry.renderMode,

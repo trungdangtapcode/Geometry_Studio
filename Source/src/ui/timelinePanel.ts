@@ -10,6 +10,7 @@ import { evaluateTimelineTrack } from "../animation/interpolation";
 import { isTimelineInterpolation, timelineInterpolationLabel, timelineInterpolationPath } from "../animation/timelineInterpolation";
 import { textureSourceLabelFromValue } from "../animation/textureSourceTrack";
 import { objectLayerRange } from "../animation/timelineLayers";
+import { layerLabelColor, layerLabelName } from "../editor/layerLabels";
 import type {
   SceneEntry,
   SceneTimelineDocument,
@@ -139,6 +140,7 @@ export interface KeyframeTimelineCallbacks {
   onPinVisibleRows(): void;
   onClearPinnedRows(): void;
   onToggleObjectShy(objectId: string): void;
+  onCycleObjectLayerLabel(objectId: string): void;
   onToggleObjectTracks(objectId: string): void;
   onToggleObjectTrackLocks(objectId: string): void;
   onToggleObjectTrackSolo(objectId: string): void;
@@ -1378,6 +1380,7 @@ export class KeyframeTimelinePanel {
       const groupEnable = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-enable");
       const groupLock = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-lock");
       const groupSolo = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-solo");
+      const groupLayerLabel = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-layer-label-swatch");
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
         const targetId = group.dataset.groupTargetId;
@@ -1386,6 +1389,9 @@ export class KeyframeTimelinePanel {
           if (groupToggle) {
             if (event.altKey) this.setAllTimelineGroupsCollapsed(!this.isTimelineGroupCollapsed(targetId));
             else this.toggleTimelineGroup(targetId);
+          } else if (groupLayerLabel) {
+            this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
+            this.callbacks.onCycleObjectLayerLabel(targetId);
           } else if (event.detail >= 2) {
             this.startTimelineGroupRename(group);
           } else if (groupPoseKey) {
@@ -2572,7 +2578,8 @@ export class KeyframeTimelinePanel {
           targetId: entry.id,
           targetName: entry.name,
           targetType: "Object",
-          color: "#".concat(entry.color.getHexString()),
+          color: layerLabelColor(entry.layerLabel, "#".concat(entry.color.getHexString())),
+          labelName: layerLabelName(entry.layerLabel),
           active: entry.id === selectedId,
           collapsed,
           rowCount: visibleRows.length,
@@ -2690,6 +2697,7 @@ export class KeyframeTimelinePanel {
     targetName: string;
     targetType: string;
     color: string;
+    labelName?: string;
     active: boolean;
     collapsed: boolean;
     rowCount: number;
@@ -2712,12 +2720,15 @@ export class KeyframeTimelinePanel {
     const enableText = options.enabled ? "Mute layer tracks" : "Enable layer tracks";
     const lockText = options.locked ? "Unlock layer tracks" : "Lock layer tracks";
     const soloText = options.solo ? "Unsolo layer tracks" : "Solo layer tracks";
+    const layerLabelText = options.labelName ? `Layer label: ${options.labelName}. Click to cycle.` : "Track color";
     return `
       <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.switchable ? "switchable-layer" : "", options.enabled === false ? "disabled-layer" : "", options.lockable ? "lockable-layer" : "", options.soloable ? "soloable-layer" : "", options.solo ? "solo-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
         <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
           <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
         </button>
-        <span class="track-swatch" style="background:${options.color}"></span>
+        ${options.labelName
+          ? `<button class="track-swatch timeline-layer-label-swatch" type="button" style="background:${options.color}" aria-label="${layerLabelText}" title="${layerLabelText}"></button>`
+          : `<span class="track-swatch" style="background:${options.color}" title="${layerLabelText}"></span>`}
         <span class="track-label-text">
           <strong>${escapeHtml(options.targetName)}</strong>
           <small>${options.targetType} | ${rowText} | ${keyText}</small>
