@@ -250,6 +250,9 @@ PDF.
   AE-style selected-layer hide/show and isolate commands, the `Alt+V` /
   `Alt+Shift+V` shortcuts, static object visibility persistence, and how it
   differs from keyed Visibility tracks.
+- [Timeline Object Layer Lock](timeline-object-layer-lock.md) documents the
+  persistent object-layer protection command that blocks object edits without
+  replacing keyed-track locks.
 - [Timeline Layer Enable](timeline-layer-enable.md) documents the object group
   switch that enables or mutes all keyed tracks for one layer.
 - [Timeline Layer Solo](timeline-layer-solo.md) documents the object group

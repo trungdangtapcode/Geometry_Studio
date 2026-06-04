@@ -111,6 +111,11 @@ use `Camera > Frame All` or `Camera > Reset`.
 7. Press `Alt+Shift+V` when you want to inspect only the selected object layer.
    Use `Undo` to restore the exact previous hidden/shown mix, or run
    `Show All Object Layers` from Commands to make every object visible.
+8. Search `Toggle Selected Object Layer Lock` in Commands when an object is
+   finished and should not be renamed, transformed, duplicated, deleted,
+   parented, re-materialed, or keyed by accident. Run the same command again to
+   unlock it. This is different from the timeline group lock switch, which only
+   protects keyed tracks.
 
 ## 7. Materials, Textures, And Render Modes
 

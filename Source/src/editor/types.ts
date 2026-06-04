@@ -89,6 +89,7 @@ export interface SceneEntry {
   parentId: string | null;
   layerLabel: LayerLabelId;
   layerComment: string;
+  locked: boolean;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   root: THREE.Group;
@@ -258,6 +259,7 @@ export interface SerializedObject {
   parentId?: string | null;
   layerLabel?: LayerLabelId;
   layerComment?: string;
+  locked?: boolean;
   kind: ObjectKind;
   type: PrimitiveType | "model";
   renderMode: RenderMode;

@@ -452,7 +452,7 @@ function boot(root: HTMLDivElement): void {
   function addPrimitive(
     primitiveType: PrimitiveType,
     position = nextSpawnPosition(),
-    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity" | "roughness" | "metalness" | "layerLabel" | "layerComment">> & { color?: string; name?: string; id?: string } = {},
+    options: Partial<Pick<SceneEntry, "renderMode" | "materialMode" | "animation" | "textureName" | "opacity" | "roughness" | "metalness" | "layerLabel" | "layerComment" | "locked">> & { color?: string; name?: string; id?: string } = {},
     record = true
   ): SceneEntry {
     if (record) recordHistory();
@@ -472,7 +472,8 @@ function boot(root: HTMLDivElement): void {
       roughness: options.roughness ?? 0.42,
       metalness: options.metalness ?? 0.08,
       layerLabel: normalizeLayerLabel(options.layerLabel),
-      layerComment: normalizeLayerComment(options.layerComment)
+      layerComment: normalizeLayerComment(options.layerComment),
+      locked: options.locked ?? false
     });
 
     entry.root.position.copy(position);
@@ -532,6 +533,7 @@ function boot(root: HTMLDivElement): void {
     assetSource?: SceneEntry["assetSource"];
     layerLabel?: SceneEntry["layerLabel"];
     layerComment?: string;
+    locked?: boolean;
   }): SceneEntry {
     const id = config.id ?? `object-${idCounter++}`;
     idCounter = Math.max(idCounter, numericObjectId(id) + 1);
@@ -546,6 +548,7 @@ function boot(root: HTMLDivElement): void {
       parentId: null,
       layerLabel: normalizeLayerLabel(config.layerLabel),
       layerComment: normalizeLayerComment(config.layerComment),
+      locked: config.locked ?? false,
       kind: config.kind,
       type: config.type,
       name: config.name,
@@ -726,6 +729,11 @@ function boot(root: HTMLDivElement): void {
       const kind = trackKindForTransformMode();
       const entry = selectedEntry();
       if (entry) {
+        if (!assertObjectLayerUnlocked(entry, "changing its transform")) {
+          syncTransformControlsLockState();
+          syncTransformUI();
+          return;
+        }
         if (sceneTimeline.autoKey) autoKeyTransformChange(entry, kind, pendingTransformAutoKeySeedValues);
         else maybeStopwatchKeyTransformChange(entry, kind);
       }
@@ -742,6 +750,7 @@ function boot(root: HTMLDivElement): void {
     query<HTMLButtonElement>("#reset-transform").addEventListener("click", () => {
       const entry = selectedEntry();
       if (!entry) return;
+      if (!assertObjectLayerUnlocked(entry, "resetting its transform")) return;
       recordHistory();
       entry.root.position.set(0, 0.02, 0);
       entry.root.rotation.set(0, 0, 0);
@@ -836,6 +845,7 @@ function boot(root: HTMLDivElement): void {
       button.addEventListener("click", () => {
         const entry = selectedEntry();
         if (!entry) return;
+        if (!assertObjectLayerUnlocked(entry, "changing its animation preset")) return;
         const mode = button.dataset.animation as AnimationMode;
         let selectedPresetKeyframeIds: string[] = [];
         recordHistory();
@@ -861,6 +871,7 @@ function boot(root: HTMLDivElement): void {
       button.addEventListener("click", () => {
         const entry = selectedEntry();
         if (!entry) return;
+        if (!assertObjectLayerUnlocked(entry, "applying a texture")) return;
         applyTexture(entry, button.dataset.texture ?? "none");
       });
     });
@@ -1130,12 +1141,17 @@ function boot(root: HTMLDivElement): void {
   function updateSelectedEntry(mutator: (entry: SceneEntry) => void): void {
     const entry = selectedEntry();
     if (!entry) return;
+    if (!assertObjectLayerUnlocked(entry, "editing it")) {
+      updateAllUI();
+      return;
+    }
     recordHistory();
     mutator(entry);
     updateAllUI();
   }
 
   function updateAllUI(): void {
+    syncTransformControlsLockState();
     syncEntryRenderOrder();
     renderOutliner();
     syncTransformUI();
@@ -1647,6 +1663,10 @@ function boot(root: HTMLDivElement): void {
         keywords: ["comment", "note", "memo", "layer note", "organize layer", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
+      command("timeline.toggle-object-layer-lock", "Toggle Selected Object Layer Lock", "View", toggleSelectedObjectLayerLock, {
+        keywords: ["lock object", "unlock object", "layer lock", "protect object", "prevent edits", "timeline", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
       command("timeline.toggle-layer-visibility", "Toggle Selected Layer Visibility", "View", toggleSelectedLayerVisibility, {
         shortcut: "Alt+V",
         keywords: ["hide layer", "show layer", "visibility", "eyeball", "object visibility", "timeline", "after effects", "ae"],
@@ -1922,8 +1942,10 @@ function boot(root: HTMLDivElement): void {
       item.ariaLabel = `Select ${entry.name}`;
       item.classList.toggle("active", entry.id === selectedId);
       item.classList.toggle("hidden-object", !entry.root.visible);
+      item.classList.toggle("locked-object", entry.locked);
       const parent = entry.parentId ? entries.get(entry.parentId) : null;
       const modeLabel = [
+        entry.locked ? "Locked" : "",
         entry.root.visible ? "" : "Hidden",
         parent ? `${capitalize(entry.renderMode)} | Parent: ${parent.name}` : capitalize(entry.renderMode)
       ].filter(Boolean).join(" | ");
@@ -1976,19 +1998,23 @@ function boot(root: HTMLDivElement): void {
       const option = document.createElement("option");
       option.value = candidate.id;
       option.textContent = candidate.name;
-      option.disabled = entry ? !canParentEntry(entry, candidate, entries) : true;
+      option.disabled = entry ? entry.locked || !canParentEntry(entry, candidate, entries) : true;
       select.appendChild(option);
     });
 
-    select.disabled = !entry;
+    select.disabled = !entry || entry.locked;
     select.value = entry?.parentId ?? "";
-    query<HTMLButtonElement>("#parent-to-null").disabled = !entry;
-    query<HTMLButtonElement>("#clear-parent").disabled = !entry || !entry.parentId;
+    query<HTMLButtonElement>("#parent-to-null").disabled = !entry || entry.locked;
+    query<HTMLButtonElement>("#clear-parent").disabled = !entry || entry.locked || !entry.parentId;
   }
 
   function setSelectedParent(parentId: string | null): void {
     const entry = selectedEntry();
     if (!entry) return;
+    if (!assertObjectLayerUnlocked(entry, "changing its parent")) {
+      syncParentUI();
+      return;
+    }
     const parent = parentId ? entries.get(parentId) ?? null : null;
     if (parentId && !parent) {
       showToast("Parent layer no longer exists.", "bad");
@@ -2026,6 +2052,7 @@ function boot(root: HTMLDivElement): void {
   function parentSelectedToNewNull(): void {
     const child = selectedEntry();
     if (!child) return;
+    if (!assertObjectLayerUnlocked(child, "parenting it to a null")) return;
     recordHistory();
     scene.updateMatrixWorld(true);
     const worldPosition = new THREE.Vector3();
@@ -2070,6 +2097,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object before pasting a pose.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "pasting a pose")) return;
     if (!transformPoseClipboard) {
       showToast("Copy a transform pose before pasting.", "bad");
       return;
@@ -2137,6 +2165,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object before pasting pose keys.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "pasting pose keys")) return;
     if (!timelinePoseKeyClipboard) {
       showToast("Copy pose keys before pasting.", "bad");
       return;
@@ -2197,6 +2226,10 @@ function boot(root: HTMLDivElement): void {
   function updateTransformValue(prop: TransformProperty, axis: TransformAxis, value: number): void {
     const current = selectedEntry();
     if (!current) return;
+    if (!assertObjectLayerUnlocked(current, "changing its transform")) {
+      syncTransformUI();
+      return;
+    }
     const previousValue = timelineValueForEntry(current, prop);
     recordHistory();
     if (prop === "rotation") current.root.rotation[axis] = THREE.MathUtils.degToRad(value);
@@ -2584,7 +2617,7 @@ function boot(root: HTMLDivElement): void {
   function syncSelectionSummary(): void {
     const entry = selectedEntry();
     const summary = entry
-      ? `${entry.name} | ${capitalize(entry.renderMode)} | ${hasObjectTimelineTracks(sceneTimeline, entry.id) ? "Keyframed" : entry.animation === "none" ? "Static" : capitalize(entry.animation)}${entry.assetSource ? ` | ${entry.assetSource.providerLabel}` : ""}`
+      ? `${entry.name} | ${capitalize(entry.renderMode)} | ${entry.locked ? "Locked" : hasObjectTimelineTracks(sceneTimeline, entry.id) ? "Keyframed" : entry.animation === "none" ? "Static" : capitalize(entry.animation)}${entry.assetSource ? ` | ${entry.assetSource.providerLabel}` : ""}`
       : "No object selected";
     query<HTMLParagraphElement>("#selection-summary").textContent = summary;
     query<HTMLInputElement>("#object-name").value = entry?.name ?? "";
@@ -2681,6 +2714,7 @@ function boot(root: HTMLDivElement): void {
   }
 
   function applyTexture(entry: SceneEntry, textureName: string): void {
+    if (!assertObjectLayerUnlocked(entry, "applying a texture")) return;
     const previousValue = timelineValueForEntry(entry, "objectTextureSource");
     recordHistory();
     const normalizedTextureName = textureSourceFromValue(textureSourceIndex(textureName));
@@ -4035,6 +4069,7 @@ function boot(root: HTMLDivElement): void {
   function deleteSelected(): void {
     const entry = selectedEntry();
     if (!entry) return;
+    if (!assertObjectLayerUnlocked(entry, "deleting it")) return;
     recordHistory();
     transformControls.detach();
     if (entry.parentId) {
@@ -4058,6 +4093,7 @@ function boot(root: HTMLDivElement): void {
   function duplicateSelected(): void {
     const entry = selectedEntry();
     if (!entry) return;
+    if (!assertObjectLayerUnlocked(entry, "duplicating it")) return;
     recordHistory();
     const copy = duplicateEntryWithTimeline(entry, "Copy");
     rebuildTimelineRuntime();
@@ -4072,6 +4108,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object before duplicating a layer at the playhead.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "duplicating it")) return;
 
     const sourceRange = objectLayerRange(sceneTimeline, entry.id);
     const targetStart = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
@@ -4160,6 +4197,10 @@ function boot(root: HTMLDivElement): void {
   function renameEntry(entry: SceneEntry, name: string): void {
     const nextName = name.trim().slice(0, 64);
     if (!nextName || nextName === entry.name) return;
+    if (!assertObjectLayerUnlocked(entry, "renaming it")) {
+      updateAllUI();
+      return;
+    }
     recordHistory();
     entry.name = nextName;
     entry.root.name = nextName;
@@ -4284,7 +4325,8 @@ function boot(root: HTMLDivElement): void {
         roughness: object.roughness ?? 0.42,
         metalness: object.metalness ?? 0.08,
         layerLabel: normalizeLayerLabel(object.layerLabel),
-        layerComment: normalizeLayerComment(object.layerComment)
+        layerComment: normalizeLayerComment(object.layerComment),
+        locked: object.locked ?? false
       }, false);
     } else {
       entry = makeEntry({
@@ -4304,7 +4346,8 @@ function boot(root: HTMLDivElement): void {
         roughness: object.roughness ?? 0.42,
         metalness: object.metalness ?? 0.08,
         layerLabel: normalizeLayerLabel(object.layerLabel),
-        layerComment: normalizeLayerComment(object.layerComment)
+        layerComment: normalizeLayerComment(object.layerComment),
+        locked: object.locked ?? false
       });
       entry.root.position.fromArray(object.position);
       rebuildEntryVisual(entry);
@@ -4704,12 +4747,26 @@ function boot(root: HTMLDivElement): void {
     showToast(nextComment ? `${entry.name} layer comment saved` : `${entry.name} layer comment cleared`, "good");
   }
 
+  function toggleSelectedObjectLayerLock(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object layer before changing its lock state.", "bad");
+      return;
+    }
+
+    recordHistory();
+    entry.locked = !entry.locked;
+    updateAllUI();
+    showToast(`${entry.name} object layer ${entry.locked ? "locked" : "unlocked"}`, "good");
+  }
+
   function toggleSelectedLayerVisibility(): void {
     const entry = selectedEntry();
     if (!entry) {
       showToast("Select an object layer before changing visibility.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "changing visibility")) return;
 
     recordHistory();
     entry.root.visible = !entry.root.visible;
@@ -4748,6 +4805,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object layer before isolating visibility.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "isolating visibility")) return;
 
     if (!canIsolateSelectedLayerVisibility()) {
       showToast(`${entry.name} is already the only visible object layer.`, "bad");
@@ -5065,7 +5123,19 @@ function boot(root: HTMLDivElement): void {
     return false;
   }
 
+  function assertObjectLayerUnlocked(entry: SceneEntry, action: string): boolean {
+    if (!entry.locked) return true;
+    showToast(`${entry.name} object layer is locked. Unlock it before ${action}.`, "bad");
+    return false;
+  }
+
   function assertTimelineSourcesUnlocked(sources: TimelineKeyframeSource[], action: string): boolean {
+    const lockedObject = sources.find((source) => source.scope === "object" && entries.get(source.objectId)?.locked);
+    if (lockedObject) {
+      const entry = entries.get(lockedObject.objectId);
+      showToast(`${entry?.name ?? "Object"} object layer is locked. Unlock it before ${action}.`, "bad");
+      return false;
+    }
     const locked = sources.find((source) => source.track.locked);
     if (!locked) return true;
     showToast(`${locked.track.label} track is locked. Unlock it before ${action}.`, "bad");
@@ -5088,6 +5158,7 @@ function boot(root: HTMLDivElement): void {
       if (options.notify !== false) showToast("Select an object before setting transform keyframes.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "setting transform keyframes")) return;
     if (selectedId !== entry.id) {
       selectedId = entry.id;
       transformControls.attach(entry.root);
@@ -5131,6 +5202,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object before clearing transform tracks.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "clearing transform tracks")) return;
     const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === entry.id);
     const transformTracks = objectTimeline?.tracks.filter((track) => isObjectTransformTrackKind(track.kind) && track.keyframes.length > 0) ?? [];
     if (!objectTimeline || transformTracks.length === 0) {
@@ -5507,6 +5579,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object before applying a motion preset.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "applying a motion preset")) return;
 
     recordHistory();
     const result = bakeTimelineMotionPreset(entry, presetId, true);
@@ -5529,6 +5602,7 @@ function boot(root: HTMLDivElement): void {
       showToast("Select an object before auto-orienting along a path.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "auto-orienting it")) return;
 
     const positionTrack = activeTimelineTrack("position", entry.id);
     if (!positionTrack || positionTrack.keyframes.length < 2) {
@@ -5698,6 +5772,7 @@ function boot(root: HTMLDivElement): void {
       if (options.notify !== false) showToast("Select an object before adding a keyframe.", "bad");
       return;
     }
+    if (!assertObjectLayerUnlocked(entry, "setting a keyframe")) return;
     const objectTimeline = ensureObjectTimeline(sceneTimeline, entry.id);
     const currentTrack = objectTimeline.tracks.find((candidate) => candidate.kind === kind);
     if (!assertTimelineTrackUnlocked(currentTrack, "setting a keyframe")) return;
@@ -7308,7 +7383,7 @@ function boot(root: HTMLDivElement): void {
   function moveTimelineKeyframe(keyframeId: string, time: number): void {
     const match = findTimelineKeyframe(keyframeId);
     if (!match) return;
-    if (match.track.locked) return;
+    if (match.track.locked || isTimelineKeyframeObjectLocked(match)) return;
     if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     match.keyframe.time = snapTimelineTime(sceneTimeline, clamp(time, 0, sceneTimeline.duration));
     sortTimelineKeyframes(match.track);
@@ -7321,10 +7396,19 @@ function boot(root: HTMLDivElement): void {
     syncMotionPath();
   }
 
+  function syncTransformControlsLockState(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      transformControls.detach();
+      return;
+    }
+    if (cleanViewSnapshot === null) transformControls.enabled = !entry.locked;
+  }
+
   function moveTimelineKeyframeValue(keyframeId: string, axis: "x" | "y" | "z", value: number): void {
     const match = findTimelineKeyframe(keyframeId);
     if (!match || !Number.isFinite(value)) return;
-    if (match.track.locked) return;
+    if (match.track.locked || isTimelineKeyframeObjectLocked(match)) return;
     if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     const axisIndex = axis === "x" ? 0 : axis === "y" ? 1 : 2;
     match.keyframe.value[axisIndex] = value;
@@ -7341,7 +7425,7 @@ function boot(root: HTMLDivElement): void {
   function moveTimelineKeyframeEase(keyframeId: string, easeStrength: number, side: TimelineEaseEditSide): void {
     const match = findTimelineKeyframe(keyframeId);
     if (!match || !Number.isFinite(easeStrength)) return;
-    if (match.track.locked) return;
+    if (match.track.locked || isTimelineKeyframeObjectLocked(match)) return;
     if (!pendingTimelineDragSnapshot) pendingTimelineDragSnapshot = snapshot();
     const nextStrength = clamp(easeStrength, 0, 2);
     if (side === "in") {
@@ -7360,6 +7444,10 @@ function boot(root: HTMLDivElement): void {
     applyObjectPropertyTimeline();
     if (hasTimelineTracks(sceneTimeline)) syncTransformUI();
     syncMotionPath();
+  }
+
+  function isTimelineKeyframeObjectLocked(match: { objectId: string | null }): boolean {
+    return Boolean(match.objectId && entries.get(match.objectId)?.locked);
   }
 
   function finishTimelineDrag(): void {
@@ -7804,6 +7892,7 @@ function boot(root: HTMLDivElement): void {
       parentId: entry.parentId,
       layerLabel: normalizeLayerLabel(entry.layerLabel),
       layerComment: normalizeLayerComment(entry.layerComment),
+      locked: entry.locked,
       kind: entry.kind,
       type: entry.type,
       renderMode: entry.renderMode,

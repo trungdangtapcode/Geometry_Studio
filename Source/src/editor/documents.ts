@@ -78,6 +78,7 @@ function serializeEntry(entry: SceneEntry): SerializedObject {
     parentId: entry.parentId,
     layerLabel: normalizeLayerLabel(entry.layerLabel),
     layerComment: normalizeLayerComment(entry.layerComment),
+    locked: entry.locked,
     kind: entry.kind,
     type: entry.type,
     renderMode: entry.renderMode,

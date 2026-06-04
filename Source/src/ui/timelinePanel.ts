@@ -2583,6 +2583,7 @@ export class KeyframeTimelinePanel {
           labelName,
           comment: entry.layerComment,
           visible: entry.root.visible,
+          objectLocked: entry.locked,
           active: entry.id === selectedId,
           collapsed,
           rowCount: visibleRows.length,
@@ -2703,6 +2704,7 @@ export class KeyframeTimelinePanel {
     labelName?: string;
     comment?: string;
     visible?: boolean;
+    objectLocked?: boolean;
     active: boolean;
     collapsed: boolean;
     rowCount: number;
@@ -2729,8 +2731,9 @@ export class KeyframeTimelinePanel {
     const commentText = options.comment?.trim() ? ` | ${escapeHtml(options.comment)}` : "";
     const commentTitle = options.comment?.trim() ? `Layer comment: ${escapeHtml(options.comment)}` : "";
     const hiddenText = options.visible === false ? " | Hidden" : "";
+    const lockedText = options.objectLocked ? " | Locked" : "";
     return `
-      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.switchable ? "switchable-layer" : "", options.enabled === false ? "disabled-layer" : "", options.visible === false ? "hidden-object-layer" : "", options.lockable ? "lockable-layer" : "", options.soloable ? "soloable-layer" : "", options.solo ? "solo-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" data-layer-comment="${escapeHtml(options.comment ?? "")}" aria-label="Select ${options.targetName} timeline group" title="${commentTitle}">
+      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.switchable ? "switchable-layer" : "", options.enabled === false ? "disabled-layer" : "", options.visible === false ? "hidden-object-layer" : "", options.objectLocked ? "locked-object-layer" : "", options.lockable ? "lockable-layer" : "", options.soloable ? "soloable-layer" : "", options.solo ? "solo-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" data-layer-comment="${escapeHtml(options.comment ?? "")}" aria-label="Select ${options.targetName} timeline group" title="${commentTitle}">
         <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
           <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
         </button>
@@ -2739,7 +2742,7 @@ export class KeyframeTimelinePanel {
           : `<span class="track-swatch" style="background:${options.color}" title="${layerLabelText}"></span>`}
         <span class="track-label-text">
           <strong>${escapeHtml(options.targetName)}</strong>
-          <small>${options.targetType} | ${rowText} | ${keyText}${hiddenText}${commentText}</small>
+          <small>${options.targetType} | ${rowText} | ${keyText}${hiddenText}${lockedText}${commentText}</small>
         </span>
         ${options.switchable && typeof options.enabled === "boolean"
           ? `<button class="timeline-group-enable${options.enabled ? "" : " active"}" type="button" aria-label="${enableText}: ${escapeHtml(options.targetName)}" title="${enableText}"><span data-icon="${options.enabled ? "Eye" : "EyeOff"}"></span></button>`
