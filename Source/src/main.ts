@@ -1656,6 +1656,11 @@ function boot(root: HTMLDivElement): void {
         keywords: ["show all", "unhide", "visibility", "eyeball", "object visibility", "timeline", "after effects", "ae"],
         disabled: () => !hasHiddenObjectLayers()
       }),
+      command("timeline.isolate-layer-visibility", "Isolate Selected Layer Visibility", "View", isolateSelectedLayerVisibility, {
+        shortcut: "Alt+Shift+V",
+        keywords: ["isolate layer", "solo visible layer", "show only selected", "visibility", "viewport solo", "timeline", "after effects", "ae"],
+        disabled: () => !canIsolateSelectedLayerVisibility()
+      }),
       command("timeline.move-layer-up", "Move Selected Layer Up", "View", () => moveSelectedLayerInStack("up"), {
         shortcut: "Alt+PageUp",
         keywords: ["layer order", "move layer", "stack", "arrange", "up", "timeline", "after effects", "ae"],
@@ -3481,6 +3486,11 @@ function boot(root: HTMLDivElement): void {
       toggleSelectedLayerVisibility();
       return;
     }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && event.shiftKey && key === "v") {
+      event.preventDefault();
+      isolateSelectedLayerVisibility();
+      return;
+    }
     if (event.altKey && event.shiftKey && key === "f") {
       event.preventDefault();
       fitSelectedLayerKeyframes();
@@ -4724,6 +4734,32 @@ function boot(root: HTMLDivElement): void {
     });
     updateAllUI();
     showToast(`${hiddenEntries.length} object layer${hiddenEntries.length === 1 ? "" : "s"} shown`, "good");
+  }
+
+  function canIsolateSelectedLayerVisibility(): boolean {
+    const entry = selectedEntry();
+    if (!entry) return false;
+    return Array.from(entries.values()).some((candidate) => candidate.id === entry.id ? !candidate.root.visible : candidate.root.visible);
+  }
+
+  function isolateSelectedLayerVisibility(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object layer before isolating visibility.", "bad");
+      return;
+    }
+
+    if (!canIsolateSelectedLayerVisibility()) {
+      showToast(`${entry.name} is already the only visible object layer.`, "bad");
+      return;
+    }
+
+    recordHistory();
+    entries.forEach((candidate) => {
+      candidate.root.visible = candidate.id === entry.id;
+    });
+    updateAllUI();
+    showToast(`${entry.name} isolated. Use Undo to restore the previous visibility mix.`, "good");
   }
 
   function canMoveSelectedLayer(move: LayerOrderMove): boolean {

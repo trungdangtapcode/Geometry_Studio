@@ -55,6 +55,7 @@ label plus key only.
 | Frame selected | `F` or `Numpad .` |
 | Clean View | `Alt+G` |
 | Hide/show selected object layer | `Alt+V` |
+| Show only selected object layer | `Alt+Shift+V` |
 | Set full transform pose key | `Shift+K` |
 | Reveal Position / Rotation / Scale rows | `Alt+P` / `Alt+R` / `Alt+S` |
 | Show selected keyed rows | `Shift+U` |
@@ -107,6 +108,9 @@ use `Camera > Frame All` or `Camera > Reset`.
 6. Press `Alt+V`, or use `Material > Visible`, to hide/show the selected object
    layer without deleting it. Hidden layers remain selectable from the Outliner
    and Timeline, show a `Hidden` label, and are saved in scene JSON.
+7. Press `Alt+Shift+V` when you want to inspect only the selected object layer.
+   Use `Undo` to restore the exact previous hidden/shown mix, or run
+   `Show All Object Layers` from Commands to make every object visible.
 
 ## 7. Materials, Textures, And Render Modes
 

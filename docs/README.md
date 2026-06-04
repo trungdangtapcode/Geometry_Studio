@@ -247,9 +247,9 @@ PDF.
 - [Timeline Layer Selection](timeline-layer-selection.md) documents keyboard
   navigation through the current object layer stack.
 - [Timeline Layer Visibility](timeline-layer-visibility.md) documents
-  AE-style selected-layer hide/show commands, the `Alt+V` shortcut, static
-  object visibility persistence, and how it differs from keyed Visibility
-  tracks.
+  AE-style selected-layer hide/show and isolate commands, the `Alt+V` /
+  `Alt+Shift+V` shortcuts, static object visibility persistence, and how it
+  differs from keyed Visibility tracks.
 - [Timeline Layer Enable](timeline-layer-enable.md) documents the object group
   switch that enables or mutes all keyed tracks for one layer.
 - [Timeline Layer Solo](timeline-layer-solo.md) documents the object group

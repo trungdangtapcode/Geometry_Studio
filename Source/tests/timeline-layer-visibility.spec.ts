@@ -45,6 +45,43 @@ test("toggles selected layer visibility and preserves it in saved scenes", async
   expect(errors).toEqual([]);
 });
 
+test("isolates selected layer visibility without using track solo", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = [];
+  await installSceneDownloadCapture(page);
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+
+  await page.goto("/");
+  const cubeGroup = page.locator('.timeline-track-group[data-group-target-id="object-1"]');
+  const torusGroup = page.locator('.timeline-track-group[data-group-target-id="object-2"]');
+  const sphereGroup = page.locator('.timeline-track-group[data-group-target-id="object-3"]');
+
+  await runCommand(page, "isolate selected layer visibility", "timeline.isolate-layer-visibility");
+  await expect(cubeGroup).not.toHaveClass(/hidden-object-layer/);
+  await expect(torusGroup).toHaveClass(/hidden-object-layer/);
+  await expect(sphereGroup).toHaveClass(/hidden-object-layer/);
+
+  const isolatedScene = await saveScene(page);
+  expect(isolatedScene.objects.find((object) => object.id === "object-1")?.visible).not.toBe(false);
+  expect(isolatedScene.objects.find((object) => object.id === "object-2")?.visible).toBe(false);
+  expect(isolatedScene.objects.find((object) => object.id === "object-3")?.visible).toBe(false);
+
+  await page.keyboard.press("Control+Z");
+  await expect(torusGroup).not.toHaveClass(/hidden-object-layer/);
+  await expect(sphereGroup).not.toHaveClass(/hidden-object-layer/);
+
+  await page.keyboard.press("Alt+Shift+V");
+  await expect(torusGroup).toHaveClass(/hidden-object-layer/);
+  await expect(sphereGroup).toHaveClass(/hidden-object-layer/);
+
+  await runCommand(page, "show all object layers", "timeline.show-all-layers");
+  await expect(torusGroup).not.toHaveClass(/hidden-object-layer/);
+  await expect(sphereGroup).not.toHaveClass(/hidden-object-layer/);
+  expect(errors).toEqual([]);
+});
+
 async function runCommand(page: Page, query: string, commandId: string): Promise<void> {
   await page.keyboard.press("Control+K");
   await page.locator("#command-palette-search").fill(query);

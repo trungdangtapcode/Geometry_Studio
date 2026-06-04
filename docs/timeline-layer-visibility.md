@@ -12,6 +12,8 @@ composition view, while remaining separate from keyed timeline track switches.
 | --- | --- |
 | Toggle selected layer visibility | Command Palette `Toggle Selected Layer Visibility` |
 | Toggle selected layer visibility shortcut | `Alt+V` |
+| Isolate selected object layer | Command Palette `Isolate Selected Layer Visibility` |
+| Isolate selected object layer shortcut | `Alt+Shift+V` |
 | Show every hidden object layer | Command Palette `Show All Object Layers` |
 | Inspector checkbox | `Material > Visible` |
 
@@ -27,6 +29,10 @@ and crossed out. The group row also shows `Hidden` beside its row/key count.
   be shown again without needing viewport picking.
 - `Show All Object Layers` only changes object root visibility. It does not
   unlock tracks, unmute tracks, remove shy flags, or clear keyframes.
+- `Isolate Selected Layer Visibility` makes the selected object layer visible
+  and hides every other object layer. It is useful for screenshots and dense
+  scene editing. Use `Undo` to restore the exact previous visibility mix, or
+  use `Show All Object Layers` to make every object layer visible.
 
 ## Difference From Other Timeline Switches
 
@@ -37,6 +43,7 @@ and crossed out. The group row also shows `Hidden` beside its row/key count.
 | Layer enable switch | Mutes or enables all keyed tracks on that object |
 | Layer solo switch | Solos keyed tracks for playback evaluation |
 | Layer shy switch | Hides timeline row clutter without changing the object |
+| Isolate selected layer visibility | One-command viewport/render cleanup using object root visibility |
 
 If an object has a keyed `Visibility` track, timeline playback can override the
 static layer visibility at the current playhead time. Use the static layer
@@ -49,6 +56,8 @@ when visibility must animate.
 
 - Command Palette toggle hides the selected layer.
 - `Alt+V` shows it again.
+- `Isolate Selected Layer Visibility` hides every non-selected object layer.
+- `Alt+Shift+V` runs the isolation shortcut.
 - Timeline and Outliner rows display hidden-layer state.
 - Saved scene JSON preserves `visible: false`.
 - `Show All Object Layers` restores hidden object layers.
