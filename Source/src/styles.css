@@ -1061,19 +1061,21 @@ svg {
 }
 
 .timeline-track-group.pose-keyable {
-  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size) var(--icon-mini-size);
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: var(--icon-mini-size);
 }
 
 .timeline-track-group.pose-keyable.lockable-layer {
-  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size) var(--icon-mini-size) var(--icon-mini-size);
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr);
 }
 
 .timeline-track-group.pose-keyable.soloable-layer {
-  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size) var(--icon-mini-size) var(--icon-mini-size);
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr);
 }
 
 .timeline-track-group.pose-keyable.lockable-layer.soloable-layer {
-  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr) var(--icon-mini-size) var(--icon-mini-size) var(--icon-mini-size) var(--icon-mini-size);
+  grid-template-columns: var(--icon-mini-size) 10px minmax(0, 1fr);
 }
 
 .timeline-track-group:hover,
@@ -1091,6 +1093,10 @@ svg {
 
 .timeline-track-group.shy-layer {
   color: rgba(26, 35, 42, 0.64);
+}
+
+.timeline-track-group.disabled-layer {
+  opacity: 0.62;
 }
 
 .timeline-group-toggle {
@@ -1235,6 +1241,7 @@ svg {
 
 .timeline-row-switch,
 .timeline-row-key,
+.timeline-group-enable,
 .timeline-group-solo,
 .timeline-group-lock,
 .timeline-group-shy,
@@ -1251,6 +1258,7 @@ svg {
 }
 
 .timeline-row-key,
+.timeline-group-enable,
 .timeline-group-solo,
 .timeline-group-lock,
 .timeline-group-shy,
@@ -1260,6 +1268,7 @@ svg {
 
 .timeline-row-switch:disabled,
 .timeline-row-key:disabled,
+.timeline-group-enable:disabled,
 .timeline-group-solo:disabled,
 .timeline-group-lock:disabled,
 .timeline-group-shy:disabled,
@@ -1289,6 +1298,8 @@ svg {
 .timeline-row-key:focus-visible,
 .timeline-row-switch:hover,
 .timeline-row-switch:focus-visible,
+.timeline-group-enable:hover,
+.timeline-group-enable:focus-visible,
 .timeline-group-solo:hover,
 .timeline-group-solo:focus-visible,
 .timeline-group-lock:hover,
@@ -1315,6 +1326,12 @@ svg {
   color: var(--teal);
   border-color: rgba(32, 191, 169, 0.34);
   background: rgba(32, 191, 169, 0.1);
+}
+
+.timeline-group-enable.active {
+  color: var(--muted);
+  border-color: rgba(26, 35, 42, 0.18);
+  background: rgba(26, 35, 42, 0.06);
 }
 
 .timeline-group-solo.active {

@@ -385,6 +385,7 @@ function boot(root: HTMLDivElement): void {
     onPinVisibleRows: pinVisibleTimelineRows,
     onClearPinnedRows: clearPinnedTimelineRows,
     onToggleObjectShy: toggleTimelineObjectShyState,
+    onToggleObjectTracks: toggleTimelineObjectTracks,
     onToggleObjectTrackLocks: toggleTimelineObjectTrackLocks,
     onToggleObjectTrackSolo: toggleTimelineObjectTrackSolo,
     onToggleHideShyRows: toggleTimelineHideShyRows,
@@ -1602,6 +1603,12 @@ function boot(root: HTMLDivElement): void {
       }),
       command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
         keywords: ["shy", "hide", "show shy", "layer", "timeline", "after effects", "ae"]
+      }),
+      command("timeline.toggle-selected-layer-tracks", "Toggle Selected Layer Tracks", "View", () => {
+        if (selectedId) toggleTimelineObjectTracks(selectedId);
+      }, {
+        keywords: ["enable layer", "disable layer", "mute layer", "layer switch", "timeline", "after effects", "ae"],
+        disabled: () => !hasSelectedLayerKeyedTracks()
       }),
       command("timeline.lock-selected-layer", "Toggle Selected Layer Lock", "View", () => {
         if (selectedId) toggleTimelineObjectTrackLocks(selectedId);
@@ -4444,6 +4451,29 @@ function boot(root: HTMLDivElement): void {
     const shy = toggleTimelineObjectShy(sceneTimeline, objectId);
     updateAllUI();
     showToast(`${entry.name} ${shy ? "marked shy" : "removed from shy layers"}`, "good");
+  }
+
+  function toggleTimelineObjectTracks(objectId: string): void {
+    const entry = entries.get(objectId);
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === objectId);
+    const keyedTracks = objectTimeline?.tracks.filter((track) => track.keyframes.length > 0) ?? [];
+    if (!entry || keyedTracks.length === 0) {
+      showToast("Add keyframes to this layer before toggling tracks.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const enabled = !keyedTracks.every((track) => track.enabled);
+    keyedTracks.forEach((track) => {
+      track.enabled = enabled;
+    });
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`${entry.name} layer tracks ${enabled ? "enabled" : "disabled"}`, "good");
   }
 
   function toggleTimelineObjectTrackLocks(objectId: string): void {
