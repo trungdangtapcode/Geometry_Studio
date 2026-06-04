@@ -254,10 +254,10 @@ To Top`, and `Move Selected Layer To Bottom` when a scene becomes crowded. These
 commands reorder the outliner and timeline stack without changing object
 position, keyframes, or parent links.
 
-Use `Alt+ArrowUp` and `Alt+ArrowDown` to select the previous or next object
-layer in the current stack. This is useful during demos because the outliner,
-timeline active row, viewport transform gizmo, and inspector all follow the
-same selected layer.
+Use `Alt+ArrowUp`, `Alt+ArrowDown`, `Alt+Home`, and `Alt+End` to select the
+previous, next, first, or last object layer in the current stack. This is useful
+during demos because the outliner, timeline active row, viewport transform
+gizmo, and inspector all follow the same selected layer.
 
 Use `Layer Dup` when you want a second copy of the selected object with the same
 animation. This is different from duplicating selected keyframes: the whole

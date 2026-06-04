@@ -116,7 +116,14 @@ import { CommandHistory } from "./editor/commands";
 import { createSceneDocument, validateSceneDocument } from "./editor/documents";
 import { normalizeLayerComment } from "./editor/layerComments";
 import { layerLabelName, nextLayerLabel, normalizeLayerLabel } from "./editor/layerLabels";
-import { adjacentLayerId, reorderLayerItems, type LayerOrderMove, type LayerSelectDirection } from "./editor/layerOrder";
+import {
+  adjacentLayerId,
+  boundaryLayerId,
+  reorderLayerItems,
+  type LayerOrderMove,
+  type LayerSelectBoundary,
+  type LayerSelectDirection
+} from "./editor/layerOrder";
 import type {
   AnimationMode,
   LightKind,
@@ -1667,6 +1674,16 @@ function boot(root: HTMLDivElement): void {
         shortcut: "Alt+ArrowDown",
         keywords: ["select layer", "next layer", "layer stack", "below", "timeline", "after effects", "ae"],
         disabled: () => !hasAdjacentLayer("next")
+      }),
+      command("timeline.select-first-layer", "Select First Layer", "View", () => selectBoundaryLayer("first"), {
+        shortcut: "Alt+Home",
+        keywords: ["select layer", "first layer", "top layer", "layer stack", "timeline", "after effects", "ae"],
+        disabled: () => !hasSelectableBoundaryLayer("first")
+      }),
+      command("timeline.select-last-layer", "Select Last Layer", "View", () => selectBoundaryLayer("last"), {
+        shortcut: "Alt+End",
+        keywords: ["select layer", "last layer", "bottom layer", "layer stack", "timeline", "after effects", "ae"],
+        disabled: () => !hasSelectableBoundaryLayer("last")
       }),
       command("timeline.hide-shy-rows", "Toggle Hide Shy Timeline Rows", "View", toggleTimelineHideShyRows, {
         keywords: ["shy", "hide", "show shy", "layer", "timeline", "after effects", "ae"]
@@ -3602,13 +3619,15 @@ function boot(root: HTMLDivElement): void {
     }
     if (key === "home") {
       event.preventDefault();
-      if (event.shiftKey) stepSelectedTimelineKeyBoundary(-1);
+      if (event.altKey && !event.ctrlKey && !event.metaKey) selectBoundaryLayer("first");
+      else if (event.shiftKey) stepSelectedTimelineKeyBoundary(-1);
       else setTimelineTime(sceneTimeline.workStart);
       return;
     }
     if (key === "end") {
       event.preventDefault();
-      if (event.shiftKey) stepSelectedTimelineKeyBoundary(1);
+      if (event.altKey && !event.ctrlKey && !event.metaKey) selectBoundaryLayer("last");
+      else if (event.shiftKey) stepSelectedTimelineKeyBoundary(1);
       else setTimelineTime(sceneTimeline.workEnd);
       return;
     }
@@ -4703,6 +4722,29 @@ function boot(root: HTMLDivElement): void {
     }
 
     setSelected(nextId);
+    const entry = selectedEntry();
+    showToast(entry ? `Selected ${entry.name}` : "Layer selected", "good");
+  }
+
+  function hasSelectableBoundaryLayer(boundary: LayerSelectBoundary): boolean {
+    if (!selectedId || entries.size < 2) return false;
+    const targetId = boundaryLayerId([...entries.values()], boundary);
+    return Boolean(targetId && targetId !== selectedId);
+  }
+
+  function selectBoundaryLayer(boundary: LayerSelectBoundary): void {
+    const targetId = boundaryLayerId([...entries.values()], boundary);
+    if (!targetId) {
+      showToast("Add an object layer before stepping through layers.", "bad");
+      return;
+    }
+    if (targetId === selectedId) {
+      const entry = selectedEntry();
+      showToast(`${entry?.name ?? "Selected layer"} is already ${boundary === "first" ? "at the top" : "at the bottom"}.`, "bad");
+      return;
+    }
+
+    setSelected(targetId);
     const entry = selectedEntry();
     showToast(entry ? `Selected ${entry.name}` : "Layer selected", "good");
   }

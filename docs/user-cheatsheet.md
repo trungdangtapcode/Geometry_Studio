@@ -216,7 +216,7 @@ Position, Rotation, and Scale recorded together.
 | Layer Label Swatch | Click the colored dot on an object group row, or run `Cycle Selected Layer Label Color`, to cycle AE-style organization colors |
 | Layer Comment | Command Palette `Set Selected Layer Comment`; notes appear on object group rows and are searchable |
 | Layer Order | Command Palette `Move Selected Layer Up/Down/To Top/To Bottom`; `Alt+PageUp` and `Alt+PageDown` move one step |
-| Layer Selection | `Alt+ArrowUp` / `Alt+ArrowDown`; select previous or next layer in the current stack |
+| Layer Selection | `Alt+ArrowUp` / `Alt+ArrowDown`; `Alt+Home` / `Alt+End` select previous, next, first, or last layer |
 | Layer Dup | Duplicate the selected object layer and copy its animation tracks |
 | Duplicate Layer At Playhead | `Ctrl+Alt+Shift+D`; copy the selected layer and shift the copied layer start to the playhead |
 | Dup Time / Del Time | Duplicate or delete visible-row keys at the playhead |

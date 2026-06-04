@@ -18,6 +18,14 @@ test("selects previous and next layers from the timeline stack", async ({ page }
   await expect(page.locator("#selection-summary")).toContainText("Sphere");
   await expect(page.locator('.outliner-item[data-id="object-3"]')).toHaveClass(/active/);
 
+  await page.keyboard.press("Alt+Home");
+  await expect(page.locator("#selection-summary")).toContainText("Cube");
+  await expect(page.locator('.outliner-item[data-id="object-1"]')).toHaveClass(/active/);
+
+  await runCommand(page, "select last layer", "timeline.select-last-layer");
+  await expect(page.locator("#selection-summary")).toContainText("Sphere");
+  await expect(page.locator('.outliner-item[data-id="object-3"]')).toHaveClass(/active/);
+
   await page.keyboard.press("Alt+ArrowUp");
   await expect(page.locator("#selection-summary")).toContainText("Wheel Torus");
   await expect(page.locator('.outliner-item[data-id="object-2"]')).toHaveClass(/active/);
@@ -25,6 +33,10 @@ test("selects previous and next layers from the timeline stack", async ({ page }
   await runCommand(page, "select previous layer", "timeline.select-previous-layer");
   await expect(page.locator("#selection-summary")).toContainText("Cube");
   await expect(page.locator('.outliner-item[data-id="object-1"]')).toHaveClass(/active/);
+
+  await page.keyboard.press("Alt+End");
+  await expect(page.locator("#selection-summary")).toContainText("Sphere");
+  await expect(page.locator('.outliner-item[data-id="object-3"]')).toHaveClass(/active/);
   expect(errors).toEqual([]);
 });
 

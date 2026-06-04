@@ -1,5 +1,6 @@
 export type LayerOrderMove = "up" | "down" | "top" | "bottom";
 export type LayerSelectDirection = "previous" | "next";
+export type LayerSelectBoundary = "first" | "last";
 
 export interface LayerOrderResult<T> {
   items: T[];
@@ -30,6 +31,11 @@ export function adjacentLayerId<T extends { id: string }>(items: T[], id: string
   if (index === -1 || items.length < 2) return null;
   const nextIndex = direction === "previous" ? index - 1 : index + 1;
   return items[nextIndex]?.id ?? null;
+}
+
+export function boundaryLayerId<T extends { id: string }>(items: T[], boundary: LayerSelectBoundary): string | null {
+  if (items.length === 0) return null;
+  return boundary === "first" ? items[0].id : items[items.length - 1].id;
 }
 
 function targetLayerIndex(index: number, count: number, move: LayerOrderMove): number {
