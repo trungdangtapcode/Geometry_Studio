@@ -157,6 +157,7 @@ Position, Rotation, and Scale recorded together.
 | Clear pinned rows | Removes every pinned-row preference |
 | Shy | Mark or unmark the selected object layer as shy |
 | Hide Shy / Show Shy | Hide or reveal shy object layers in the timeline |
+| Layer solo switch | Solo or unsolo every keyed track on that object layer |
 | Layer lock switch | Lock or unlock every keyed track on that object layer |
 
 ## Timeline Buttons

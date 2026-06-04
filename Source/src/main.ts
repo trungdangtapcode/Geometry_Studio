@@ -386,6 +386,7 @@ function boot(root: HTMLDivElement): void {
     onClearPinnedRows: clearPinnedTimelineRows,
     onToggleObjectShy: toggleTimelineObjectShyState,
     onToggleObjectTrackLocks: toggleTimelineObjectTrackLocks,
+    onToggleObjectTrackSolo: toggleTimelineObjectTrackSolo,
     onToggleHideShyRows: toggleTimelineHideShyRows,
     onTrackKindChanged: updateAllUI,
     onTrackLabelSelected: selectTimelineTrackLabel,
@@ -1606,6 +1607,12 @@ function boot(root: HTMLDivElement): void {
         if (selectedId) toggleTimelineObjectTrackLocks(selectedId);
       }, {
         keywords: ["lock layer", "unlock layer", "layer switch", "protect keys", "timeline", "after effects", "ae"],
+        disabled: () => !hasSelectedLayerKeyedTracks()
+      }),
+      command("timeline.solo-selected-layer", "Toggle Selected Layer Solo", "View", () => {
+        if (selectedId) toggleTimelineObjectTrackSolo(selectedId);
+      }, {
+        keywords: ["solo layer", "unsolo layer", "layer switch", "isolate motion", "timeline", "after effects", "ae"],
         disabled: () => !hasSelectedLayerKeyedTracks()
       }),
       command("timeline.collapse-groups", "Collapse Timeline Groups", "View", collapseTimelineGroups, {
@@ -4455,6 +4462,29 @@ function boot(root: HTMLDivElement): void {
     });
     updateAllUI();
     showToast(`${entry.name} layer tracks ${locked ? "locked" : "unlocked"}`, "good");
+  }
+
+  function toggleTimelineObjectTrackSolo(objectId: string): void {
+    const entry = entries.get(objectId);
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === objectId);
+    const keyedTracks = objectTimeline?.tracks.filter((track) => track.keyframes.length > 0) ?? [];
+    if (!entry || keyedTracks.length === 0) {
+      showToast("Add keyframes to this layer before soloing it.", "bad");
+      return;
+    }
+
+    recordHistory();
+    const solo = !keyedTracks.every((track) => track.solo);
+    keyedTracks.forEach((track) => {
+      track.solo = solo;
+    });
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyCameraTimeline();
+    applyLightTimeline();
+    applyObjectPropertyTimeline();
+    updateAllUI();
+    showToast(`${entry.name} layer tracks ${solo ? "soloed" : "unsoloed"}`, "good");
   }
 
   function toggleTimelineHideShyRows(): void {

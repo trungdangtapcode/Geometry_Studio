@@ -228,6 +228,10 @@ should remain in the scene. Mark the selected object as shy, then click
 `Hide Shy`. This cleans the timeline without muting tracks or hiding objects in
 the viewport.
 
+Use the solo switch on an object group row when you want to review only that
+layer's keyed animation. Solo does not lock keys or hide objects; it only tells
+the playback runtime to evaluate the soloed keyed tracks until solo is cleared.
+
 Use the lock switch on an object group row when you want to protect every keyed
 track on that layer from accidental edits. It is different from hiding or shy:
 the animation still plays, but key editing is blocked until you unlock it.

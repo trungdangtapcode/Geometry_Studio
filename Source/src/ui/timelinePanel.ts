@@ -139,6 +139,7 @@ export interface KeyframeTimelineCallbacks {
   onClearPinnedRows(): void;
   onToggleObjectShy(objectId: string): void;
   onToggleObjectTrackLocks(objectId: string): void;
+  onToggleObjectTrackSolo(objectId: string): void;
   onToggleHideShyRows(): void;
   onTrackKindChanged(): void;
   onTrackLabelSelected(targetId: string, kind: TimelineTrackKind): void;
@@ -1372,6 +1373,7 @@ export class KeyframeTimelinePanel {
       const groupPoseKey = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-pose-key");
       const groupShy = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-shy");
       const groupLock = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-lock");
+      const groupSolo = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-solo");
       const group = (event.target as HTMLElement).closest<HTMLElement>(".timeline-track-group");
       if (group) {
         const targetId = group.dataset.groupTargetId;
@@ -1389,6 +1391,9 @@ export class KeyframeTimelinePanel {
           } else if (groupShy) {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
             this.callbacks.onToggleObjectShy(targetId);
+          } else if (groupSolo) {
+            this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
+            this.callbacks.onToggleObjectTrackSolo(targetId);
           } else if (groupLock) {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
             this.callbacks.onToggleObjectTrackLocks(targetId);
@@ -2567,6 +2572,8 @@ export class KeyframeTimelinePanel {
           keyframeCount: countTrackKeyframes(objectTimeline?.tracks),
           lockable: keyedTracks.length > 0,
           locked: keyedTracks.length > 0 && keyedTracks.every((track) => track.locked),
+          soloable: keyedTracks.length > 0,
+          solo: keyedTracks.length > 0 && keyedTracks.every((track) => track.solo),
           shy: isTimelineObjectShy(timelineDocument, entry.id),
           poseKey: true,
           poseKeyed: hasTransformPoseTracks(objectTimeline?.tracks)
@@ -2680,6 +2687,8 @@ export class KeyframeTimelinePanel {
     keyframeCount: number;
     lockable?: boolean;
     locked?: boolean;
+    soloable?: boolean;
+    solo?: boolean;
     shy?: boolean;
     poseKey?: boolean;
     poseKeyed?: boolean;
@@ -2690,8 +2699,9 @@ export class KeyframeTimelinePanel {
     const stateText = options.collapsed ? "Expand" : "Collapse";
     const shyText = options.shy ? "Remove shy flag" : "Mark layer shy";
     const lockText = options.locked ? "Unlock layer tracks" : "Lock layer tracks";
+    const soloText = options.solo ? "Unsolo layer tracks" : "Solo layer tracks";
     return `
-      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.lockable ? "lockable-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
+      <div class="${["timeline-track-group", options.poseKey ? "pose-keyable" : "", options.lockable ? "lockable-layer" : "", options.soloable ? "soloable-layer" : "", options.solo ? "solo-layer" : "", options.shy ? "shy-layer" : "", options.extraClass ?? "", options.active ? "active" : "", options.collapsed ? "collapsed" : ""].filter(Boolean).join(" ")}" role="button" tabindex="0" data-group-target-id="${options.targetId}" aria-label="Select ${options.targetName} timeline group">
         <button class="timeline-group-toggle" type="button" aria-expanded="${!options.collapsed}" aria-label="${stateText} ${options.targetName} timeline group" title="${stateText} group. Alt-click applies to all groups.">
           <span data-icon="${options.collapsed ? "ChevronRight" : "ChevronDown"}"></span>
         </button>
@@ -2700,6 +2710,9 @@ export class KeyframeTimelinePanel {
           <strong>${escapeHtml(options.targetName)}</strong>
           <small>${options.targetType} | ${rowText} | ${keyText}</small>
         </span>
+        ${options.soloable && typeof options.solo === "boolean"
+          ? `<button class="timeline-group-solo${options.solo ? " active" : ""}" type="button" aria-label="${soloText}: ${escapeHtml(options.targetName)}" title="${soloText}"><span data-icon="${options.solo ? "CircleDot" : "Circle"}"></span></button>`
+          : ""}
         ${options.lockable && typeof options.locked === "boolean"
           ? `<button class="timeline-group-lock${options.locked ? " active" : ""}" type="button" aria-label="${lockText}: ${escapeHtml(options.targetName)}" title="${lockText}"><span data-icon="${options.locked ? "Lock" : "Unlock"}"></span></button>`
           : ""}
