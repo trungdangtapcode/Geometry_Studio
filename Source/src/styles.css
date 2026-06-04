@@ -1322,6 +1322,19 @@ svg {
   border: 1px dashed currentColor;
 }
 
+.timeline-track-group.hidden-object-layer {
+  opacity: 0.62;
+}
+
+.timeline-track-group.hidden-object-layer .track-swatch {
+  background: transparent !important;
+  border: 1px solid rgba(26, 35, 42, 0.28);
+}
+
+.timeline-track-group.hidden-object-layer .track-label-text strong {
+  text-decoration: line-through;
+}
+
 .timeline-group-shy.active {
   color: var(--teal);
   border-color: rgba(32, 191, 169, 0.34);
@@ -2281,6 +2294,19 @@ svg {
   background: #20272c;
   color: #ffffff;
   border-color: #20272c;
+}
+
+.outliner-item.hidden-object {
+  opacity: 0.58;
+}
+
+.outliner-item.hidden-object .object-dot {
+  background: transparent !important;
+  border: 1px solid currentColor;
+}
+
+.outliner-item.hidden-object .object-name {
+  text-decoration: line-through;
 }
 
 .object-dot {

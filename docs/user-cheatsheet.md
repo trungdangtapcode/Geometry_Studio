@@ -100,7 +100,7 @@ but `Load Campus` is the intended one-click workflow.
 | Transform | Move, rotate, scale, world/local space, reset transform |
 | Parent & Link | Parent selected objects to another layer or create a Null Controller |
 | Geometry / Render Mode | Change primitive type or switch Solid, Lines, Points |
-| Material | Color, material mode, PBR presets, opacity, roughness, metalness |
+| Material | Color, material mode, PBR presets, opacity, roughness, metalness, selected-layer visibility |
 | Textures | Built-in texture presets, uploaded bitmap texture, repeat/offset/rotation |
 | Camera | Projection controls, view presets, frame selected/all, frustum helper |
 | Lighting | Sun, point, spot, ambient, shadows, helpers, lighting presets |
@@ -157,6 +157,7 @@ Position, Rotation, and Scale recorded together.
 | Clear pinned rows | Removes every pinned-row preference |
 | Shy | Mark or unmark the selected object layer as shy |
 | Hide Shy / Show Shy | Hide or reveal shy object layers in the timeline |
+| Layer visibility | Hide or show the selected object layer in the viewport/render; separate from track mute and keyframed Visibility |
 | Layer enable switch | Mute or restore every keyed track on that object layer |
 | Layer solo switch | Solo or unsolo every keyed track on that object layer |
 | Layer lock switch | Lock or unlock every keyed track on that object layer |
@@ -215,6 +216,7 @@ Position, Rotation, and Scale recorded together.
 | Pinned Time Commands | Command Palette actions for select/copy/cut/duplicate/delete pinned-row keys at the playhead |
 | Layer Label Swatch | Click the colored dot on an object group row, or run `Cycle Selected Layer Label Color`, to cycle AE-style organization colors |
 | Layer Comment | Command Palette `Set Selected Layer Comment`; notes appear on object group rows and are searchable |
+| Layer Visibility | Command Palette `Toggle Selected Layer Visibility` or `Alt+V`; hidden layers stay selectable from Outliner/Timeline and save to JSON |
 | Layer Order | Command Palette `Move Selected Layer Up/Down/To Top/To Bottom`; `Alt+PageUp` and `Alt+PageDown` move one step |
 | Layer Selection | `Alt+ArrowUp` / `Alt+ArrowDown`; `Alt+Home` / `Alt+End` select previous, next, first, or last layer |
 | Layer Dup | Duplicate the selected object layer and copy its animation tracks |
@@ -275,6 +277,7 @@ Position, Rotation, and Scale recorded together.
 | `U` | Cycle Focus, Selected Layer, Selected Keyed, Keyed, Pinned, All Rows and clear stale row search |
 | `V`, `H` | Timeline selection tool, timeline pan tool |
 | `Alt+P`, `Alt+R`, `Alt+S` | Reveal Position, Rotation, Scale rows |
+| `Alt+V` | Toggle selected object layer visibility |
 | `Shift+P` | Pin or unpin the active timeline row |
 | `Shift+K` | Set Pose Key for Position, Rotation, and Scale |
 | `Alt+Click` keyed transform/timeline diamond or Set Pose | Clear that animated property track, or clear Position/Rotation/Scale together from Set Pose |

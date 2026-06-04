@@ -1647,6 +1647,15 @@ function boot(root: HTMLDivElement): void {
         keywords: ["comment", "note", "memo", "layer note", "organize layer", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
+      command("timeline.toggle-layer-visibility", "Toggle Selected Layer Visibility", "View", toggleSelectedLayerVisibility, {
+        shortcut: "Alt+V",
+        keywords: ["hide layer", "show layer", "visibility", "eyeball", "object visibility", "timeline", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.show-all-layers", "Show All Object Layers", "View", showAllObjectLayers, {
+        keywords: ["show all", "unhide", "visibility", "eyeball", "object visibility", "timeline", "after effects", "ae"],
+        disabled: () => !hasHiddenObjectLayers()
+      }),
       command("timeline.move-layer-up", "Move Selected Layer Up", "View", () => moveSelectedLayerInStack("up"), {
         shortcut: "Alt+PageUp",
         keywords: ["layer order", "move layer", "stack", "arrange", "up", "timeline", "after effects", "ae"],
@@ -1907,8 +1916,12 @@ function boot(root: HTMLDivElement): void {
       item.dataset.id = entry.id;
       item.ariaLabel = `Select ${entry.name}`;
       item.classList.toggle("active", entry.id === selectedId);
+      item.classList.toggle("hidden-object", !entry.root.visible);
       const parent = entry.parentId ? entries.get(entry.parentId) : null;
-      const modeLabel = parent ? `${capitalize(entry.renderMode)} | Parent: ${parent.name}` : capitalize(entry.renderMode);
+      const modeLabel = [
+        entry.root.visible ? "" : "Hidden",
+        parent ? `${capitalize(entry.renderMode)} | Parent: ${parent.name}` : capitalize(entry.renderMode)
+      ].filter(Boolean).join(" | ");
       item.innerHTML = `
         <span class="object-dot" style="background:${entry.color.getStyle()}"></span>
         <span class="object-name">${entry.name}</span>
@@ -3463,6 +3476,11 @@ function boot(root: HTMLDivElement): void {
       selectSelectedLayerKeyframes();
       return;
     }
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && key === "v") {
+      event.preventDefault();
+      toggleSelectedLayerVisibility();
+      return;
+    }
     if (event.altKey && event.shiftKey && key === "f") {
       event.preventDefault();
       fitSelectedLayerKeyframes();
@@ -4674,6 +4692,38 @@ function boot(root: HTMLDivElement): void {
     entry.layerComment = nextComment;
     updateAllUI();
     showToast(nextComment ? `${entry.name} layer comment saved` : `${entry.name} layer comment cleared`, "good");
+  }
+
+  function toggleSelectedLayerVisibility(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object layer before changing visibility.", "bad");
+      return;
+    }
+
+    recordHistory();
+    entry.root.visible = !entry.root.visible;
+    updateAllUI();
+    showToast(`${entry.name} ${entry.root.visible ? "shown" : "hidden"}`, "good");
+  }
+
+  function hasHiddenObjectLayers(): boolean {
+    return Array.from(entries.values()).some((entry) => !entry.root.visible);
+  }
+
+  function showAllObjectLayers(): void {
+    const hiddenEntries = Array.from(entries.values()).filter((entry) => !entry.root.visible);
+    if (hiddenEntries.length === 0) {
+      showToast("All object layers are already visible.", "bad");
+      return;
+    }
+
+    recordHistory();
+    hiddenEntries.forEach((entry) => {
+      entry.root.visible = true;
+    });
+    updateAllUI();
+    showToast(`${hiddenEntries.length} object layer${hiddenEntries.length === 1 ? "" : "s"} shown`, "good");
   }
 
   function canMoveSelectedLayer(move: LayerOrderMove): boolean {

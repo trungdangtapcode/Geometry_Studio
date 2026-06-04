@@ -539,7 +539,7 @@ export function studioTemplate(): string {
               <span>Metalness</span>
               <input id="object-metalness" type="number" min="0" max="1" step="0.05" value="0.08" />
             </label>
-            <label class="toggle-line panel-toggle">
+            <label class="toggle-line panel-toggle" title="Toggle selected layer visibility (Alt+V)">
               <input id="object-visible" type="checkbox" checked />
               <span>Visible</span>
             </label>

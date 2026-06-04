@@ -54,6 +54,7 @@ label plus key only.
 | Move / Rotate / Scale tool | `T` / `R` / `S` |
 | Frame selected | `F` or `Numpad .` |
 | Clean View | `Alt+G` |
+| Hide/show selected object layer | `Alt+V` |
 | Set full transform pose key | `Shift+K` |
 | Reveal Position / Rotation / Scale rows | `Alt+P` / `Alt+R` / `Alt+S` |
 | Show selected keyed rows | `Shift+U` |
@@ -103,6 +104,9 @@ use `Camera > Frame All` or `Camera > Reset`.
 3. Rename, duplicate, or delete it from the Outliner.
 4. Use `T`, `R`, or `S` for transform tools.
 5. Use the numeric Transform inspector for exact Position, Rotation, and Scale.
+6. Press `Alt+V`, or use `Material > Visible`, to hide/show the selected object
+   layer without deleting it. Hidden layers remain selectable from the Outliner
+   and Timeline, show a `Hidden` label, and are saved in scene JSON.
 
 ## 7. Materials, Textures, And Render Modes
 
