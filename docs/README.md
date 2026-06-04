@@ -246,6 +246,9 @@ PDF.
   switch that locks or unlocks all keyed tracks for one layer.
 - [Timeline Layer Duplicate](timeline-layer-duplicate.md) documents selected
   layer duplication with copied object animation tracks.
+- [Timeline Layer Duplicate At Playhead](timeline-layer-duplicate-at-playhead.md)
+  documents AE-style layer duplication that shifts the copied layer start to
+  the current playhead.
 - [Timeline Row Switches](timeline-row-switches.md) documents direct row-level
   enable, solo, lock, and key controls.
 - [Timeline Row Value Readouts](timeline-row-value-readouts.md) documents live

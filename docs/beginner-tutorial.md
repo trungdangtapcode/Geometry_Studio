@@ -245,6 +245,12 @@ animation. This is different from duplicating selected keyframes: the whole
 object layer is cloned, selected, offset in the scene, and given copied timeline
 tracks with fresh IDs.
 
+Use `Duplicate Selected Layer At Playhead` from the Command Palette, or press
+`Ctrl+Alt+Shift+D`, when you want the copied layer to begin at the current
+playhead. Example: animate Cube from `0s` to `1s`, move the playhead to `3s`,
+then run this command to create a second Cube whose copied animation starts at
+`3s`.
+
 Useful row shortcuts:
 
 | Action | Shortcut |

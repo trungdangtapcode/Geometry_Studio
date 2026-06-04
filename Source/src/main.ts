@@ -59,6 +59,7 @@ import {
   setObjectVisibilityRange,
   shiftObjectLayerKeyframes,
   stretchObjectLayerKeyframesToRange,
+  type ShiftLayerKeyframesResult,
   type TimelineLayerRange
 } from "./animation/timelineLayers";
 import { TimelinePlayer } from "./animation/timelinePlayer";
@@ -1518,6 +1519,11 @@ function boot(root: HTMLDivElement): void {
       command("timeline.duplicate-layer", "Duplicate Selected Layer", "Retiming", duplicateSelected, {
         shortcut: "Ctrl+Alt+D",
         keywords: ["duplicate layer", "copy layer", "clone layer", "copy object animation", "after effects", "ae"],
+        disabled: () => !selectedEntry()
+      }),
+      command("timeline.duplicate-layer-at-playhead", "Duplicate Selected Layer At Playhead", "Retiming", duplicateSelectedLayerAtPlayhead, {
+        shortcut: "Ctrl+Alt+Shift+D",
+        keywords: ["duplicate layer at playhead", "copy layer to playhead", "clone timing", "cti", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
       command("timeline.sequence-layers", "Sequence Object Layers", "Retiming", sequenceTimelineObjectLayers, {
@@ -3285,6 +3291,11 @@ function boot(root: HTMLDivElement): void {
       pasteTimelineKeyframes();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && event.altKey && event.shiftKey && key === "d") {
+      event.preventDefault();
+      duplicateSelectedLayerAtPlayhead();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.altKey && key === "d") {
       event.preventDefault();
       duplicateSelected();
@@ -3926,11 +3937,50 @@ function boot(root: HTMLDivElement): void {
     const entry = selectedEntry();
     if (!entry) return;
     recordHistory();
+    const copy = duplicateEntryWithTimeline(entry, "Copy");
+    rebuildTimelineRuntime();
+    setSelected(copy.id);
+    updateAllUI();
+    showToast(`${entry.name} duplicated`, "good");
+  }
+
+  function duplicateSelectedLayerAtPlayhead(): void {
+    const entry = selectedEntry();
+    if (!entry) {
+      showToast("Select an object before duplicating a layer at the playhead.", "bad");
+      return;
+    }
+
+    const sourceRange = objectLayerRange(sceneTimeline, entry.id);
+    const targetStart = snapTimelineTime(sceneTimeline, sceneTimeline.currentTime);
+    recordHistory();
+    const copy = duplicateEntryWithTimeline(entry, "Playhead Copy");
+    const copiedRange = sourceRange ?? objectLayerRange(sceneTimeline, copy.id);
+    const delta = roundTime(targetStart - (copiedRange?.start ?? 0));
+    const shiftResult = shiftDuplicatedLayerTracks(copy.id, delta);
+    const selectedKeyframeIds = shiftResult.keyframeIds.length
+      ? shiftResult.keyframeIds
+      : objectLayerKeyframeIds(sceneTimeline, copy.id);
+
+    sceneTimeline.currentTime = targetStart;
+    clearPresetAnimationsForTimelineObjects(shiftResult.changedTransformObjectIds);
+    rebuildTimelineRuntime();
+    timelinePlayer.setTime(sceneTimeline.currentTime);
+    applyObjectPropertyTimeline();
+    setSelected(copy.id);
+    updateAllUI();
+    timelinePanel.selectKeyframes(selectedKeyframeIds);
+
+    const skipped = shiftResult.skipped ? `, ${shiftResult.skipped} out-of-range keys skipped` : "";
+    showToast(`${entry.name} duplicated at ${formatNumber(targetStart)}s${skipped}`, shiftResult.skipped ? "bad" : "good");
+  }
+
+  function duplicateEntryWithTimeline(entry: SceneEntry, suffix: string): SceneEntry {
     const copyId = `object-${idCounter++}`;
     const copy = restoreObject({
       ...serializeObjectForDuplicate(entry),
       id: copyId,
-      name: `${entry.name} Copy`,
+      name: `${entry.name} ${suffix}`,
       position: [entry.root.position.x + 0.8, entry.root.position.y, entry.root.position.z + 0.8]
     });
     if (entry.parentId) {
@@ -3938,10 +3988,39 @@ function boot(root: HTMLDivElement): void {
       if (parent) attachEntryToStoredParent(copy, parent, entries);
     }
     copyTimelineObject(sceneTimeline, entry.id, copy.id);
-    rebuildTimelineRuntime();
-    setSelected(copy.id);
-    updateAllUI();
-    showToast(`${entry.name} duplicated`, "good");
+    return copy;
+  }
+
+  function shiftDuplicatedLayerTracks(objectId: string, delta: number): ShiftLayerKeyframesResult {
+    const objectTimeline = sceneTimeline.objects.find((candidate) => candidate.objectId === objectId);
+    if (!objectTimeline || Math.abs(delta) < 0.001) {
+      return { shifted: 0, skipped: 0, keyframeIds: [], changedTransformObjectIds: [] };
+    }
+
+    const duration = Math.max(sceneTimeline.duration, 0);
+    const changedTransformObjectIds = new Set<string>();
+    const keyframeIds: string[] = [];
+    let shifted = 0;
+    let skipped = 0;
+
+    objectTimeline.tracks.forEach((track) => {
+      if (track.keyframes.length === 0) return;
+      const nextTimes = track.keyframes.map((keyframe) => roundTime(keyframe.time + delta));
+      if (nextTimes.some((time) => time < -0.001 || time > duration + 0.001)) {
+        skipped += track.keyframes.length;
+        return;
+      }
+
+      track.keyframes.forEach((keyframe, index) => {
+        keyframe.time = clamp(nextTimes[index], 0, duration);
+        keyframeIds.push(keyframe.id);
+        shifted += 1;
+      });
+      sortTimelineKeyframes(track);
+      if (isObjectTransformTrackKind(track.kind)) changedTransformObjectIds.add(objectId);
+    });
+
+    return { shifted, skipped, keyframeIds, changedTransformObjectIds: [...changedTransformObjectIds] };
   }
 
   function renameSelected(): void {

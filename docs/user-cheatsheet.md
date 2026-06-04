@@ -214,6 +214,7 @@ Position, Rotation, and Scale recorded together.
 | Selected Layer Time Commands | Command Palette actions to copy, cut, duplicate, or delete only the selected object's keys at the playhead |
 | Pinned Time Commands | Command Palette actions for select/copy/cut/duplicate/delete pinned-row keys at the playhead |
 | Layer Dup | Duplicate the selected object layer and copy its animation tracks |
+| Duplicate Layer At Playhead | `Ctrl+Alt+Shift+D`; copy the selected layer and shift the copied layer start to the playhead |
 | Dup Time / Del Time | Duplicate or delete visible-row keys at the playhead |
 | Insert Gap | Push later visible-row keys by Work In/Out length |
 | Lift Work | Delete visible-row keys inside Work In/Out without closing gap |
