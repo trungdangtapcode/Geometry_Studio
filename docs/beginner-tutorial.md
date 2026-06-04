@@ -105,9 +105,10 @@ use `Camera > Frame All` or `Camera > Reset`.
 3. Rename, duplicate, or delete it from the Outliner.
 4. Use `T`, `R`, or `S` for transform tools.
 5. Use the numeric Transform inspector for exact Position, Rotation, and Scale.
-6. Press `Alt+V`, or use `Material > Visible`, to hide/show the selected object
-   layer without deleting it. Hidden layers remain selectable from the Outliner
-   and Timeline, show a `Hidden` label, and are saved in scene JSON.
+6. Click the eye button on the object timeline row, press `Alt+V`, or use
+   `Material > Visible`, to hide/show the selected object layer without
+   deleting it. Hidden layers remain selectable from the Outliner and Timeline,
+   show a `Hidden` label, and are saved in scene JSON.
 7. Press `Alt+Shift+V` when you want to inspect only the selected object layer.
    Use `Undo` to restore the exact previous hidden/shown mix, or run
    `Show All Object Layers` from Commands to make every object visible.

@@ -157,7 +157,7 @@ Position, Rotation, and Scale recorded together.
 | Clear pinned rows | Removes every pinned-row preference |
 | Shy | Mark or unmark the selected object layer as shy |
 | Hide Shy / Show Shy | Hide or reveal shy object layers in the timeline |
-| Layer visibility | Hide or show the selected object layer in the viewport/render; separate from track mute and keyframed Visibility |
+| Layer visibility | Timeline group eye button, `Alt+V`, or Command Palette; hide/show the selected object layer in the viewport/render, separate from track mute and keyframed Visibility |
 | Isolate layer visibility | Show only the selected object layer in the viewport/render; use `Undo` to restore the exact previous visibility mix |
 | Object layer lock | Timeline group shield button or Command Palette `Toggle Selected Object Layer Lock`; protects the selected object from rename, transform, duplicate, delete, parenting, material, texture, and key edits |
 | Layer enable switch | Mute or restore every keyed track on that object layer |
@@ -219,7 +219,7 @@ Position, Rotation, and Scale recorded together.
 | Pinned Time Commands | Command Palette actions for select/copy/cut/duplicate/delete pinned-row keys at the playhead |
 | Layer Label Swatch | Click the colored dot on an object group row, or run `Cycle Selected Layer Label Color`, to cycle AE-style organization colors |
 | Layer Comment | Command Palette `Set Selected Layer Comment`; notes appear on object group rows and are searchable |
-| Layer Visibility | Command Palette `Toggle Selected Layer Visibility` or `Alt+V`; hidden layers stay selectable from Outliner/Timeline and save to JSON |
+| Layer Visibility | Timeline group eye button, Command Palette `Toggle Selected Layer Visibility`, or `Alt+V`; hidden layers stay selectable from Outliner/Timeline and save to JSON |
 | Isolate Layer Visibility | Command Palette `Isolate Selected Layer Visibility` or `Alt+Shift+V`; hides every non-selected object layer |
 | Layer Order | Command Palette `Move Selected Layer Up/Down/To Top/To Bottom`; `Alt+PageUp` and `Alt+PageDown` move one step |
 | Layer Selection | `Alt+ArrowUp` / `Alt+ArrowDown`; `Alt+Home` / `Alt+End` select previous, next, first, or last layer |

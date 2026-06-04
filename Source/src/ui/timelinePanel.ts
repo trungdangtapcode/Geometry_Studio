@@ -141,6 +141,7 @@ export interface KeyframeTimelineCallbacks {
   onClearPinnedRows(): void;
   onToggleObjectShy(objectId: string): void;
   onCycleObjectLayerLabel(objectId: string): void;
+  onToggleObjectVisibility(objectId: string): void;
   onToggleObjectLayerLock(objectId: string): void;
   onToggleObjectTracks(objectId: string): void;
   onToggleObjectTrackLocks(objectId: string): void;
@@ -1377,6 +1378,7 @@ export class KeyframeTimelinePanel {
     this.labels.addEventListener("click", (event) => {
       const groupToggle = (event.target as HTMLElement).closest<HTMLElement>(".timeline-group-toggle");
       const groupPoseKey = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-pose-key");
+      const groupVisibility = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-visibility");
       const groupShy = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-shy");
       const groupObjectLock = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-object-lock");
       const groupEnable = (event.target as HTMLElement).closest<HTMLButtonElement>(".timeline-group-enable");
@@ -1400,6 +1402,9 @@ export class KeyframeTimelinePanel {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
             if (event.altKey && groupPoseKey.classList.contains("keyed-track")) this.callbacks.onClearTransformKeyframes(targetId);
             else this.callbacks.onSetObjectTransformKeyframes(targetId);
+          } else if (groupVisibility) {
+            this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
+            this.callbacks.onToggleObjectVisibility(targetId);
           } else if (groupShy) {
             this.callbacks.onTrackLabelSelected(targetId, this.selectedTrackKind());
             this.callbacks.onToggleObjectShy(targetId);
@@ -2728,6 +2733,7 @@ export class KeyframeTimelinePanel {
     const rowText = options.rowCount === 1 ? "1 row" : `${options.rowCount} rows`;
     const keyText = options.keyframeCount === 1 ? "1 key" : `${options.keyframeCount} keys`;
     const stateText = options.collapsed ? "Expand" : "Collapse";
+    const visibilityText = options.visible === false ? "Show object layer" : "Hide object layer";
     const shyText = options.shy ? "Remove shy flag" : "Mark layer shy";
     const objectLockText = options.objectLocked ? "Unlock object layer" : "Lock object layer";
     const enableText = options.enabled ? "Mute layer tracks" : "Enable layer tracks";
@@ -2750,8 +2756,11 @@ export class KeyframeTimelinePanel {
           <strong>${escapeHtml(options.targetName)}</strong>
           <small>${options.targetType} | ${rowText} | ${keyText}${hiddenText}${lockedText}${commentText}</small>
         </span>
+        ${typeof options.visible === "boolean"
+          ? `<button class="timeline-group-visibility${options.visible === false ? " active" : ""}" type="button" aria-label="${visibilityText}: ${escapeHtml(options.targetName)}" title="${visibilityText}"><span data-icon="${options.visible === false ? "EyeOff" : "Eye"}"></span></button>`
+          : ""}
         ${options.switchable && typeof options.enabled === "boolean"
-          ? `<button class="timeline-group-enable${options.enabled ? "" : " active"}" type="button" aria-label="${enableText}: ${escapeHtml(options.targetName)}" title="${enableText}"><span data-icon="${options.enabled ? "Eye" : "EyeOff"}"></span></button>`
+          ? `<button class="timeline-group-enable${options.enabled ? "" : " active"}" type="button" aria-label="${enableText}: ${escapeHtml(options.targetName)}" title="${enableText}"><span data-icon="${options.enabled ? "ListChecks" : "ListX"}"></span></button>`
           : ""}
         ${options.soloable && typeof options.solo === "boolean"
           ? `<button class="timeline-group-solo${options.solo ? " active" : ""}" type="button" aria-label="${soloText}: ${escapeHtml(options.targetName)}" title="${soloText}"><span data-icon="${options.solo ? "CircleDot" : "Circle"}"></span></button>`

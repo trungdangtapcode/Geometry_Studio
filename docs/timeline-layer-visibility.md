@@ -10,6 +10,7 @@ composition view, while remaining separate from keyed timeline track switches.
 
 | Action | Control |
 | --- | --- |
+| Toggle selected/object row visibility | Eye button on the object timeline group row |
 | Toggle selected layer visibility | Command Palette `Toggle Selected Layer Visibility` |
 | Toggle selected layer visibility shortcut | `Alt+V` |
 | Isolate selected object layer | Command Palette `Isolate Selected Layer Visibility` |
@@ -19,6 +20,8 @@ composition view, while remaining separate from keyed timeline track switches.
 
 When a layer is hidden, the outliner row and timeline group row become faded
 and crossed out. The group row also shows `Hidden` beside its row/key count.
+The eye button is the object viewport/render visibility switch; the nearby
+row-list button is the keyed-track enable/mute switch.
 
 ## Behavior
 
@@ -55,6 +58,7 @@ when visibility must animate.
 `Source/tests/timeline-layer-visibility.spec.ts` verifies:
 
 - Command Palette toggle hides the selected layer.
+- Timeline group eye toggles object-layer visibility.
 - `Alt+V` shows it again.
 - `Isolate Selected Layer Visibility` hides every non-selected object layer.
 - `Alt+Shift+V` runs the isolation shortcut.

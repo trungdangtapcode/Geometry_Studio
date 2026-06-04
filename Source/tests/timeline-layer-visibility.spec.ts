@@ -15,13 +15,18 @@ test("toggles selected layer visibility and preserves it in saved scenes", async
   await page.goto("/");
   const cubeGroup = page.locator('.timeline-track-group[data-group-target-id="object-1"]');
   const cubeOutliner = page.locator('.outliner-item[data-id="object-1"]');
+  const layerVisibility = cubeGroup.locator(".timeline-group-visibility");
   const visibleToggle = page.locator("#object-visible");
 
   await expect(cubeOutliner).toHaveClass(/active/);
+  await expect(layerVisibility).toBeVisible();
+  await expect(layerVisibility).toHaveAttribute("title", "Hide object layer");
   await expect(visibleToggle).toBeChecked();
 
-  await runCommand(page, "toggle selected layer visibility", "timeline.toggle-layer-visibility");
+  await layerVisibility.click();
   await expect(visibleToggle).not.toBeChecked();
+  await expect(layerVisibility).toHaveClass(/active/);
+  await expect(layerVisibility).toHaveAttribute("title", "Show object layer");
   await expect(cubeGroup).toHaveClass(/hidden-object-layer/);
   await expect(cubeGroup.locator(".track-label-text small")).toContainText("Hidden");
   await expect(cubeOutliner).toHaveClass(/hidden-object/);
@@ -31,6 +36,8 @@ test("toggles selected layer visibility and preserves it in saved scenes", async
 
   await page.keyboard.press("Alt+V");
   await expect(visibleToggle).toBeChecked();
+  await expect(layerVisibility).not.toHaveClass(/active/);
+  await expect(layerVisibility).toHaveAttribute("title", "Hide object layer");
   await expect(cubeGroup).not.toHaveClass(/hidden-object-layer/);
   await expect(cubeOutliner).not.toHaveClass(/hidden-object/);
 

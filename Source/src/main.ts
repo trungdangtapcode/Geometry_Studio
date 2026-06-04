@@ -398,6 +398,7 @@ function boot(root: HTMLDivElement): void {
     onClearPinnedRows: clearPinnedTimelineRows,
     onToggleObjectShy: toggleTimelineObjectShyState,
     onCycleObjectLayerLabel: cycleTimelineObjectLayerLabel,
+    onToggleObjectVisibility: toggleSelectedLayerVisibility,
     onToggleObjectLayerLock: toggleSelectedObjectLayerLock,
     onToggleObjectTracks: toggleTimelineObjectTracks,
     onToggleObjectTrackLocks: toggleTimelineObjectTrackLocks,
@@ -1668,7 +1669,7 @@ function boot(root: HTMLDivElement): void {
         keywords: ["lock object", "unlock object", "layer lock", "protect object", "prevent edits", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
       }),
-      command("timeline.toggle-layer-visibility", "Toggle Selected Layer Visibility", "View", toggleSelectedLayerVisibility, {
+      command("timeline.toggle-layer-visibility", "Toggle Selected Layer Visibility", "View", () => toggleSelectedLayerVisibility(), {
         shortcut: "Alt+V",
         keywords: ["hide layer", "show layer", "visibility", "eyeball", "object visibility", "timeline", "after effects", "ae"],
         disabled: () => !selectedEntry()
@@ -4766,8 +4767,8 @@ function boot(root: HTMLDivElement): void {
     showToast(`${entry.name} object layer ${entry.locked ? "locked" : "unlocked"}`, "good");
   }
 
-  function toggleSelectedLayerVisibility(): void {
-    const entry = selectedEntry();
+  function toggleSelectedLayerVisibility(objectId = selectedId): void {
+    const entry = entries.get(objectId) ?? null;
     if (!entry) {
       showToast("Select an object layer before changing visibility.", "bad");
       return;
@@ -4776,6 +4777,11 @@ function boot(root: HTMLDivElement): void {
 
     recordHistory();
     entry.root.visible = !entry.root.visible;
+    if (entry.id !== selectedId) {
+      selectedId = entry.id;
+      transformControls.attach(entry.root);
+      syncOutline();
+    }
     updateAllUI();
     showToast(`${entry.name} ${entry.root.visible ? "shown" : "hidden"}`, "good");
   }
